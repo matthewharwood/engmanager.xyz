@@ -1,0 +1,80 @@
+# -----------------------------------------
+# Rust / Cargo
+# -----------------------------------------
+
+# Build and compilation outputs
+/target/
+/debug/
+/release/
+
+# Cargo package metadata
+**/*.rs.bk
+Cargo.lock
+!website/Cargo.lock    # keep lockfile if website is an app (optional)
+
+# Rustfmt backup files
+**/*.rs.bk
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+
+# -----------------------------------------
+# JetBrains / RustRover
+# -----------------------------------------
+
+# Project settings (workspace-specific)
+.idea/
+
+# JetBrains local history
+.idea/**/shelf/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+
+# RustRover cache
+.idea/**/library/
+.idea/**/modules.xml
+.idea/**/workspace.xml
+.idea/**/httpRequests/
+
+# -----------------------------------------
+# Node / Web (optional but recommended if you later add frontend)
+# -----------------------------------------
+
+node_modules/
+dist/
+build/
+.cache/
+
+# Vite / Next.js / Parcel / Webpack
+.vite/
+.next/
+parcel-cache/
+
+# -----------------------------------------
+# OS-generated files
+# -----------------------------------------
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.Trash-*
+*~

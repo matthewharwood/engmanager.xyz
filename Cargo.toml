@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "website",
+]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"]}
