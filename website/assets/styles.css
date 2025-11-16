@@ -1,0 +1,48 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* @link https://utopia.fyi/type/calculator?c=360,18,1.2,1240,20,1.25,9,4,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12 */
+@font-face {
+    font-display: swap;
+    font-family: 'monument_extendedblack';
+    src: url('/assets/monumentextended-black-webfont.woff2') format('woff2'),
+    url('/assets/monumentextended-black-webfont.woff') format('woff');
+}
+
+:root {
+    --font-display: 'monument_extendedblack', sans-serif;
+}
+
+/* @link https://utopia.fyi/type/calculator?c=360,18,1.2,1700,20,1.25,9,4,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12 */
+:root {
+    --step--4: clamp(0.512rem, 0.5507rem + -0.0365cqi, 0.5425rem);
+    --step--3: clamp(0.64rem, 0.654rem + -0.0132cqi, 0.651rem);
+    --step--2: clamp(0.7813rem, 0.7762rem + 0.0224cqi, 0.8rem);
+    --step--1: clamp(0.9375rem, 0.9207rem + 0.0746cqi, 1rem);
+    --step-0: clamp(1.125rem, 1.0914rem + 0.1493cqi, 1.25rem);
+    --step-1: clamp(1.35rem, 1.2929rem + 0.2537cqi, 1.5625rem);
+    --step-2: clamp(1.62rem, 1.5305rem + 0.3978cqi, 1.9531rem);
+    --step-3: clamp(1.944rem, 1.8104rem + 0.5939cqi, 2.4414rem);
+    --step-4: clamp(2.3328rem, 2.1396rem + 0.8585cqi, 3.0518rem);
+    --step-5: clamp(2.7994rem, 2.5266rem + 1.2123cqi, 3.8147rem);
+    --step-6: clamp(3.3592rem, 2.9807rem + 1.6826cqi, 4.7684rem);
+    --step-7: clamp(4.0311rem, 3.5127rem + 2.3037cqi, 5.9605rem);
+    --step-8: clamp(4.8373rem, 4.1352rem + 3.1203cqi, 7.4506rem);
+    --step-9: clamp(5.8048rem, 4.8622rem + 4.1892cqi, 9.3132rem);
+}
+
+h1 {
+    text-transform: uppercase;
+    font-family: var(--font-display);
+    font-size: var(--step-9);
+    text-align: center;
+
+    /* Text ellipsis - prevents scrollbars */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

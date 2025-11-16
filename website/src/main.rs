@@ -1,16 +1,39 @@
 use axum::{
+    response::Html,
     routing::get,
     Router,
 };
+use maud::html;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tower_http::services::ServeDir;
+
+async fn homepage() -> Html<String> {
+    let markup = html! {
+        html {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { "Hello world" }
+                link rel="stylesheet" href="/assets/styles.css";
+            }
+            body {
+                div class="container" {
+                    h1 { "hello world" }
+                }
+            }
+        }
+    };
+    Html(markup.into_string())
+}
 
 #[tokio::main]
 async fn main() {
     // Build application with routes
     let app = Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
-        .route("/health", get(|| async { "OK" }));
+        .route("/", get(homepage))
+        .route("/health", get(|| async { "OK" }))
+        .nest_service("/assets", ServeDir::new("website/assets"));
 
     // Get port from environment (Render.io sets PORT) or use 3000 for dev
     let port = std::env::var("PORT")
