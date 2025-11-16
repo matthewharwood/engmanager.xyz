@@ -12,8 +12,7 @@
 Cargo.lock
 !website/Cargo.lock    # keep lockfile if website is an app (optional)
 
-# Rustfmt backup files
-**/*.rs.bk
+
 
 # Environment variables
 .env
@@ -44,7 +43,6 @@ Cargo.lock
 # RustRover cache
 .idea/**/library/
 .idea/**/modules.xml
-.idea/**/workspace.xml
 .idea/**/httpRequests/
 
 # -----------------------------------------
