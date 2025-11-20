@@ -1,9 +1,11 @@
-use axum::{response::Html, routing::get, Router};
+use axum::{response::Html, routing::{get, post}, Router};
 use maud::{html, Markup};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
+
+mod admin;
 
 // ============================================================================
 // Component Props (Data Shapes)
@@ -11,24 +13,24 @@ use tower_http::services::ServeDir;
 
 /// Button props - reusable across components
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct ButtonProps {
-    href: String,
-    text: String,
-    aria_label: String,
+pub struct ButtonProps {
+    pub href: String,
+    pub text: String,
+    pub aria_label: String,
 }
 
 /// Header component props
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct HeaderProps {
-    headline: String,
-    button: ButtonProps,
+pub struct HeaderProps {
+    pub headline: String,
+    pub button: ButtonProps,
 }
 
 /// Hero component props
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct HeroProps {
-    headline: String,
-    subheadline: String,
+pub struct HeroProps {
+    pub headline: String,
+    pub subheadline: String,
 }
 
 // ============================================================================
@@ -39,7 +41,7 @@ struct HeroProps {
 /// Uses serde's "type" tagging for JSON serialization
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "props")]
-enum Block {
+pub enum Block {
     Header(HeaderProps),
     Hero(HeroProps),
 }
@@ -49,12 +51,12 @@ enum Block {
 // ============================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct HomepageData {
-    blocks: Vec<Block>,
+pub struct HomepageData {
+    pub blocks: Vec<Block>,
 }
 
 /// Load homepage blocks from JSON file
-fn load_homepage_blocks() -> Vec<Block> {
+pub fn load_homepage_blocks() -> Vec<Block> {
     match std::fs::read_to_string("data/homepage.json") {
         Ok(contents) => match serde_json::from_str::<HomepageData>(&contents) {
             Ok(data) => data.blocks,
@@ -71,7 +73,7 @@ fn load_homepage_blocks() -> Vec<Block> {
 }
 
 /// Save homepage blocks to JSON file
-fn save_homepage_blocks(blocks: &[Block]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn save_homepage_blocks(blocks: &[Block]) -> Result<(), Box<dyn std::error::Error>> {
     let data = HomepageData {
         blocks: blocks.to_vec(),
     };
@@ -181,66 +183,17 @@ async fn homepage() -> Html<String> {
     Html(markup.into_string())
 }
 
-// ============================================================================
-// Admin Routes
-// ============================================================================
-
-async fn admin_index() -> Html<String> {
-    let markup = html! {
-        html {
-            head {
-                meta charset="utf-8";
-                title { "Admin" }
-            }
-            body {
-                h1 { "Admin" }
-                a href="/admin/route/" { "Go to admin/route/" }
-            }
-        }
-    };
-    Html(markup.into_string())
-}
-
-async fn admin_route_index() -> Html<String> {
-    let markup = html! {
-        html {
-            head {
-                meta charset="utf-8";
-                title { "Admin Route" }
-            }
-            body {
-                h1 { "Admin Route" }
-                a href="/admin/route/homepage/" { "Go to admin/route/homepage/" }
-            }
-        }
-    };
-    Html(markup.into_string())
-}
-
-async fn admin_route_homepage() -> Html<String> {
-    let markup = html! {
-        html {
-            head {
-                meta charset="utf-8";
-                title { "Admin Route Homepage" }
-            }
-            body {
-                h1 { "Admin Route Homepage" }
-            }
-        }
-    };
-    Html(markup.into_string())
-}
-
 #[tokio::main]
 async fn main() {
     // Build application with routes
     let app = Router::new()
         .route("/", get(homepage))
         .route("/health", get(|| async { "OK" }))
-        .route("/admin", get(admin_index))
-        .route("/admin/route/", get(admin_route_index))
-        .route("/admin/route/homepage/", get(admin_route_homepage))
+        // Admin routes
+        .route("/admin", get(admin::admin_index))
+        .route("/admin/route/", get(admin::admin_route_index))
+        .route("/admin/route/homepage/", get(admin::admin_route_homepage))
+        .route("/admin/api/homepage", post(admin::update_homepage))
         .nest_service("/assets", ServeDir::new("website/assets"));
 
     // Get port from environment (Render.io sets PORT) or use 3000 for dev
