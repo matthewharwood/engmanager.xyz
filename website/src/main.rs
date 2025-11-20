@@ -1,5 +1,6 @@
 use axum::{response::Html, routing::get, Router};
 use maud::{html, Markup};
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
@@ -9,25 +10,25 @@ use tower_http::services::ServeDir;
 // ============================================================================
 
 /// Button props - reusable across components
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ButtonProps {
-    href: &'static str,
-    text: &'static str,
-    aria_label: &'static str,
+    href: String,
+    text: String,
+    aria_label: String,
 }
 
 /// Header component props
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct HeaderProps {
-    headline: &'static str,
+    headline: String,
     button: ButtonProps,
 }
 
 /// Hero component props
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct HeroProps {
-    headline: &'static str,
-    subheadline: &'static str,
+    headline: String,
+    subheadline: String,
 }
 
 // ============================================================================
@@ -35,32 +36,76 @@ struct HeroProps {
 // ============================================================================
 
 /// Each variant represents a component with its unique data shape
-#[derive(Debug, Clone)]
+/// Uses serde's "type" tagging for JSON serialization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "props")]
 enum Block {
     Header(HeaderProps),
     Hero(HeroProps),
 }
 
 // ============================================================================
-// Page Block Definitions
+// Data Persistence
 // ============================================================================
 
-/// Defines which blocks appear on the homepage with their specific props
-fn homepage_blocks() -> Vec<Block> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct HomepageData {
+    blocks: Vec<Block>,
+}
+
+/// Load homepage blocks from JSON file
+fn load_homepage_blocks() -> Vec<Block> {
+    match std::fs::read_to_string("data/homepage.json") {
+        Ok(contents) => match serde_json::from_str::<HomepageData>(&contents) {
+            Ok(data) => data.blocks,
+            Err(e) => {
+                eprintln!("Failed to parse homepage.json: {}", e);
+                default_homepage_blocks()
+            }
+        },
+        Err(e) => {
+            eprintln!("Failed to read homepage.json: {}", e);
+            default_homepage_blocks()
+        }
+    }
+}
+
+/// Save homepage blocks to JSON file
+fn save_homepage_blocks(blocks: &[Block]) -> Result<(), Box<dyn std::error::Error>> {
+    let data = HomepageData {
+        blocks: blocks.to_vec(),
+    };
+    let json = serde_json::to_string_pretty(&data)?;
+    std::fs::write("data/homepage.json", json)?;
+    Ok(())
+}
+
+/// Default blocks if JSON file doesn't exist or is invalid
+fn default_homepage_blocks() -> Vec<Block> {
     vec![
         Block::Header(HeaderProps {
-            headline: "Eng Manager",
+            headline: "Eng Manager".to_string(),
             button: ButtonProps {
-                href: "/contact",
-                text: "Get in touch",
-                aria_label: "Contact us to discuss your engineering needs",
+                href: "/contact".to_string(),
+                text: "Get in touch".to_string(),
+                aria_label: "Contact us to discuss your engineering needs".to_string(),
             },
         }),
         Block::Hero(HeroProps {
-            headline: "Building world-class engineering teams",
-            subheadline: "Leadership through example, expertise, and empathy",
+            headline: "Building world-class engineering teams".to_string(),
+            subheadline: "Leadership through example, expertise, and empathy".to_string(),
         }),
     ]
+}
+
+// ============================================================================
+// Page Block Definitions
+// ============================================================================
+
+/// Loads homepage blocks from data/homepage.json
+/// Falls back to default blocks if file doesn't exist or is invalid
+fn homepage_blocks() -> Vec<Block> {
+    load_homepage_blocks()
 }
 
 // ============================================================================
@@ -136,12 +181,66 @@ async fn homepage() -> Html<String> {
     Html(markup.into_string())
 }
 
+// ============================================================================
+// Admin Routes
+// ============================================================================
+
+async fn admin_index() -> Html<String> {
+    let markup = html! {
+        html {
+            head {
+                meta charset="utf-8";
+                title { "Admin" }
+            }
+            body {
+                h1 { "Admin" }
+                a href="/admin/route/" { "Go to admin/route/" }
+            }
+        }
+    };
+    Html(markup.into_string())
+}
+
+async fn admin_route_index() -> Html<String> {
+    let markup = html! {
+        html {
+            head {
+                meta charset="utf-8";
+                title { "Admin Route" }
+            }
+            body {
+                h1 { "Admin Route" }
+                a href="/admin/route/homepage/" { "Go to admin/route/homepage/" }
+            }
+        }
+    };
+    Html(markup.into_string())
+}
+
+async fn admin_route_homepage() -> Html<String> {
+    let markup = html! {
+        html {
+            head {
+                meta charset="utf-8";
+                title { "Admin Route Homepage" }
+            }
+            body {
+                h1 { "Admin Route Homepage" }
+            }
+        }
+    };
+    Html(markup.into_string())
+}
+
 #[tokio::main]
 async fn main() {
     // Build application with routes
     let app = Router::new()
         .route("/", get(homepage))
         .route("/health", get(|| async { "OK" }))
+        .route("/admin", get(admin_index))
+        .route("/admin/route/", get(admin_route_index))
+        .route("/admin/route/homepage/", get(admin_route_homepage))
         .nest_service("/assets", ServeDir::new("website/assets"));
 
     // Get port from environment (Render.io sets PORT) or use 3000 for dev

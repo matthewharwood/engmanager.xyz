@@ -1,0 +1,22 @@
+{
+  "blocks": [
+    {
+      "type": "Header",
+      "props": {
+        "headline": "Eng Manager",
+        "button": {
+          "href": "/contact",
+          "text": "Get in touch",
+          "aria_label": "Contact us to discuss your engineering needs"
+        }
+      }
+    },
+    {
+      "type": "Hero",
+      "props": {
+        "headline": "Building world-class engineering teamszzzz",
+        "subheadline": "Leadership through example, expertise, and empathy"
+      }
+    }
+  ]
+}
