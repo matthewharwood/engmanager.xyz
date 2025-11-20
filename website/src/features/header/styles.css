@@ -1,0 +1,56 @@
+/* Header Component Styles */
+
+.header-block {
+    padding: 2rem 0;
+    background: #0a0a0a;
+    color: #fff;
+    border-bottom: 1px solid #333;
+}
+
+.header-block .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.header-block h1 {
+    flex: 1;
+    text-align: left;
+}
+
+.header-block .cta-button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: #0070f3;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.header-block .cta-button:hover {
+    background: #0060df;
+}
+
+.header-block .cta-button:focus {
+    outline: 2px solid #0070f3;
+    outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-block .container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .header-block h1 {
+        text-align: center;
+    }
+}

@@ -3,26 +3,30 @@
     {
       "type": "Header",
       "props": {
-        "headline": "Eng Manager2",
+        "headline": "Eng Manager",
         "button": {
           "href": "/contact",
           "text": "Get in touch",
-          "aria_label": "Contact us to discuss your engineering zzzneedszzz2222"
+          "aria_label": "Contact us to discuss your engineering needs"
         }
       }
     },
     {
       "type": "Hero",
       "props": {
-        "headline": "Building world-class engineering zzzzteamszz2222zz",
+        "headline": "Building world-class engineering teams",
         "subheadline": "Leadership through example, expertise, and empathy"
       }
     },
     {
-      "type": "Hero",
+      "type": "Header",
       "props": {
-        "headline": "2223333",
-        "subheadline": ""
+        "headline": "asdfasdfasdf",
+        "button": {
+          "href": "",
+          "text": "",
+          "aria_label": ""
+        }
       }
     }
   ]
