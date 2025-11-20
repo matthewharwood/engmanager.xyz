@@ -1,8 +1,4 @@
-use axum::{
-    response::Html,
-    routing::get,
-    Router,
-};
+use axum::{response::Html, routing::get, Router};
 use maud::html;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -19,7 +15,7 @@ async fn homepage() -> Html<String> {
             }
             body {
                 div class="container" {
-                    h1 { "hello world" }
+                    h1 { "Eng Manager" }
                 }
             }
         }

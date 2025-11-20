@@ -3,8 +3,28 @@ name = "website"
 version = "0.1.0"
 edition = "2024"
 
+#[lib]
+#name = "website"
+#path = "src/lib.rs"
+
+# Optional: Dev server binary
+#[[bin]]
+#name = "dev"
+#path = "src/bin/dev.rs"
+
 [dependencies]
-axum = { version = "0.8.7", features = ["ws"] }
-maud = "0.27.0"
-tokio = { version = "1.48.0", features = ["full"] }
-tower-http = { version = "0.6", features = ["fs"] }
+maud = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[features]
+dev-server = ["tower", "tracing", "tracing-subscriber"]

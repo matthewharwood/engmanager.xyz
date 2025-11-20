@@ -18,31 +18,48 @@
 }
 
 /* @link https://utopia.fyi/type/calculator?c=360,18,1.2,1700,20,1.25,9,4,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12 */
+/* @link https://utopia.fyi/type/calculator?c=360,18,1.2,2560,20,1.25,9,4,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12 */
+
 :root {
-    --step--4: clamp(0.512rem, 0.5507rem + -0.0365cqi, 0.5425rem);
-    --step--3: clamp(0.64rem, 0.654rem + -0.0132cqi, 0.651rem);
-    --step--2: clamp(0.7813rem, 0.7762rem + 0.0224cqi, 0.8rem);
-    --step--1: clamp(0.9375rem, 0.9207rem + 0.0746cqi, 1rem);
-    --step-0: clamp(1.125rem, 1.0914rem + 0.1493cqi, 1.25rem);
-    --step-1: clamp(1.35rem, 1.2929rem + 0.2537cqi, 1.5625rem);
-    --step-2: clamp(1.62rem, 1.5305rem + 0.3978cqi, 1.9531rem);
-    --step-3: clamp(1.944rem, 1.8104rem + 0.5939cqi, 2.4414rem);
-    --step-4: clamp(2.3328rem, 2.1396rem + 0.8585cqi, 3.0518rem);
-    --step-5: clamp(2.7994rem, 2.5266rem + 1.2123cqi, 3.8147rem);
-    --step-6: clamp(3.3592rem, 2.9807rem + 1.6826cqi, 4.7684rem);
-    --step-7: clamp(4.0311rem, 3.5127rem + 2.3037cqi, 5.9605rem);
-    --step-8: clamp(4.8373rem, 4.1352rem + 3.1203cqi, 7.4506rem);
-    --step-9: clamp(5.8048rem, 4.8622rem + 4.1892cqi, 9.3132rem);
+    /* Step -4: 8.6806px → 8.192px */
+    --step--4: clamp(0.512rem, 0.5475rem + -0.0222vi, 0.5425rem);
+    /* Step -3: 10.4167px → 10.24px */
+    --step--3: clamp(0.64rem, 0.6528rem + -0.008vi, 0.651rem);
+    /* Step -2: 12.5px → 12.8px */
+    --step--2: clamp(0.7813rem, 0.7782rem + 0.0136vi, 0.8rem);
+    /* Step -1: 15px → 16px */
+    --step--1: clamp(0.9375rem, 0.9273rem + 0.0455vi, 1rem);
+    /* Step 0: 18px → 20px */
+    --step-0: clamp(1.125rem, 1.1045rem + 0.0909vi, 1.25rem);
+    /* Step 1: 21.6px → 25px */
+    --step-1: clamp(1.35rem, 1.3152rem + 0.1545vi, 1.5625rem);
+    /* Step 2: 25.92px → 31.25px */
+    --step-2: clamp(1.62rem, 1.5655rem + 0.2423vi, 1.9531rem);
+    /* Step 3: 31.104px → 39.0625px */
+    --step-3: clamp(1.944rem, 1.8626rem + 0.3618vi, 2.4414rem);
+    /* Step 4: 37.3248px → 48.8281px */
+    --step-4: clamp(2.3328rem, 2.2152rem + 0.5229vi, 3.0518rem);
+    /* Step 5: 44.7898px → 61.0352px */
+    --step-5: clamp(2.7994rem, 2.6332rem + 0.7384vi, 3.8147rem);
+    /* Step 6: 53.7477px → 76.2939px */
+    --step-6: clamp(3.3592rem, 3.1286rem + 1.0248vi, 4.7684rem);
+    /* Step 7: 64.4973px → 95.3674px */
+    --step-7: clamp(4.0311rem, 3.7154rem + 1.4032vi, 5.9605rem);
+    /* Step 8: 77.3967px → 119.2093px */
+    --step-8: clamp(4.8373rem, 4.4097rem + 1.9006vi, 7.4506rem);
+    /* Step 9: 92.876px → 149.0116px */
+    --step-9: clamp(5.8048rem, 5.2306rem + 2.5516vi, 9.3132rem);
 }
 
 h1 {
     text-transform: uppercase;
     font-family: var(--font-display);
-    font-size: var(--step-9);
-    text-align: center;
 
-    /* Text ellipsis - prevents scrollbars */
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: clamp(1rem, 8vw, var(--step-9));
+    text-align: center;
+    line-height: 1;
+    margin: 0;
+
+    /* Never wrap, always fit */
     white-space: nowrap;
 }
