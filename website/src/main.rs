@@ -5,14 +5,61 @@ use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
 // ============================================================================
+// Component Props (Data Shapes)
+// ============================================================================
+
+/// Button props - reusable across components
+#[derive(Debug, Clone)]
+struct ButtonProps {
+    href: &'static str,
+    text: &'static str,
+    aria_label: &'static str,
+}
+
+/// Header component props
+#[derive(Debug, Clone)]
+struct HeaderProps {
+    headline: &'static str,
+    button: ButtonProps,
+}
+
+/// Hero component props
+#[derive(Debug, Clone)]
+struct HeroProps {
+    headline: &'static str,
+    subheadline: &'static str,
+}
+
+// ============================================================================
+// Block Enum (Type-Safe Component Variants)
+// ============================================================================
+
+/// Each variant represents a component with its unique data shape
+#[derive(Debug, Clone)]
+enum Block {
+    Header(HeaderProps),
+    Hero(HeroProps),
+}
+
+// ============================================================================
 // Page Block Definitions
 // ============================================================================
 
-/// Defines which blocks appear on the homepage and their data/props
-fn homepage_blocks() -> Vec<(&'static str, &'static str)> {
+/// Defines which blocks appear on the homepage with their specific props
+fn homepage_blocks() -> Vec<Block> {
     vec![
-        ("header", "Eng Manager"),
-        ("hero", "Building world-class engineering teams"),
+        Block::Header(HeaderProps {
+            headline: "Eng Manager",
+            button: ButtonProps {
+                href: "/contact",
+                text: "Get in touch",
+                aria_label: "Contact us to discuss your engineering needs",
+            },
+        }),
+        Block::Hero(HeroProps {
+            headline: "Building world-class engineering teams",
+            subheadline: "Leadership through example, expertise, and empathy",
+        }),
     ]
 }
 
@@ -20,23 +67,31 @@ fn homepage_blocks() -> Vec<(&'static str, &'static str)> {
 // Component Templates
 // ============================================================================
 
-/// Header component with water text effect
-fn header(content: &str) -> Markup {
+/// Header component - receives HeaderProps
+fn header(props: &HeaderProps) -> Markup {
     html! {
         header class="header-block" {
             div class="container" {
-                h1 { (content) }
+                h1 { (props.headline) }
+                a
+                    href=(props.button.href)
+                    aria-label=(props.button.aria_label)
+                    class="cta-button"
+                {
+                    (props.button.text)
+                }
             }
         }
     }
 }
 
-/// Hero section component
-fn hero(content: &str) -> Markup {
+/// Hero component - receives HeroProps
+fn hero(props: &HeroProps) -> Markup {
     html! {
         section class="hero-block" {
             div class="container" {
-                p { (content) }
+                h2 { (props.headline) }
+                p class="subheadline" { (props.subheadline) }
             }
         }
     }
@@ -46,17 +101,12 @@ fn hero(content: &str) -> Markup {
 // Component Mapping
 // ============================================================================
 
-/// Maps component names to their template functions
-/// This is the "ComponentMap" - it routes block names to the correct template
-fn render_component(name: &str, content: &str) -> Markup {
-    match name {
-        "header" => header(content),
-        "hero" => hero(content),
-        _ => html! {
-            div class="unknown-component" {
-                "⚠️ Unknown component: " (name)
-            }
-        },
+/// Maps Block enum variants to their template functions
+/// Each variant carries its own unique props shape
+fn render_block(block: &Block) -> Markup {
+    match block {
+        Block::Header(props) => header(props),
+        Block::Hero(props) => hero(props),
     }
 }
 
@@ -76,9 +126,9 @@ async fn homepage() -> Html<String> {
                 link rel="stylesheet" href="/assets/styles.css";
             }
             body {
-                // Loop over blocks and render each component
-                @for (name, content) in &blocks {
-                    (render_component(name, content))
+                // Loop over blocks and render each with its unique props
+                @for block in &blocks {
+                    (render_block(block))
                 }
             }
         }
