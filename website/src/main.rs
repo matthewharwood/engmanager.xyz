@@ -62,8 +62,8 @@ async fn main() {
         // Following the feature-based pattern, we serve:
         // - /assets/* - Global styles, fonts, images
         // - /features/* - Per-component CSS and JS files
-        .nest_service("/assets", ServeDir::new("assets"))
-        .nest_service("/features", ServeDir::new("src/features"));
+        .nest_service("/assets", ServeDir::new("website/assets"))
+        .nest_service("/features", ServeDir::new("website/src/features"));
 
     // Get port from environment (Render.io sets PORT) or use 3000 for dev
     let port = std::env::var("PORT")
