@@ -21,7 +21,6 @@
 /// - **Pages** compose features into layouts (or provide admin interfaces)
 /// - **Features** provide reusable components
 /// - **Core** provides shared types and operations
-
 pub mod admin;
 pub mod homepage;
 

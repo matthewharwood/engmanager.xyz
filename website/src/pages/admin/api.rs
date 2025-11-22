@@ -10,7 +10,7 @@
 /// In production, this should use proper error types with IntoResponse.
 use axum::Json;
 
-use crate::core::{save_homepage_blocks, HomepageData};
+use crate::core::{HomepageData, save_homepage_blocks};
 
 /// POST /admin/api/homepage
 ///

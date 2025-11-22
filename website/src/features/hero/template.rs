@@ -16,9 +16,10 @@
 /// `/features/hero/styles.css`
 ///
 /// The stylesheet is loaded in the page <head>, not inline with the component.
-use maud::{html, Markup};
+use maud::{Markup, html};
 
-use crate::core::{HeroProps, Render};
+use crate::core::Render;
+use crate::features::hero::HeroProps;
 
 /// Render the Hero component with the given props
 ///

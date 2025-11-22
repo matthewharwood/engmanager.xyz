@@ -1,0 +1,39 @@
+/**
+ * Button Component Styles
+ *
+ * Following Utopia fluid scales for consistent sizing and spacing.
+ * The button uses semantic color tokens and accessible contrast ratios.
+ */
+
+.cta-button {
+  /* Layout */
+  display: inline-block;
+  padding: var(--space-xs) var(--space-m);
+
+  /* Typography */
+  font-size: var(--step-0);
+  font-weight: 600;
+  text-decoration: none;
+
+  /* Visual */
+  background-color: var(--color-primary, #0066cc);
+  color: var(--color-on-primary, #ffffff);
+  border-radius: 4px;
+
+  /* Interaction */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.cta-button:hover {
+  background-color: var(--color-primary-hover, #0052a3);
+}
+
+.cta-button:focus-visible {
+  outline: 2px solid var(--color-focus, #0066cc);
+  outline-offset: 2px;
+}
+
+.cta-button:active {
+  background-color: var(--color-primary-active, #003d7a);
+}

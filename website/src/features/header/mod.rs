@@ -7,15 +7,15 @@
 /// # Architecture
 ///
 /// Following the feature-based architecture pattern:
-/// - **Props**: Defined in core/block.rs (HeaderProps, ButtonProps)
+/// - **Schema**: Data shape defined in schema.rs (HeaderProps)
 /// - **Template**: Maud rendering logic in template.rs
 /// - **Styles**: Component-scoped CSS in styles.css
 ///
 /// # Usage
 ///
 /// ```rust
-/// use crate::features::header::render_header;
-/// use crate::core::{HeaderProps, ButtonProps};
+/// use crate::features::header::{HeaderProps, render_header};
+/// use crate::features::button::ButtonProps;
 ///
 /// let props = HeaderProps {
 ///     headline: "Welcome".to_string(),
@@ -28,7 +28,11 @@
 ///
 /// let markup = render_header(&props);
 /// ```
+pub mod schema;
 pub mod template;
+
+// Re-export schema types for easy importing
+pub use schema::HeaderProps;
 
 // Re-export the main rendering function for convenience
 pub use template::header as render_header;

@@ -31,7 +31,7 @@
 /// - **maud-axum-integration**: IntoResponse, templates, layouts
 /// - **maud-components-patterns**: Render trait, component composition
 /// - **rust-core-patterns**: Type-safe domain modeling with enums
-use axum::{routing::get, routing::post, Router};
+use axum::{Router, routing::get, routing::post};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;

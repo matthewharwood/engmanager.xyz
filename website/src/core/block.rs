@@ -10,6 +10,7 @@
 /// - **Type safety**: Each block type has its own props struct
 /// - **Exhaustive matching**: Adding new blocks requires updating all match expressions
 /// - **Serialization**: Uses serde's "type" tagging for JSON persistence
+/// - **Feature ownership**: Each feature owns its schema (imported from features/*/schema.rs)
 ///
 /// # JSON Format
 ///
@@ -24,33 +25,23 @@
 ///   }
 /// }
 /// ```
+///
+/// # Schema Imports
+///
+/// Props are defined in feature-specific schema modules:
+/// - `ButtonProps`: features/button/schema.rs
+/// - `HeaderProps`: features/header/schema.rs
+/// - `HeroProps`: features/hero/schema.rs
+///
+/// This enables each feature to own its data shape while allowing core
+/// to orchestrate them into the Block enum.
 use serde::{Deserialize, Serialize};
 
-// ============================================================================
-// Component Props (Data Shapes)
-// ============================================================================
-
-/// Button props - reusable across components
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ButtonProps {
-    pub href: String,
-    pub text: String,
-    pub aria_label: String,
-}
-
-/// Header component props
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HeaderProps {
-    pub headline: String,
-    pub button: ButtonProps,
-}
-
-/// Hero component props
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HeroProps {
-    pub headline: String,
-    pub subheadline: String,
-}
+// Import schemas from feature modules
+// These are pub use to allow re-exporting from core/mod.rs
+pub use crate::features::button::ButtonProps;
+pub use crate::features::header::HeaderProps;
+pub use crate::features::hero::HeroProps;
 
 // ============================================================================
 // Block Enum (Type-Safe Component Variants)

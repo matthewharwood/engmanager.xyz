@@ -73,7 +73,6 @@ pub fn save_homepage_blocks(blocks: &[Block]) -> Result<(), Box<dyn std::error::
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::block::{ButtonProps, HeaderProps, HeroProps};
 
     #[test]
     fn test_default_blocks_serialization() {

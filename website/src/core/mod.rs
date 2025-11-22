@@ -15,13 +15,20 @@
 /// 2. **Operations** (load, save) - What we do with the data
 /// 3. **Presentation** (Render trait) - How we display the data
 ///
-/// Features depend on core, but core never depends on features.
-
+/// # Schema Re-exports
+///
+/// While schemas are defined in feature modules, core re-exports them for
+/// convenience. This allows consumers to import commonly-used types from core
+/// without needing to know which feature owns them.
+///
+/// Features depend on core, but core never depends on features (it imports
+/// feature schemas only to re-export them in the Block enum).
 pub mod block;
 pub mod persistence;
 pub mod render;
 
 // Re-export commonly used types for convenience
-pub use block::{Block, HeaderProps, HeroProps, HomepageData};
+// Props are re-exported from block module (which imports them from features)
+pub use block::{Block, HomepageData};
 pub use persistence::{load_homepage_blocks, save_homepage_blocks};
 pub use render::Render;

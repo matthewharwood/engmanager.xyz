@@ -7,15 +7,14 @@
 /// # Architecture
 ///
 /// Following the feature-based architecture pattern:
-/// - **Props**: Defined in core/block.rs (HeroProps)
+/// - **Schema**: Data shape defined in schema.rs (HeroProps)
 /// - **Template**: Maud rendering logic in template.rs
 /// - **Styles**: Component-scoped CSS in styles.css
 ///
 /// # Usage
 ///
 /// ```rust
-/// use crate::features::hero::render_hero;
-/// use crate::core::HeroProps;
+/// use crate::features::hero::{HeroProps, render_hero};
 ///
 /// let props = HeroProps {
 ///     headline: "Welcome to Our Platform".to_string(),
@@ -24,7 +23,11 @@
 ///
 /// let markup = render_hero(&props);
 /// ```
+pub mod schema;
 pub mod template;
+
+// Re-export schema types for easy importing
+pub use schema::HeroProps;
 
 // Re-export the main rendering function for convenience
 pub use template::hero as render_hero;

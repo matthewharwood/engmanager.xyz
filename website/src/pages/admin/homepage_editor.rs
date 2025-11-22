@@ -7,9 +7,9 @@
 /// The template and route handler live together in the pages directory
 /// because this is a page-level concern, not a reusable component.
 use axum::response::Html;
-use maud::{html, Markup};
+use maud::{Markup, html};
 
-use crate::core::{load_homepage_blocks, HomepageData};
+use crate::core::{HomepageData, load_homepage_blocks};
 
 /// Route handler: GET /admin/route/homepage/
 ///

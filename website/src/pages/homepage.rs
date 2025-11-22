@@ -18,9 +18,9 @@
 /// - Content editors to compose pages without code
 /// - Easy addition of new block types
 use axum::response::Html;
-use maud::{html, Markup};
+use maud::{Markup, html};
 
-use crate::core::{load_homepage_blocks, Block};
+use crate::core::{Block, load_homepage_blocks};
 use crate::features::header::render_header;
 use crate::features::hero::render_hero;
 
