@@ -1,0 +1,12 @@
+[
+  {
+    "path": "/",
+    "name": "homepage",
+    "blockIds": ["data/content/homepage.json"]
+  },
+  {
+    "path": "/foo",
+    "name": "foo",
+    "blockIds": ["data/content/foo.json"]
+  }
+]

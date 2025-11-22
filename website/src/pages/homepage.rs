@@ -21,7 +21,7 @@ use axum::response::Html;
 use maud::html;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{Block, load_homepage_blocks, render_block};
+use crate::core::{BlockWithId, block::Block, load_homepage_blocks, render_block};
 use crate::features::button::ButtonProps;
 use crate::features::header::HeaderProps;
 use crate::features::hero::HeroProps;
@@ -32,8 +32,8 @@ use crate::features::hero::HeroProps;
 
 /// Top-level data structure for homepage content
 ///
-/// This structure is persisted to data/homepage.json and loaded on each request.
-/// It contains an ordered list of blocks that are rendered in sequence.
+/// This structure is persisted to data/content/homepage.json and loaded on each request.
+/// It contains an ordered list of blocks with IDs that are rendered in sequence.
 ///
 /// # Architecture
 ///
@@ -44,12 +44,12 @@ use crate::features::hero::HeroProps;
 /// - Core remains focused on the block primitives
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HomepageData {
-    pub blocks: Vec<Block>,
+    pub blocks: Vec<BlockWithId>,
 }
 
 impl HomepageData {
     /// Create a new HomepageData with the given blocks
-    pub fn new(blocks: Vec<Block>) -> Self {
+    pub fn new(blocks: Vec<BlockWithId>) -> Self {
         Self { blocks }
     }
 
@@ -57,20 +57,26 @@ impl HomepageData {
     ///
     /// These defaults provide a working homepage on first launch and serve
     /// as an example of the content structure for editors.
-    pub fn default_blocks() -> Vec<Block> {
+    pub fn default_blocks() -> Vec<BlockWithId> {
         vec![
-            Block::Header(HeaderProps {
-                headline: "Eng Manager".to_string(),
-                button: ButtonProps {
-                    href: "/contact".to_string(),
-                    text: "Get in touch".to_string(),
-                    aria_label: "Contact us to discuss your engineering needs".to_string(),
-                },
-            }),
-            Block::Hero(HeroProps {
-                headline: "Building world-class engineering teams".to_string(),
-                subheadline: "Leadership through example, expertise, and empathy".to_string(),
-            }),
+            BlockWithId {
+                id: "550e8400-e29b-41d4-a716-446655440001".to_string(),
+                block: Block::Header(HeaderProps {
+                    headline: "Eng Manager".to_string(),
+                    button: ButtonProps {
+                        href: "/contact".to_string(),
+                        text: "Get in touch".to_string(),
+                        aria_label: "Contact us to discuss your engineering needs".to_string(),
+                    },
+                }),
+            },
+            BlockWithId {
+                id: "550e8400-e29b-41d4-a716-446655440002".to_string(),
+                block: Block::Hero(HeroProps {
+                    headline: "Building world-class engineering teams".to_string(),
+                    subheadline: "Leadership through example, expertise, and empathy".to_string(),
+                }),
+            },
         ]
     }
 }

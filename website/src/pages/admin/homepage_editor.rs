@@ -1,29 +1,56 @@
-/// Homepage editor page
+/// Route editor page
 ///
-/// Provides a dual-view interface for editing homepage content:
+/// Provides a dual-view interface for editing route content:
 /// - List view for visual block management
 /// - JSON view for raw data editing
 ///
 /// The template and route handler live together in the pages directory
 /// because this is a page-level concern, not a reusable component.
-use axum::response::Html;
+use axum::extract::Path;
+use axum::http::StatusCode;
+use axum::response::{Html, IntoResponse, Response};
 use maud::{Markup, html};
 
-use crate::core::load_homepage_blocks;
+use crate::core::{load_blocks, load_routes};
 use crate::pages::homepage::HomepageData;
 
-/// Route handler: GET /admin/route/homepage/
+/// Route handler: GET /admin/route/:name/
 ///
-/// Loads the current homepage blocks and renders the editor interface.
-/// Changes are persisted via the admin API endpoint.
-pub async fn admin_route_homepage() -> Html<String> {
-    let blocks = load_homepage_blocks();
+/// Loads the route by name from routes.json, then loads the corresponding
+/// page data and renders the editor interface.
+///
+/// # Path Parameters
+///
+/// - `name`: The route name (e.g., "homepage", "foo")
+///
+/// # Error Handling
+///
+/// Returns 404 if the route name is not found in routes.json.
+pub async fn admin_route_homepage(Path(name): Path<String>) -> Response {
+    // Load routes and find the requested route
+    let routes = load_routes();
+    let route = match routes.iter().find(|r| r.name == name) {
+        Some(r) => r,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Html(format!(
+                    "<h1>404 Not Found</h1><p>Route '{}' not found</p>",
+                    name
+                )),
+            )
+                .into_response();
+        }
+    };
+
+    // Load blocks for this specific route using the generic loader
+    let blocks = load_blocks(&name);
     let data = HomepageData::new(blocks);
-    let markup = render_editor_template(&data);
-    Html(markup.into_string())
+    let markup = render_editor_template(&data, route, &name);
+    Html(markup.into_string()).into_response()
 }
 
-/// Render the homepage editor template
+/// Render the route editor template
 ///
 /// This template provides a dual-view interface with tab switching:
 /// - **List View**: Visual block management with add/delete
@@ -33,7 +60,11 @@ pub async fn admin_route_homepage() -> Html<String> {
 ///
 /// - `/features/admin/editor/styles.css` - Editor styles
 /// - `/features/admin/editor/script.js` - Interactive behavior
-fn render_editor_template(data: &HomepageData) -> Markup {
+fn render_editor_template(
+    data: &HomepageData,
+    route: &crate::core::Route,
+    route_name: &str,
+) -> Markup {
     let json = serde_json::to_string_pretty(data).unwrap_or_default();
 
     html! {
@@ -41,18 +72,22 @@ fn render_editor_template(data: &HomepageData) -> Markup {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Edit Homepage" }
+                title { "Edit " (route.name) }
                 link rel="stylesheet" href="/features/admin/editor/styles.css";
             }
             body {
-                h1 { "Edit Homepage Content" }
+                h1 { "Edit " (route.name) " Content" }
+                p style="color: #666; margin-bottom: 1rem;" {
+                    "Route: "
+                    code { (route.path) }
+                }
 
                 div class="tabs" {
                     button class="tab active" data-tab="list" { "List View" }
                     button class="tab" data-tab="json" { "JSON View" }
                 }
 
-                form id="homepage-form" {
+                form id="homepage-form" data-route-name=(route_name) {
                     // List View Tab
                     div class="tab-content active" id="list-view" {
                         div class="add-block" {
@@ -70,7 +105,7 @@ fn render_editor_template(data: &HomepageData) -> Markup {
                     // JSON View Tab
                     div class="tab-content" id="json-view" {
                         div class="form-group" {
-                            label for="json-editor" { "Homepage JSON Data" }
+                            label for="json-editor" { (route.name) " JSON Data" }
                             textarea
                                 id="json-editor"
                                 name="json-data"
@@ -83,8 +118,8 @@ fn render_editor_template(data: &HomepageData) -> Markup {
 
                     div class="button-group" {
                         button type="submit" { "Publish Changes" }
-                        a href="/" {
-                            button type="button" { "Preview Homepage" }
+                        a href=(route.path) {
+                            button type="button" { "Preview " (route.name) }
                         }
                     }
                 }

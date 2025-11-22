@@ -5,11 +5,14 @@ const form = document.getElementById('homepage-form');
 const messageDiv = document.getElementById('message');
 const jsonEditor = document.getElementById('json-editor');
 const blockList = document.getElementById('block-list');
+const routeName = form.getAttribute('data-route-name') || 'homepage';
 let blocksData = { blocks: [] };
 
 // Default empty block templates
+// Note: IDs will be generated server-side if not present
 const blockDefaults = {
     Header: {
+        id: '', // Empty ID - server will generate UUID
         type: 'Header',
         props: {
             headline: '',
@@ -21,6 +24,7 @@ const blockDefaults = {
         }
     },
     Hero: {
+        id: '', // Empty ID - server will generate UUID
         type: 'Hero',
         props: {
             headline: '',
@@ -165,9 +169,9 @@ form.addEventListener('submit', async function(e) {
         return;
     }
 
-    // Send to server
+    // Send to server using dynamic route name
     try {
-        const response = await fetch('/admin/api/homepage', {
+        const response = await fetch('/admin/api/' + routeName, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -176,8 +180,10 @@ form.addEventListener('submit', async function(e) {
         });
 
         if (response.ok) {
-            showMessage('✓ Homepage updated successfully!', 'success');
+            const responseText = await response.text();
+            showMessage('✓ ' + responseText, 'success');
             // Update blocksData to reflect saved state
+            // Parse the response to get the IDs that were generated server-side
             blocksData = JSON.parse(jsonData);
             renderBlockList();
         } else {

@@ -1,0 +1,36 @@
+{
+  "blocks": [
+    {
+      "id": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+      "type": "Hero",
+      "props": {
+        "headline": "Welcome to Foo",
+        "subheadline": "This is a sample page demonstrating the block-based content system"
+      }
+    },
+    {
+      "id": "b2c3d4e5-f6a7-4890-b123-456789abcdef",
+      "type": "Header",
+      "props": {
+        "headline": "Explore More",
+        "button": {
+          "href": "/",
+          "text": "Back to Home",
+          "aria_label": "Navigate back to the homepage"
+        }
+      }
+    },
+    {
+      "id": "3a3de4bb-6ef0-435c-9ad3-f340e3a4623e",
+      "type": "Header",
+      "props": {
+        "headline": "",
+        "button": {
+          "href": "",
+          "text": "",
+          "aria_label": ""
+        }
+      }
+    }
+  ]
+}

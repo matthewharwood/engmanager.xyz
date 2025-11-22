@@ -53,11 +53,12 @@ async fn main() {
         .route("/admin", get(pages::admin::admin_index))
         .route("/admin/route/", get(pages::admin::admin_route_index))
         .route(
-            "/admin/route/homepage/",
+            "/admin/route/{name}/",
             get(pages::admin::admin_route_homepage),
         )
         // Admin API endpoints
         .route("/admin/api/homepage", post(pages::admin::update_homepage))
+        .route("/admin/api/{route_name}", post(pages::admin::update_route))
         // Static asset serving
         // Following the feature-based pattern, we serve:
         // - /assets/* - Global styles, fonts, images

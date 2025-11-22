@@ -19,7 +19,7 @@ pub mod routes;
 
 // Re-export handlers
 pub use admin_index_template::render_admin_index;
-pub use api::update_homepage;
+pub use api::{update_homepage, update_route};
 pub use homepage_editor::admin_route_homepage;
 pub use routes::admin_route_index;
 

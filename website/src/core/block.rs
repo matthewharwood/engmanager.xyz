@@ -12,12 +12,13 @@
 /// - **Serialization**: Uses serde's "type" tagging for JSON persistence
 /// - **Feature ownership**: Each feature owns its schema (imported from features/*/schema.rs)
 ///
-/// # JSON Format
+/// # JSON Format (BlockWithId)
 ///
-/// Blocks are serialized with a discriminant "type" field:
+/// Blocks are wrapped with an ID for identification:
 ///
 /// ```json
 /// {
+///   "id": "550e8400-e29b-41d4-a716-446655440000",
 ///   "type": "Header",
 ///   "props": {
 ///     "headline": "...",
@@ -25,6 +26,9 @@
 ///   }
 /// }
 /// ```
+///
+/// The `BlockWithId` wrapper preserves the original Block enum's serde structure
+/// while adding a unique identifier for each block instance.
 ///
 /// # Schema Imports
 ///
@@ -56,6 +60,42 @@ pub enum Block {
 }
 
 // ============================================================================
+// Block With ID (Wrapper for Persistence)
+// ============================================================================
+
+/// Wrapper that adds a unique ID to each block instance
+///
+/// This structure is used for persistence and API responses. The ID allows
+/// for stable references to specific blocks, enabling:
+/// - Edit operations on specific blocks
+/// - Reordering blocks while maintaining identity
+/// - Tracking changes to individual blocks
+///
+/// # JSON Format
+///
+/// ```json
+/// {
+///   "id": "550e8400-e29b-41d4-a716-446655440000",
+///   "type": "Header",
+///   "props": { ... }
+/// }
+/// ```
+///
+/// The `#[serde(flatten)]` attribute on `block` merges the Block's fields
+/// (type, props) into the same level as the id field, creating the desired
+/// JSON structure.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockWithId {
+    /// Unique identifier for this block instance
+    /// Should be a UUID v4 for global uniqueness
+    pub id: String,
+
+    /// The block content and type
+    #[serde(flatten)]
+    pub block: Block,
+}
+
+// ============================================================================
 // Block Rendering Dispatch
 // ============================================================================
 
@@ -83,23 +123,26 @@ pub enum Block {
 /// # Example
 ///
 /// ```rust
-/// use crate::core::{Block, render_block};
+/// use crate::core::{BlockWithId, render_block};
 /// use crate::features::header::HeaderProps;
 /// use crate::features::button::ButtonProps;
 ///
-/// let block = Block::Header(HeaderProps {
-///     headline: "Welcome".to_string(),
-///     button: ButtonProps {
-///         href: "/start".to_string(),
-///         text: "Get Started".to_string(),
-///         aria_label: "Navigate to start".to_string(),
-///     },
-/// });
+/// let block_with_id = BlockWithId {
+///     id: "550e8400-e29b-41d4-a716-446655440000".to_string(),
+///     block: Block::Header(HeaderProps {
+///         headline: "Welcome".to_string(),
+///         button: ButtonProps {
+///             href: "/start".to_string(),
+///             text: "Get Started".to_string(),
+///             aria_label: "Navigate to start".to_string(),
+///         },
+///     }),
+/// };
 ///
-/// let markup = render_block(&block);
+/// let markup = render_block(&block_with_id);
 /// ```
-pub fn render_block(block: &Block) -> maud::Markup {
-    match block {
+pub fn render_block(block_with_id: &BlockWithId) -> maud::Markup {
+    match &block_with_id.block {
         Block::Header(props) => crate::features::header::render_header(props),
         Block::Hero(props) => crate::features::hero::render_hero(props),
     }

@@ -1,0 +1,24 @@
+{
+  "blocks": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "Hero",
+      "props": {
+        "headline": "Building world-class engineering teams",
+        "subheadline": "Leadership through example, expertise, and empathy"
+      }
+    },
+    {
+      "id": "8b4edbc4-99f5-4bf0-9be9-b16d20658aaf",
+      "type": "Header",
+      "props": {
+        "headline": "",
+        "button": {
+          "href": "",
+          "text": "",
+          "aria_label": ""
+        }
+      }
+    }
+  ]
+}
