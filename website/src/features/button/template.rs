@@ -15,8 +15,7 @@
 ///
 /// This component has an associated stylesheet at:
 /// `/features/button/styles.css`
-use maud::{html, Markup};
-
+use maud::{Markup, html};
 
 use crate::core::Render;
 use crate::features::button::ButtonProps;

@@ -1,0 +1,68 @@
+/* Admin Index Component Styles
+ *
+ * This stylesheet contains styles specific to the Admin Index component.
+ * It uses Utopia fluid typography for responsive scaling without breakpoints.
+ *
+ * Design Requirements:
+ * - Black circle at the top
+ * - "ADMIN" heading in Monument Extended Black
+ * - Purple "Routes" link (#8B5CF6)
+ * - Centered layout with ample spacing
+ *
+ * Asset Dependencies:
+ * - Monument Extended Black font (loaded in /assets/styles.css)
+ *
+ * Utopia Fluid Scales:
+ * - Typography: Uses --step-* custom properties from global styles
+ * - Spacing: Uses --space-* custom properties for consistent spacing
+ */
+
+/* Admin Index Container */
+.admin-index {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: var(--space-m);
+    padding: var(--space-l);
+}
+
+/* Black Circle */
+.admin-index__circle {
+    width: clamp(3rem, 8vw, 6rem);
+    height: clamp(3rem, 8vw, 6rem);
+    background-color: #000000;
+    border-radius: 50%;
+}
+
+/* "ADMIN" Heading */
+.admin-index__heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 6vw, var(--step-4));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    text-align: center;
+}
+
+/* "Routes" Link */
+.admin-index__link {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: #8B5CF6;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    transition: opacity 0.2s ease;
+}
+
+.admin-index__link:hover {
+    opacity: 0.7;
+}
+
+.admin-index__link:focus {
+    outline: 2px solid #8B5CF6;
+    outline-offset: 4px;
+}

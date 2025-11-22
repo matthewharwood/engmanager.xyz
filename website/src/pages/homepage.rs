@@ -18,24 +18,60 @@
 /// - Content editors to compose pages without code
 /// - Easy addition of new block types
 use axum::response::Html;
-use maud::{Markup, html};
+use maud::html;
+use serde::{Deserialize, Serialize};
 
-use crate::core::{Block, load_homepage_blocks};
-use crate::features::header::render_header;
-use crate::features::hero::render_hero;
+use crate::core::{Block, load_homepage_blocks, render_block};
+use crate::features::button::ButtonProps;
+use crate::features::header::HeaderProps;
+use crate::features::hero::HeroProps;
 
-/// Render a single block by dispatching to the appropriate feature template
+// ============================================================================
+// Homepage Data Structure
+// ============================================================================
+
+/// Top-level data structure for homepage content
 ///
-/// This function matches on the Block enum and calls the corresponding
-/// feature's rendering function. When adding new block types:
+/// This structure is persisted to data/homepage.json and loaded on each request.
+/// It contains an ordered list of blocks that are rendered in sequence.
 ///
-/// 1. Add variant to Block enum in core/block.rs
-/// 2. Add match arm here
-/// 3. Import the feature's render function
-fn render_block(block: &Block) -> Markup {
-    match block {
-        Block::Header(props) => render_header(props),
-        Block::Hero(props) => render_hero(props),
+/// # Architecture
+///
+/// Following the principle that pages own page-specific data structures while
+/// core owns the building blocks (Block enum). HomepageData lives here because:
+/// - It's specific to the homepage, not a core domain concern
+/// - Pages layer composes core blocks into page-specific structures
+/// - Core remains focused on the block primitives
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HomepageData {
+    pub blocks: Vec<Block>,
+}
+
+impl HomepageData {
+    /// Create a new HomepageData with the given blocks
+    pub fn new(blocks: Vec<Block>) -> Self {
+        Self { blocks }
+    }
+
+    /// Get default homepage blocks when no persisted data exists
+    ///
+    /// These defaults provide a working homepage on first launch and serve
+    /// as an example of the content structure for editors.
+    pub fn default_blocks() -> Vec<Block> {
+        vec![
+            Block::Header(HeaderProps {
+                headline: "Eng Manager".to_string(),
+                button: ButtonProps {
+                    href: "/contact".to_string(),
+                    text: "Get in touch".to_string(),
+                    aria_label: "Contact us to discuss your engineering needs".to_string(),
+                },
+            }),
+            Block::Hero(HeroProps {
+                headline: "Building world-class engineering teams".to_string(),
+                subheadline: "Leadership through example, expertise, and empathy".to_string(),
+            }),
+        ]
     }
 }
 

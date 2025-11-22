@@ -18,7 +18,8 @@
 use std::fs;
 use std::io;
 
-use crate::core::block::{Block, HomepageData};
+use crate::core::block::Block;
+use crate::pages::homepage::HomepageData;
 
 const HOMEPAGE_JSON_PATH: &str = "../data/homepage.json";
 

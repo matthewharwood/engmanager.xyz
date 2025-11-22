@@ -9,7 +9,8 @@
 use axum::response::Html;
 use maud::{Markup, html};
 
-use crate::core::{HomepageData, load_homepage_blocks};
+use crate::core::load_homepage_blocks;
+use crate::pages::homepage::HomepageData;
 
 /// Route handler: GET /admin/route/homepage/
 ///

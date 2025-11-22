@@ -39,7 +39,6 @@ use serde::{Deserialize, Serialize};
 
 // Import schemas from feature modules
 // These are pub use to allow re-exporting from core/mod.rs
-pub use crate::features::button::ButtonProps;
 pub use crate::features::header::HeaderProps;
 pub use crate::features::hero::HeroProps;
 
@@ -57,39 +56,51 @@ pub enum Block {
 }
 
 // ============================================================================
-// Homepage Data Structure
+// Block Rendering Dispatch
 // ============================================================================
 
-/// Top-level data structure for homepage content
+/// Render a single block by dispatching to the appropriate feature template
 ///
-/// This structure is persisted to data/homepage.json and loaded on each request.
-/// It contains an ordered list of blocks that are rendered in sequence.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HomepageData {
-    pub blocks: Vec<Block>,
-}
-
-impl HomepageData {
-    /// Create a new HomepageData with the given blocks
-    pub fn new(blocks: Vec<Block>) -> Self {
-        Self { blocks }
-    }
-
-    /// Get default homepage blocks when no persisted data exists
-    pub fn default_blocks() -> Vec<Block> {
-        vec![
-            Block::Header(HeaderProps {
-                headline: "Eng Manager".to_string(),
-                button: ButtonProps {
-                    href: "/contact".to_string(),
-                    text: "Get in touch".to_string(),
-                    aria_label: "Contact us to discuss your engineering needs".to_string(),
-                },
-            }),
-            Block::Hero(HeroProps {
-                headline: "Building world-class engineering teams".to_string(),
-                subheadline: "Leadership through example, expertise, and empathy".to_string(),
-            }),
-        ]
+/// This is the core dispatch function that maps Block enum variants to their
+/// corresponding rendering implementations. It centralizes the block → component
+/// mapping logic so that any page can render blocks consistently.
+///
+/// # Architecture
+///
+/// Following maud-components-patterns, this function:
+/// - **Type safety**: Exhaustive match ensures all Block variants are handled
+/// - **Feature dispatch**: Calls feature-specific render functions
+/// - **Centralized**: Single source of truth for block rendering
+///
+/// # Adding New Block Types
+///
+/// When adding a new block variant:
+///
+/// 1. Add variant to Block enum above
+/// 2. Import the feature's render function
+/// 3. Add match arm here to dispatch to the render function
+///
+/// # Example
+///
+/// ```rust
+/// use crate::core::{Block, render_block};
+/// use crate::features::header::HeaderProps;
+/// use crate::features::button::ButtonProps;
+///
+/// let block = Block::Header(HeaderProps {
+///     headline: "Welcome".to_string(),
+///     button: ButtonProps {
+///         href: "/start".to_string(),
+///         text: "Get Started".to_string(),
+///         aria_label: "Navigate to start".to_string(),
+///     },
+/// });
+///
+/// let markup = render_block(&block);
+/// ```
+pub fn render_block(block: &Block) -> maud::Markup {
+    match block {
+        Block::Header(props) => crate::features::header::render_header(props),
+        Block::Hero(props) => crate::features::hero::render_hero(props),
     }
 }

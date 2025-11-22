@@ -29,6 +29,6 @@ pub mod render;
 
 // Re-export commonly used types for convenience
 // Props are re-exported from block module (which imports them from features)
-pub use block::{Block, HomepageData};
+pub use block::{Block, render_block};
 pub use persistence::{load_homepage_blocks, save_homepage_blocks};
 pub use render::Render;
