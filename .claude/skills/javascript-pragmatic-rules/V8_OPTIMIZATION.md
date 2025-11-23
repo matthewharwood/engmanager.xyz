@@ -2,179 +2,172 @@
 
 Complete guide to Rules 22a-27: Advanced V8 optimization techniques
 
-## Rule 22a: Profile V8 Optimization — Use --trace-opt, --trace-deopt Flags
+## Rule 22a: Profile V8 Optimization — Use Chrome DevTools Performance Profiler
 
-**Why It Matters**: Understanding what V8 optimizes (and why it deoptimizes) is essential for writing fast code. These flags reveal V8's internal decisions.
+**Why It Matters**: Understanding what V8 optimizes (and why it deoptimizes) is essential for writing fast code. Chrome DevTools reveals optimization opportunities.
 
-**How to Use V8 Flags**:
-```bash
-# Node.js
-node --trace-opt --trace-deopt app.js
-
-# Chrome
-chrome --js-flags="--trace-opt --trace-deopt"
-
-# Useful combinations
-node --trace-opt --trace-deopt --trace-ic app.js
-```
-
-**Understanding Output**:
-```
-[optimizing 0x2a1f8b042b1 <JSFunction add> - took 0.123 ms]
-[deoptimizing (DEOPT soft): begin 0x2a1f8b042b1 <JSFunction add>]
-```
-
-**Best Practice - Optimization Checker**:
+**How to Profile in Browser**:
 ```javascript
-// ✅ CORRECT - Check if function is optimized
-function isOptimized(fn) {
-  // V8 only - requires --allow-natives-syntax flag
-  try {
-    %OptimizeFunctionOnNextCall(fn);
-    fn(); // Call to trigger optimization
-    return %GetOptimizationStatus(fn) === 1;
-  } catch (error) {
-    // Fallback for non-V8 environments
-    return null;
-  }
+// 1. Open Chrome DevTools → Performance tab
+// 2. Click Record button (or Cmd+E / Ctrl+E)
+// 3. Run your performance-critical code
+// 4. Stop recording
+// 5. Analyze flame graph and call tree
+
+// Use Performance API for precise timing
+const start = performance.now();
+hotFunction();
+const end = performance.now();
+console.log(`Execution time: ${end - start}ms`);
+
+// Use console.profile for automatic profiling
+console.profile('HotPath');
+for (let i = 0; i < 100_000; i++) {
+  criticalFunction();
 }
+console.profileEnd('HotPath');
+```
+
+**Best Practice - Performance Baseline Testing**:
+```javascript
+// ✅ CORRECT - Measure performance improvement from warmup
+const measurePerformance = (fn, iterations = 100_000) => {
+  // Cold run
+  const coldStart = performance.now();
+  fn();
+  const coldEnd = performance.now();
+  const coldTime = coldEnd - coldStart;
+
+  // Warm up
+  for (let i = 0; i < iterations; i++) {
+    fn();
+  }
+
+  // Hot run
+  const hotStart = performance.now();
+  fn();
+  const hotEnd = performance.now();
+  const hotTime = hotEnd - hotStart;
+
+  return {
+    coldTime,
+    hotTime,
+    improvement: ((coldTime - hotTime) / coldTime) * 100,
+    likelyOptimized: hotTime < coldTime * 0.5,
+  };
+};
 
 // Test function
-function add(a, b) {
-  return a + b;
-}
+const add = (a, b) => a + b;
 
-// Warm up (call multiple times)
-for (let i = 0; i < 10000; i++) {
-  add(i, i + 1);
-}
+// Test
+const result = measurePerformance(() => {
+  let sum = 0;
+  for (let i = 0; i < 10_000; i++) {
+    sum += add(i, i + 1);
+  }
+  return sum;
+});
 
-console.log('Is optimized:', isOptimized(add));
+console.log('Performance:', result);
+// { coldTime: 2.1ms, hotTime: 0.8ms, improvement: 62%, likelyOptimized: true }
 ```
 
 **Pattern: Optimization Testing**:
 ```javascript
-// ✅ ADVANCED - Systematic optimization testing
+// ✅ ADVANCED - Systematic performance testing
 
-class OptimizationTester {
+class PerformanceTester {
+  #fn;
+  #name;
+
   constructor(fn, name) {
-    this.fn = fn;
-    this.name = name;
-    this.hasNativesSyntax = this.checkNativesSupport();
+    this.#fn = fn;
+    this.#name = name;
   }
 
-  checkNativesSupport() {
-    try {
-      eval('%OptimizeFunctionOnNextCall');
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  warmup(iterations = 10000) {
-    console.log(`Warming up ${this.name}...`);
+  warmup(iterations = 10_000) {
+    console.log(`Warming up ${this.#name}...`);
     for (let i = 0; i < iterations; i++) {
-      this.fn();
-    }
-  }
-
-  getOptimizationStatus() {
-    if (!this.hasNativesSyntax) {
-      return 'Unknown (no natives syntax support)';
-    }
-
-    try {
-      const status = eval(`%GetOptimizationStatus(${this.fn})`);
-      const statusMap = {
-        1: 'Optimized',
-        2: 'Not optimized',
-        3: 'Always optimized',
-        4: 'Never optimized',
-        6: 'Maybe deoptimized',
-        7: 'TurboFan optimized'
-      };
-      return statusMap[status] || `Unknown status: ${status}`;
-    } catch (error) {
-      return 'Error checking status';
-    }
-  }
-
-  forceOptimization() {
-    if (!this.hasNativesSyntax) {
-      console.warn('Native syntax not available');
-      return false;
-    }
-
-    try {
-      eval(`%OptimizeFunctionOnNextCall(${this.fn})`);
-      this.fn(); // Trigger optimization
-      return true;
-    } catch (error) {
-      console.error('Failed to force optimization:', error);
-      return false;
+      this.#fn();
     }
   }
 
   test() {
-    console.log(`\n=== Testing ${this.name} ===`);
-
+    console.log(`\n=== Testing ${this.#name} ===`);
     this.warmup();
 
-    const status = this.getOptimizationStatus();
-    console.log('Status:', status);
+    // Measure cold vs hot performance
+    const coldStart = performance.now();
+    this.#fn();
+    const coldTime = performance.now() - coldStart;
 
-    if (status !== 'Optimized' && status !== 'TurboFan optimized') {
-      console.log('Attempting to force optimization...');
-      this.forceOptimization();
-      console.log('New status:', this.getOptimizationStatus());
-    }
+    // Additional warmup
+    this.warmup(50_000);
+
+    const hotStart = performance.now();
+    this.#fn();
+    const hotTime = performance.now() - hotStart;
+
+    const improvement = ((coldTime - hotTime) / coldTime) * 100;
+
+    console.log(`Cold time: ${coldTime.toFixed(4)}ms`);
+    console.log(`Hot time: ${hotTime.toFixed(4)}ms`);
+    console.log(`Improvement: ${improvement.toFixed(1)}%`);
+    console.log(
+      `Status: ${improvement > 50 ? 'Likely optimized' : 'Not optimized'}`
+    );
   }
 
-  benchmark(iterations = 1000000) {
+  benchmark(iterations = 1_000_000) {
     this.warmup();
 
     const start = performance.now();
     for (let i = 0; i < iterations; i++) {
-      this.fn();
+      this.#fn();
     }
     const end = performance.now();
 
-    const opsPerSecond = (iterations / (end - start)) * 1000;
+    const duration = end - start;
+    const opsPerSecond = (iterations / duration) * 1_000;
 
-    console.log(`\n=== Benchmark ${this.name} ===`);
-    console.log(`Duration: ${(end - start).toFixed(2)}ms`);
+    console.log(`\n=== Benchmark ${this.#name} ===`);
+    console.log(`Duration: ${duration.toFixed(2)}ms`);
     console.log(`Operations: ${iterations.toLocaleString()}`);
     console.log(`Ops/sec: ${opsPerSecond.toLocaleString()}`);
-    console.log(`Status: ${this.getOptimizationStatus()}`);
 
-    return { duration: end - start, opsPerSecond };
+    return { duration, opsPerSecond };
   }
 }
 
 // Usage
-function monomorphicAdd(a, b) {
-  return a + b;
-}
-
-function polymorphicAdd(a, b) {
-  return a + b;
-}
+const monomorphicAdd = (a, b) => a + b;
+const polymorphicAdd = (a, b) => a + b;
 
 // Test monomorphic version
-const testerMono = new OptimizationTester(monomorphicAdd, 'monomorphic');
-for (let i = 0; i < 10000; i++) {
+const testerMono = new PerformanceTester(
+  () => monomorphicAdd(1, 2),
+  'monomorphic'
+);
+for (let i = 0; i < 10_000; i++) {
   monomorphicAdd(i, i); // Always numbers
 }
 testerMono.test();
 testerMono.benchmark();
 
 // Test polymorphic version
-const testerPoly = new OptimizationTester(polymorphicAdd, 'polymorphic');
-for (let i = 0; i < 10000; i++) {
-  if (i % 3 === 0) polymorphicAdd(i, i);      // Numbers
-  else if (i % 3 === 1) polymorphicAdd('a', 'b'); // Strings
-  else polymorphicAdd([i], [i]);              // Arrays
+const testerPoly = new PerformanceTester(
+  () => polymorphicAdd(1, 2),
+  'polymorphic'
+);
+for (let i = 0; i < 10_000; i++) {
+  if (i % 3 === 0) {
+    polymorphicAdd(i, i); // Numbers
+  } else if (i % 3 === 1) {
+    polymorphicAdd('a', 'b'); // Strings
+  } else {
+    polymorphicAdd([i], [i]); // Arrays
+  }
 }
 testerPoly.test();
 testerPoly.benchmark();
@@ -184,56 +177,49 @@ testerPoly.benchmark();
 
 **Real-World Example - Hot Path Analysis**:
 ```javascript
-// ✅ PRODUCTION - Identify optimization bottlenecks
-
-// Run with: node --trace-opt --trace-deopt --trace-ic script.js
+// ✅ PRODUCTION - Identify performance characteristics
 
 class PerformanceAnalyzer {
-  constructor() {
-    this.functions = new Map();
-  }
+  #functions = new Map();
 
   register(name, fn) {
-    this.functions.set(name, fn);
+    this.#functions.set(name, fn);
   }
 
   analyzeAll() {
-    console.log('\n=== V8 Optimization Analysis ===\n');
+    console.log('\n=== Performance Analysis ===\n');
 
-    for (const [name, fn] of this.functions) {
+    for (const [name, fn] of this.#functions) {
       console.log(`Function: ${name}`);
 
+      // Measure cold performance
+      const coldStart = performance.now();
+      fn(1, 2);
+      const coldTime = performance.now() - coldStart;
+
       // Warmup
-      for (let i = 0; i < 10000; i++) {
+      for (let i = 0; i < 10_000; i++) {
         fn(i, i * 2);
       }
 
-      // Check optimization
-      try {
-        const status = eval(`%GetOptimizationStatus(${fn})`);
-        console.log(`  Status: ${this.getStatusName(status)}`);
-
-        if (status !== 1) {
-          console.log(`  ⚠️  Not optimized! Check for deopt triggers.`);
-        }
-      } catch {
-        console.log(`  Unable to check status (natives syntax required)`);
+      // Measure hot performance
+      const hotStart = performance.now();
+      for (let i = 0; i < 100_000; i++) {
+        fn(i, i * 2);
       }
+      const hotTime = performance.now() - hotStart;
 
+      const opsPerSec = (100_000 / hotTime) * 1_000;
+      const improvement = ((coldTime - hotTime / 100_000) / coldTime) * 100;
+
+      console.log(`  Cold: ${coldTime.toFixed(4)}ms`);
+      console.log(`  Hot (100k): ${hotTime.toFixed(2)}ms`);
+      console.log(`  Ops/sec: ${opsPerSec.toLocaleString()}`);
+      console.log(
+        `  Status: ${improvement > 50 ? '✓ Optimized' : '⚠️  Not optimized'}`
+      );
       console.log('');
     }
-  }
-
-  getStatusName(status) {
-    const names = {
-      1: '✓ Optimized',
-      2: '✗ Not optimized',
-      3: '✓ Always optimized',
-      4: '✗ Never optimized',
-      6: '⚠️  Maybe deoptimized',
-      7: '✓ TurboFan optimized'
-    };
-    return names[status] || `Unknown (${status})`;
   }
 }
 
@@ -281,15 +267,31 @@ getValue({ a: 1, b: 2, value: 5 });        // Shape 5 - MEGAMORPHIC!
 **Best Practice - Monomorphic Functions**:
 ```javascript
 // ✅ CORRECT - Monomorphic (single shape)
-function getPointValue(point) {
+const getPointValue = (point) => {
   return point.value; // Always Point shape
-}
+};
 
 class Point {
+  #value;
+  #x;
+  #y;
+
   constructor(value, x = 0, y = 0) {
-    this.value = value; // Always same shape
-    this.x = x;
-    this.y = y;
+    this.#value = value; // Always same shape
+    this.#x = x;
+    this.#y = y;
+  }
+
+  get value() {
+    return this.#value;
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
   }
 }
 
@@ -309,25 +311,25 @@ console.log(getPointValue(p3));
 // ✅ ADVANCED - Separate functions for different types
 
 // Instead of polymorphic toString
-function toString(value) {
+const toString = (value) => {
   return value.toString(); // Polymorphic!
-}
+};
 
 // Use type-specific functions
-function numberToString(num) {
+const numberToString = (num) => {
   return String(num);
-}
+};
 
-function objectToString(obj) {
+const objectToString = (obj) => {
   return JSON.stringify(obj);
-}
+};
 
-function arrayToString(arr) {
+const arrayToString = (arr) => {
   return arr.join(',');
-}
+};
 
 // Dispatch based on type (once)
-function convertToString(value) {
+const convertToString = (value) => {
   if (typeof value === 'number') {
     return numberToString(value);
   } else if (Array.isArray(value)) {
@@ -336,7 +338,7 @@ function convertToString(value) {
     return objectToString(value);
   }
   return String(value);
-}
+};
 
 // Each called function is monomorphic
 ```
@@ -400,22 +402,22 @@ const strings = processor.processStrings(['a', 'b', 'c']);
 // Demonstrate performance difference
 
 // Polymorphic version
-function polymorphicSum(items) {
+const polymorphicSum = (items) => {
   let sum = 0;
   for (const item of items) {
     sum += item.value; // Different shapes!
   }
   return sum;
-}
+};
 
 // Monomorphic version
-function monomorphicSum(items) {
+const monomorphicSum = (items) => {
   let sum = 0;
   for (const item of items) {
     sum += item.value; // Same shape!
   }
   return sum;
-}
+};
 
 // Test data
 const polyData = [
@@ -423,12 +425,18 @@ const polyData = [
   { value: 2, x: 0 },
   { value: 3, y: 0 },
   { value: 4, x: 0, y: 0 },
-  { value: 5, z: 0 }
+  { value: 5, z: 0 },
 ];
 
 class Item {
+  #value;
+
   constructor(value) {
-    this.value = value;
+    this.#value = value;
+  }
+
+  get value() {
+    return this.#value;
   }
 }
 
@@ -437,24 +445,24 @@ const monoData = [
   new Item(2),
   new Item(3),
   new Item(4),
-  new Item(5)
+  new Item(5),
 ];
 
 // Warm up
-for (let i = 0; i < 10000; i++) {
+for (let i = 0; i < 10_000; i++) {
   polymorphicSum(polyData);
   monomorphicSum(monoData);
 }
 
 // Benchmark
 console.time('Polymorphic');
-for (let i = 0; i < 1000000; i++) {
+for (let i = 0; i < 1_000_000; i++) {
   polymorphicSum(polyData);
 }
 console.timeEnd('Polymorphic');
 
 console.time('Monomorphic');
-for (let i = 0; i < 1000000; i++) {
+for (let i = 0; i < 1_000_000; i++) {
   monomorphicSum(monoData);
 }
 console.timeEnd('Monomorphic');
@@ -491,10 +499,30 @@ p1.z = 5; // Hidden class transition: {x, y} -> {x, y, z}
 ```javascript
 // ✅ CORRECT - All properties initialized
 class Point {
+  #x;
+  #y;
+  #z;
+
   constructor(x, y, z = 0) {
-    this.x = x;
-    this.y = y;
-    this.z = z; // Always initialized, even if 0
+    this.#x = x;
+    this.#y = y;
+    this.#z = z; // Always initialized, even if 0
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
+  }
+
+  get z() {
+    return this.#z;
+  }
+
+  set z(value) {
+    this.#z = value;
   }
 }
 
@@ -512,60 +540,63 @@ p1.z = 10; // Just changes value, not shape
 // ✅ ADVANCED - Reuse objects with same shape
 
 class ObjectPool {
+  #factory;
+  #available = [];
+  #inUse = new Set();
+
   constructor(factory, size = 100) {
-    this.factory = factory;
-    this.available = [];
-    this.inUse = new Set();
+    this.#factory = factory;
 
     // Pre-create objects with consistent shape
     for (let i = 0; i < size; i++) {
-      this.available.push(factory());
+      this.#available.push(factory());
     }
   }
 
   acquire() {
     let obj;
 
-    if (this.available.length > 0) {
-      obj = this.available.pop();
+    if (this.#available.length > 0) {
+      obj = this.#available.pop();
     } else {
-      obj = this.factory();
+      obj = this.#factory();
     }
 
-    this.inUse.add(obj);
+    this.#inUse.add(obj);
     return obj;
   }
 
   release(obj) {
-    if (!this.inUse.has(obj)) {
+    if (!this.#inUse.has(obj)) {
       throw new Error('Object not from this pool');
     }
 
-    this.inUse.delete(obj);
-    this.reset(obj);
-    this.available.push(obj);
+    this.#inUse.delete(obj);
+    this.#reset(obj);
+    this.#available.push(obj);
   }
 
-  reset(obj) {
+  #reset(obj) {
     // Reset to initial state without changing shape
-    Object.keys(obj).forEach(key => {
-      if (typeof obj[key] === 'number') {
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      if (typeof value === 'number') {
         obj[key] = 0;
-      } else if (typeof obj[key] === 'string') {
+      } else if (typeof value === 'string') {
         obj[key] = '';
-      } else if (typeof obj[key] === 'boolean') {
+      } else if (typeof value === 'boolean') {
         obj[key] = false;
-      } else if (obj[key] === null) {
+      } else if (value === null) {
         obj[key] = null;
       }
-    });
+    }
   }
 }
 
 // Usage
 const pointPool = new ObjectPool(
   () => ({ x: 0, y: 0, z: 0 }),
-  1000
+  1_000
 );
 
 // All objects have same hidden class
@@ -581,70 +612,105 @@ pointPool.release(p1); // Returns to pool, resets values but keeps shape
 // ✅ PRODUCTION - Entity system with stable shapes
 
 class Entity {
+  #type;
+  #id = 0;
+  #active = false;
+  #x = 0;
+  #y = 0;
+  #z = 0;
+  #vx = 0;
+  #vy = 0;
+  #vz = 0;
+  #sprite = null;
+  #visible = true;
+  #opacity = 1;
+  #health = 100;
+  #maxHealth = 100;
+  #aiState = 'idle';
+  #target = null;
+
   constructor(type) {
-    // Initialize ALL properties for all entity types
-    this.type = type;
-    this.id = 0;
-    this.active = false;
+    this.#type = type;
+  }
 
-    // Position (all entities)
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
+  get type() {
+    return this.#type;
+  }
 
-    // Physics (all entities)
-    this.vx = 0;
-    this.vy = 0;
-    this.vz = 0;
+  get x() {
+    return this.#x;
+  }
 
-    // Rendering (all entities)
-    this.sprite = null;
-    this.visible = true;
-    this.opacity = 1;
+  set x(value) {
+    this.#x = value;
+  }
 
-    // Health (all entities, even if not used)
-    this.health = 100;
-    this.maxHealth = 100;
+  get y() {
+    return this.#y;
+  }
 
-    // AI (all entities, even if not used)
-    this.aiState = 'idle';
-    this.target = null;
+  set y(value) {
+    this.#y = value;
+  }
+
+  get vx() {
+    return this.#vx;
+  }
+
+  set vx(value) {
+    this.#vx = value;
+  }
+
+  get vy() {
+    return this.#vy;
+  }
+
+  set vy(value) {
+    this.#vy = value;
+  }
+
+  get aiState() {
+    return this.#aiState;
+  }
+
+  get target() {
+    return this.#target;
   }
 
   // Type-specific behavior, but same shape
   update(deltaTime) {
-    switch (this.type) {
+    switch (this.#type) {
       case 'player':
-        this.updatePlayer(deltaTime);
+        this.#updatePlayer(deltaTime);
         break;
       case 'enemy':
-        this.updateEnemy(deltaTime);
+        this.#updateEnemy(deltaTime);
         break;
       case 'projectile':
-        this.updateProjectile(deltaTime);
+        this.#updateProjectile(deltaTime);
         break;
     }
   }
 
-  updatePlayer(deltaTime) {
+  #updatePlayer(deltaTime) {
     // Player logic uses: x, y, vx, vy, health
-    this.x += this.vx * deltaTime;
-    this.y += this.vy * deltaTime;
+    this.#x += this.#vx * deltaTime;
+    this.#y += this.#vy * deltaTime;
   }
 
-  updateEnemy(deltaTime) {
+  #updateEnemy(deltaTime) {
     // Enemy logic uses: x, y, aiState, target, health
-    if (this.aiState === 'chase' && this.target) {
-      const dx = this.target.x - this.x;
-      const dy = this.target.y - this.y;
+    if (this.#aiState === 'chase' && this.#target) {
+      const dx = this.#target.x - this.#x;
+      const dy = this.#target.y - this.#y;
       // Move toward target
     }
   }
 
-  updateProjectile(deltaTime) {
+  #updateProjectile(deltaTime) {
     // Projectile logic uses: x, y, vx, vy
-    this.x += this.vx * deltaTime;
-    this.y += this.vy * deltaTime;
+    this.#x += this.#vx * deltaTime;
+    this.#y += this.#vy * deltaTime;
   }
 }
 
@@ -653,15 +719,15 @@ const entities = [
   new Entity('player'),
   new Entity('enemy'),
   new Entity('enemy'),
-  new Entity('projectile')
+  new Entity('projectile'),
 ];
 
 // Hot loop is optimized - monomorphic, no transitions
-function updateAll(entities, deltaTime) {
+const updateAll = (entities, deltaTime) => {
   for (let i = 0; i < entities.length; i++) {
     entities[i].update(deltaTime);
   }
-}
+};
 ```
 
 ---
@@ -706,29 +772,45 @@ See SKILL_PART2.md for complete documentation on typed arrays.
 ## Debugging V8 Issues
 
 ### Check Optimization Status
-```bash
-# Node.js with natives syntax
-node --allow-natives-syntax script.js
+```javascript
+// Use Chrome DevTools Performance tab
+// 1. Open DevTools → Performance
+// 2. Record a profile
+// 3. Look for red triangles (deoptimizations)
+// 4. Analyze flame graph for hot spots
 
-# Check if function is optimized
-%OptimizeFunctionOnNextCall(myFunction);
-myFunction();
-const status = %GetOptimizationStatus(myFunction);
+// Use Performance API for timing
+const iterations = 100_000;
+const start = performance.now();
+for (let i = 0; i < iterations; i++) {
+  myFunction();
+}
+const duration = performance.now() - start;
+console.log(`${iterations} iterations in ${duration.toFixed(2)}ms`);
+console.log(`${((iterations / duration) * 1_000).toLocaleString()} ops/sec`);
 ```
 
 ### Trace Optimization
-```bash
-# See what gets optimized
-node --trace-opt script.js
+```javascript
+// Use console.profile in browser
+console.profile('FunctionName');
+for (let i = 0; i < 100_000; i++) {
+  myFunction();
+}
+console.profileEnd('FunctionName');
 
-# See what gets deoptimized
-node --trace-deopt script.js
+// Use Performance Observer for detailed metrics
+const observer = new PerformanceObserver((list) => {
+  for (const entry of list.getEntries()) {
+    console.log(`${entry.name}: ${entry.duration}ms`);
+  }
+});
+observer.observe({ entryTypes: ['measure'] });
 
-# See inline cache status
-node --trace-ic script.js
-
-# Combined
-node --trace-opt --trace-deopt --trace-ic script.js
+performance.mark('start');
+myFunction();
+performance.mark('end');
+performance.measure('myFunction', 'start', 'end');
 ```
 
 ### Common Deopt Reasons

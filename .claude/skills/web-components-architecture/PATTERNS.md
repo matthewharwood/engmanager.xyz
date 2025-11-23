@@ -825,8 +825,8 @@ class RetryableComponent extends HTMLElement {
 
         if (attempt < maxRetries) {
           // Exponential backoff
-          const delay = Math.pow(2, attempt) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          const delay = Math.pow(2, attempt) * 1_000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }

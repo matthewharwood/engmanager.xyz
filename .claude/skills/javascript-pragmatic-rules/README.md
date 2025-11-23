@@ -94,20 +94,23 @@ Claude will automatically activate this skill when:
 ### Basic Example - Async with Timeout
 ```javascript
 // Rule 2: Time-bound all async operations
-async function fetchWithTimeout(url, timeoutMs = 5000) {
+async function fetchWithTimeout(url, timeoutMs = 5_000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      throw new Error(`Request timed out after ${timeoutMs}ms`);
+      throw new Error(`Request timed out after ${timeoutMs}ms`, {
+        cause: error,
+      });
     }
-    throw error;
+    throw new Error('Fetch failed', { cause: error });
   }
 }
 ```
@@ -116,25 +119,32 @@ async function fetchWithTimeout(url, timeoutMs = 5000) {
 ```javascript
 // Rule 3: Limit concurrent operations
 class PromisePool {
+  #concurrency;
+  #running = 0;
+  #queue = [];
+
   constructor(concurrency) {
-    this.concurrency = concurrency;
-    this.running = 0;
-    this.queue = [];
+    this.#concurrency = concurrency;
   }
 
   async run(fn) {
-    while (this.running >= this.concurrency) {
-      await new Promise(resolve => this.queue.push(resolve));
+    while (this.#running >= this.#concurrency) {
+      await new Promise((resolve) => this.#queue.push(resolve));
     }
 
-    this.running++;
+    this.#running++;
 
     try {
-      return await fn();
+      const result = await fn();
+      return result;
+    } catch (error) {
+      throw new Error('Pool task failed', { cause: error });
     } finally {
-      this.running--;
-      const resolve = this.queue.shift();
-      if (resolve) resolve();
+      this.#running--;
+      const resolve = this.#queue.shift();
+      if (resolve) {
+        resolve();
+      }
     }
   }
 }
@@ -144,16 +154,33 @@ class PromisePool {
 ```javascript
 // Rule 4a: Consistent object shapes
 class Point {
+  #x;
+  #y;
+  #z;
+
   constructor(x, y, z = 0) {
     // Initialize ALL properties - creates stable hidden class
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    // ES Private Fields still benefit from V8 optimization
+    this.#x = x;
+    this.#y = y;
+    this.#z = z;
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
+  }
+
+  get z() {
+    return this.#z;
   }
 }
 
 // All instances share same optimized hidden class
-const points = Array.from({ length: 10000 }, (_, i) =>
+const points = Array.from({ length: 10_000 }, (_, i) =>
   new Point(i, i * 2, i * 3)
 );
 
@@ -282,14 +309,14 @@ Rules to apply when specific needs arise:
 ```javascript
 // Old
 function fetchData(callback) {
-  setTimeout(() => callback(null, data), 1000);
+  setTimeout(() => callback(null, data), 1_000);
 }
 
 // New (Rule 2: with timeout)
 async function fetchData() {
   return withTimeout(
-    new Promise(resolve => setTimeout(() => resolve(data), 1000)),
-    5000
+    new Promise((resolve) => setTimeout(() => resolve(data), 1_000)),
+    5_000
   );
 }
 ```
@@ -320,10 +347,24 @@ function getValue(obj) {
 
 // New (Rule 24)
 class Point {
+  #value;
+  #x = 0;
+  #y = 0;
+
   constructor(value) {
-    this.value = value;
-    this.x = 0;
-    this.y = 0;
+    this.#value = value;
+  }
+
+  get value() {
+    return this.#value;
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
   }
 }
 

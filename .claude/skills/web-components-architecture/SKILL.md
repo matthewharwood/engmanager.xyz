@@ -39,7 +39,7 @@ class AsyncAction extends HTMLButtonElement {
       this.disabled = true;
 
       // Simulate async work
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
 
       this.removeAttribute('aria-busy');
       this.disabled = false;
@@ -148,7 +148,7 @@ class DataDisplay extends HTMLElement {
   connectedCallback() {
     // Read initial state from attributes
     const apiUrl = this.getAttribute('data-url');
-    const refreshInterval = this.getAttribute('refresh-interval') || 5000;
+    const refreshInterval = this.getAttribute('refresh-interval') || 5_000;
 
     this.setAttribute('status', 'loading');
     this.loadData(apiUrl);
@@ -551,7 +551,7 @@ class AsyncAction extends HTMLButtonElement {
 
         if (shouldContinue) {
           // Simulate async work (in real usage, parent handles this)
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 1_500));
 
           // Success state
           this.setAttribute('aria-busy', 'false');

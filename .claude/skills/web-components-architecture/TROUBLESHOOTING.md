@@ -297,7 +297,7 @@
        // ❌ Wrong - timer continues after disconnect
        setInterval(() => {
          console.log('tick');
-       }, 1000);
+       }, 1_000);
      }
    }
 
@@ -306,7 +306,7 @@
        // ✓ Correct - store timer ID
        this.intervalId = setInterval(() => {
          console.log('tick');
-       }, 1000);
+       }, 1_000);
      }
 
      disconnectedCallback() {

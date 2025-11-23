@@ -24,7 +24,7 @@ window.addEventListener('unhandledrejection', (e) => {
 ```javascript
 // ✅ With AbortController
 const controller = new AbortController();
-setTimeout(() => controller.abort(), 5000);
+setTimeout(() => controller.abort(), 5_000);
 
 const response = await fetch(url, { signal: controller.signal });
 ```
@@ -44,7 +44,7 @@ async function processInBatches(items, batchSize, processor) {
 ```javascript
 // ✅ React cleanup
 useEffect(() => {
-  const id = setInterval(() => {}, 1000);
+  const id = setInterval(() => {}, 1_000);
   return () => clearInterval(id);
 }, []);
 
@@ -63,11 +63,29 @@ disconnectedCallback() {
 ```javascript
 // ✅ Stable hidden class
 class User {
+  #name;
+  #email = null;
+  #age = null;
+  #role = 'user';
+
   constructor(name) {
-    this.name = name;
-    this.email = null;     // Initialize even if null
-    this.age = null;
-    this.role = 'user';
+    this.#name = name;
+  }
+
+  get name() {
+    return this.#name;
+  }
+
+  get email() {
+    return this.#email;
+  }
+
+  get age() {
+    return this.#age;
+  }
+
+  get role() {
+    return this.#role;
   }
 }
 ```
@@ -92,9 +110,21 @@ const updated = state.users.map(u =>
 useEffect(() => {
   const controller = new AbortController();
 
-  fetch(url, { signal: controller.signal })
-    .then(r => r.json())
-    .then(setData);
+  const fetchData = async () => {
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      setData(data);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Fetch failed:', error);
+      }
+    }
+  };
+
+  fetchData();
 
   return () => controller.abort();
 }, [url]);
@@ -200,21 +230,21 @@ test.each([
 ### 13. Mock with MSW
 ```javascript
 // ✅ Network-level mocking
-import { rest } from 'msw';
+import { rest } from 'msw.js';
 
 export const handlers = [
   rest.get('/api/users/:id', (req, res, ctx) => {
     return res(
       ctx.json({ id: req.params.id, name: 'Test' })
     );
-  })
+  }),
 ];
 ```
 
 ### 14. Property-Based Tests
 ```javascript
 // ✅ fast-check
-import fc from 'fast-check';
+import fc from 'fast-check.js';
 
 test('reverse is self-inverse', () => {
   fc.assert(
@@ -229,13 +259,13 @@ test('reverse is self-inverse', () => {
 ### 15. Debounce/Throttle
 ```javascript
 // ✅ Debounce
-function debounce(fn, delay) {
+const debounce = (fn, delay) => {
   let timeoutId;
   return (...args) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn(...args), delay);
   };
-}
+};
 
 const debouncedSearch = debounce(search, 300);
 ```
@@ -321,7 +351,7 @@ const numbers = [1, 2, 3, 4, 5];
 const doubles = [1.5, 2.7, 3.14];
 
 // ❌ Mixed types (slow)
-const mixed = [1, "two", {}];
+const mixed = [1, 'two', {}];
 
 // ❌ Holes (slow)
 const holey = [1, 2, , 4];
@@ -330,7 +360,7 @@ const holey = [1, 2, , 4];
 ### 22. Typed Arrays for Math
 ```javascript
 // ✅ Fast numeric operations
-const buffer = new Float64Array(1000);
+const buffer = new Float64Array(1_000);
 for (let i = 0; i < buffer.length; i++) {
   buffer[i] = Math.sin(i);
 }
@@ -344,19 +374,21 @@ const pixels = new Uint8ClampedArray(width * height * 4);
 ## V8 Optimization (22a-27)
 
 ### 22a. Profile V8
-```bash
-# Trace optimization
-node --trace-opt --trace-deopt app.js
-
-# With natives syntax
-node --allow-natives-syntax app.js
-```
-
 ```javascript
-// Check optimization status
-%OptimizeFunctionOnNextCall(myFunction);
-myFunction();
-const status = %GetOptimizationStatus(myFunction);
+// ✅ Chrome DevTools Performance Profiler
+// 1. Open DevTools -> Performance tab
+// 2. Click Record
+// 3. Run your hot path code
+// 4. Stop recording
+// 5. Analyze flame graph for optimization opportunities
+
+// ✅ Use Performance API for timing
+const start = performance.now();
+for (let i = 0; i < 100_000; i++) {
+  hotFunction();
+}
+const end = performance.now();
+console.log(`Hot path: ${end - start}ms`);
 ```
 
 ### 23. Array Type Consistency
@@ -368,19 +400,25 @@ const ids = [1, 2, 3, 4, 5];
 const arr = new Array(100).fill(0);
 
 // ❌ Mixed (PACKED_ELEMENTS)
-const mixed = [1, "two", {}];
+const mixed = [1, 'two', {}];
 ```
 
 ### 24. Monomorphic Call Sites
 ```javascript
 // ✅ Single type
-function getPointValue(point) {
+const getPointValue = (point) => {
   return point.value; // Always Point
-}
+};
 
 class Point {
+  #value;
+
   constructor(value) {
-    this.value = value;
+    this.#value = value;
+  }
+
+  get value() {
+    return this.#value;
   }
 }
 
@@ -392,49 +430,77 @@ const points = [new Point(1), new Point(2)];
 ```javascript
 // ✅ Initialize all properties
 class Entity {
+  #type;
+  #x = 0;
+  #y = 0;
+  #health = 0;
+
   constructor(type) {
-    this.type = type;
-    this.x = 0;      // All entities
-    this.y = 0;      // have same
-    this.health = 0; // shape
+    this.#type = type;
+  }
+
+  get type() {
+    return this.#type;
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
+  }
+
+  get health() {
+    return this.#health;
   }
 }
 
-// ❌ Adding later causes transition
-const e = new Entity('player');
-e.mana = 100; // Shape transition!
+// ❌ Adding properties later would require redesign with private fields
+// With private fields, you cannot dynamically add properties
 ```
 
 ### 26. Monomorphic Over Polymorphic
 ```javascript
 // ✅ Type-specific functions
-function processNumbers(nums) {
-  return nums.map(n => n * 2);
-}
+const processNumbers = (nums) => {
+  return nums.map((n) => n * 2);
+};
 
-function processStrings(strs) {
-  return strs.map(s => s.toUpperCase());
-}
+const processStrings = (strs) => {
+  return strs.map((s) => s.toUpperCase());
+};
 
 // ❌ Polymorphic
-function process(items) {
-  return items.map(x => transform(x));
-}
+const process = (items) => {
+  return items.map((x) => transform(x));
+};
 ```
 
 ### 27. Typed Arrays
 ```javascript
 // ✅ Physics simulation
 class Particles {
+  #positions;
+  #velocities;
+
   constructor(count) {
-    this.positions = new Float64Array(count * 3);
-    this.velocities = new Float64Array(count * 3);
+    this.#positions = new Float64Array(count * 3);
+    this.#velocities = new Float64Array(count * 3);
   }
 
   update(dt) {
-    for (let i = 0; i < this.positions.length; i++) {
-      this.positions[i] += this.velocities[i] * dt;
+    for (let i = 0; i < this.#positions.length; i++) {
+      this.#positions[i] += this.#velocities[i] * dt;
     }
+  }
+
+  get positions() {
+    return this.#positions;
+  }
+
+  get velocities() {
+    return this.#velocities;
   }
 }
 ```
@@ -469,7 +535,7 @@ class Particles {
 ```javascript
 // Timeout
 const controller = new AbortController();
-setTimeout(() => controller.abort(), 5000);
+setTimeout(() => controller.abort(), 5_000);
 
 // Pool
 const pool = new PromisePool(10);
@@ -501,13 +567,24 @@ work();
 console.log(performance.now() - start);
 
 // Typed array
-const buffer = new Float64Array(1000);
+const buffer = new Float64Array(1_000);
 
 // Monomorphic
 class Point {
+  #x;
+  #y;
+
   constructor(x, y) {
-    this.x = x;
-    this.y = y;
+    this.#x = x;
+    this.#y = y;
+  }
+
+  get x() {
+    return this.#x;
+  }
+
+  get y() {
+    return this.#y;
   }
 }
 ```
@@ -523,13 +600,13 @@ function f() { arguments }    // Use rest params
 eval(code);                   // Use Function()
 with (obj) { }                // Use destructuring
 const arr = [1, , 3];         // No holes
-const mixed = [1, "two"];     // Keep types consistent
+const mixed = [1, 'two'];     // Keep types consistent
 ```
 
 ### ✅ Do
 ```javascript
 obj.prop = undefined;
-function f(...args) { }
+const f = (...args) => { };
 new Function(code)();
 const { value } = obj;
 const arr = [1, 0, 3];
@@ -542,19 +619,21 @@ const numbers = [1, 2, 3];
 
 ```javascript
 // Warm up
-for (let i = 0; i < 10000; i++) {
+for (let i = 0; i < 10_000; i++) {
   fn();
 }
 
 // Benchmark
+const iterations = 1_000_000;
 const start = performance.now();
-for (let i = 0; i < 1000000; i++) {
+for (let i = 0; i < iterations; i++) {
   fn();
 }
 const end = performance.now();
 
 console.log(`${iterations} ops in ${end - start}ms`);
-console.log(`${(iterations / (end - start) * 1000).toLocaleString()} ops/sec`);
+const opsPerSec = (iterations / (end - start)) * 1_000;
+console.log(`${opsPerSec.toLocaleString()} ops/sec`);
 ```
 
 ---

@@ -808,7 +808,7 @@ class ToastNotification extends HTMLElement {
     this.addEventListener('click', this);
 
     // Auto-dismiss
-    const duration = parseInt(this.getAttribute('duration'), 10) || 5000;
+    const duration = parseInt(this.getAttribute('duration'), 10) || 5_000;
     if (duration > 0) {
       this.timeoutId = setTimeout(() => {
         this.dismiss();
@@ -861,7 +861,7 @@ class ToastContainer extends HTMLElement {
     this.setAttribute('aria-atomic', 'false');
   }
 
-  addToast(message, type = 'info', duration = 5000) {
+  addToast(message, type = 'info', duration = 5_000) {
     const toast = document.createElement('toast-notification');
     toast.setAttribute('type', type);
     toast.setAttribute('duration', String(duration));
@@ -964,7 +964,7 @@ customElements.define('toast-container', ToastContainer);
       container.addToast(
         `This is a ${type} message!`,
         type,
-        3000
+        3_000
       );
     });
   </script>
