@@ -14,15 +14,23 @@ Rules organized by category:
 
 See V8_OPTIMIZATION.md for advanced V8 optimization techniques (Rules 22a-27).
 
-## When Claude Uses This Skill
+## When to Use This Skill
 
-Auto-activates when:
-- Writing or optimizing JavaScript
-- Handling promises and async operations
+**This skill applies to ALL JavaScript code.** Reference it when:
+- Writing utility functions
+- Handling async operations (fetch, promises, timers)
 - Implementing error handling
 - Writing tests
 - Optimizing performance
-- Building production applications
+- Building ANY JavaScript feature
+
+**For UI Components:** If you're building interactive client-side components (Custom Elements), ALSO reference the `web-components-architecture` skill for architectural patterns. This skill provides the HOW (best practices), while `web-components-architecture` provides the WHAT (component structure).
+
+**Examples:**
+- Writing a data processing utility → Use this skill only
+- Writing async fetch logic → Use this skill only (Rules 1-4)
+- Building a `<custom-dropdown>` component → Use this skill + `web-components-architecture`
+- Implementing form validation → Use this skill only (unless building a custom element)
 
 ## Example Triggers
 

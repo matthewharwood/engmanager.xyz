@@ -8,6 +8,32 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash, WebFetch, WebSearch
 
 30 battle-tested principles for production JavaScript.
 
+## Relationship with Web Components
+
+This skill provides best practices for **all JavaScript code**, including web components. When building interactive UI components with the Custom Elements API, combine this skill with `web-components-architecture`:
+
+- **This skill (`javascript-pragmatic-rules`)**: HOW to write JavaScript correctly
+  - Async patterns (Rules 1-4)
+  - Error handling (Rules 7-10)
+  - Performance optimization (Rules 16-22)
+  - Testing strategies (Rules 12-15)
+
+- **`web-components-architecture` skill**: WHAT pattern to use for components
+  - Component lifecycle (connectedCallback, disconnectedCallback)
+  - Shadow DOM and encapsulation
+  - Attribute-driven state
+  - HandleEvent pattern
+
+**Example:** A custom `<data-table>` component should:
+- Use `web-components-architecture` for structure (extends HTMLElement, uses Shadow DOM)
+- Use `javascript-pragmatic-rules` Rule 4 for cleanup (disconnectedCallback removes listeners)
+- Use `javascript-pragmatic-rules` Rule 17 for memory leak prevention
+- Use `javascript-pragmatic-rules` Rule 2 for timeout on async data fetching
+
+See `web-components-architecture` skill for component-specific patterns.
+
+---
+
 ## Async Operations & Promises
 
 ### Rule 1: Handle Promise Rejections

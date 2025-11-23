@@ -43,10 +43,20 @@ These skills are built into Claude Code. Use the `Skill` tool to invoke them whe
 13. **utopia-grid-layout** - CSS Grid/Flexbox with fluid spacing
 14. **utopia-container-queries** - Container-based responsive design
 
-**JavaScript & Component Design Systems:**
+**JavaScript & Component Architecture:**
 
-15. **web-components-architecture** - Writing JavaScript as Web Components
-16. **javascript-pragmatic-rules** - 30 production rules for JavaScript (async, V8 optimization, testing)
+15. **web-components-architecture** - Custom Elements v1 architecture for building interactive UI components. Covers Shadow DOM, lifecycle callbacks, handleEvent pattern, attribute-driven state, and zero DOM selection principle. **Use when:** Building client-side interactive components, form controls, or reusable UI elements. **Always combine with** `javascript-pragmatic-rules` for implementation best practices.
+
+16. **javascript-pragmatic-rules** - 30 production rules for ALL JavaScript code covering async operations, V8 optimization, memory management, testing, error handling, and performance. **Use when:** Writing any JavaScript code (utilities, components, data processing, event handlers). **Foundation for:** All JavaScript implementations including web components.
+
+**Skill Relationship - JavaScript:**
+- **All JavaScript code** → Reference `javascript-pragmatic-rules` (HOW to write it correctly)
+- **UI components specifically** → ALSO reference `web-components-architecture` (WHAT pattern to use)
+- **Non-UI JavaScript** (utilities, data processing) → ONLY `javascript-pragmatic-rules`
+
+Example: When building a custom `<async-button>` web component, reference BOTH skills:
+- Use `web-components-architecture` for component structure (HTMLElement, connectedCallback, handleEvent)
+- Use `javascript-pragmatic-rules` for async handling (Rule 2: timeout operations, Rule 4: cleanup resources)
 
 ### Project-Specific Skills (Read from local files)
 

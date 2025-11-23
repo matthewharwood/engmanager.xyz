@@ -18,6 +18,76 @@ This skill enforces a strict architectural pattern for web components:
 6. **Progressive Enhancement**: Components work (degraded) even if JavaScript fails
 7. **Customized Built-ins Over Autonomous**: Extend native elements when possible to preserve accessibility
 
+## Relationship with JavaScript Best Practices
+
+This skill defines the **architectural pattern** for building web components. When implementing components, combine this skill with `javascript-pragmatic-rules` for production-quality code:
+
+**This skill provides the WHAT (component architecture):**
+- Component structure (extends HTMLElement)
+- Lifecycle callbacks (connectedCallback, disconnectedCallback)
+- State management (attribute-driven)
+- Event patterns (handleEvent, CustomEvent)
+- Shadow DOM and encapsulation
+
+**`javascript-pragmatic-rules` provides the HOW (implementation quality):**
+- Async operation handling (timeouts, cancellation)
+- Resource cleanup patterns
+- Error handling strategies
+- Memory leak prevention
+- Performance optimization
+
+**Example:** Building an `<async-button>` component:
+
+```javascript
+// Architecture from web-components-architecture skill
+class AsyncButton extends HTMLButtonElement {
+  #controller = null; // Private field for cleanup
+
+  connectedCallback() {
+    this.addEventListener('click', this);
+  }
+
+  // Using handleEvent pattern from web-components-architecture
+  async handleEvent(e) {
+    if (e.type === 'click') {
+      // Rule 2 from javascript-pragmatic-rules: Timeout async operations
+      this.#controller = new AbortController();
+      const timeoutId = setTimeout(() => this.#controller.abort(), 5_000);
+
+      try {
+        const response = await fetch(this.getAttribute('data-url'), {
+          signal: this.#controller.signal
+        });
+        clearTimeout(timeoutId);
+        // Handle response...
+      } catch (error) {
+        // Rule 1 from javascript-pragmatic-rules: Handle rejections
+        if (error.name === 'AbortError') {
+          console.warn('Request timed out');
+        } else {
+          throw new Error('Request failed', { cause: error });
+        }
+      }
+    }
+  }
+
+  // Rule 4 from javascript-pragmatic-rules: Clean up resources
+  disconnectedCallback() {
+    this.removeEventListener('click', this);
+    if (this.#controller) this.#controller.abort();
+  }
+}
+```
+
+**Key Integration Points:**
+- Use this skill's `connectedCallback` with `javascript-pragmatic-rules` Rule 4 (cleanup)
+- Use this skill's `handleEvent` with `javascript-pragmatic-rules` Rules 1-2 (async safety)
+- Use this skill's attribute patterns with `javascript-pragmatic-rules` Rule 5 (immutability)
+
+See `javascript-pragmatic-rules` skill for comprehensive JavaScript best practices.
+
+---
+
 ## Component Types
 
 ### 1. Customized Built-in Elements (PREFERRED)

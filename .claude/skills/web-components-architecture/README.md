@@ -14,6 +14,21 @@ This skill teaches and enforces a pristine web component architecture based on:
 - **Progressive Enhancement**: Components work (degraded) without JavaScript
 - **No External Dependencies**: Pure Web Platform APIs only
 
+## When to Use This Skill
+
+**Use this skill when building interactive UI components with the Custom Elements API:**
+- Custom form controls
+- Interactive widgets (dropdowns, modals, carousels)
+- Reusable UI components
+- Client-side interactivity
+
+**Do NOT use this skill for:**
+- Utility functions (use `javascript-pragmatic-rules` only)
+- Data processing logic
+- Non-UI JavaScript
+
+**Always combine with `javascript-pragmatic-rules`:** This skill defines component architecture (WHAT to build), while `javascript-pragmatic-rules` ensures quality implementation (HOW to build it correctly). All async operations, error handling, and resource cleanup should follow `javascript-pragmatic-rules` patterns.
+
 ## Skill Files
 
 ### SKILL.md (Main Documentation)
