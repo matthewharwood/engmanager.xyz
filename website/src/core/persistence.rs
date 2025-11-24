@@ -12,10 +12,11 @@
 ///
 /// # File Locations
 ///
-/// - Route content: `data/content/{route_name}.json`
-/// - Routes data: `data/routes.json`
+/// - Route content: `../data/content/{route_name}.json`
+/// - Routes data: `../data/routes.json`
 ///
-/// Paths are relative to the project root where the binary runs from.
+/// Paths are relative to the website/ directory (the package directory where cargo runs from).
+/// The `../` prefix navigates up to the project root where the data/ directory lives.
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -23,7 +24,7 @@ use std::path::PathBuf;
 use crate::core::block::BlockWithId;
 use crate::pages::homepage::HomepageData;
 
-const ROUTES_JSON_PATH: &str = "data/routes.json";
+const ROUTES_JSON_PATH: &str = "../data/routes.json";
 
 /// Route definition
 ///
@@ -34,7 +35,7 @@ const ROUTES_JSON_PATH: &str = "data/routes.json";
 ///
 /// - `path`: The URL path (acts as primary key), e.g., "/", "/foo"
 /// - `name`: The route name used in admin URLs, e.g., "homepage", "foo"
-/// - `block_ids`: Array of content file paths for this route, e.g., ["data/content/homepage.json"]
+/// - `block_ids`: Array of content file paths for this route, e.g., ["../data/content/homepage.json"]
 ///
 /// # Example
 ///
@@ -42,7 +43,7 @@ const ROUTES_JSON_PATH: &str = "data/routes.json";
 /// {
 ///   "path": "/",
 ///   "name": "homepage",
-///   "blockIds": ["data/content/homepage.json"]
+///   "blockIds": ["../data/content/homepage.json"]
 /// }
 /// ```
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -79,8 +80,9 @@ fn get_content_path(route_name: &str) -> Result<PathBuf, String> {
         .first()
         .ok_or_else(|| format!("Route '{}' has no blockIds", route_name))?;
 
-    // Paths in routes.json are relative to project root (e.g., "data/content/homepage.json")
-    // The binary runs from the project root, so we use the path directly
+    // Paths in routes.json are relative to the website/ directory where cargo runs from
+    // (e.g., "../data/content/homepage.json" goes up to project root, then into data/content/)
+    // When running `cd website && cargo run`, the working directory is website/, so we use ../data/
     Ok(PathBuf::from(content_path))
 }
 
@@ -163,6 +165,12 @@ pub fn save_blocks(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Get the content file path for this route
     let content_path = get_content_path(route_name)?;
+
+    // Ensure the parent directory exists (rust-error-handling: graceful degradation)
+    // This handles the case where data/content/ doesn't exist yet
+    if let Some(parent) = content_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
 
     let data = HomepageData::new(blocks.to_vec());
     let json = serde_json::to_string_pretty(&data)?;
@@ -280,7 +288,7 @@ fn default_routes() -> Vec<Route> {
     vec![Route {
         path: "/".to_string(),
         name: "homepage".to_string(),
-        block_ids: vec!["data/content/homepage.json".to_string()],
+        block_ids: vec!["../data/content/homepage.json".to_string()],
     }]
 }
 
@@ -305,12 +313,12 @@ mod tests {
             Route {
                 path: "/".to_string(),
                 name: "homepage".to_string(),
-                block_ids: vec!["data/content/homepage.json".to_string()],
+                block_ids: vec!["../data/content/homepage.json".to_string()],
             },
             Route {
                 path: "/foo".to_string(),
                 name: "foo".to_string(),
-                block_ids: vec!["data/content/foo.json".to_string()],
+                block_ids: vec!["../data/content/foo.json".to_string()],
             },
         ];
 
@@ -320,10 +328,10 @@ mod tests {
         assert_eq!(parsed.len(), 2);
         assert_eq!(parsed[0].path, "/");
         assert_eq!(parsed[0].name, "homepage");
-        assert_eq!(parsed[0].block_ids, vec!["data/content/homepage.json"]);
+        assert_eq!(parsed[0].block_ids, vec!["../data/content/homepage.json"]);
         assert_eq!(parsed[1].path, "/foo");
         assert_eq!(parsed[1].name, "foo");
-        assert_eq!(parsed[1].block_ids, vec!["data/content/foo.json"]);
+        assert_eq!(parsed[1].block_ids, vec!["../data/content/foo.json"]);
     }
 
     #[test]
@@ -332,6 +340,6 @@ mod tests {
         assert_eq!(routes.len(), 1);
         assert_eq!(routes[0].path, "/");
         assert_eq!(routes[0].name, "homepage");
-        assert_eq!(routes[0].block_ids, vec!["data/content/homepage.json"]);
+        assert_eq!(routes[0].block_ids, vec!["../data/content/homepage.json"]);
     }
 }

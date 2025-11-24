@@ -19,6 +19,18 @@
           "aria_label": ""
         }
       }
+    },
+    {
+      "id": "998ede03-6bda-4e0d-b983-ed8176a21e0f",
+      "type": "Header",
+      "props": {
+        "headline": "1234",
+        "button": {
+          "href": "",
+          "text": "",
+          "aria_label": ""
+        }
+      }
     }
   ]
 }

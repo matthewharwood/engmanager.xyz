@@ -2,11 +2,11 @@
   {
     "path": "/",
     "name": "homepage",
-    "blockIds": ["data/content/homepage.json"]
+    "blockIds": ["../data/content/homepage.json"]
   },
   {
     "path": "/foo",
     "name": "foo",
-    "blockIds": ["data/content/foo.json"]
+    "blockIds": ["../data/content/foo.json"]
   }
 ]

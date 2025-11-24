@@ -59,7 +59,7 @@ pub async fn admin_route_homepage(Path(name): Path<String>) -> Response {
 /// # Asset Dependencies
 ///
 /// - `/features/admin/editor/styles.css` - Editor styles
-/// - `/features/admin/editor/script.js` - Interactive behavior
+/// - `/features/admin/editor/components/index.js` - Web components (ES module)
 fn render_editor_template(
     data: &HomepageData,
     route: &crate::core::Route,
@@ -82,51 +82,41 @@ fn render_editor_template(
                     code { (route.path) }
                 }
 
-                div class="tabs" {
-                    button class="tab active" data-tab="list" { "List View" }
-                    button class="tab" data-tab="json" { "JSON View" }
-                }
-
-                form id="homepage-form" data-route-name=(route_name) {
-                    // List View Tab
-                    div class="tab-content active" id="list-view" {
-                        div class="add-block" {
-                            label { "Add Block: " }
-                            select id="block-type-select" {
-                                option value="Header" { "Header" }
-                                option value="Hero" { "Hero" }
-                            }
-                            button type="button" class="btn-add" id="add-block-btn" { "+ Add Block" }
-                        }
-
-                        ul class="block-list" id="block-list" {}
+                // Web component structure - using custom elements
+                admin-editor data-route-name=(route_name) {
+                    // Tab switcher component
+                    tab-switcher active-tab="list" {
+                        button class="tab" data-tab="list" { "List View" }
+                        button class="tab" data-tab="json" { "JSON View" }
                     }
 
-                    // JSON View Tab
+                    // Tab content containers
+                    div class="tab-content" id="list-view" {
+                        // Block list component with initial data
+                        block-list {}
+                    }
+
                     div class="tab-content" id="json-view" {
-                        div class="form-group" {
-                            label for="json-editor" { (route.name) " JSON Data" }
-                            textarea
-                                id="json-editor"
-                                name="json-data"
-                                spellcheck="false"
-                            {
-                                (json)
+                        // JSON editor component with initial data
+                        json-editor value=(json) {}
+                    }
+
+                    // Form for submission
+                    form {
+                        div class="button-group" {
+                            button type="submit" { "Publish Changes" }
+                            a href=(route.path) {
+                                button type="button" { "Preview " (route.name) }
                             }
                         }
                     }
 
-                    div class="button-group" {
-                        button type="submit" { "Publish Changes" }
-                        a href=(route.path) {
-                            button type="button" { "Preview " (route.name) }
-                        }
-                    }
+                    // Message banner component
+                    message-banner {}
                 }
 
-                div id="message" class="message" {}
-
-                script src="/features/admin/editor/script.js" {}
+                // Load web components as ES module
+                script type="module" src="/features/admin/editor/components/index.js" {}
             }
         }
     }
