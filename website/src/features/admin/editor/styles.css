@@ -237,5 +237,14 @@ monaco-json-editor {
 /* Ensure Monaco's internal container fills the component */
 monaco-json-editor > div {
     width: 100% !important;
-    height: 100% !important;
+}
+
+/* Fix codicon font path for Monaco editor */
+/* Override Monaco's font loading with absolute path */
+@font-face {
+    font-family: 'codicon';
+    font-display: block;
+    src: url('/assets/codicon.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
 }

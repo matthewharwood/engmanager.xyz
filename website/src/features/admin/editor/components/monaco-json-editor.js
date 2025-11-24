@@ -9,38 +9,34 @@
 // - Better editing experience
 // - Monaco Editor features (find/replace, etc.)
 
-// Monaco Editor is loaded from CDN (monaco-editor-esm package)
-// Import happens at top level - browser will cache it
+// Monaco Editor 0.55 - loaded from local assets
+// Configure MonacoEnvironment to prevent worker creation entirely
+// This prevents all worker-related errors by forcing synchronous mode
+if (typeof self !== 'undefined') {
+    self.MonacoEnvironment = {
+        getWorker: function (workerId, label) {
+            // Return null to force Monaco to run all operations synchronously
+            // This prevents worker creation errors
+            return null;
+        }
+    };
+}
+
 let monacoPromise = null;
-
-// Configure Monaco Environment for web workers
-// This must be set before Monaco loads to avoid worker errors
-// For monaco-editor-esm loaded from CDN, we use a simplified approach
-// that avoids CORS issues by running language features in the main thread
-window.MonacoEnvironment = {
-    getWorkerUrl: function (moduleId, label) {
-        // Return a blob URL that will load the worker from CDN
-        // Using a proxy worker that imports from the CDN
-        const workerPath = `https://cdn.jsdelivr.net/npm/monaco-editor-esm@0.17.0/esm/${moduleId}.js`;
-
-        const workerCode = `
-            import * as worker from '${workerPath}';
-        `;
-
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        return URL.createObjectURL(blob);
-    }
-};
 
 const loadMonaco = async () => {
     if (monacoPromise) return monacoPromise;
 
-    monacoPromise = import('https://cdn.jsdelivr.net/npm/monaco-editor-esm@0.17.0/+esm')
-        .then((module) => module.default || module)
+    monacoPromise = import('/assets/monaco.js')
+        .then((module) => {
+            // Monaco 0.55 ESM module exports
+            const monaco = module.editor ? module : module.default;
+            return monaco;
+        })
         .catch((error) => {
             console.error('Failed to load Monaco Editor:', error);
             monacoPromise = null; // Reset on error to allow retry
-            throw new Error('Monaco Editor failed to load from CDN', {cause: error});
+            throw new Error('Monaco Editor failed to load from local assets', {cause: error});
         });
 
     return monacoPromise;
@@ -90,6 +86,33 @@ class MonacoJsonEditor extends HTMLElement {
         this.#isInitialized = false;
     }
 
+    // Inject codicon font CSS with absolute path to override Monaco's relative paths
+    // This must run BEFORE Monaco loads to ensure our CSS takes precedence
+    #injectFontCSS() {
+        // Check if we've already injected this CSS (prevent duplicates)
+        if (document.getElementById('monaco-codicon-font-override')) {
+            return;
+        }
+
+        // Create a <style> element with high specificity
+        const style = document.createElement('style');
+        style.id = 'monaco-codicon-font-override';
+        style.textContent = `
+            /* Monaco codicon font override - must use absolute path */
+            /* Loaded AFTER Monaco's CSS to override via cascade order */
+            @font-face {
+                font-family: 'codicon';
+                font-display: block;
+                src: url('/assets/codicon.ttf') format('truetype');
+                font-weight: normal;
+                font-style: normal;
+            }
+        `;
+
+        // Insert at the END of <head> so it loads AFTER Monaco's CSS and overrides it
+        document.head.appendChild(style);
+    }
+
     // Rule 1 from javascript-pragmatic-rules: Handle promise rejections with async/await
     async #initializeEditor() {
         try {
@@ -101,13 +124,15 @@ class MonacoJsonEditor extends HTMLElement {
             this.#container.style.borderRadius = '4px';
             this.appendChild(this.#container);
 
-            // 2. Load Monaco from CDN
+            // 2. Load Monaco 0.55 from local assets
             this.#monaco = await loadMonaco();
 
-            // 3. Create editor instance
+            // 3. Create editor instance with full Monaco 0.55 features
+            // Using 'plaintext' to avoid lazy-loading JSON language module
+            // Disable worker-dependent features to avoid worker errors
             this.#editor = this.#monaco.editor.create(this.#container, {
                 value: this.getAttribute('value') || '{}',
-                language: 'json',
+                language: 'plaintext', // Changed from 'json' to avoid module loading
                 theme: 'vs-dark',
                 automaticLayout: true, // Auto-resize with container
                 minimap: {enabled: false}, // Disable minimap for simplicity
@@ -122,6 +147,9 @@ class MonacoJsonEditor extends HTMLElement {
                 folding: true,
                 foldingStrategy: 'indentation',
                 showFoldingControls: 'always',
+                // Disable worker-dependent features
+                colorDecorators: false, // Disable color detection (requires worker)
+                links: false, // Disable link detection (requires worker)
                 // Accessibility
                 'aria-label': 'JSON content editor'
             });
@@ -134,7 +162,11 @@ class MonacoJsonEditor extends HTMLElement {
 
             this.#isInitialized = true;
 
-            // 5. Initial validation
+            // 5. Inject codicon font CSS AFTER editor creation
+            // Monaco injects its CSS during editor creation, so we inject after to override
+            this.#injectFontCSS();
+
+            // 6. Initial validation
             this.#validateJson();
 
         } catch (error) {
