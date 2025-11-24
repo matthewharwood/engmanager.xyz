@@ -24,7 +24,15 @@
 /// - **Reusability**: Other features can use ButtonProps without coupling to rendering
 /// - **Type safety**: Serde validation ensures data integrity
 /// - **Clear boundaries**: Schema defines the contract, template implements the presentation
+///
+/// # Story Support
+///
+/// ButtonProps implements ComponentStory trait to provide story/preview functionality
+/// directly in the schema, eliminating the need for a separate story.rs file.
+use maud::Markup;
 use serde::{Deserialize, Serialize};
+
+use crate::features::story::ComponentStory;
 
 /// Button component props
 ///
@@ -50,4 +58,34 @@ pub struct ButtonProps {
     pub href: String,
     pub text: String,
     pub aria_label: String,
+}
+
+/// ComponentStory implementation for Button
+///
+/// Following rust-core-patterns for trait-based abstraction, this implementation
+/// provides all story functionality (name, description, fixture, rendering) directly
+/// on the Props type.
+impl ComponentStory for ButtonProps {
+    fn story_name() -> &'static str {
+        "button"
+    }
+
+    fn story_description() -> &'static str {
+        "Interactive button component with link and accessibility features."
+    }
+
+    fn story_fixture() -> Self {
+        ButtonProps {
+            href: "/example".to_string(),
+            text: "Example Button".to_string(),
+            aria_label: "Example button for demonstration".to_string(),
+        }
+    }
+
+    fn render_story(&self) -> Markup {
+        // Import the template function here to avoid circular dependencies
+        crate::features::button::template::button(self)
+    }
+
+    // No additional stylesheets needed - using default implementation
 }

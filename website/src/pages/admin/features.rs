@@ -2,16 +2,19 @@
 ///
 /// This module provides a Storybook-like component story system for previewing
 /// UI components in isolation. Following the feature-based architecture pattern,
-/// each feature can have a story.rs module that exports:
-/// - `NAME: &str` - The story identifier
-/// - `fixture() -> Props` - Sample data for rendering
+/// each feature's schema.rs implements the ComponentStory trait to provide:
+/// - Story name and description
+/// - Fixture data generation
+/// - Component rendering
+/// - Additional stylesheet requirements
 ///
 /// # Architecture
 ///
 /// Following rust-feature-architecture and axum-web-framework patterns:
 /// - Stories are manually registered (compile-time discovery via this registry)
-/// - Each story renders its component with fixture data
+/// - Each Props type implements ComponentStory trait in its schema.rs
 /// - Stories are accessed via /admin/features and /admin/features/{name}
+/// - No separate story.rs files needed - all functionality lives in schema.rs
 ///
 /// # Routes
 ///
@@ -21,9 +24,9 @@ use axum::extract::Path;
 use axum::response::Html;
 use maud::{html, Markup};
 
-
-use crate::features::button;
-use crate::features::header;
+use crate::features::button::ButtonProps;
+use crate::features::header::HeaderProps;
+use crate::features::story::ComponentStory;
 
 /// Story metadata for listing
 ///
@@ -34,91 +37,28 @@ pub struct Story {
     pub description: &'static str,
 }
 
-/// Renderable story trait
-///
-/// Defines the contract for rendering a component story. Each feature implements
-/// this trait to provide story-specific rendering logic while using a shared
-/// template structure.
-///
-/// Following rust-core-patterns for trait-based abstraction.
-trait RenderableStory {
-    /// The story identifier
-    fn name(&self) -> &'static str;
-
-    /// Human-readable description of the component
-    fn description(&self) -> &'static str;
-
-    /// Render the component with fixture data
-    fn render_component(&self) -> Markup;
-
-    /// Additional stylesheets beyond the main feature stylesheet
-    ///
-    /// Convention: All features have `/features/{feature_name}/styles.css`
-    /// This method returns any additional stylesheets needed.
-    fn additional_stylesheets(&self) -> Vec<&'static str> {
-        Vec::new()
-    }
-}
-
-/// Button story implementation
-struct ButtonStory;
-
-impl RenderableStory for ButtonStory {
-    fn name(&self) -> &'static str {
-        button::story::NAME
-    }
-
-    fn description(&self) -> &'static str {
-        "Interactive button component with link and accessibility features."
-    }
-
-    fn render_component(&self) -> Markup {
-        let props = button::story::fixture();
-        button::template::button(&props)
-    }
-}
-
-/// Header story implementation
-struct HeaderStory;
-
-impl RenderableStory for HeaderStory {
-    fn name(&self) -> &'static str {
-        header::story::NAME
-    }
-
-    fn description(&self) -> &'static str {
-        "Page header with headline and call-to-action button."
-    }
-
-    fn render_component(&self) -> Markup {
-        let props = header::story::fixture();
-        header::template::header(&props)
-    }
-
-    fn additional_stylesheets(&self) -> Vec<&'static str> {
-        vec![
-            "/assets/styles.css",          // Global styles for base typography
-            "/features/button/styles.css", // Button component styles
-        ]
-    }
-}
-
 /// Get all registered stories
 ///
 /// Manual registry of all component stories in the codebase.
-/// When adding a new feature with a story.rs module, add it here.
+/// When adding a new feature that implements ComponentStory, add it here.
 ///
 /// Following the pattern from rust-feature-architecture where features
 /// are self-contained and registered explicitly.
+///
+/// # Usage
+///
+/// Each entry uses the ComponentStory trait's static methods to provide metadata:
+/// - `story_name()` for the identifier
+/// - `story_description()` for the human-readable description
 pub fn get_all_stories() -> Vec<Story> {
     vec![
         Story {
-            name: button::story::NAME,
-            description: "Button component with link and accessibility support",
+            name: ButtonProps::story_name(),
+            description: ButtonProps::story_description(),
         },
         Story {
-            name: header::story::NAME,
-            description: "Header component with headline and call-to-action button",
+            name: HeaderProps::story_name(),
+            description: HeaderProps::story_description(),
         },
     ]
 }
@@ -181,17 +121,21 @@ fn render_features_index(stories: &[Story]) -> Markup {
 /// Following axum-web-framework patterns for path parameter extraction.
 pub async fn feature_story(Path(name): Path<String>) -> Html<String> {
     let markup = match name.as_str() {
-        "button" => render_story(&ButtonStory),
-        "header" => render_story(&HeaderStory),
+        "button" => render_story_for::<ButtonProps>(),
+        "header" => render_story_for::<HeaderProps>(),
         _ => render_story_not_found(&name),
     };
     Html(markup.into_string())
 }
 
-/// Render a component story using a parameterized template
+/// Render a component story using ComponentStory trait
 ///
-/// Single rendering function that works with any component implementing RenderableStory.
+/// Single rendering function that works with any component implementing ComponentStory.
 /// This eliminates duplication while maintaining type safety and flexibility.
+///
+/// # Type Parameters
+///
+/// - `T`: A type that implements ComponentStory (e.g., ButtonProps, HeaderProps)
 ///
 /// # Convention
 ///
@@ -199,10 +143,12 @@ pub async fn feature_story(Path(name): Path<String>) -> Html<String> {
 /// Additional stylesheets can be provided via `additional_stylesheets()`.
 ///
 /// Following maud-components-patterns for clean, reusable template functions.
-fn render_story(story: &impl RenderableStory) -> Markup {
-    let name = story.name();
-    let component = story.render_component();
-    let additional_stylesheets = story.additional_stylesheets();
+fn render_story_for<T: ComponentStory>() -> Markup {
+    let name = T::story_name();
+    let description = T::story_description();
+    let fixture = T::story_fixture();
+    let component = fixture.render_story();
+    let additional_stylesheets = T::additional_stylesheets();
 
     html! {
         html {
@@ -221,7 +167,7 @@ fn render_story(story: &impl RenderableStory) -> Markup {
             }
             body {
                 h1 { (capitalize_first(name)) " Component" }
-                p { (story.description()) }
+                p { (description) }
 
                 div class="story-preview" {
                     h2 { "Preview" }

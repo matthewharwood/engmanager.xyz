@@ -10,6 +10,7 @@
 /// - **Schema**: Data shape defined in schema.rs (HeaderProps)
 /// - **Template**: Maud rendering logic in template.rs
 /// - **Styles**: Component-scoped CSS in styles.css
+/// - **Story**: ComponentStory trait implementation in schema.rs for preview system
 ///
 /// # Usage
 ///
@@ -29,7 +30,6 @@
 /// let markup = render_header(&props);
 /// ```
 pub mod schema;
-pub mod story;
 pub mod template;
 
 // Re-export schema types for easy importing

@@ -10,6 +10,7 @@
 /// - **Schema**: Data shape defined in schema.rs (ButtonProps)
 /// - **Template**: Maud rendering logic in template.rs
 /// - **Styles**: Component-scoped CSS in styles.css
+/// - **Story**: ComponentStory trait implementation in schema.rs for preview system
 ///
 /// # Reusability
 ///
@@ -43,7 +44,6 @@
 /// }
 /// ```
 pub mod schema;
-pub mod story;
 pub mod template;
 
 // Re-export schema types for easy importing
