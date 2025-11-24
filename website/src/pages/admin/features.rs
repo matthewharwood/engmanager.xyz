@@ -25,7 +25,9 @@ use axum::response::Html;
 use maud::{html, Markup};
 
 use crate::features::button::ButtonProps;
+use crate::features::checkbox::CheckboxProps;
 use crate::features::header::HeaderProps;
+use crate::features::input::InputProps;
 use crate::features::story::ComponentStory;
 
 /// Story metadata for listing
@@ -57,8 +59,16 @@ pub fn get_all_stories() -> Vec<Story> {
             description: ButtonProps::story_description(),
         },
         Story {
+            name: CheckboxProps::story_name(),
+            description: CheckboxProps::story_description(),
+        },
+        Story {
             name: HeaderProps::story_name(),
             description: HeaderProps::story_description(),
+        },
+        Story {
+            name: InputProps::story_name(),
+            description: InputProps::story_description(),
         },
     ]
 }
@@ -122,7 +132,9 @@ fn render_features_index(stories: &[Story]) -> Markup {
 pub async fn feature_story(Path(name): Path<String>) -> Html<String> {
     let markup = match name.as_str() {
         "button" => render_story_for::<ButtonProps>(),
+        "checkbox" => render_story_for::<CheckboxProps>(),
         "header" => render_story_for::<HeaderProps>(),
+        "input" => render_story_for::<InputProps>(),
         _ => render_story_not_found(&name),
     };
     Html(markup.into_string())

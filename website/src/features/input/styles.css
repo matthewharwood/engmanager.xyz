@@ -1,0 +1,71 @@
+/**
+ * Input Component Styles
+ *
+ * Following Utopia fluid scales for consistent sizing and spacing.
+ * The input uses semantic color tokens and accessible contrast ratios.
+ */
+
+.form-field {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs, 0.25rem);
+  margin-bottom: var(--space-s, 1rem);
+}
+
+.form-label {
+  /* Typography */
+  font-size: var(--step-0);
+  font-weight: 500;
+  color: var(--color-text, #1a1a1a);
+}
+
+.required-indicator {
+  /* Visual */
+  color: var(--color-error, #cc0000);
+  font-weight: 600;
+}
+
+.form-input {
+  /* Layout */
+  padding: var(--space-xs) var(--space-s);
+
+  /* Typography */
+  font-size: var(--step-0);
+  font-family: inherit;
+  line-height: 1.5;
+
+  /* Visual */
+  background-color: var(--color-surface, #ffffff);
+  color: var(--color-text, #1a1a1a);
+  border: 1px solid var(--color-border, #cccccc);
+  border-radius: 4px;
+
+  /* Interaction */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-secondary, #666666);
+  opacity: 1;
+}
+
+.form-input:hover {
+  border-color: var(--color-border-hover, #999999);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.form-input:required:invalid {
+  border-color: var(--color-error, #cc0000);
+}
+
+.form-input:disabled {
+  background-color: var(--color-surface-disabled, #f5f5f5);
+  color: var(--color-text-disabled, #999999);
+  cursor: not-allowed;
+}

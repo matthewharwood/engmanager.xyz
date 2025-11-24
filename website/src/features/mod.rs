@@ -14,8 +14,10 @@
 /// # Features
 ///
 /// - **button**: Reusable button/link component (primitive)
+/// - **checkbox**: Checkbox input field component (primitive)
 /// - **header**: Page header with headline and CTA button
 /// - **hero**: Hero section with headline and subheadline
+/// - **input**: Text input field component (primitive)
 ///
 /// # Story System
 ///
@@ -33,6 +35,8 @@
 /// 8. Add variant to `Block` enum in `core/block.rs` (if block-based)
 /// 9. Update render dispatcher in pages
 pub mod button;
+pub mod checkbox;
 pub mod header;
 pub mod hero;
+pub mod input;
 pub mod story;
