@@ -6,6 +6,7 @@
 import { MessageBanner } from './message-banner.js';
 import { TabSwitcher } from './tab-switcher.js';
 import { JsonEditor } from './json-editor.js';
+import { MonacoJsonEditor } from './monaco-json-editor.js';
 import { BlockList } from './block-list.js';
 import { AdminEditor } from './admin-editor.js';
 
@@ -33,6 +34,7 @@ export {
   MessageBanner,
   TabSwitcher,
   JsonEditor,
+  MonacoJsonEditor,
   BlockList,
   AdminEditor
 };
@@ -42,6 +44,7 @@ console.log('Admin editor components registered:', {
   'message-banner': customElements.get('message-banner'),
   'tab-switcher': customElements.get('tab-switcher'),
   'json-editor': customElements.get('json-editor'),
+  'monaco-json-editor': customElements.get('monaco-json-editor'),
   'block-list': customElements.get('block-list'),
   'admin-editor': customElements.get('admin-editor')
 });

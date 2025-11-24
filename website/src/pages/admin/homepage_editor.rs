@@ -97,8 +97,8 @@ fn render_editor_template(
                     }
 
                     div class="tab-content" id="json-view" {
-                        // JSON editor component with initial data
-                        json-editor value=(json) {}
+                        // Monaco JSON editor component with initial data
+                        monaco-json-editor value=(json) {}
                     }
 
                     // Form for submission

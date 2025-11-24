@@ -88,7 +88,7 @@ class AdminEditor extends HTMLElement {
     // This is acceptable because we're coordinating a known component tree structure
     this.#tabSwitcher = this.querySelector('tab-switcher');
     this.#blockList = this.querySelector('block-list');
-    this.#jsonEditor = this.querySelector('json-editor');
+    this.#jsonEditor = this.querySelector('monaco-json-editor');
     this.#messageBanner = this.querySelector('message-banner');
 
     if (!this.#tabSwitcher || !this.#blockList || !this.#jsonEditor || !this.#messageBanner) {
@@ -191,7 +191,8 @@ class AdminEditor extends HTMLElement {
       return;
     }
 
-    const jsonValue = this.#jsonEditor.getAttribute('value');
+    // Call getValue() method to get current editor content (not the initial attribute value)
+    const jsonValue = this.#jsonEditor.getValue();
 
     // Validate JSON before submission
     // Rule 1 from javascript-pragmatic-rules: Handle errors with context

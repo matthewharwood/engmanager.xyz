@@ -86,9 +86,11 @@ Production-grade web components for the admin content editor, built using strict
 </tab-switcher>
 ```
 
-### 3. `<json-editor>` (json-editor.js)
+### 3. `<json-editor>` (json-editor.js) [LEGACY]
 
-**Purpose:** JSON editing with real-time validation
+**Status:** REPLACED by `<monaco-json-editor>` (see below)
+
+**Purpose:** JSON editing with real-time validation (basic textarea)
 
 **Attributes:**
 - `value` - JSON string value
@@ -132,7 +134,114 @@ Production-grade web components for the admin content editor, built using strict
 </script>
 ```
 
-### 4. `<block-list>` (block-list.js)
+---
+
+### 4. `<monaco-json-editor>` (monaco-json-editor.js) ⭐ NEW
+
+**Purpose:** JSON editing with Monaco Editor syntax highlighting
+
+**Technology:**
+- Monaco Editor 0.52.0 (loaded from CDN: [monaco-esm](https://cdn.jsdelivr.net/npm/monaco-esm@0.52.0/+esm))
+- JSON language mode with syntax highlighting
+- vs-dark theme (matches admin UI)
+- Line numbers, code folding, find/replace built-in
+- ~630kb bundle (cached by browser)
+
+**Attributes:**
+- `value` - Initial JSON string value (optional)
+
+**Events Emitted:**
+- `json-valid` - When JSON is valid (debounced 500ms)
+  - `detail.value` - JSON string
+  - `detail.parsed` - Parsed JSON object
+- `json-invalid` - When JSON is invalid (debounced 500ms)
+  - `detail.value` - JSON string
+  - `detail.error` - Error message
+- `content-changed` - When content changes (immediate, not debounced)
+  - `detail.value` - Current JSON string
+  - `detail.isValid` - Boolean validity
+- `json-format-error` - When JSON formatting fails
+  - `detail.error` - Error message
+- `monaco-load-error` - When Monaco fails to load from CDN
+  - `detail.error` - Error message
+
+**Public Methods:**
+- `getValue()` - Returns current JSON string
+- `setValue(jsonString)` - Sets JSON content
+- `getParsedValue()` - Returns parsed JSON object or null
+- `setFormattedValue(obj)` - Sets formatted JSON from object
+- `focus()` - Focus the editor
+- `format()` - Format current JSON using Monaco's formatter
+
+**Features:**
+- ✅ Syntax highlighting for JSON
+- ✅ Line numbers
+- ✅ Code folding
+- ✅ Find/Replace (Ctrl+F / Cmd+F)
+- ✅ Auto-complete for JSON structure
+- ✅ Error squiggles for invalid JSON
+- ✅ Format Document (right-click menu)
+- ✅ Keyboard shortcuts (Monaco defaults)
+- ✅ Fallback to textarea if CDN fails
+
+**Skills Applied:**
+- **javascript-pragmatic-rules Rule 1:** Async/await with error handling (lines 14-28, 45-142)
+- **javascript-pragmatic-rules Rule 2:** AbortController not needed (CDN load is one-time)
+- **javascript-pragmatic-rules Rule 4:** Comprehensive resource cleanup (lines 48-70)
+- **javascript-pragmatic-rules Rule 15:** Debounced validation (lines 165-179)
+- **javascript-pragmatic-rules Rule 17:** ES Private Fields prevent memory leaks (all # fields)
+
+**API Compatibility:**
+This component is a **drop-in replacement** for `<json-editor>` with the same public API:
+- Same methods: `getValue()`, `setValue()`, `getParsedValue()`, `setFormattedValue()`
+- Same events: `json-valid`, `json-invalid`, `json-format-error`
+- Additional features: Monaco Editor capabilities
+
+**Usage:**
+```html
+<monaco-json-editor value='{"blocks":[]}'></monaco-json-editor>
+
+<script>
+  const editor = document.querySelector('monaco-json-editor');
+
+  // Listen for validation events (same as json-editor)
+  editor.addEventListener('json-valid', (e) => {
+    console.log('Valid JSON:', e.detail.parsed);
+  });
+
+  editor.addEventListener('json-invalid', (e) => {
+    console.error('Invalid JSON:', e.detail.error);
+  });
+
+  // Get/set values (same API as json-editor)
+  const currentJson = editor.getValue();
+  editor.setValue('{"new": "content"}');
+
+  // Additional Monaco features
+  editor.focus();
+  await editor.format();
+</script>
+```
+
+**Integration with Backend:**
+- Loads initial JSON from `value` attribute (passed from Maud template)
+- Validates JSON client-side with debouncing
+- Emits events for parent `<admin-editor>` to handle save
+- Compatible with existing save mechanism (POST to `/admin/api/{route_name}`)
+
+**Fallback Handling:**
+If Monaco fails to load from CDN, the component:
+1. Shows error message to user
+2. Renders a `<textarea>` fallback editor
+3. Maintains same API (getValue/setValue still work)
+4. Emits `monaco-load-error` event
+
+**Research:**
+See `./research/monaco-editor-integration.md` for comprehensive integration documentation.
+
+---
+
+### 5. `<block-list>` (block-list.js)
 
 **Purpose:** Display and manage list of content blocks
 
@@ -173,7 +282,7 @@ Production-grade web components for the admin content editor, built using strict
 </script>
 ```
 
-### 5. `<admin-editor>` (admin-editor.js)
+### 6. `<admin-editor>` (admin-editor.js)
 
 **Purpose:** Main container coordinating all editor components
 

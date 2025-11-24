@@ -225,3 +225,17 @@ button[type="button"]:hover {
 .message.show {
     display: block;
 }
+
+/* Monaco Editor Container */
+monaco-json-editor {
+    display: block;
+    width: 100%;
+    min-height: 400px;
+    overflow: hidden;
+}
+
+/* Ensure Monaco's internal container fills the component */
+monaco-json-editor > div {
+    width: 100% !important;
+    height: 100% !important;
+}
