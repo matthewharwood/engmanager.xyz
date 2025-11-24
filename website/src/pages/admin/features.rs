@@ -34,6 +34,75 @@ pub struct Story {
     pub description: &'static str,
 }
 
+/// Renderable story trait
+///
+/// Defines the contract for rendering a component story. Each feature implements
+/// this trait to provide story-specific rendering logic while using a shared
+/// template structure.
+///
+/// Following rust-core-patterns for trait-based abstraction.
+trait RenderableStory {
+    /// The story identifier
+    fn name(&self) -> &'static str;
+
+    /// Human-readable description of the component
+    fn description(&self) -> &'static str;
+
+    /// Render the component with fixture data
+    fn render_component(&self) -> Markup;
+
+    /// Additional stylesheets beyond the main feature stylesheet
+    ///
+    /// Convention: All features have `/features/{feature_name}/styles.css`
+    /// This method returns any additional stylesheets needed.
+    fn additional_stylesheets(&self) -> Vec<&'static str> {
+        Vec::new()
+    }
+}
+
+/// Button story implementation
+struct ButtonStory;
+
+impl RenderableStory for ButtonStory {
+    fn name(&self) -> &'static str {
+        button::story::NAME
+    }
+
+    fn description(&self) -> &'static str {
+        "Interactive button component with link and accessibility features."
+    }
+
+    fn render_component(&self) -> Markup {
+        let props = button::story::fixture();
+        button::template::button(&props)
+    }
+}
+
+/// Header story implementation
+struct HeaderStory;
+
+impl RenderableStory for HeaderStory {
+    fn name(&self) -> &'static str {
+        header::story::NAME
+    }
+
+    fn description(&self) -> &'static str {
+        "Page header with headline and call-to-action button."
+    }
+
+    fn render_component(&self) -> Markup {
+        let props = header::story::fixture();
+        header::template::header(&props)
+    }
+
+    fn additional_stylesheets(&self) -> Vec<&'static str> {
+        vec![
+            "/assets/styles.css",          // Global styles for base typography
+            "/features/button/styles.css", // Button component styles
+        ]
+    }
+}
+
 /// Get all registered stories
 ///
 /// Manual registry of all component stories in the codebase.
@@ -112,50 +181,52 @@ fn render_features_index(stories: &[Story]) -> Markup {
 /// Following axum-web-framework patterns for path parameter extraction.
 pub async fn feature_story(Path(name): Path<String>) -> Html<String> {
     let markup = match name.as_str() {
-        "button" => render_button_story(),
-        "header" => render_header_story(),
+        "button" => render_story(&ButtonStory),
+        "header" => render_story(&HeaderStory),
         _ => render_story_not_found(&name),
     };
     Html(markup.into_string())
 }
 
-/// Render the button component story
+/// Render a component story using a parameterized template
 ///
-/// Uses the fixture data from button::story to render a preview.
-fn render_button_story() -> Markup {
-    let props = button::story::fixture();
-    let component = button::template::button(&props);
+/// Single rendering function that works with any component implementing RenderableStory.
+/// This eliminates duplication while maintaining type safety and flexibility.
+///
+/// # Convention
+///
+/// All features have one stylesheet at `/features/{feature_name}/styles.css`.
+/// Additional stylesheets can be provided via `additional_stylesheets()`.
+///
+/// Following maud-components-patterns for clean, reusable template functions.
+fn render_story(story: &impl RenderableStory) -> Markup {
+    let name = story.name();
+    let component = story.render_component();
+    let additional_stylesheets = story.additional_stylesheets();
 
     html! {
         html {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Button Story - Component Preview" }
-                // Load button styles for preview
-                link rel="stylesheet" href="/features/button/styles.css";
+                title { (capitalize_first(name)) " Story - Component Preview" }
+
+                // Load additional stylesheets first (e.g., global styles, dependencies)
+                @for stylesheet in additional_stylesheets {
+                    link rel="stylesheet" href=(stylesheet);
+                }
+
+                // Load main feature stylesheet last (convention: /features/{name}/styles.css)
+                link rel="stylesheet" href=(format!("/features/{}/styles.css", name));
             }
             body {
-                h1 { "Button Component" }
-                p { "Interactive button component with link and accessibility features." }
+                h1 { (capitalize_first(name)) " Component" }
+                p { (story.description()) }
 
                 div class="story-preview" {
                     h2 { "Preview" }
                     div class="story-component" {
                         (component)
-                    }
-                }
-
-                div class="story-props" {
-                    h2 { "Fixture Data" }
-                    pre {
-                        code {
-                            "ButtonProps {\n"
-                            "    href: \"" (props.href) "\",\n"
-                            "    text: \"" (props.text) "\",\n"
-                            "    aria_label: \"" (props.aria_label) "\",\n"
-                            "}"
-                        }
                     }
                 }
 
@@ -169,59 +240,14 @@ fn render_button_story() -> Markup {
     }
 }
 
-/// Render the header component story
+/// Capitalize the first letter of a string
 ///
-/// Uses the fixture data from header::story to render a preview.
-fn render_header_story() -> Markup {
-    let props = header::story::fixture();
-    let component = header::template::header(&props);
-
-    html! {
-        html {
-            head {
-                meta charset="utf-8";
-                meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Header Story - Component Preview" }
-                // Load global styles for base typography
-                link rel="stylesheet" href="/assets/styles.css";
-                // Load header and button styles for preview
-                link rel="stylesheet" href="/features/header/styles.css";
-                link rel="stylesheet" href="/features/button/styles.css";
-            }
-            body {
-                h1 { "Header Component" }
-                p { "Page header with headline and call-to-action button." }
-
-                div class="story-preview" {
-                    h2 { "Preview" }
-                    div class="story-component" {
-                        (component)
-                    }
-                }
-
-                div class="story-props" {
-                    h2 { "Fixture Data" }
-                    pre {
-                        code {
-                            "HeaderProps {\n"
-                            "    headline: \"" (props.headline) "\",\n"
-                            "    button: ButtonProps {\n"
-                            "        href: \"" (props.button.href) "\",\n"
-                            "        text: \"" (props.button.text) "\",\n"
-                            "        aria_label: \"" (props.button.aria_label) "\",\n"
-                            "    },\n"
-                            "}"
-                        }
-                    }
-                }
-
-                div class="button-group" {
-                    a href="/admin/features/" {
-                        button type="button" { "Back to Stories" }
-                    }
-                }
-            }
-        }
+/// Helper function for formatting component names in titles.
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
     }
 }
 
@@ -235,7 +261,6 @@ fn render_story_not_found(name: &str) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "Story Not Found" }
-                link rel="stylesheet" href="/assets/features/admin/editor/styles.css";
             }
             body {
                 h1 { "Story Not Found" }
