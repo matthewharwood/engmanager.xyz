@@ -63,10 +63,7 @@ async fn main() {
         // Admin pages (route handlers in pages::admin)
         .route("/admin", get(pages::admin::admin_index))
         .route("/admin/route/", get(pages::admin::admin_route_index))
-        .route(
-            "/admin/route/{name}/",
-            get(pages::admin::admin_route_homepage),
-        )
+        .route("/admin/route/{name}/", get(pages::admin::admin_route_page))
         // Admin features (component story system)
         .route("/admin/features/", get(pages::admin::features_index))
         .route("/admin/features/{name}/", get(pages::admin::feature_story))
@@ -91,7 +88,7 @@ async fn main() {
     };
 
     let addr = SocketAddr::from((host, port));
-    println!("Starting server on {}", addr);
+    println!("Starting server on http://{}", addr);
 
     let listener = match TcpListener::bind(addr).await {
         Ok(l) => l,

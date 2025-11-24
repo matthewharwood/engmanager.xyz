@@ -23,6 +23,16 @@ Cargo.lock
 *.log
 
 # -----------------------------------------
+# Data / Content (user-generated)
+# -----------------------------------------
+
+# Exclude content JSON files (user edits)
+/data/content/*.json
+
+# Keep directory structure
+!/data/content/.gitkeep
+
+# -----------------------------------------
 # JetBrains / RustRover
 # -----------------------------------------
 
