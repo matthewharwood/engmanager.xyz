@@ -9,6 +9,7 @@
 /// - A black circle (visual element)
 /// - "ADMIN" heading
 /// - "Routes" link to /admin/route/
+/// - "Features" link to /admin/features/
 ///
 /// # Asset References
 ///
@@ -21,13 +22,14 @@ use maud::{Markup, html};
 /// Render the Admin Index component
 ///
 /// This is a pure function that returns Markup for the admin index page.
-/// The component displays a centered layout with a black circle, heading, and link.
+/// The component displays a centered layout with a black circle, heading, and links.
 pub fn render_admin_index() -> Markup {
     html! {
         div class="admin-index" {
             div class="admin-index__circle" {}
             h1 class="admin-index__heading" { "ADMIN" }
             a class="admin-index__link" href="/admin/route/" { "Routes" }
+            a class="admin-index__link" href="/admin/features/" { "Features" }
         }
     }
 }

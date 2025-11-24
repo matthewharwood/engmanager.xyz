@@ -7,6 +7,8 @@
 /// - `GET /admin` - Admin index page
 /// - `GET /admin/route/` - Route index page
 /// - `GET /admin/route/homepage/` - Homepage editor page
+/// - `GET /admin/features/` - Component stories index page
+/// - `GET /admin/features/{name}` - Component story preview page
 /// - `POST /admin/api/homepage` - Homepage update API
 use axum::response::Html;
 use maud::html;
@@ -14,12 +16,14 @@ use maud::html;
 // Submodules
 pub mod admin_index_template;
 pub mod api;
+pub mod features;
 pub mod homepage_editor;
 pub mod routes;
 
 // Re-export handlers
 pub use admin_index_template::render_admin_index;
 pub use api::{update_homepage, update_route};
+pub use features::{feature_story, features_index};
 pub use homepage_editor::admin_route_homepage;
 pub use routes::admin_route_index;
 

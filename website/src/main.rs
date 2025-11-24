@@ -31,15 +31,26 @@
 /// - **maud-axum-integration**: IntoResponse, templates, layouts
 /// - **maud-components-patterns**: Render trait, component composition
 /// - **rust-core-patterns**: Type-safe domain modeling with enums
-use axum::{Router, routing::get, routing::post};
+use axum::{routing::get, routing::post, Router};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
+
 
 // Module declarations
 mod core;
 mod features;
 mod pages;
+
+// Server configuration constants
+const PORT_ENV_VAR: &str = "PORT";
+const DEFAULT_PORT: u16 = 3000;
+const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0]; // 0.0.0.0 - accept external connections
+const DEV_HOST: [u8; 4] = [127, 0, 0, 1]; // 127.0.0.1 - localhost only
+
+// Asset serving paths
+const ASSETS_DIR: &str = "website/assets";
+const FEATURES_DIR: &str = "website/src/features";
 
 #[tokio::main]
 async fn main() {
@@ -56,28 +67,27 @@ async fn main() {
             "/admin/route/{name}/",
             get(pages::admin::admin_route_homepage),
         )
+        // Admin features (component story system)
+        .route("/admin/features/", get(pages::admin::features_index))
+        .route("/admin/features/{name}/", get(pages::admin::feature_story))
         // Admin API endpoints
         .route("/admin/api/homepage", post(pages::admin::update_homepage))
         .route("/admin/api/{route_name}", post(pages::admin::update_route))
-        // Static asset serving
-        // Following the feature-based pattern, we serve:
-        // - /assets/* - Global styles, fonts, images
-        // - /features/* - Per-component CSS and JS files
-        .nest_service("/assets", ServeDir::new("assets"))
-        .nest_service("/features", ServeDir::new("src/features"));
+        .nest_service("/assets", ServeDir::new(ASSETS_DIR))
+        .nest_service("/features", ServeDir::new(FEATURES_DIR));
 
-    // Get port from environment (Render.io sets PORT) or use 3000 for dev
-    let port = std::env::var("PORT")
+    // Get port from environment (Render.io sets PORT) or use default for dev
+    let port = std::env::var(PORT_ENV_VAR)
         .ok()
         .and_then(|p| p.parse::<u16>().ok())
-        .unwrap_or(3000);
+        .unwrap_or(DEFAULT_PORT);
 
     // Bind to 0.0.0.0 in production (when PORT env var is set)
     // Bind to 127.0.0.1 in dev (local only)
-    let host = if std::env::var("PORT").is_ok() {
-        [0, 0, 0, 0] // Production: accept external connections
+    let host = if std::env::var(PORT_ENV_VAR).is_ok() {
+        PRODUCTION_HOST
     } else {
-        [127, 0, 0, 1] // Dev: localhost only
+        DEV_HOST
     };
 
     let addr = SocketAddr::from((host, port));

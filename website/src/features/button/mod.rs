@@ -43,6 +43,7 @@
 /// }
 /// ```
 pub mod schema;
+pub mod story;
 pub mod template;
 
 // Re-export schema types for easy importing
