@@ -41,7 +41,6 @@ use tower_http::services::ServeDir;
 mod core;
 mod features;
 mod pages;
-
 // Server configuration constants
 const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;

@@ -199,13 +199,24 @@ sqlx-cli 0.8.x
 
 ### The DATABASE_URL Environment Variable
 
-SQLx needs to know where your database is. For SQLite, this is a file path:
+SQLx needs to know where your database is. For SQLite, this is a file path.
+
+**Create a `.env` file in your project root:**
 
 ```bash
-export DATABASE_URL="sqlite:./data/app.db"
+# .env
+DATABASE_URL=sqlite:./data/app.db
 ```
 
 The format is: `sqlite:` followed by the file path.
+
+The `sqlx` CLI automatically reads from `.env` files, so you do not need to export the variable manually. This is cleaner than using `export` because:
+
+1. The setting persists across terminal sessions
+2. It is consistent for all developers (just copy `.env.example`)
+3. Your Rust code can also read from it
+
+**Important:** Add `.env` to your `.gitignore` to avoid committing secrets.
 
 ### Create the Database
 
@@ -213,7 +224,7 @@ The format is: `sqlite:` followed by the file path.
 # Create the directory first
 mkdir -p data
 
-# Create the database
+# Create the database (sqlx reads DATABASE_URL from .env)
 sqlx database create
 ```
 
@@ -453,8 +464,10 @@ async fn test_invalid_query(pool: &SqlitePool) {
 Run:
 
 ```bash
-DATABASE_URL="sqlite:./data/app.db" cargo check
+cargo check
 ```
+
+(The `.env` file provides `DATABASE_URL` automatically.)
 
 If it compiles, your valid query is correct. Uncomment the invalid query to see compile-time checking catch the error.
 
@@ -537,7 +550,7 @@ async fn main() -> Result<(), sqlx::Error> {
 Run:
 
 ```bash
-DATABASE_URL="sqlite:./data/app.db" cargo run
+cargo run
 ```
 
 Expected output:
@@ -640,7 +653,7 @@ async fn main() -> Result<(), sqlx::Error> {
 Run:
 
 ```bash
-DATABASE_URL="sqlite:./data/app.db" cargo run
+cargo run
 ```
 
 Expected output:
@@ -738,8 +751,10 @@ async fn main() -> Result<(), sqlx::Error> {
 ### Run It
 
 ```bash
-# Set up
-export DATABASE_URL="sqlite:./data/app.db"
+# Create .env file
+echo 'DATABASE_URL=sqlite:./data/app.db' > .env
+
+# Set up database
 mkdir -p data
 sqlx database create
 sqlx migrate run
@@ -851,8 +866,11 @@ Start with local SQLite. Migrate when you have the need.
 # Install CLI
 cargo install sqlx-cli --features sqlite
 
+# Create .env file (one time)
+echo 'DATABASE_URL=sqlite:./data/app.db' > .env
+
 # Create database
-export DATABASE_URL="sqlite:./data/app.db"
+mkdir -p data
 sqlx database create
 
 # Create migration
@@ -893,9 +911,13 @@ You are now ready to build the CRUD pattern with SQLite. Proceed to the CRUD tut
 
 ### "DATABASE_URL must be set"
 
+Create a `.env` file in your project root:
+
 ```bash
-export DATABASE_URL="sqlite:./data/app.db"
+echo 'DATABASE_URL=sqlite:./data/app.db' > .env
 ```
+
+The `sqlx` CLI and your Rust code will read from this file automatically.
 
 ### "no such table: routes"
 
@@ -916,8 +938,8 @@ SQLite allows only one writer at a time. If you see this:
 The `query!` macro needs database access at compile time:
 
 ```bash
-# Make sure DATABASE_URL is set
-export DATABASE_URL="sqlite:./data/app.db"
+# Make sure .env file exists with DATABASE_URL
+cat .env  # Should show: DATABASE_URL=sqlite:./data/app.db
 
 # Make sure database exists and migrations are run
 sqlx database create

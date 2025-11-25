@@ -26,6 +26,11 @@ Cargo.lock
 # Data / Content (user-generated)
 # -----------------------------------------
 
+# SQLite database
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+
 # Exclude content JSON files (user edits)
 /data/content/*.json
 
