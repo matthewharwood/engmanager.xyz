@@ -1,92 +1,46 @@
-/// Eng Manager Website - Feature-based Architecture
-///
-/// This application demonstrates a production-quality feature-based architecture
-/// for Axum + Maud web applications. Key principles:
-///
-/// - **Feature-based organization**: Code organized by feature, not layer
-/// - **Separation of concerns**: Templates, styles, and scripts in separate files
-/// - **Type-safe blocks**: Content composition using enum variants
-/// - **Clean module boundaries**: Core, features, and pages are independent
-///
-/// # Architecture
-///
-/// ```
-/// src/
-/// ├── core/           # Shared types and operations
-/// │   ├── block.rs    # Block enum and props
-/// │   ├── persistence.rs # JSON file operations
-/// │   └── render.rs   # Render trait
-/// ├── features/       # Feature modules (vertical slices)
-/// │   ├── header/     # Header component
-/// │   ├── hero/       # Hero component
-/// │   └── admin/      # Admin interface
-/// ├── pages/          # Route handlers
-/// │   └── homepage.rs # Homepage composition
-/// └── main.rs         # App setup, router, server
-/// ```
-///
-/// # Skills Applied
-///
-/// - **axum-web-framework**: Router setup, asset serving, state management
-/// - **maud-axum-integration**: IntoResponse, templates, layouts
-/// - **maud-components-patterns**: Render trait, component composition
-/// - **rust-core-patterns**: Type-safe domain modeling with enums
 use axum::{routing::get, routing::post, Router};
+use dotenvy::dotenv;
+use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
+use std::env::var;
 use std::net::SocketAddr;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 
-
-// Module declarations
 mod core;
 mod features;
 mod pages;
-// Server configuration constants
+
 const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;
-const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0]; // 0.0.0.0 - accept external connections
-const DEV_HOST: [u8; 4] = [127, 0, 0, 1]; // 127.0.0.1 - localhost only
+const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0];
+const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
 
-// Asset serving paths
 const ASSETS_DIR: &str = "website/assets";
 const FEATURES_DIR: &str = "website/src/features";
 
 #[tokio::main]
 async fn main() {
-    // Build application with routes
-    // Following axum-web-framework patterns for router composition
-    let app = Router::new()
-        // Public pages
-        .route("/", get(pages::homepage))
-        .route("/health", get(|| async { "OK" }))
-        // Admin pages (route handlers in pages::admin)
-        .route("/admin", get(pages::admin::admin_index))
-        .route("/admin/route/", get(pages::admin::admin_route_index))
-        .route("/admin/route/{name}/", get(pages::admin::admin_route_page))
-        // Admin features (component story system)
-        .route("/admin/features/", get(pages::admin::features_index))
-        .route("/admin/features/{name}/", get(pages::admin::feature_story))
-        // Admin API endpoints
-        .route("/admin/api/homepage", post(pages::admin::update_homepage))
-        .route("/admin/api/{route_name}", post(pages::admin::update_route))
-        .nest_service("/assets", ServeDir::new(ASSETS_DIR))
-        .nest_service("/features", ServeDir::new(FEATURES_DIR));
+    dotenv().ok();
 
-    // Get port from environment (Render.io sets PORT) or use default for dev
-    let port = std::env::var(PORT_ENV_VAR)
-        .ok()
-        .and_then(|p| p.parse::<u16>().ok())
-        .unwrap_or(DEFAULT_PORT);
+    let pool = create_pool().await.expect("Failed to create database pool");
+    // Insert a test route
+    sqlx::query("INSERT OR REPLACE INTO routes (path, name) VALUES ('/test', 'Test Route')")
+        .execute(&pool)
+        .await
+        .expect("Failed to insert test route");
+    let route: Route = sqlx::query_as(
+        "SELECT path, name, created_at, updated_at FROM routes WHERE path = '/test'",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("Failed to fetch route");
 
-    // Bind to 0.0.0.0 in production (when PORT env var is set)
-    // Bind to 127.0.0.1 in dev (local only)
-    let host = if std::env::var(PORT_ENV_VAR).is_ok() {
-        PRODUCTION_HOST
-    } else {
-        DEV_HOST
-    };
-
-    let addr = SocketAddr::from((host, port));
+    let app = create_router();
+    let addr = resolve_server_address();
+    println!("Found route: {:?}", route);
+    assert_eq!(route.path, "/test");
+    assert_eq!(route.name, "Test Route");
     println!("Starting server on http://{}", addr);
 
     let listener = match TcpListener::bind(addr).await {
@@ -101,4 +55,69 @@ async fn main() {
         eprintln!("Server error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn create_router() -> Router {
+    Router::new()
+        .merge(public_routes())
+        .nest("/admin", admin_routes())
+        .merge(static_assets())
+}
+
+fn public_routes() -> Router {
+    Router::new()
+        .route("/", get(pages::homepage))
+        .route("/health", get(|| async { "OK" }))
+}
+
+fn admin_routes() -> Router {
+    Router::new()
+        .route("/", get(pages::admin::admin_index))
+        .route("/route/", get(pages::admin::admin_route_index))
+        .route("/route/{name}/", get(pages::admin::admin_route_page))
+        .route("/features/", get(pages::admin::features_index))
+        .route("/features/{name}/", get(pages::admin::feature_story))
+        .route("/api/homepage", post(pages::admin::update_homepage))
+        .route("/api/{route_name}", post(pages::admin::update_route))
+}
+
+fn static_assets() -> Router {
+    Router::new()
+        .nest_service("/assets", ServeDir::new(ASSETS_DIR))
+        .nest_service("/features", ServeDir::new(FEATURES_DIR))
+}
+
+fn resolve_server_address() -> SocketAddr {
+    let port = var(PORT_ENV_VAR)
+        .ok()
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_PORT);
+
+    let host = if var(PORT_ENV_VAR).is_ok() {
+        PRODUCTION_HOST
+    } else {
+        DEV_HOST
+    };
+
+    SocketAddr::from((host, port))
+}
+
+async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
+    let database_url = var("DATABASE_URL").expect("DATABASE_URL must be set in .env");
+    SqlitePoolOptions::new()
+        .max_connections(5)
+        .min_connections(1)
+        .acquire_timeout(Duration::from_secs(5))
+        .connect(&database_url)
+        .await
+}
+
+use sqlx::FromRow;
+
+#[derive(Debug, Clone, FromRow)]
+pub struct Route {
+    pub path: String,
+    pub name: String,
+    pub created_at: String,
+    pub updated_at: String,
 }

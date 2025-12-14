@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT path, name FROM routes",
+  "describe": {
+    "columns": [
+      {
+        "name": "path",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c4b40914af52e12c163164efe70963f33185236989dbb33f3e699f0339ca9d50"
+}

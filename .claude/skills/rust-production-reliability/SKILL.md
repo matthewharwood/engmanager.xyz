@@ -188,6 +188,7 @@ pub enum ShutdownError {
 ### Signal Handling
 
 ```rust
+use std::future;
 use tokio::signal;
 
 pub async fn shutdown_signal() {
@@ -206,7 +207,7 @@ pub async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+    let terminate = future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c => {

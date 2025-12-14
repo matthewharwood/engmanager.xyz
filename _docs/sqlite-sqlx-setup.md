@@ -119,13 +119,16 @@ SQLx is a Rust library for working with SQL databases. It has a killer feature: 
 
 ### Cargo.toml Configuration
 
-Add SQLx to your project's `Cargo.toml`:
+Add SQLx and dotenvy to your project's `Cargo.toml`:
 
 ```toml
 [dependencies]
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1", features = ["full"] }
+dotenvy = "0.15"
 ```
+
+**Why dotenvy?** The `sqlx-cli` tool automatically reads `.env` files, but your Rust code does not. The `dotenvy` crate loads environment variables from `.env` files at runtime. Without it, `std::env::var("DATABASE_URL")` will fail even if `.env` exists.
 
 ### Understanding the Features
 
@@ -195,18 +198,79 @@ sqlx-cli 0.8.x
 
 ---
 
+## Working with Cargo Workspaces
+
+If your project uses a Cargo workspace (multiple crates in one repository), SQLx commands need to run from the right location. This section explains the differences.
+
+### Typical Workspace Structure
+
+```
+my-project/               # Workspace root
+  Cargo.toml              # [workspace] members = ["website", "shared"]
+  .env                    # DATABASE_URL goes here (ONLY here, not in members)
+  data/
+    app.db                # Database at workspace root
+  website/                # Member with SQLx queries
+    Cargo.toml
+    src/
+    migrations/           # Migrations go in the member using SQLx
+  shared/                 # Other members
+    Cargo.toml
+    src/
+```
+
+### Key Differences from Single-Package Projects
+
+| Operation | Single Package | Workspace |
+|-----------|---------------|-----------|
+| `.env` file location | Project root | Workspace root (ONLY here) |
+| `data/app.db` location | Project root | Workspace root |
+| `migrations/` location | Project root | Member directory that uses SQLx |
+| `cargo sqlx prepare` | `cargo sqlx prepare` | `cargo sqlx prepare --workspace` |
+| `sqlx migrate run` | From project root | From member directory, or use `--manifest-path` |
+
+### Why This Matters
+
+The `sqlx-cli` tool needs to find:
+
+1. **DATABASE_URL**: Read from `.env` in the current directory or parent directories
+2. **Cargo.toml**: To identify the package and find SQLx queries
+3. **migrations/**: To apply schema changes
+
+In a workspace, these files are split between the workspace root and member directories. The commands throughout this guide show both single-package and workspace variants where they differ.
+
+> **Note:** Since `sqlx-cli` searches parent directories for `.env`, placing it at the workspace root means it will be found whether you run commands from the workspace root or from a member directory like `website/`.
+
+---
+
 ## Part 5: Creating Your First Database
 
 ### The DATABASE_URL Environment Variable
 
 SQLx needs to know where your database is. For SQLite, this is a file path.
 
-**Create a `.env` file in your project root:**
+> **WARNING: Create only ONE .env file.**
+>
+> - Single-package project: `.env` in the project root
+> - Workspace project: `.env` in the workspace root only
+>
+> Do NOT create `.env` files in both locations. The `sqlx` CLI searches parent directories, so a workspace `.env` will be found from any member directory.
+
+**Single-package project:** Create a `.env` file in your project root:
 
 ```bash
-# .env
+# .env (in project root)
 DATABASE_URL=sqlite:./data/app.db
 ```
+
+**Workspace project:** Create a `.env` file in the workspace root:
+
+```bash
+# .env (in workspace root, e.g., my-project/.env)
+DATABASE_URL=sqlite:./data/app.db
+```
+
+Keep the database at the workspace root (`./data/app.db`) for simplicity. The migrations live in the member directory, but the database itself belongs at the workspace root where you run most commands.
 
 The format is: `sqlite:` followed by the file path.
 
@@ -220,11 +284,23 @@ The `sqlx` CLI automatically reads from `.env` files, so you do not need to expo
 
 ### Create the Database
 
+**Single-package project:**
+
 ```bash
 # Create the directory first
 mkdir -p data
 
 # Create the database (sqlx reads DATABASE_URL from .env)
+sqlx database create
+```
+
+**Workspace project:**
+
+```bash
+# Create the directory at the workspace root
+mkdir -p data
+
+# Create the database (run from workspace root)
 sqlx database create
 ```
 
@@ -234,7 +310,7 @@ SQLx created:
 
 ```
 data/
-  app.db      # Your SQLite database file
+  app.db      # Your SQLite database file (at workspace root)
 ```
 
 That file IS your database. There is no server. No process. Just a file.
@@ -281,7 +357,9 @@ A migration is a versioned change to your database schema. Instead of manually r
 
 ### Create a Migrations Directory
 
-SQLx expects migrations in a `migrations/` directory:
+SQLx expects migrations in a `migrations/` directory.
+
+**Single-package project:**
 
 ```bash
 sqlx migrate add create_routes_table
@@ -292,6 +370,24 @@ This creates:
 ```
 migrations/
   20240101120000_create_routes_table.sql
+```
+
+**Workspace project:** The `migrations/` directory belongs in the member that uses SQLx:
+
+```bash
+# From workspace root, specify the member
+cd website && sqlx migrate add create_routes_table
+
+# Or use --manifest-path
+sqlx migrate add create_routes_table --manifest-path website/Cargo.toml
+```
+
+This creates:
+
+```
+website/
+  migrations/
+    20240101120000_create_routes_table.sql
 ```
 
 The timestamp prefix ensures migrations run in order.
@@ -315,8 +411,20 @@ CREATE INDEX IF NOT EXISTS idx_routes_name ON routes(name);
 
 ### Run the Migration
 
+**Single-package project:**
+
 ```bash
 sqlx migrate run
+```
+
+**Workspace project:**
+
+```bash
+# From the member directory
+cd website && sqlx migrate run
+
+# Or from workspace root with --manifest-path
+sqlx migrate run --manifest-path website/Cargo.toml
 ```
 
 Expected output:
@@ -413,11 +521,19 @@ What about CI/CD where there is no database?
 
 SQLx can generate query metadata in a `.sqlx/` directory:
 
+**Single-package project:**
+
 ```bash
 cargo sqlx prepare
 ```
 
-This creates:
+**Workspace project:** Use `--workspace` to prepare all members:
+
+```bash
+cargo sqlx prepare --workspace
+```
+
+This creates `.sqlx/` directories containing query metadata:
 
 ```
 .sqlx/
@@ -428,14 +544,11 @@ This creates:
 
 These files describe your queries. During compilation without a database, SQLx uses these files instead.
 
-### Enable Offline Mode
+**SQLx 0.8 Changes:**
 
-Add to your `Cargo.toml`:
-
-```toml
-[dependencies]
-sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "offline"] }
-```
+- **Offline mode is automatic.** In SQLx 0.8, the `offline` feature flag was removed. Offline support is now enabled unconditionally - you do not need to add it to your `Cargo.toml` features.
+- **One file per query.** The `.sqlx/` directory now stores each query in a separate JSON file (rather than a single large file). This reduces git merge conflicts when multiple developers add queries.
+- **SQLX_OFFLINE environment variable.** Set `SQLX_OFFLINE=true` in your CI/CD environment to ensure builds never attempt to connect to a live database. This is recommended for reproducible builds.
 
 ### Checkpoint: Verify Compile-Time Checking
 
@@ -487,10 +600,24 @@ Opening a database connection is expensive. A connection pool:
 ### Create a Connection Pool
 
 ```rust
+use dotenvy::dotenv;
+use std::env;
+use std::time::Duration;
 use sqlx::sqlite::{SqlitePool, SqlitePoolOptions};
 
+#[tokio::main]
+async fn main() {
+    // Load .env file (if present)
+    // The .ok() ignores errors - in production, .env might not exist
+    // and that's fine if env vars are set directly in the environment
+    dotenv().ok();
+
+    let pool = create_pool().await.expect("Failed to create database pool");
+    // ... rest of your application
+}
+
 async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
-    let database_url = std::env::var("DATABASE_URL")
+    let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
 
     SqlitePoolOptions::new()
@@ -499,6 +626,8 @@ async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
         .await
 }
 ```
+
+**Important:** Call `dotenv().ok()` at the very beginning of `main()`, before any calls to `env::var()`. This ensures the `.env` file is loaded before your code tries to read environment variables.
 
 ### Connection Options
 
@@ -516,21 +645,21 @@ SqlitePoolOptions::new()
 Create `src/main.rs`:
 
 ```rust
+use std::env;
+use axum::{routing::get, Router};
 use sqlx::sqlite::SqlitePool;
+use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
-    // Load DATABASE_URL from environment
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-
-    // Create connection pool
-    let pool = SqlitePool::connect(&database_url).await?;
+async fn main() {
+    // Create database pool
+    let pool = create_pool().await.expect("Failed to create database pool");
 
     // Test the connection with a simple query
     let row: (i64,) = sqlx::query_as("SELECT 1")
         .fetch_one(&pool)
-        .await?;
+        .await
+        .expect("Failed to run test query");
 
     println!("Connection test: {}", row.0);
     assert_eq!(row.0, 1);
@@ -538,12 +667,34 @@ async fn main() -> Result<(), sqlx::Error> {
     // Query the routes table
     let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM routes")
         .fetch_one(&pool)
-        .await?;
+        .await
+        .expect("Failed to count routes");
 
     println!("Routes in database: {}", count.0);
-
     println!("All connection tests passed!");
-    Ok(())
+
+    // Build router with database pool as state
+    let app = Router::new()
+        .route("/", get(|| async { "Hello, World!" }))
+        .with_state(pool);
+
+    // Start server
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await
+        .expect("Failed to bind");
+
+    println!("Listening on http://127.0.0.1:3000");
+
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    SqlitePool::connect(&database_url).await
 }
 ```
 
@@ -605,7 +756,10 @@ let routes: Vec<Route> = sqlx::query_as::<_, Route>(
 Add to `src/main.rs`:
 
 ```rust
+use std::env;
+use axum::{routing::get, Router, extract::State};
 use sqlx::{FromRow, sqlite::SqlitePool};
+use tokio::net::TcpListener;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct Route {
@@ -616,25 +770,25 @@ pub struct Route {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-
-    let pool = SqlitePool::connect(&database_url).await?;
+async fn main() {
+    // Create database pool
+    let pool = create_pool().await.expect("Failed to create database pool");
 
     // Insert a test route
     sqlx::query(
         "INSERT OR REPLACE INTO routes (path, name) VALUES ('/test', 'Test Route')"
     )
     .execute(&pool)
-    .await?;
+    .await
+    .expect("Failed to insert test route");
 
     // Query it back as a struct
     let route: Route = sqlx::query_as(
         "SELECT path, name, created_at, updated_at FROM routes WHERE path = '/test'"
     )
     .fetch_one(&pool)
-    .await?;
+    .await
+    .expect("Failed to fetch route");
 
     println!("Found route: {:?}", route);
     assert_eq!(route.path, "/test");
@@ -643,10 +797,33 @@ async fn main() -> Result<(), sqlx::Error> {
     // Clean up
     sqlx::query("DELETE FROM routes WHERE path = '/test'")
         .execute(&pool)
-        .await?;
+        .await
+        .expect("Failed to clean up test route");
 
     println!("FromRow test passed!");
-    Ok(())
+
+    // Build router with database pool as state
+    let app = Router::new()
+        .route("/", get(|| async { "FromRow works!" }))
+        .with_state(pool);
+
+    // Start server
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await
+        .expect("Failed to bind");
+
+    println!("Listening on http://127.0.0.1:3000");
+
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    SqlitePool::connect(&database_url).await
 }
 ```
 
@@ -678,6 +855,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+axum = "0.8"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1", features = ["full"] }
 ```
@@ -696,9 +874,12 @@ CREATE TABLE IF NOT EXISTS routes (
 ### src/main.rs
 
 ```rust
+use std::env;
+use axum::{routing::get, Router, extract::State, response::Json};
 use sqlx::{FromRow, sqlite::SqlitePool};
+use tokio::net::TcpListener;
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone, FromRow, serde::Serialize)]
 pub struct Route {
     pub path: String,
     pub name: String,
@@ -707,44 +888,64 @@ pub struct Route {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
-    // Connect
-    let pool = SqlitePool::connect("sqlite:./data/app.db").await?;
+async fn main() {
+    // Create database pool
+    let pool = create_pool().await.expect("Failed to create database pool");
 
-    // Create
-    sqlx::query("INSERT INTO routes (path, name) VALUES ($1, $2)")
+    // Run migrations on startup
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations");
+
+    // Seed test data
+    seed_data(&pool).await;
+
+    // Build router with database pool as state
+    let app = Router::new()
+        .route("/", get(|| async { "SQLite + Axum Demo" }))
+        .route("/routes", get(list_routes))
+        .with_state(pool);
+
+    // Start server
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await
+        .expect("Failed to bind");
+
+    println!("Listening on http://127.0.0.1:3000");
+
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    SqlitePool::connect(&database_url).await
+}
+
+async fn seed_data(pool: &SqlitePool) {
+    // Insert test route if it doesn't exist
+    sqlx::query("INSERT OR IGNORE INTO routes (path, name) VALUES ($1, $2)")
         .bind("/about")
         .bind("About Page")
-        .execute(&pool)
-        .await?;
-    println!("Created route");
+        .execute(pool)
+        .await
+        .expect("Failed to seed data");
+    println!("Database seeded");
+}
 
-    // Read
-    let route: Route = sqlx::query_as(
-        "SELECT path, name, created_at, updated_at FROM routes WHERE path = $1"
+async fn list_routes(State(pool): State<SqlitePool>) -> Json<Vec<Route>> {
+    let routes: Vec<Route> = sqlx::query_as(
+        "SELECT path, name, created_at, updated_at FROM routes"
     )
-    .bind("/about")
-    .fetch_one(&pool)
-    .await?;
-    println!("Read route: {:?}", route);
+    .fetch_all(&pool)
+    .await
+    .unwrap_or_default();
 
-    // Update
-    sqlx::query("UPDATE routes SET name = $1, updated_at = datetime('now') WHERE path = $2")
-        .bind("About Us")
-        .bind("/about")
-        .execute(&pool)
-        .await?;
-    println!("Updated route");
-
-    // Delete
-    sqlx::query("DELETE FROM routes WHERE path = $1")
-        .bind("/about")
-        .execute(&pool)
-        .await?;
-    println!("Deleted route");
-
-    println!("All CRUD operations successful!");
-    Ok(())
+    Json(routes)
 }
 ```
 
@@ -802,16 +1003,44 @@ services:
 ### Startup Script Pattern
 
 ```rust
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let pool = SqlitePool::connect(&std::env::var("DATABASE_URL")?).await?;
+use std::env;
+use axum::{routing::get, Router};
+use sqlx::sqlite::SqlitePool;
+use tokio::net::TcpListener;
+
+#[tokio::main]
+async fn main() {
+    // Create database pool
+    let pool = create_pool().await.expect("Failed to create database pool");
 
     // Run migrations on startup
     sqlx::migrate!("./migrations")
         .run(&pool)
-        .await?;
+        .await
+        .expect("Failed to run migrations");
 
-    // Start your server...
-    Ok(())
+    // Build router with database pool as state
+    let app = Router::new()
+        .route("/", get(handler))
+        .with_state(pool);
+
+    // Start server
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await
+        .expect("Failed to bind");
+
+    println!("Listening on http://127.0.0.1:3000");
+
+    if let Err(e) = axum::serve(listener, app).await {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn create_pool() -> Result<SqlitePool, sqlx::Error> {
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
+    SqlitePool::connect(&database_url).await
 }
 ```
 
@@ -862,6 +1091,8 @@ Start with local SQLite. Migrate when you have the need.
 
 ### Commands to Remember
 
+**Single-Package Project:**
+
 ```bash
 # Install CLI
 cargo install sqlx-cli --features sqlite
@@ -887,12 +1118,42 @@ sqlite3 data/app.db ".tables"
 sqlite3 data/app.db ".schema routes"
 ```
 
+**Workspace Project:**
+
+```bash
+# Install CLI
+cargo install sqlx-cli --features sqlite
+
+# Create .env file in workspace root ONLY (one time)
+# WARNING: Do NOT create a second .env in member directories
+echo 'DATABASE_URL=sqlite:./data/app.db' > .env
+
+# Create database at workspace root
+mkdir -p data
+sqlx database create
+
+# Create migration (run from member directory)
+cd website && sqlx migrate add <name>
+
+# Run migrations (from member directory or with --manifest-path)
+cd website && sqlx migrate run
+# Or: sqlx migrate run --manifest-path website/Cargo.toml
+
+# Prepare for offline mode (CI/CD) - from workspace root
+cargo sqlx prepare --workspace
+
+# Inspect database (from workspace root)
+sqlite3 data/app.db ".tables"
+sqlite3 data/app.db ".schema routes"
+```
+
 ### Dependencies
 
 ```toml
 [dependencies]
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1", features = ["full"] }
+dotenvy = "0.15"
 ```
 
 ### What You Have Learned
@@ -911,20 +1172,46 @@ You are now ready to build the CRUD pattern with SQLite. Proceed to the CRUD tut
 
 ### "DATABASE_URL must be set"
 
-Create a `.env` file in your project root:
+This error means your Rust code cannot find the `DATABASE_URL` environment variable. There are two common causes:
+
+**1. Missing .env file:** Create a `.env` file:
 
 ```bash
+# Single-package project (in project root)
+echo 'DATABASE_URL=sqlite:./data/app.db' > .env
+
+# Workspace project (in workspace root ONLY - do NOT create in member directories)
 echo 'DATABASE_URL=sqlite:./data/app.db' > .env
 ```
 
-The `sqlx` CLI and your Rust code will read from this file automatically.
+**2. Missing dotenvy:** Your Rust code needs to load the `.env` file. The `sqlx-cli` tool reads `.env` automatically, but your application does not. Add `dotenvy` to your dependencies and call `dotenv().ok()` at the start of `main()`:
+
+```rust
+use dotenvy::dotenv;
+
+#[tokio::main]
+async fn main() {
+    // Load .env file (if present)
+    dotenv().ok();
+
+    // Now env::var("DATABASE_URL") will work
+    let pool = create_pool().await.expect("Failed to create database pool");
+    // ...
+}
+```
+
+> **If you have TWO .env files:** Delete the one in the member directory (e.g., `website/.env`). Keep only the one at the workspace root.
 
 ### "no such table: routes"
 
 Run migrations:
 
 ```bash
+# Single-package project
 sqlx migrate run
+
+# Workspace project (from member directory)
+cd website && sqlx migrate run
 ```
 
 ### "database is locked"
@@ -954,7 +1241,49 @@ cargo build
 Generate offline data locally:
 
 ```bash
+# Single-package project
 cargo sqlx prepare
+
+# Workspace project
+cargo sqlx prepare --workspace
 ```
 
 Commit the `.sqlx/` directory. CI will use these files instead of a live database.
+
+---
+
+## IDE Setup: JetBrains (RustRover, IntelliJ)
+
+JetBrains IDEs may show SQL errors like "Unable to resolve table 'routes'" in your query strings. This is because the IDE doesn't know about your SQLite database. The code compiles and runs correctly - this is purely an IDE issue.
+
+### Connect RustRover to Your Database
+
+1. Open **View → Tool Windows → Database**
+2. Click **+** → **Data Source** → **SQLite**
+3. In the **File** field, enter the full path to your database:
+
+**Single-package project:**
+```
+/path/to/your-project/data/app.db
+```
+
+**Workspace project:**
+```
+/path/to/workspace-root/data/app.db
+```
+
+4. Click **Test Connection** to verify
+5. Click **OK**
+
+The IDE will now recognize your tables and the red squiggles will disappear.
+
+### Alternative: Disable SQL Inspection
+
+If you prefer not to configure the database connection:
+
+1. Open **Settings → Editor → Inspections**
+2. Search for "SQL"
+3. Uncheck **SQL → Unresolved reference**
+4. Click **OK**
+
+This hides the warnings without affecting your code.

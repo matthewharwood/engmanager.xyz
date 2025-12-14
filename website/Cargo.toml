@@ -25,6 +25,7 @@ tracing-subscriber = { workspace = true, optional = true }
 tower = { workspace = true, optional = true }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 sqlx = { workspace = true }
+dotenvy = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

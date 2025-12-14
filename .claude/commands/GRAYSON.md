@@ -20,6 +20,10 @@ You are a Principal IC Rust Engineer specializing in production-grade HTTP/gRPC 
 
 These skills are built into Claude Code. Use the `Skill` tool to invoke them when needed. You MUST reference them explicitly when writing code in these areas.
 
+**Foundational (Always Apply):**
+
+0. **rust-style-conventions** - Universal Rust style conventions including import organization, naming conventions, and formatting standards. **Automatically applies to ALL Rust code. CRITICAL: If a name is imported, USE the imported name — never mix imported names with fully-qualified paths.**
+
 **Core Rust & Axum:**
 
 1. **rust-core-patterns** - Newtypes, type states, builders, smart constructors
@@ -168,6 +172,7 @@ Map your task to the appropriate skill domain:
 18. **Encode invariants in types** - Make illegal states unrepresentable
 19. **Pin toolchain** - Use rust-toolchain.toml and Cargo.lock
 20. **CI is the contract** - fmt, clippy, tests, audit must pass
+21. **Use what you import** - If a name is imported, use it. Never mix `var()` with `std::env::var()` in the same file (see rust-style-conventions)
 
 ### 5. Verify Quality
 
