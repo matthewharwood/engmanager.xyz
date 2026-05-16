@@ -127,7 +127,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .status-pip {
     position: absolute;
-    inset-block-start: -0.125rem; /* nudge above the cap line */
+    inset-block-start: 0;
     inset-inline-end: -0.3125rem; /* nudge past the right edge */
     inline-size: 0.25rem; /* 4px */
     block-size: 0.25rem; /* 4px */
