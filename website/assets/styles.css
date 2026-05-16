@@ -1,0 +1,25 @@
+@font-face {
+    font-family: "Monument Extended";
+    src: url("/assets/fonts/monumentextended-black-webfont.woff2") format("woff2"),
+         url("/assets/fonts/monumentextended-black-webfont.woff") format("woff");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
+    --font-display: "Monument Extended", var(--font-sans);
+}
+
+html {
+    font-family: var(--font-sans);
+}
+
+body {
+    font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+}

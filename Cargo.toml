@@ -5,6 +5,7 @@ resolver = "3"
 [workspace.dependencies]
 axum = "0.8.7"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "net"] }
+tower-http = { version = "0.6", features = ["fs"] }
 
 # eng-markup proc-macros + eng-domain runtime types, pulled from auteur-rs.
 # eng-domain MUST be a direct dep of any crate that uses view!/html!, because
