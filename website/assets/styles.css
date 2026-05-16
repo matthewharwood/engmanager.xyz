@@ -80,6 +80,16 @@ h1, h2, h3, h4, h5, h6 {
     white-space: pre;
 }
 
+.resume-avatar-row {
+    margin-block-end: 0.75rem;
+}
+
+.resume-avatar {
+    block-size: 3rem; /* 48px @ 16px root; height-only, width auto-derives. */
+    inline-size: auto;
+    display: block;
+}
+
 .resume-heading {
     display: flex;
     align-items: center;

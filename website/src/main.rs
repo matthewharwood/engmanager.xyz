@@ -20,6 +20,12 @@ const OPEN_PROPS_HREF: &str = "https://unpkg.com/open-props@1.7.23/open-props.mi
 const GOOGLE_FONTS_HREF: &str =
     "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap";
 
+// Avatar served via Cloudflare Images. Using the first-party
+// `engmanager.xyz/cdn-cgi/imagedelivery/...` path (Cloudflare proxies this
+// transparently) rather than the raw `imagedelivery.net` host so the URL
+// looks first-party.
+const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
+
 // Embed all static assets into the binary at compile time. Render (and most
 // platform-as-a-service runtimes) don't reliably preserve the source tree at
 // runtime, so a ServeDir pointing at `website/assets/` 404s in production.
@@ -81,6 +87,12 @@ impl Component for EngResume {
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
         view! {
             <section class="resume" aria-label="About Matthew Harwood">
+                <div class="resume-avatar-row">
+                    <img class="resume-avatar"
+                         src=AVATAR_SRC
+                         alt="Matthew Harwood"
+                         height="48" />
+                </div>
                 <div class="resume-line resume-heading">"MATTHEW HARWOOD"</div>
                 <div class="resume-line resume-sep">"~~~"</div>
                 <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
