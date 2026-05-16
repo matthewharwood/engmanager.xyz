@@ -5,7 +5,7 @@ A minimal Axum site that renders a `hello-world` component via
 
 ## Stack
 
-- **Rust** (2024 edition)
+- **Rust nightly** (pinned via `rust-toolchain.toml` — required by `eng-markup`)
 - **Axum 0.8** + **Tokio**
 - **eng-markup** — JSX-like `view!` proc-macro for HTML
 - **eng-domain** — `HtmlFragment`, `Component`, `RenderValue` runtime types
@@ -48,6 +48,11 @@ engmanager.xyz/
 - Start command: `./target/release/website`
 - Render auto-sets `PORT`, which flips the bind to `0.0.0.0`.
 - No env vars need to be configured.
+
+`rust-toolchain.toml` pins the nightly toolchain required by `eng-markup`/`eng-domain`
+(their workspace declares `rust-version = "1.97"`, which only exists as nightly today).
+Render's build runner respects `rust-toolchain.toml` and `rustup` will fetch the
+pinned nightly on first build.
 
 `eng-markup` / `eng-domain` are pulled as git dependencies from the public
 [`eng-manager-xyz/auteur-rs`](https://github.com/eng-manager-xyz/auteur-rs)
