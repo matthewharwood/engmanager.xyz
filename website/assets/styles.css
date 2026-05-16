@@ -110,6 +110,39 @@ h1, h2, h3, h4, h5, h6 {
     text-underline-offset: 0.15em;
 }
 
+/*
+ * 4×4px green status pip in the top-right corner of "ONLINE".
+ *
+ * - inline-block span so position: relative establishes a containing block
+ *   for the absolutely-positioned pip.
+ * - Radial gradient with the highlight off-center (top-left light source)
+ *   gives a subtle 3D / spherical look.
+ * - Box shadow: a soft drop shadow below for lift, plus a faint green glow
+ *   to soften the edge against the white page.
+ */
+.status-online {
+    position: relative;
+    display: inline-block;
+}
+
+.status-pip {
+    position: absolute;
+    inset-block-start: -0.125rem; /* nudge above the cap line */
+    inset-inline-end: -0.3125rem; /* nudge past the right edge */
+    inline-size: 0.25rem; /* 4px */
+    block-size: 0.25rem; /* 4px */
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at 30% 30%,
+        #86efac 0%,
+        #22c55e 50%,
+        #15803d 100%
+    );
+    box-shadow:
+        0 0.0625rem 0.125rem rgba(0, 0, 0, 0.25),
+        0 0 0.25rem rgba(34, 197, 94, 0.35);
+}
+
 .resume-link:hover {
     color: #7c3aed;
 }

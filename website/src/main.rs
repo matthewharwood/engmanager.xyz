@@ -91,7 +91,13 @@ impl Component for EngResume {
                 <div class="resume-line resume-sep">"~~~"</div>
                 <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
                 <div class="resume-line">"LOCATION: USA"</div>
-                <div class="resume-line">"STATUS: ONLINE"</div>
+                <div class="resume-line">
+                    "STATUS: "
+                    <span class="status-online">
+                        "ONLINE"
+                        <span class="status-pip" aria-hidden="true"></span>
+                    </span>
+                </div>
                 <div class="resume-line">"FOCUS:"</div>
                 <div class="resume-line">
                     "  - [Engineering Manager]("
