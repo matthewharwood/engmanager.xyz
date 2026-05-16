@@ -28,14 +28,51 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
     match Assets::get(&path) {
         Some(file) => {
             let mime = file.metadata.mimetype();
+            // Assets are embedded into the binary, so their contents only
+            // change on deploy. Cache them aggressively at the edge and in
+            // the browser. `immutable` tells the browser to skip revalidation.
+            let cache_control = "public, max-age=31536000, immutable";
             (
-                [(header::CONTENT_TYPE, mime.to_string())],
+                [
+                    (header::CONTENT_TYPE, mime.to_string()),
+                    (header::CACHE_CONTROL, cache_control.to_string()),
+                ],
                 file.data.into_owned(),
             )
                 .into_response()
         }
         None => StatusCode::NOT_FOUND.into_response(),
     }
+}
+
+// Cache-Control for HTML responses.
+//   max-age=60       → browser caches 1 min (so reload is snappy but fresh-ish)
+//   s-maxage=3600    → Cloudflare caches at edge for 1 hour
+//   stale-while-revalidate=86400 → CF can serve a day-old cached copy while
+//                                  re-fetching in the background
+// Cloudflare still needs a Cache Rule to opt HTML into edge caching, but
+// once enabled it will honor these s-maxage / SWR directives.
+const HTML_CACHE_CONTROL: &str =
+    "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
+
+async fn html_cache_layer(
+    req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> Response {
+    let mut response = next.run(req).await;
+    let is_html = response
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.starts_with("text/html"))
+        .unwrap_or(false);
+    if is_html && !response.headers().contains_key(header::CACHE_CONTROL) {
+        response.headers_mut().insert(
+            header::CACHE_CONTROL,
+            axum::http::HeaderValue::from_static(HTML_CACHE_CONTROL),
+        );
+    }
+    response
 }
 
 #[tokio::main]
@@ -46,7 +83,8 @@ async fn main() {
         .route("/articles/{slug}", get(pages::articles::detail))
         .route("/health", get(|| async { "OK" }))
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
-        .route("/assets/{*path}", get(asset_handler));
+        .route("/assets/{*path}", get(asset_handler))
+        .layer(axum::middleware::from_fn(html_cache_layer));
 
     let addr = resolve_server_address();
     println!("Starting server on http://{addr}");
