@@ -80,16 +80,6 @@ h1, h2, h3, h4, h5, h6 {
     white-space: pre;
 }
 
-.resume-avatar-row {
-    margin-block-end: 0.75rem;
-}
-
-.resume-avatar {
-    block-size: 3rem; /* 48px @ 16px root; height-only, width auto-derives. */
-    inline-size: auto;
-    display: block;
-}
-
 .resume-heading {
     display: flex;
     align-items: center;
@@ -129,9 +119,35 @@ h1, h2, h3, h4, h5, h6 {
     color: #6b7280;
 }
 
+/*
+ * Full viewport height using `dvh` (dynamic viewport height): on iOS/mobile
+ * Safari the value updates as the address bar shows/hides, unlike `vh` which
+ * is frozen to the largest possible height and causes the page to be cut off.
+ */
+html {
+    block-size: 100%;
+}
+
 body {
     /* Page padding so the headline + resume don't touch the viewport edge. */
     padding-block: 2rem;
     padding-inline: 1rem;
+    min-block-size: 100dvh;
+    box-sizing: border-box;
+}
+
+/*
+ * Avatar pinned to the bottom-right of the viewport. inset-inline-end matches
+ * body padding-inline so the avatar's right gutter equals the page's left
+ * gutter ("shared padding with left").
+ */
+.avatar {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    block-size: 3rem;
+    inline-size: auto;
+    display: block;
+    z-index: 10;
 }
 

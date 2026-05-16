@@ -87,12 +87,6 @@ impl Component for EngResume {
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
         view! {
             <section class="resume" aria-label="About Matthew Harwood">
-                <div class="resume-avatar-row">
-                    <img class="resume-avatar"
-                         src=AVATAR_SRC
-                         alt="Matthew Harwood"
-                         height="48" />
-                </div>
                 <div class="resume-line resume-heading">"MATTHEW HARWOOD"</div>
                 <div class="resume-line resume-sep">"~~~"</div>
                 <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
@@ -151,6 +145,10 @@ async fn index() -> Html<String> {
             <body>
                 <EngHeadline />
                 <EngResume />
+                <img class="avatar"
+                     src=AVATAR_SRC
+                     alt="Matthew Harwood"
+                     height="48" />
             </body>
         </html>
     };
