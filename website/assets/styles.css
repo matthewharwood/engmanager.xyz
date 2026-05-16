@@ -28,23 +28,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*
- * Fluid display headline via SVG textLength.
+ * Fluid display headline — "SVG Way" from
+ * https://css-tricks.com/fitting-text-to-a-container/
  *
- * Why SVG: a CSS clamp/cqi approach has to guess the font's width metrics,
- * and any miss either clips the text or pushes a horizontal scrollbar onto
- * the page. With SVG, the viewBox owns the aspect ratio: the SVG element
- * is sized in normal flow (inline-size: 100%, height auto), and the text
- * inside is forced to span exactly the viewBox width via textLength +
- * lengthAdjust="spacingAndGlyphs". Result: text always fills its container,
- * never wraps, never clips, never overflows.
+ * Markup is an SVG containing a <text> at a fixed user-space font-size.
+ * On load (assets/scripts/fit-text.js), after web fonts are ready, JS reads
+ * the text's getBBox() and sets viewBox to those exact bounds. With width:100%
+ * + height:auto, the SVG (and the text inside it) scales perfectly with its
+ * container — never clips, never wraps, never overflows. No glyph distortion.
  *
- * Sizing math:
- *   viewBox is 1200 x 144 (aspect ratio 8.333:1, chosen close to Monument
- *   Extended Black's natural width for "ENG MANAGER" at 144px so glyph
- *   stretching is minimal).
- *   At inline-size: 100%, block-size = inline-size * 144 / 1200.
- *   To cap block-size at 9rem (144px), cap inline-size at 9rem * 1200/144
- *   = 75rem. Beyond that container width, the SVG centers itself.
+ * The initial viewBox (1200x200) is a generous fallback so things look sane
+ * before the JS runs / if it fails. JS also overrides max-inline-size to cap
+ * the visible height at 9rem (144px).
  */
 .fluid-display-wrap {
     inline-size: 100%;
@@ -58,15 +53,10 @@ h1, h2, h3, h4, h5, h6 {
 .fluid-display-svg {
     display: block;
     inline-size: 100%;
-    max-inline-size: 75rem;
+    /* Pre-JS fallback cap (1200/200 = 6:1 → 9rem * 6 = 54rem). JS replaces this
+     * with the real aspect ratio once it has measured the text. */
+    max-inline-size: 54rem;
     block-size: auto;
     margin-inline: auto;
-}
-
-.fluid-display-svg text {
-    font-family: var(--font-display);
-    font-weight: 900;
-    font-size: 144px;
-    fill: currentColor;
 }
 

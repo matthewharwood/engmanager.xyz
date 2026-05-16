@@ -31,16 +31,16 @@ impl Component for EngHeadline {
             <div class="fluid-display-wrap">
                 <h1 class="fluid-display">
                     <svg class="fluid-display-svg"
-                         viewBox="0 0 1200 144"
+                         viewBox="0 0 1200 200"
                          preserveAspectRatio="xMidYMid meet"
                          role="img"
                          aria-label="ENG MANAGER">
-                        <text x="600"
-                              y="72"
-                              text-anchor="middle"
-                              dominant-baseline="central"
-                              textLength="1200"
-                              lengthAdjust="spacingAndGlyphs">
+                        <text x="0"
+                              y="160"
+                              font-family="Monument Extended, sans-serif"
+                              font-weight="900"
+                              font-size="144"
+                              fill="currentColor">
                             "ENG MANAGER"
                         </text>
                     </svg>
@@ -61,6 +61,7 @@ async fn index() -> Html<String> {
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href="/assets/styles.css" />
+                <script src="/assets/scripts/fit-text.js" defer></script>
             </head>
             <body>
                 <EngHeadline />
