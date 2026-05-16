@@ -23,3 +23,29 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
 }
+
+/*
+ * Fluid display headline.
+ *
+ * The wrapper establishes an inline-size container; the headline sizes itself
+ * in `cqi` units (1cqi = 1% of the container's inline-size), so it scales
+ * proportionally with whatever container it sits in — viewport today, sidebar
+ * tomorrow. `white-space: nowrap` guarantees no carriage return; the `min()`
+ * with `9rem` caps the size at 144px (@ 16px root).
+ *
+ * The 12cqi factor is calibrated so "ENG MANAGER" in Monument Extended Black
+ * (~7.5em of glyph width) fits within the container with a small safety margin.
+ * Adjust up to grow / down to shrink if the font's metrics call for it.
+ */
+.fluid-display-wrap {
+    container-type: inline-size;
+    inline-size: 100%;
+}
+
+.fluid-display {
+    font-size: min(12cqi, 9rem);
+    line-height: 1;
+    white-space: nowrap;
+    margin: 0;
+}
+

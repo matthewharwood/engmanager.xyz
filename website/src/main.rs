@@ -20,14 +20,18 @@ const OPEN_PROPS_HREF: &str = "https://unpkg.com/open-props@1.7.23/open-props.mi
 const GOOGLE_FONTS_HREF: &str =
     "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap";
 
-struct HelloWorld;
-struct HelloWorldProps;
+struct EngHeadline;
+struct EngHeadlineProps;
 
-impl Component for HelloWorld {
-    type Props = HelloWorldProps;
+impl Component for EngHeadline {
+    type Props = EngHeadlineProps;
 
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
-        view! { <h1>"hello-world"</h1> }
+        view! {
+            <div class="fluid-display-wrap">
+                <h1 class="fluid-display">"ENG MANAGER"</h1>
+            </div>
+        }
     }
 }
 
@@ -44,7 +48,7 @@ async fn index() -> Html<String> {
                 <link rel="stylesheet" href="/assets/styles.css" />
             </head>
             <body>
-                <HelloWorld />
+                <EngHeadline />
             </body>
         </html>
     };
