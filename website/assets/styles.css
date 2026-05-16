@@ -167,37 +167,6 @@ body {
     padding-inline: 1rem;
     min-block-size: 100dvh;
     box-sizing: border-box;
-
-    /* Warm-orange-to-pale-white skybox.
-     *
-     * Layers (top → bottom in the stack, so listed top-first):
-     *   1. SVG <feTurbulence> noise, blended via `overlay` for film grain.
-     *   2. Radial sun glow in the upper-right.
-     *   3. Linear gradient — burnt orange at top, cream at bottom.
-     *
-     * `background-attachment: fixed` keeps the whole composite locked to the
-     * viewport, so as you scroll the page content moves but the sky stays
-     * still — that's the "skybox" effect. */
-    background:
-        url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' stitchTiles='stitch' seed='3'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-        radial-gradient(
-            ellipse 55% 45% at 85% 75%,
-            rgba(255, 205, 115, 0.5),
-            transparent 60%
-        ),
-        linear-gradient(
-            180deg,
-            #fdf6ec 0%,
-            #fae5cf 25%,
-            #f5c39a 48%,
-            #ee9c5e 68%,
-            #de6f2c 85%,
-            #c4441e 100%
-        );
-    background-size: 220px 220px, 100% 100%, 100% 100%;
-    background-repeat: repeat, no-repeat, no-repeat;
-    background-blend-mode: overlay, normal, normal;
-    background-attachment: fixed;
 }
 
 /*
