@@ -18,6 +18,9 @@ html {
 
 body {
     font-family: var(--font-sans);
+    margin: 0;
+    /* Belt + suspenders: never let any child cause a horizontal scrollbar. */
+    overflow-x: clip;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -25,27 +28,45 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*
- * Fluid display headline.
+ * Fluid display headline via SVG textLength.
  *
- * The wrapper establishes an inline-size container; the headline sizes itself
- * in `cqi` units (1cqi = 1% of the container's inline-size), so it scales
- * proportionally with whatever container it sits in — viewport today, sidebar
- * tomorrow. `white-space: nowrap` guarantees no carriage return; the `min()`
- * with `9rem` caps the size at 144px (@ 16px root).
+ * Why SVG: a CSS clamp/cqi approach has to guess the font's width metrics,
+ * and any miss either clips the text or pushes a horizontal scrollbar onto
+ * the page. With SVG, the viewBox owns the aspect ratio: the SVG element
+ * is sized in normal flow (inline-size: 100%, height auto), and the text
+ * inside is forced to span exactly the viewBox width via textLength +
+ * lengthAdjust="spacingAndGlyphs". Result: text always fills its container,
+ * never wraps, never clips, never overflows.
  *
- * The 12cqi factor is calibrated so "ENG MANAGER" in Monument Extended Black
- * (~7.5em of glyph width) fits within the container with a small safety margin.
- * Adjust up to grow / down to shrink if the font's metrics call for it.
+ * Sizing math:
+ *   viewBox is 1200 x 144 (aspect ratio 8.333:1, chosen close to Monument
+ *   Extended Black's natural width for "ENG MANAGER" at 144px so glyph
+ *   stretching is minimal).
+ *   At inline-size: 100%, block-size = inline-size * 144 / 1200.
+ *   To cap block-size at 9rem (144px), cap inline-size at 9rem * 1200/144
+ *   = 75rem. Beyond that container width, the SVG centers itself.
  */
 .fluid-display-wrap {
-    container-type: inline-size;
     inline-size: 100%;
 }
 
 .fluid-display {
-    font-size: min(12cqi, 9rem);
-    line-height: 1;
-    white-space: nowrap;
     margin: 0;
+    line-height: 0;
+}
+
+.fluid-display-svg {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 75rem;
+    block-size: auto;
+    margin-inline: auto;
+}
+
+.fluid-display-svg text {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 144px;
+    fill: currentColor;
 }
 

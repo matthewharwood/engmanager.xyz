@@ -29,7 +29,22 @@ impl Component for EngHeadline {
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
         view! {
             <div class="fluid-display-wrap">
-                <h1 class="fluid-display">"ENG MANAGER"</h1>
+                <h1 class="fluid-display">
+                    <svg class="fluid-display-svg"
+                         viewBox="0 0 1200 144"
+                         preserveAspectRatio="xMidYMid meet"
+                         role="img"
+                         aria-label="ENG MANAGER">
+                        <text x="600"
+                              y="72"
+                              text-anchor="middle"
+                              dominant-baseline="central"
+                              textLength="1200"
+                              lengthAdjust="spacingAndGlyphs">
+                            "ENG MANAGER"
+                        </text>
+                    </svg>
+                </h1>
             </div>
         }
     }
