@@ -2,23 +2,45 @@ use std::env::var;
 use std::net::SocketAddr;
 
 use axum::Router;
-use axum::response::Html;
+use axum::extract::Path;
+use axum::http::{StatusCode, header};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use eng_domain::{Component, HtmlFragment};
 use eng_markup::{html, view};
+use rust_embed::RustEmbed;
 use tokio::net::TcpListener;
-use tower_http::services::ServeDir;
 
 const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;
 const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0];
 const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
 
-const ASSETS_DIR: &str = "website/assets";
-
 const OPEN_PROPS_HREF: &str = "https://unpkg.com/open-props@1.7.23/open-props.min.css";
 const GOOGLE_FONTS_HREF: &str =
     "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap";
+
+// Embed all static assets into the binary at compile time. Render (and most
+// platform-as-a-service runtimes) don't reliably preserve the source tree at
+// runtime, so a ServeDir pointing at `website/assets/` 404s in production.
+// Embedding makes the binary self-contained and CWD-independent.
+#[derive(RustEmbed)]
+#[folder = "assets/"]
+struct Assets;
+
+async fn asset_handler(Path(path): Path<String>) -> Response {
+    match Assets::get(&path) {
+        Some(file) => {
+            let mime = file.metadata.mimetype();
+            (
+                [(header::CONTENT_TYPE, mime.to_string())],
+                file.data.into_owned(),
+            )
+                .into_response()
+        }
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
 
 struct EngHeadline;
 struct EngHeadlineProps;
@@ -50,6 +72,57 @@ impl Component for EngHeadline {
     }
 }
 
+struct EngResume;
+struct EngResumeProps;
+
+impl Component for EngResume {
+    type Props = EngResumeProps;
+
+    fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
+        view! {
+            <section class="resume" aria-label="About Matthew Harwood">
+                <div class="resume-line resume-heading">"MATTHEW HARWOOD"</div>
+                <div class="resume-line resume-sep">"~~~"</div>
+                <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
+                <div class="resume-line">"LOCATION: USA"</div>
+                <div class="resume-line">"STATUS: ONLINE"</div>
+                <div class="resume-line">"FOCUS:"</div>
+                <div class="resume-line">
+                    "  - [Engineering Manager]("
+                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                        "https://www.linkedin.com/in/matthewcharwood"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">"  - [Frontend Platform / Design Systems / Tooling]"</div>
+                <div class="resume-line resume-sep">"~~~"</div>
+                <div class="resume-line">"PROJECTS:"</div>
+                <div class="resume-line">
+                    "  - [engmanager.xyz]("
+                    <a class="resume-link" href="https://engmanager.xyz">
+                        "https://engmanager.xyz"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">
+                    "  - [github/matthewharwood]("
+                    <a class="resume-link" href="https://github.com/matthewharwood">
+                        "https://github.com/matthewharwood"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">
+                    "  - [linkedin/matthewcharwood]("
+                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                        "https://www.linkedin.com/in/matthewcharwood"
+                    </a>
+                    ")"
+                </div>
+            </section>
+        }
+    }
+}
+
 async fn index() -> Html<String> {
     let page = html! {
         <!DOCTYPE html>
@@ -65,6 +138,7 @@ async fn index() -> Html<String> {
             </head>
             <body>
                 <EngHeadline />
+                <EngResume />
             </body>
         </html>
     };
@@ -76,7 +150,8 @@ async fn main() {
     let app = Router::new()
         .route("/", get(index))
         .route("/health", get(|| async { "OK" }))
-        .nest_service("/assets", ServeDir::new(ASSETS_DIR));
+        .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
+        .route("/assets/{*path}", get(asset_handler));
 
     let addr = resolve_server_address();
     println!("Starting server on http://{addr}");

@@ -57,6 +57,71 @@ h1, h2, h3, h4, h5, h6 {
      * with the real aspect ratio once it has measured the text. */
     max-inline-size: 54rem;
     block-size: auto;
-    margin-inline: auto;
+}
+
+/*
+ * Pierre-style monospace resume block.
+ *
+ * 12px monospace text expressed in rem (0.75rem @ 16px root). Each line is
+ * its own div with white-space: pre so leading spaces in "  - [...]" survive.
+ * Markdown-syntax (`[text](url)`) is rendered as literal text with the URL
+ * portion wrapped in an <a> so it's clickable.
+ */
+.resume {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #111;
+    margin-block-start: 2rem;
+}
+
+.resume-line {
+    white-space: pre;
+}
+
+.resume-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+/* Blinking block cursor after the heading text. */
+.resume-heading::after {
+    content: "";
+    display: inline-block;
+    inline-size: 0.55em;
+    block-size: 1em;
+    background: currentColor;
+    animation: resume-cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes resume-cursor-blink {
+    to { background: transparent; }
+}
+
+.resume-sep {
+    margin-block: 0.75rem;
+}
+
+.resume-link {
+    color: #5b21b6;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.resume-link:hover {
+    color: #7c3aed;
+}
+
+.resume-strike {
+    text-decoration: line-through;
+    color: #6b7280;
+}
+
+body {
+    /* Page padding so the headline + resume don't touch the viewport edge. */
+    padding-block: 2rem;
+    padding-inline: 1rem;
 }
 
