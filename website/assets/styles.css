@@ -184,3 +184,123 @@ body {
     z-index: 10;
 }
 
+/* =================================================================
+ * Articles (monospace-only for now)
+ * ================================================================= */
+
+.articles-page {
+    color: #111;
+}
+
+.articles-index,
+.article {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+    max-inline-size: 50rem;
+}
+
+.article-nav {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.75rem;
+    margin-block-end: 1.5rem;
+}
+
+.article-nav-link {
+    color: #5b21b6;
+    text-decoration: none;
+}
+
+.article-nav-link:hover {
+    text-decoration: underline;
+}
+
+.articles-index-title,
+.article-title {
+    font-family: inherit;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.article-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.article-entry {
+    padding-block: 0.75rem;
+    border-block-end: 1px solid #e5e7eb;
+}
+
+.article-entry:last-child {
+    border-block-end: none;
+}
+
+.article-entry-title {
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: block;
+}
+
+.article-entry-title:hover {
+    text-decoration: underline;
+}
+
+.article-entry-date,
+.article-date {
+    color: #6b7280;
+    font-size: 0.75rem;
+    display: block;
+    margin-block-start: 0.25rem;
+}
+
+.article-entry-summary {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin: 0.5rem 0 0;
+    color: #374151;
+}
+
+.article p {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    margin-block: 1rem;
+}
+
+.article ul,
+.article ol {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    padding-inline-start: 1.5rem;
+}
+
+.article h2 {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-block-start: 2rem;
+    margin-block-end: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.article a {
+    color: #5b21b6;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.article-note {
+    font-size: 0.75rem;
+    color: #b45309;
+    background: #fef3c7;
+    padding: 0.5rem 0.75rem;
+    border-inline-start: 3px solid #b45309;
+}
+

@@ -1,0 +1,125 @@
+use axum::response::Html;
+use eng_domain::{Component, HtmlFragment};
+use eng_markup::{html, view};
+
+use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+
+const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
+
+pub struct EngHeadline;
+pub struct EngHeadlineProps;
+
+impl Component for EngHeadline {
+    type Props = EngHeadlineProps;
+
+    fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
+        view! {
+            <div class="fluid-display-wrap">
+                <h1 class="fluid-display">
+                    <svg class="fluid-display-svg"
+                         viewBox="0 0 1200 200"
+                         preserveAspectRatio="xMidYMid meet"
+                         role="img"
+                         aria-label="ENG MANAGER">
+                        <text x="0"
+                              y="160"
+                              font-family="Monument Extended, sans-serif"
+                              font-weight="900"
+                              font-size="144"
+                              fill="currentColor">
+                            "ENG MANAGER"
+                        </text>
+                    </svg>
+                </h1>
+            </div>
+        }
+    }
+}
+
+pub struct EngResume;
+pub struct EngResumeProps;
+
+impl Component for EngResume {
+    type Props = EngResumeProps;
+
+    fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
+        view! {
+            <section class="resume" aria-label="About Matthew Harwood">
+                <div class="resume-line resume-heading">"MATTHEW HARWOOD"</div>
+                <div class="resume-line resume-sep">"~~~"</div>
+                <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
+                <div class="resume-line">"LOCATION: USA"</div>
+                <div class="resume-line">
+                    "STATUS: "
+                    <span class="status-online">
+                        "ONLINE"
+                        <span class="status-pip" aria-hidden="true"></span>
+                    </span>
+                </div>
+                <div class="resume-line">"FOCUS:"</div>
+                <div class="resume-line">
+                    "  - [Engineering Manager]("
+                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                        "https://www.linkedin.com/in/matthewcharwood"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">"  - [Frontend Platform / Design Systems / Tooling]"</div>
+                <div class="resume-line resume-sep">"~~~"</div>
+                <div class="resume-line">"PROJECTS:"</div>
+                <div class="resume-line">
+                    "  - [engmanager.xyz]("
+                    <a class="resume-link" href="https://engmanager.xyz">
+                        "https://engmanager.xyz"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">
+                    "  - [github/matthewharwood]("
+                    <a class="resume-link" href="https://github.com/matthewharwood">
+                        "https://github.com/matthewharwood"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">
+                    "  - [linkedin/matthewcharwood]("
+                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                        "https://www.linkedin.com/in/matthewcharwood"
+                    </a>
+                    ")"
+                </div>
+                <div class="resume-line">
+                    "  - [articles]("
+                    <a class="resume-link" href="/articles/">"/articles/"</a>
+                    ")"
+                </div>
+            </section>
+        }
+    }
+}
+
+pub async fn index() -> Html<String> {
+    let page = html! {
+        <!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>"engmanager.xyz"</title>
+                <link rel="stylesheet" href=OPEN_PROPS_HREF />
+                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
+                <link rel="stylesheet" href="/assets/styles.css" />
+                <script src="/assets/scripts/fit-text.js" defer></script>
+            </head>
+            <body>
+                <EngHeadline />
+                <EngResume />
+                <img class="avatar"
+                     src=AVATAR_SRC
+                     alt="Matthew Harwood"
+                     height="48" />
+            </body>
+        </html>
+    };
+    Html(page.into_string())
+}
