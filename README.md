@@ -1,160 +1,75 @@
 # engmanager.xyz
 
-A production-quality engineering management website built with Rust, Axum, and Maud.
+A minimal Axum site that renders a `hello-world` component via
+[`eng-markup`](https://github.com/eng-manager-xyz/auteur-rs) `view!` macros.
 
-## Tech Stack
+## Stack
 
-- **Rust** - Systems programming language
-- **Axum 0.8** - Async web framework
-- **Maud** - Compile-time HTML templating
-- **SQLite + SQLx** - Database with compile-time query checking
-- **Tokio** - Async runtime
+- **Rust** (2024 edition)
+- **Axum 0.8** + **Tokio**
+- **eng-markup** — JSX-like `view!` proc-macro for HTML
+- **eng-domain** — `HtmlFragment`, `Component`, `RenderValue` runtime types
 
-## Prerequisites
-
-- [Rust](https://rustup.rs/) (latest stable)
-- [SQLite](https://sqlite.org/) CLI
-- [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli)
-
-## Getting Started
-
-### 1. Install Rust
+## Run locally
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+cargo run --release
 ```
 
-### 2. Install SQLite CLI
+Visit <http://127.0.0.1:3000>. Routes:
+
+- `GET /` → `<h1>hello-world</h1>` rendered via `view! { <HelloWorld /> }`
+- `GET /health` → `OK`
+
+That's it — no database, no env vars required, no migrations.
+
+### Optional: pick a port
 
 ```bash
-# macOS
-brew install sqlite
-
-# Verify
-sqlite3 --version
+PORT=8080 cargo run --release
 ```
 
-### 3. Install sqlx-cli
+When `PORT` is set, the server binds `0.0.0.0:$PORT` (production mode).
+Without it, it binds `127.0.0.1:3000` (dev mode).
 
-```bash
-cargo install sqlx-cli --features sqlite
-```
-
-This takes a few minutes (compiling from source).
-
-Verify:
-
-```bash
-sqlx --version
-```
-
-### 4. Set Up the Database
-
-```bash
-# Set the database URL
-export DATABASE_URL="sqlite:./data/app.db"
-
-# Create the data directory
-mkdir -p data
-
-# Create the database file
-sqlx database create
-
-# Run migrations
-sqlx migrate run
-```
-
-### 5. Run the Server
-
-```bash
-cd website
-cargo run
-```
-
-Visit http://127.0.0.1:3000
-
-## Project Structure
+## Project layout
 
 ```
 engmanager.xyz/
-├── website/                 # Main application
-│   ├── src/
-│   │   ├── main.rs         # Server setup, routes
-│   │   ├── core/           # Shared types and operations
-│   │   ├── features/       # Feature modules (vertical slices)
-│   │   └── pages/          # Route handlers
-│   └── assets/             # Static files (CSS, JS, images)
-├── migrations/             # SQLx database migrations
-├── data/                   # SQLite database (gitignored)
-└── _docs/                  # Internal documentation
+├── Cargo.toml             # workspace + shared deps
+└── website/
+    ├── Cargo.toml         # binary crate
+    └── src/main.rs        # router, HelloWorld component, server
 ```
 
-## Database Commands
+## Deployment (Render.com)
 
-```bash
-# Create a new migration
-sqlx migrate add <migration_name>
+- Build command: `cargo build --release`
+- Start command: `./target/release/website`
+- Render auto-sets `PORT`, which flips the bind to `0.0.0.0`.
+- No env vars need to be configured.
 
-# Run pending migrations
-sqlx migrate run
+`eng-markup` / `eng-domain` are pulled as git dependencies from the public
+[`eng-manager-xyz/auteur-rs`](https://github.com/eng-manager-xyz/auteur-rs)
+repo (pinned to a specific commit in `Cargo.toml`), so the build needs
+outbound HTTPS to GitHub — which Render has by default.
 
-# Check migration status
-sqlx migrate info
+## Adding a component
 
-# Inspect database
-sqlite3 data/app.db ".tables"
-sqlite3 data/app.db ".schema <table_name>"
+```rust
+use eng_domain::{Component, HtmlFragment};
+use eng_markup::view;
+
+struct Greeting;
+struct GreetingProps { name: String }
+
+impl Component for Greeting {
+    type Props = GreetingProps;
+    fn render(props: Self::Props, _: HtmlFragment) -> HtmlFragment {
+        view! { <p>"Hello, " {props.name} "!"</p> }
+    }
+}
+
+// Then in a handler:
+let markup = view! { <Greeting name={"world".to_string()} /> };
 ```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | SQLite connection string | Required |
-| `PORT` | Server port | `3000` |
-
-## Development Tips
-
-### Compile-Time Query Checking
-
-SQLx verifies your SQL queries at compile time. If you change the schema:
-
-1. Run migrations: `sqlx migrate run`
-2. Rebuild: `cargo build`
-
-### Offline Mode (CI/CD)
-
-Generate query metadata for builds without database access:
-
-```bash
-cargo sqlx prepare
-```
-
-Commit the `.sqlx/` directory. CI will use these files instead of a live database.
-
-### Common Issues
-
-**"DATABASE_URL must be set"**
-
-```bash
-export DATABASE_URL="sqlite:./data/app.db"
-```
-
-**"no such table"**
-
-```bash
-sqlx migrate run
-```
-
-**"database is locked"**
-
-SQLite allows one writer at a time. Close other connections (sqlite3 CLI, DB browsers).
-
-## Architecture
-
-See `_docs/ARCHITECTURE.md` for traffic flow and deployment details.
-
-The application follows a feature-based architecture:
-- **Core**: Shared types, persistence, render traits
-- **Features**: Vertical slices (header, hero, admin)
-- **Pages**: Route handlers that compose features
