@@ -181,28 +181,23 @@ body {
     background:
         url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' stitchTiles='stitch' seed='3'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
         radial-gradient(
-            ellipse 55% 45% at 85% 35%,
+            ellipse 55% 45% at 85% 75%,
             rgba(255, 205, 115, 0.5),
             transparent 60%
         ),
         linear-gradient(
             180deg,
-            #c4441e 0%,
-            #de6f2c 15%,
-            #ee9c5e 32%,
-            #f5c39a 52%,
-            #fae5cf 75%,
-            #fdf6ec 100%
+            #fdf6ec 0%,
+            #fae5cf 25%,
+            #f5c39a 48%,
+            #ee9c5e 68%,
+            #de6f2c 85%,
+            #c4441e 100%
         );
     background-size: 220px 220px, 100% 100%, 100% 100%;
     background-repeat: repeat, no-repeat, no-repeat;
     background-blend-mode: overlay, normal, normal;
     background-attachment: fixed;
-}
-
-/* Headline reads as cream "Prologue"-style text on the warm top of the sky. */
-.fluid-display {
-    color: #fdf6ec;
 }
 
 /*
