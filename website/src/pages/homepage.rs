@@ -120,7 +120,7 @@ pub async fn index() -> Html<String> {
                                   font-weight="900"
                                   font-size="144"
                                   fill="currentColor">
-                                { a.title }
+                                { a.title.to_uppercase() }
                             </text>
                         </svg>
                     </div>
