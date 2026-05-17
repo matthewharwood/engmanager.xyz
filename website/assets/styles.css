@@ -41,9 +41,9 @@
     --ctp-mantle:    #e6e9ef;
     --ctp-crust:     #dce0e8;
 
-    /* Theme accent: change this one line to repaint the headline, focus
-     * rings, and any other "accent" surface. Defaults to Catppuccin Mauve. */
-    --accent: var(--ctp-mauve);
+    /* Theme accent: change this one line to repaint the headline, article
+     * titles, and any other "accent" surface. */
+    --accent: var(--ctp-maroon);
 }
 
 html {
@@ -251,7 +251,7 @@ body {
  */
 .article-fluid-link {
     display: block;
-    color: inherit;
+    color: var(--accent);
     text-decoration: none;
 }
 
@@ -432,7 +432,7 @@ body {
     font-size: clamp(1.875rem, 1.2rem + 2.4vw, 3rem);
     line-height: 1.1;
     letter-spacing: -0.015em;
-    color: var(--ctp-text);
+    color: var(--accent);
     margin: 1rem 0 0.75rem;
     text-transform: uppercase;
 }
