@@ -179,12 +179,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .resume-link {
     color: var(--ctp-mauve);
-    text-decoration: underline;
+    text-decoration: none;
     text-underline-offset: 0.15em;
 }
 
-.resume-link:hover {
+.resume-link:hover,
+.resume-link:focus-visible {
     color: var(--ctp-blue);
+    text-decoration: underline;
 }
 
 .resume-strike {
@@ -262,6 +264,15 @@ body {
     text-decoration: underline;
     text-decoration-thickness: 0.06em;
     text-underline-offset: 0.06em;
+}
+
+/* Same hover treatment for the HTML fallback (shown when SVG would
+ * render below 16px). */
+.article-fluid-link:hover .article-fluid-fallback,
+.article-fluid-link:focus-visible .article-fluid-fallback {
+    text-decoration: underline;
+    text-underline-offset: 0.1em;
+    text-decoration-thickness: 0.05em;
 }
 
 /*
