@@ -27,7 +27,7 @@ impl Component for EngHeadline {
                               font-weight="900"
                               font-size="144"
                               fill="currentColor">
-                            "ENG MANAGERz"
+                            "ENG MANAGER"
                         </text>
                     </svg>
                 </h1>
