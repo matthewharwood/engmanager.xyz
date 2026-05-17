@@ -388,8 +388,7 @@ body {
     letter-spacing: -0.015em;
     color: var(--ctp-text);
     margin: 1rem 0 0.75rem;
-    /* Override the older uppercase rule from .articles-index-title family. */
-    text-transform: none;
+    text-transform: uppercase;
 }
 
 .article-list {

@@ -99,7 +99,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
     }
 }
 
-// Loads the markdown for an article slug, parses it with pulldown-cmark, and
+// Loads the Markdown for an article slug, parses it with pulldown-cmark, and
 // returns the rendered HTML wrapped in an HtmlFragment (which view! splices
 // in without re-escaping). pulldown-cmark preserves language hints on code
 // fences as `<code class="language-X">`, which Prism's autoloader then targets
