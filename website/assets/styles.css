@@ -260,23 +260,35 @@ body {
     margin-block-start: 1rem;
 }
 
-/* SVG-rect underline appended to every .article-fluid-svg by fit-text.js.
- * Lives in the SVG coordinate space (so it scales with the title and isn't
- * clipped by tight viewBoxes). Hidden by default, opacity-toggled on link
- * hover / focus. */
-.hover-underline {
-    opacity: 0;
-    transition: opacity 120ms ease;
+/* Hover underline is drawn as an absolutely-positioned pseudo-element on the
+ * link itself — pure CSS, no JS race conditions, scales with the title's
+ * container width. The transform: scaleX animation gives a subtle sweep-in
+ * effect from the left. */
+.article-fluid-link {
+    position: relative;
+    padding-block-end: 0.5rem;
+}
+
+.article-fluid-link::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: clamp(0.1875rem, 0.4vw, 0.4375rem);
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 220ms ease;
     pointer-events: none;
 }
 
-.article-fluid-link:hover .hover-underline,
-.article-fluid-link:focus-visible .hover-underline {
-    opacity: 1;
+.article-fluid-link:hover::after,
+.article-fluid-link:focus-visible::after {
+    transform: scaleX(1);
 }
 
-/* HTML fallback (shown when SVG would render below 16px) — text-decoration
- * works natively here. */
+/* HTML fallback (shown when SVG would render below 16px) — native CSS
+ * text-decoration works fine on real HTML elements. */
 .article-fluid-link:hover .article-fluid-fallback,
 .article-fluid-link:focus-visible .article-fluid-fallback {
     text-decoration: underline;
