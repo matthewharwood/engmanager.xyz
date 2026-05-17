@@ -22,15 +22,85 @@ const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
 // Embedding makes the binary self-contained and CWD-independent.
 #[derive(RustEmbed)]
 #[folder = "assets/"]
-struct Assets;
+pub struct Assets;
+
+// Length of the hex hash segment baked into asset URLs. 8 hex chars = 4 bytes
+// of sha256 = ~4 billion buckets, plenty to make collisions across deploys
+// effectively impossible while keeping URLs short.
+const ASSET_HASH_LEN: usize = 8;
+
+// Content-addressed URL for an embedded asset. `asset_url("styles.css")`
+// returns something like `/assets/styles.a1b2c3d4.css`. Because the URL
+// changes whenever the file's bytes change, browsers and edge caches can
+// hold the response with `immutable; max-age=1y` without ever serving stale
+// CSS after a deploy — the new HTML simply references a new URL.
+//
+// Falls back to the flat `/assets/{path}` URL if the asset isn't embedded
+// or doesn't have an extension, so the request still 404s predictably
+// rather than silently rewriting to something else.
+pub fn asset_url(path: &str) -> String {
+    let Some(file) = Assets::get(path) else {
+        return format!("/assets/{path}");
+    };
+    let Some((stem, ext)) = path.rsplit_once('.') else {
+        return format!("/assets/{path}");
+    };
+    let hash = file.metadata.sha256_hash();
+    let short = hash_hex(&hash[..ASSET_HASH_LEN / 2]);
+    format!("/assets/{stem}.{short}.{ext}")
+}
+
+fn hash_hex(bytes: &[u8]) -> String {
+    use std::fmt::Write;
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        let _ = write!(out, "{b:02x}");
+    }
+    out
+}
+
+// Reverse of asset_url: given `scripts/fit-text.a1b2c3d4.js` returns
+// `scripts/fit-text.js`. Returns None when the filename has no recognizable
+// hash segment, in which case the handler falls back to looking up the path
+// as-is (e.g. CSS-referenced fonts, Markdown-embedded images).
+//
+// Doesn't validate that the hash matches the file's actual hash. If a client
+// requests an old hash with current content, we serve the current content
+// (the URL is just a cache key, not a content integrity check), and the
+// next HTML refresh hands them the up-to-date URL anyway.
+fn strip_asset_hash(path: &str) -> Option<String> {
+    let slash = path.rfind('/').map_or(0, |i| i + 1);
+    let (dir, file) = path.split_at(slash);
+
+    let last_dot = file.rfind('.')?;
+    let (stem_plus_hash, ext_with_dot) = file.split_at(last_dot);
+    let prev_dot = stem_plus_hash.rfind('.')?;
+    let (stem, hash_with_dot) = stem_plus_hash.split_at(prev_dot);
+    let hash = &hash_with_dot[1..];
+
+    if hash.len() == ASSET_HASH_LEN && hash.bytes().all(|b| b.is_ascii_hexdigit()) {
+        Some(format!("{dir}{stem}{ext_with_dot}"))
+    } else {
+        None
+    }
+}
 
 async fn asset_handler(Path(path): Path<String>) -> Response {
-    match Assets::get(&path) {
+    // Try the hashed form first (rewriting `styles.HASH.css` → `styles.css`);
+    // fall back to the literal path so flat URLs (fonts in CSS, Markdown
+    // images) keep resolving.
+    let file = strip_asset_hash(&path)
+        .and_then(|stripped| Assets::get(&stripped))
+        .or_else(|| Assets::get(&path));
+
+    match file {
         Some(file) => {
             let mime = file.metadata.mimetype();
             // Assets are embedded into the binary, so their contents only
             // change on deploy. Cache them aggressively at the edge and in
             // the browser. `immutable` tells the browser to skip revalidation.
+            // Safe under hashed URLs because the URL itself changes whenever
+            // the bytes change.
             let cache_control = "public, max-age=31536000, immutable";
             (
                 [
