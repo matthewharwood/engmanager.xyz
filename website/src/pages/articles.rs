@@ -21,12 +21,20 @@ pub struct Article {
     pub summary: &'static str,
 }
 
-pub const ARTICLES: &[Article] = &[Article {
-    slug: "claude-code-lsp",
-    title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
-    date: "December 29, 2025",
-    summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
-}];
+pub const ARTICLES: &[Article] = &[
+    Article {
+        slug: "claude-code-lsp",
+        title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
+        date: "December 29, 2025",
+        summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
+    },
+    Article {
+        slug: "jsx-like-rust-macro",
+        title: "Making an JSX like Rust Macro",
+        date: "May 31, 2025",
+        summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
+    },
+];
 
 fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
     html! {
