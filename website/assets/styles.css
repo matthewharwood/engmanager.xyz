@@ -170,18 +170,87 @@ body {
 }
 
 /*
- * Avatar pinned to the bottom-right of the viewport. inset-inline-end matches
- * body padding-inline so the avatar's right gutter equals the page's left
- * gutter ("shared padding with left").
+ * Stacked article-link titles under the main headline. Each is a fluid SVG
+ * (same treatment as ENG MANAGER) wrapped in an <a>. Default underline hidden;
+ * hover paints a chunky underline beneath the title.
  */
-.avatar {
+.article-fluid-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.article-fluid-link + .article-fluid-link {
+    margin-block-start: 1rem;
+}
+
+.article-fluid-link:hover .article-fluid-svg text,
+.article-fluid-link:focus-visible .article-fluid-svg text {
+    text-decoration: underline;
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.06em;
+}
+
+/*
+ * Avatar pinned to the bottom-right of the viewport.
+ * The fixed positioning lives on the <button> wrapper now so clicks open
+ * the bio popover. The <img> inside is static.
+ */
+.avatar-button {
     position: fixed;
     inset-block-end: 1rem;
     inset-inline-end: 1rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 0;
+}
+
+.avatar-button:focus-visible {
+    outline: 2px solid #5b21b6;
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+.avatar {
     block-size: 3rem;
     inline-size: auto;
     display: block;
-    z-index: 10;
+}
+
+/*
+ * Bio popover.
+ *
+ * Anchor math: avatar is at inset-block-end:1rem / inset-inline-end:1rem and
+ * is 3rem square. So the avatar's TOP edge sits 4rem from viewport bottom,
+ * and its LEFT edge sits 4rem from viewport right. Setting the popover's
+ * inset-block-end and inset-inline-end to 4rem aligns its BOTTOM-RIGHT
+ * corner exactly to the avatar's TOP-LEFT corner.
+ */
+#bio {
+    position: fixed;
+    inset: auto 4rem 4rem auto;
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background: #fff;
+    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(0, 0, 0, 0.25);
+    max-inline-size: 26rem;
+    inline-size: max-content;
+}
+
+#bio::backdrop {
+    background: transparent;
+}
+
+/* Reset the .resume margin-block-start inside the popover; the popover has
+ * its own padding now. */
+#bio .resume {
+    margin-block-start: 0;
 }
 
 /* =================================================================

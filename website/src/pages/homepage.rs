@@ -2,6 +2,7 @@ use axum::response::Html;
 use eng_domain::{Component, HtmlFragment};
 use eng_markup::{html, view};
 
+use super::articles::ARTICLES;
 use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
 
 const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
@@ -99,6 +100,35 @@ impl Component for EngResume {
 }
 
 pub async fn index() -> Html<String> {
+    // Each article rendered as its own fluid SVG title, Archivo Black, linked
+    // to the article detail page. Stacked under <EngHeadline />. Titles auto-fit
+    // their container width via assets/scripts/fit-text.js.
+    let article_links: HtmlFragment = ARTICLES
+        .iter()
+        .map(|a| {
+            view! {
+                <a class="article-fluid-link" href={ format!("/articles/{}", a.slug) }>
+                    <div class="fluid-display-wrap">
+                        <svg class="fluid-display-svg article-fluid-svg"
+                             viewBox="0 0 1200 200"
+                             preserveAspectRatio="xMidYMid meet"
+                             role="img"
+                             aria-label={ a.title }>
+                            <text x="0"
+                                  y="160"
+                                  font-family="Archivo, sans-serif"
+                                  font-weight="900"
+                                  font-size="144"
+                                  fill="currentColor">
+                                { a.title }
+                            </text>
+                        </svg>
+                    </div>
+                </a>
+            }
+        })
+        .collect();
+
     let page = html! {
         <!DOCTYPE html>
         <html lang="en">
@@ -114,11 +144,22 @@ pub async fn index() -> Html<String> {
             </head>
             <body>
                 <EngHeadline />
-                <EngResume />
-                <img class="avatar"
-                     src=AVATAR_SRC
-                     alt="Matthew Harwood"
-                     height="48" />
+                { article_links }
+
+                // Avatar is a popover trigger via the native HTML Popover API.
+                // Clicking toggles the #bio popover.
+                <button class="avatar-button" type="button" popovertarget="bio" aria-label="Open bio">
+                    <img class="avatar"
+                         src=AVATAR_SRC
+                         alt="Matthew Harwood"
+                         height="48" />
+                </button>
+
+                // Resume bio. Anchored so its bottom-right corner touches the
+                // avatar's top-left corner (math in styles.css → #bio).
+                <div id="bio" popover="auto">
+                    <EngResume />
+                </div>
             </body>
         </html>
     };
