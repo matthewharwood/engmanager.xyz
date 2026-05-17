@@ -31,6 +31,13 @@ pub struct Article {
 
 pub const ARTICLES: &[Article] = &[
     Article {
+        slug: "talking-not-typing",
+        title: "I Ship Sites By Talking, Not Typing",
+        title_alias: None,
+        date: "May 17, 2026",
+        summary: "I built three Rust projects this week without typing a single line of code. Voice → Claude Code → pull requests. The floor is rising for everyone.",
+    },
+    Article {
         slug: "auteurs",
         title: "https://discord.gg/sTzQBrbnBM",
         title_alias: Some(

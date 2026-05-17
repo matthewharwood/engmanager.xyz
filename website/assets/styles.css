@@ -1122,6 +1122,73 @@ body {
     line-height: 1;
 }
 
+/* ===========================================================================
+ * Article inline visuals — callouts, captioned figures, small SVG diagrams.
+ * Reusable across articles; first used by /articles/talking-not-typing.
+ * =========================================================================== */
+
+/* Highlighted intro box. Soft gradient tint of the accent + a left rail. */
+.article-callout {
+    margin-block: 2rem;
+    padding: 1.125rem 1.375rem;
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in oklab, var(--accent) 6%, transparent),
+            color-mix(in oklab, var(--ctp-mauve) 4%, transparent)
+        );
+    border-inline-start: 3px solid var(--accent);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ctp-text);
+}
+
+.article-callout strong {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.article-callout p {
+    margin: 0;
+}
+
+/* Generic captioned-figure shell used by the SVG illustrations below. */
+.article figure {
+    margin: 2rem 0;
+    padding: 1.25rem;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.article figcaption {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ctp-subtext0);
+    text-align: center;
+    line-height: 1.5;
+    max-inline-size: 32ch;
+}
+
+/* iPad ⟷ GitHub tether. The dashed line animates via SMIL inside the SVG. */
+.tether-svg {
+    inline-size: min(100%, 18rem);
+    block-size: auto;
+    color: var(--accent);
+}
+
+/* Crescent moon + ascending Zs. Z opacity loops via SMIL. */
+.moonloop-svg {
+    inline-size: min(100%, 9rem);
+    block-size: auto;
+    color: var(--accent);
+}
+
 /* Workflow diagram: horizontal flex of stage cards connected by →.
  * Reflows to a vertical stack on narrow viewports; arrows rotate 90deg. */
 .workflow {
