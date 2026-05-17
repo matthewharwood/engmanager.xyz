@@ -1081,8 +1081,12 @@ body {
 }
 
 /* Filled accent button — sits flush-left so it doesn't hijack the whole
- * card width. Vercel-style: subtle gradient, soft elevation on hover. */
-.discord-widget-join {
+ * card width. Vercel-style: subtle gradient, soft elevation on hover.
+ *
+ * Scoped under .article to win specificity against `.article a` (which
+ * paints the link blue and underlines it). Without this the join CTA
+ * comes out blue-on-blurple with the article-body underline. */
+.article .discord-widget-join {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
@@ -1103,8 +1107,10 @@ body {
         filter 120ms ease;
 }
 
-.discord-widget-join:hover,
-.discord-widget-join:focus-visible {
+.article .discord-widget-join:hover,
+.article .discord-widget-join:focus-visible {
+    color: #fff;
+    text-decoration: none;
     transform: translateY(-0.0625rem);
     box-shadow: 0 0.25rem 0.875rem rgba(88, 101, 242, 0.4);
     filter: brightness(1.06);
