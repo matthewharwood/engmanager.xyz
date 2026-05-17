@@ -147,8 +147,10 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href="/assets/styles.css" />
                 <script src="/assets/scripts/fit-text.js" defer></script>
+                <script src="/assets/scripts/big-cursor.js" defer></script>
+                <script src="/assets/scripts/keyboard-nav.js" defer></script>
             </head>
-            <body>
+            <body class="homepage">
                 <EngHeadline />
                 { article_links }
 

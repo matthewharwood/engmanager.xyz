@@ -787,6 +787,33 @@ body {
 .article .token.italic { font-style: italic; }
 
 /* ===========================================================================
+ * Comically-large custom cursor on the homepage.
+ *
+ * The native cursor is hidden; scripts/big-cursor.js mounts a position:fixed
+ * SVG arrow that follows the mouse. Sized at 256px — about 8x a typical
+ * 32px system cursor.
+ * =========================================================================== */
+.homepage,
+.homepage * {
+    cursor: none;
+}
+
+.big-cursor {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 256px;
+    block-size: 256px;
+    pointer-events: none;
+    z-index: 9999;
+    /* Translate is driven by JS via requestAnimationFrame. Provide a subtle
+     * fade for cursor-enter / cursor-leave events. */
+    transition: opacity 150ms ease;
+    will-change: transform;
+    filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
+}
+
+/* ===========================================================================
  * Auteurs article: shader canvas, QR + discord link, workflow, products grid.
  * =========================================================================== */
 
