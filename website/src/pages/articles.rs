@@ -16,7 +16,14 @@ struct ArticleSources;
 
 pub struct Article {
     pub slug: &'static str,
+    /// Title shown on the homepage's fluid-SVG stack. Can be anything —
+    /// a sentence, a URL, etc.
     pub title: &'static str,
+    /// Optional override for the article-page <h1> (and browser <title>).
+    /// `None` falls back to `title`. Use this when the homepage display
+    /// should differ from the article page's heading — e.g. a Discord URL
+    /// on the stack but a real headline on the article itself.
+    pub title_alias: Option<&'static str>,
     pub date: &'static str,
     pub summary: &'static str,
 }
@@ -25,18 +32,23 @@ pub const ARTICLES: &[Article] = &[
     Article {
         slug: "auteurs",
         title: "https://discord.gg/sTzQBrbnBM",
+        title_alias: Some(
+            "Auteur's a discord for managing early career engineers, product and designers",
+        ),
         date: "March 14, 2026",
         summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
     },
     Article {
         slug: "claude-code-lsp",
         title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
+        title_alias: None,
         date: "December 29, 2025",
         summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
     },
     Article {
         slug: "jsx-like-rust-macro",
         title: "Making an JSX like Rust Macro",
+        title_alias: None,
         date: "May 31, 2025",
         summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
     },
@@ -99,16 +111,18 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
     let article = ARTICLES.iter().find(|a| a.slug == slug);
     match article {
         Some(a) => {
+            // Article-page heading + browser <title> use title_alias when set.
+            let page_title = a.title_alias.unwrap_or(a.title);
             let inner = article_body(&slug).unwrap_or_else(HtmlFragment::empty);
             let body = view! {
                 <article class="article">
-                    <h1 class="article-title">{ a.title }</h1>
+                    <h1 class="article-title">{ page_title }</h1>
                     <p class="article-byline">"Matthew Harwood · Engineering Manager @ Uber"</p>
                     <p class="article-date">{ a.date }</p>
                     { inner }
                 </article>
             };
-            Ok(Html(layout(a.title, body).into_string()))
+            Ok(Html(layout(page_title, body).into_string()))
         }
         None => Err(StatusCode::NOT_FOUND),
     }
