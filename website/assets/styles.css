@@ -497,26 +497,91 @@ body {
     color: var(--ctp-text);
 }
 
-/* Article byline: byline + date on a single line, separated by a middot. */
-.article-byline,
-.article-date {
+/* Article meta header — Vercel/changelog-flavored.
+ *
+ *   [avatar]  Matthew Harwood              [ May 31, 2025 ]
+ *             Engineering Manager @ Uber
+ *
+ * Avatar on the left, author name + role stacked, date pushed to the
+ * trailing edge as a subtle mono pill. On narrow viewports the date
+ * wraps below and aligns with the author block. */
+.article-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-block: 0.75rem 2.5rem;
+    padding-block-end: 1.25rem;
+    border-block-end: 1px solid var(--ctp-surface0);
+}
+
+.article-meta-avatar {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 50%;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    flex-shrink: 0;
+    display: block;
+    object-fit: cover;
+}
+
+.article-meta-author {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-inline-size: 0;
+}
+
+.article-meta-name {
     font-family: var(--font-sans);
-    font-size: 0.875rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--ctp-text);
+    letter-spacing: -0.005em;
+}
+
+.article-meta-role {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 0.8125rem;
     color: var(--ctp-subtext0);
-    margin: 0;
+    margin-block-start: 0.125rem;
 }
 
-.article-byline { margin-block-start: 0.25rem; }
-
-.article-date { margin-block-end: 2rem; }
-
-.article-date::before {
-    content: "·";
-    margin-inline: 0.5rem;
+.article-meta-date {
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--ctp-subtext1);
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 999px;
+    padding-block: 0.25rem;
+    padding-inline: 0.625rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
-.article-byline + .article-date {
-    display: inline;
+.article-meta-date::before {
+    content: "";
+    inline-size: 0.3125rem;
+    block-size: 0.3125rem;
+    border-radius: 50%;
+    background: var(--ctp-overlay1);
+    flex-shrink: 0;
+}
+
+@media (max-width: 30rem) {
+    .article-meta-date {
+        margin-inline-start: 3.25rem;
+    }
 }
 
 /* Body content */
