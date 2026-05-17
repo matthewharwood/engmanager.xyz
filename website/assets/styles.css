@@ -10,6 +10,36 @@
 :root {
     --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
     --font-display: "Monument Extended", var(--font-sans);
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+
+    /* Catppuccin Latte palette (https://catppuccin.com/palette/) */
+    --ctp-rosewater: #dc8a78;
+    --ctp-flamingo:  #dd7878;
+    --ctp-pink:      #ea76cb;
+    --ctp-mauve:     #8839ef;
+    --ctp-red:       #d20f39;
+    --ctp-maroon:    #e64553;
+    --ctp-peach:     #fe640b;
+    --ctp-yellow:    #df8e1d;
+    --ctp-green:     #40a02b;
+    --ctp-teal:      #179299;
+    --ctp-sky:       #04a5e5;
+    --ctp-sapphire:  #209fb5;
+    --ctp-blue:      #1e66f5;
+    --ctp-lavender:  #7287fd;
+    --ctp-text:      #4c4f69;
+    --ctp-subtext1:  #5c5f77;
+    --ctp-subtext0:  #6c6f85;
+    --ctp-overlay2:  #7c7f93;
+    --ctp-overlay1:  #8c8fa1;
+    --ctp-overlay0:  #9ca0b0;
+    --ctp-surface2:  #acb0be;
+    --ctp-surface1:  #bcc0cc;
+    --ctp-surface0:  #ccd0da;
+    --ctp-base:      #eff1f5;
+    --ctp-mantle:    #e6e9ef;
+    --ctp-crust:     #dce0e8;
 }
 
 html {
@@ -19,6 +49,8 @@ html {
 body {
     font-family: var(--font-sans);
     margin: 0;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
     /* Belt + suspenders: never let any child cause a horizontal scrollbar. */
     overflow-x: clip;
 }
@@ -68,11 +100,10 @@ h1, h2, h3, h4, h5, h6 {
  * portion wrapped in an <a> so it's clickable.
  */
 .resume {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-        Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
     line-height: 1.5;
-    color: #111;
+    color: var(--ctp-text);
     margin-block-start: 2rem;
 }
 
@@ -105,9 +136,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .resume-link {
-    color: #5b21b6;
+    color: var(--ctp-mauve);
     text-decoration: underline;
     text-underline-offset: 0.15em;
+}
+
+.resume-link:hover {
+    color: var(--ctp-blue);
+}
+
+.resume-strike {
+    text-decoration: line-through;
+    color: var(--ctp-subtext0);
 }
 
 /*
@@ -134,22 +174,13 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 50%;
     background: radial-gradient(
         circle at 30% 30%,
-        #86efac 0%,
-        #22c55e 50%,
-        #15803d 100%
+        #a6e3a1 0%,
+        var(--ctp-green) 50%,
+        #2d7d20 100%
     );
     box-shadow:
         0 0.0625rem 0.125rem rgba(0, 0, 0, 0.25),
-        0 0 0.25rem rgba(34, 197, 94, 0.35);
-}
-
-.resume-link:hover {
-    color: #7c3aed;
-}
-
-.resume-strike {
-    text-decoration: line-through;
-    color: #6b7280;
+        0 0 0.25rem rgba(64, 160, 43, 0.35);
 }
 
 /*
@@ -264,10 +295,11 @@ body {
 
     /* Visual */
     padding: 1.25rem 1.5rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--ctp-surface0);
     border-radius: 0.75rem;
-    background: #fff;
-    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(0, 0, 0, 0.25);
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(76, 79, 105, 0.18);
 }
 
 #bio::backdrop {
@@ -285,25 +317,23 @@ body {
  * ================================================================= */
 
 .articles-page {
-    color: #111;
+    color: var(--ctp-text);
 }
 
 .articles-index,
 .article {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-        Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: var(--font-mono);
     max-inline-size: 50rem;
 }
 
 .article-nav {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-        Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: var(--font-mono);
     font-size: 0.75rem;
     margin-block-end: 1.5rem;
 }
 
 .article-nav-link {
-    color: #5b21b6;
+    color: var(--ctp-blue);
     text-decoration: none;
 }
 
@@ -329,7 +359,7 @@ body {
 
 .article-entry {
     padding-block: 0.75rem;
-    border-block-end: 1px solid #e5e7eb;
+    border-block-end: 1px solid var(--ctp-surface0);
 }
 
 .article-entry:last-child {
@@ -349,8 +379,9 @@ body {
 }
 
 .article-entry-date,
-.article-date {
-    color: #6b7280;
+.article-date,
+.article-byline {
+    color: var(--ctp-subtext0);
     font-size: 0.75rem;
     display: block;
     margin-block-start: 0.25rem;
@@ -360,7 +391,7 @@ body {
     font-size: 0.75rem;
     line-height: 1.5;
     margin: 0.5rem 0 0;
-    color: #374151;
+    color: var(--ctp-text);
 }
 
 .article p {
@@ -376,9 +407,9 @@ body {
     padding-inline-start: 1.5rem;
 }
 
-.article h2 {
+.article h2,
+.article h3 {
     font-family: inherit;
-    font-size: 1rem;
     font-weight: 700;
     margin-block-start: 2rem;
     margin-block-end: 0.5rem;
@@ -386,17 +417,167 @@ body {
     letter-spacing: 0.02em;
 }
 
+.article h2 { font-size: 1rem; }
+.article h3 { font-size: 0.9375rem; }
+
 .article a {
-    color: #5b21b6;
+    color: var(--ctp-blue);
     text-decoration: underline;
     text-underline-offset: 0.15em;
 }
 
-.article-note {
-    font-size: 0.75rem;
-    color: #b45309;
-    background: #fef3c7;
-    padding: 0.5rem 0.75rem;
-    border-inline-start: 3px solid #b45309;
+.article blockquote {
+    border-inline-start: 3px solid var(--ctp-mauve);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    background: var(--ctp-mantle);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--ctp-subtext1);
 }
+
+.article table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    margin-block: 1rem;
+}
+
+.article th,
+.article td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-block-end: 1px solid var(--ctp-surface0);
+}
+
+.article th {
+    font-weight: 700;
+    background: var(--ctp-mantle);
+}
+
+/* Inline backtick code (not inside a <pre>). */
+.article :not(pre) > code {
+    font-family: var(--font-mono);
+    background: var(--ctp-mantle);
+    color: var(--ctp-text);
+    padding: 0.125rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+}
+
+/* ===========================================================================
+ * Code-block "editor" chrome (Zed-flavored wireframe).
+ *
+ * Each <pre> from pulldown-cmark becomes a faux editor window:
+ *   - Rounded outer panel (mantle bg, subtle border)
+ *   - Top "title bar" strip with three traffic-light dots, colored from the
+ *     Catppuccin palette (red / yellow / green).
+ *   - <code> body sits below with padding.
+ * Everything stays scrollable via overflow-x on the <pre>.
+ * =========================================================================== */
+.article pre {
+    position: relative;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.5rem;
+    padding: 0;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    max-block-size: 32rem;
+}
+
+.article pre::before {
+    content: "";
+    display: block;
+    block-size: 1.5rem;
+    background-color: var(--ctp-crust);
+    background-image:
+        radial-gradient(circle at 0.6rem 0.75rem, var(--ctp-red)    0.22rem, transparent 0.23rem),
+        radial-gradient(circle at 1.35rem 0.75rem, var(--ctp-yellow) 0.22rem, transparent 0.23rem),
+        radial-gradient(circle at 2.1rem 0.75rem, var(--ctp-green)  0.22rem, transparent 0.23rem);
+    border-block-end: 1px solid var(--ctp-surface0);
+}
+
+.article pre > code {
+    display: block;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    background: transparent;
+    color: var(--ctp-text);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    /* Cap the inner scroll area so the <pre>'s max-block-size is respected. */
+    max-block-size: calc(32rem - 1.5rem);
+    box-sizing: border-box;
+}
+
+/* ===========================================================================
+ * Prism.js token colors — Catppuccin Latte.
+ * Targets the .token classes Prism adds inside <code class="language-X">.
+ * =========================================================================== */
+.article code[class*="language-"],
+.article pre[class*="language-"],
+.article pre > code {
+    color: var(--ctp-text);
+}
+
+.article .token.comment,
+.article .token.prolog,
+.article .token.doctype,
+.article .token.cdata {
+    color: var(--ctp-subtext0);
+    font-style: italic;
+}
+
+.article .token.namespace { opacity: 0.7; }
+
+.article .token.string,
+.article .token.char,
+.article .token.attr-value,
+.article .token.regex,
+.article .token.variable {
+    color: var(--ctp-green);
+}
+
+.article .token.punctuation,
+.article .token.operator {
+    color: var(--ctp-sky);
+}
+
+.article .token.entity,
+.article .token.url,
+.article .token.symbol,
+.article .token.number,
+.article .token.boolean,
+.article .token.constant,
+.article .token.property,
+.article .token.inserted {
+    color: var(--ctp-peach);
+}
+
+.article .token.atrule,
+.article .token.keyword,
+.article .token.attr-name,
+.article .token.important {
+    color: var(--ctp-mauve);
+}
+
+.article .token.function,
+.article .token.deleted {
+    color: var(--ctp-red);
+}
+
+.article .token.tag,
+.article .token.selector,
+.article .token.class-name {
+    color: var(--ctp-yellow);
+}
+
+.article .token.builtin {
+    color: var(--ctp-teal);
+}
+
+.article .token.bold { font-weight: 700; }
+.article .token.italic { font-style: italic; }
 
