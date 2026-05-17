@@ -92,10 +92,49 @@ h1, h2, h3, h4, h5, h6 {
 .fluid-display-svg {
     display: block;
     inline-size: 100%;
-    /* Pre-JS fallback cap (1200/200 = 6:1 → 9rem * 6 = 54rem). JS replaces this
-     * with the real aspect ratio once it has measured the text. */
-    max-inline-size: 54rem;
     block-size: auto;
+}
+
+/*
+ * ENG MANAGER lives in a top-level <div class="fluid-display-wrap"> directly
+ * under <body>. Body has padding-inline: 1rem so non-headline content has a
+ * comfortable gutter, but the headline is meant to be truly edge-to-edge.
+ * Negative-margin the wrap by the same amount so the SVG extends to the
+ * viewport's left and right edges. body { overflow-x: clip; } prevents any
+ * sub-pixel overshoot from creating a horizontal scrollbar.
+ */
+body > .fluid-display-wrap {
+    margin-inline: -1rem;
+}
+
+/*
+ * HTML fallback for article-link titles when the fluid SVG would render the
+ * text below 16px. fit-text.js measures the effective font size at the
+ * current container width and toggles .is-too-small on the SVG; CSS uses
+ * the adjacent-sibling combinator to swap in the fallback.
+ *
+ * The fallback uses Archivo 900 at 1rem (16px @ 16px root), white-space:
+ * nowrap + text-overflow: ellipsis to cleanly truncate long titles.
+ */
+.article-fluid-fallback {
+    display: none;
+    font-family: "Archivo", sans-serif;
+    font-weight: 900;
+    font-size: 1rem;
+    line-height: 1.25;
+    color: inherit;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.article-fluid-svg.is-too-small {
+    display: none;
+}
+
+.article-fluid-svg.is-too-small + .article-fluid-fallback {
+    display: block;
 }
 
 /*

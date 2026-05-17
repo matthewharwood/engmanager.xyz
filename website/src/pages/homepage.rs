@@ -123,6 +123,12 @@ pub async fn index() -> Html<String> {
                                 { a.title.to_uppercase() }
                             </text>
                         </svg>
+                        // Fallback rendered as HTML text when the SVG would
+                        // shrink below 16px. fit-text.js toggles .is-too-small
+                        // on the SVG; CSS swaps the visible element.
+                        <span class="article-fluid-fallback" aria-hidden="true">
+                            { a.title.to_uppercase() }
+                        </span>
                     </div>
                 </a>
             }

@@ -6,17 +6,24 @@
 // are the precise ink-coverage extents — unlike SVG's getBBox() which on
 // many browsers returns the layout box including side-bearing whitespace.
 //
-// We then:
-//   1. Shift the <text> by (actualBoundingBoxLeft, actualBoundingBoxAscent)
-//      so its ink corner lands at (0, 0) in SVG user space.
-//   2. Set viewBox to exactly the ink rectangle.
-//   3. Cap visible block-size at HEADLINE_CAP_REM by setting max-inline-size
-//      to (cap-rem * ink aspect ratio).
+// Pipeline per <svg.fluid-display-svg>:
+//   1. Shift the <text> by (boxLeft, ascent) so its ink corner lands at (0,0).
+//   2. Set viewBox to the exact ink rectangle. The SVG element is sized in
+//      normal flow (inline-size: 100%, block-size: auto) so it fills its
+//      container with the ink's natural aspect ratio.
+//
+// Minimum font-size enforcement (article-fluid-svg only):
+//   - Effective rendered font-size at the current container width =
+//     fontSize * (containerWidth / inkWidth). Compute that on every layout
+//     event. If it falls below MIN_FONT_SIZE_PX (16px), add .is-too-small
+//     to the SVG. CSS hides the SVG and reveals the .article-fluid-fallback
+//     <span>, which renders the title at 16px with text-overflow: ellipsis.
 //
 // References:
 //   https://css-tricks.com/fitting-text-to-a-container/
 //   https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics
-const HEADLINE_CAP_REM = 9; // 9rem = 144px @ 16px root.
+
+const MIN_FONT_SIZE_PX = 16;
 
 // Convert a font-family attribute value into a Canvas-safe family list.
 // Family names containing whitespace need quotes for the CSS font shorthand.
@@ -28,51 +35,81 @@ function quoteFamilies(value) {
         .join(", ");
 }
 
+function measureInk(text) {
+    const content = (text.textContent || "").trim();
+    if (!content) return null;
+
+    const fontSize = parseFloat(text.getAttribute("font-size")) || 144;
+    const fontFamily = quoteFamilies(
+        text.getAttribute("font-family") || "sans-serif",
+    );
+    const fontWeight = text.getAttribute("font-weight") || "normal";
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+    const m = ctx.measureText(content);
+
+    const inkWidth = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+    const inkHeight = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+    if (!inkWidth || !inkHeight) return null;
+
+    return {
+        boxLeft: m.actualBoundingBoxLeft,
+        ascent: m.actualBoundingBoxAscent,
+        inkWidth,
+        inkHeight,
+        fontSize,
+    };
+}
+
+function applyFit(svg, ink) {
+    const text = svg.querySelector("text");
+    if (!text) return;
+    text.setAttribute("x", ink.boxLeft);
+    text.setAttribute("y", ink.ascent);
+    svg.setAttribute("viewBox", `0 0 ${ink.inkWidth} ${ink.inkHeight}`);
+}
+
+function checkSize(svg, ink) {
+    if (!svg.classList.contains("article-fluid-svg")) return;
+    const containerWidth = svg.getBoundingClientRect().width;
+    if (!containerWidth) return;
+    const effectivePx = ink.fontSize * (containerWidth / ink.inkWidth);
+    svg.classList.toggle("is-too-small", effectivePx < MIN_FONT_SIZE_PX);
+}
+
 (async () => {
     try {
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
         const svgs = document.querySelectorAll("svg.fluid-display-svg");
+        const measurements = new Map();
         for (const svg of svgs) {
             const text = svg.querySelector("text");
             if (!text) continue;
-
-            const content = (text.textContent || "").trim();
-            if (!content) continue;
-
-            const fontSize = parseFloat(text.getAttribute("font-size")) || 144;
-            const fontFamily = quoteFamilies(
-                text.getAttribute("font-family") || "sans-serif",
-            );
-            const fontWeight = text.getAttribute("font-weight") || "normal";
-
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-            const m = ctx.measureText(content);
-
-            // Per spec, actualBoundingBoxLeft is the distance from the
-            // alignment point to the LEFT edge of the ink bounding rect,
-            // positive going left. Total ink width = left + right.
-            const inkWidth = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
-            const inkHeight =
-                m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-
-            if (!inkWidth || !inkHeight) continue;
-
-            // Shift <text> so its ink corner lands at SVG (0, 0).
-            // - text.x defaults to 0; ink left sits at -actualBoundingBoxLeft.
-            //   Set text.x = actualBoundingBoxLeft so ink left = 0.
-            // - text.y is the baseline; ink top sits at y - ascent.
-            //   Set text.y = actualBoundingBoxAscent so ink top = 0.
-            text.setAttribute("x", m.actualBoundingBoxLeft);
-            text.setAttribute("y", m.actualBoundingBoxAscent);
-
-            svg.setAttribute("viewBox", `0 0 ${inkWidth} ${inkHeight}`);
-            const ratio = inkWidth / inkHeight;
-            svg.style.maxInlineSize = `calc(${HEADLINE_CAP_REM}rem * ${ratio})`;
+            const ink = measureInk(text);
+            if (!ink) continue;
+            applyFit(svg, ink);
+            measurements.set(svg, ink);
+            checkSize(svg, ink);
         }
+
+        // Re-evaluate the min-size check on viewport resize. The fit (viewBox)
+        // doesn't need re-running — it's container-relative via SVG scaling.
+        let pending = false;
+        const onResize = () => {
+            if (pending) return;
+            pending = true;
+            requestAnimationFrame(() => {
+                pending = false;
+                for (const [svg, ink] of measurements) {
+                    checkSize(svg, ink);
+                }
+            });
+        };
+        window.addEventListener("resize", onResize);
     } catch (_err) {
         // Measurement failed — leave the fallback viewBox in place.
     }
