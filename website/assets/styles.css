@@ -207,6 +207,8 @@ body {
     cursor: pointer;
     z-index: 10;
     line-height: 0;
+    /* Named anchor for the bio popover (used by position-anchor below). */
+    anchor-name: --avatar;
 }
 
 .avatar-button:focus-visible {
@@ -222,25 +224,50 @@ body {
 }
 
 /*
- * Bio popover.
+ * Bio popover, anchored so its BOTTOM-RIGHT corner sits at the avatar's
+ * TOP-LEFT corner.
  *
- * Anchor math: avatar is at inset-block-end:1rem / inset-inline-end:1rem and
- * is 3rem square. So the avatar's TOP edge sits 4rem from viewport bottom,
- * and its LEFT edge sits 4rem from viewport right. Setting the popover's
- * inset-block-end and inset-inline-end to 4rem aligns its BOTTOM-RIGHT
- * corner exactly to the avatar's TOP-LEFT corner.
+ * Two strategies layered:
+ *
+ *   1. Manual offset (universal): set top/left to auto and bottom/right to
+ *      4rem. Avatar is 3rem square at 1rem inset, so its top-left lives 4rem
+ *      from the viewport's right and bottom — setting our right and bottom
+ *      to 4rem puts our bottom-right corner there. Each of top/right/bottom/
+ *      left is set as a *longhand* (not the `inset` shorthand) because the
+ *      shorthand fights the UA `inset: 0` rule less reliably across engines.
+ *
+ *   2. CSS Anchor Positioning (modern browsers, 2024+): position-anchor +
+ *      position-area let the browser do the math from the .avatar-button
+ *      anchor directly. The `top left` area places the popover above and to
+ *      the left of the anchor, with its near corner kissing the anchor's
+ *      far corner — which is exactly the alignment we want. Browsers that
+ *      don't support anchor positioning silently ignore these properties
+ *      and the manual offset above takes over.
  */
 #bio {
+    /* Override the UA popover defaults (inset: 0; margin: auto = centered). */
     position: fixed;
-    inset: auto 4rem 4rem auto;
+    top: auto;
+    left: auto;
+    right: 4rem;
+    bottom: 4rem;
     margin: 0;
+
+    /* Sizing */
+    width: max-content;
+    max-width: 26rem;
+    height: auto;
+
+    /* Modern anchor positioning (Chrome 125+, Safari 17.4+, Firefox 137+). */
+    position-anchor: --avatar;
+    position-area: top left;
+
+    /* Visual */
     padding: 1.25rem 1.5rem;
     border: 1px solid #e5e7eb;
     border-radius: 0.75rem;
     background: #fff;
     box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(0, 0, 0, 0.25);
-    max-inline-size: 26rem;
-    inline-size: max-content;
 }
 
 #bio::backdrop {
