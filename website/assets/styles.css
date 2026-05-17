@@ -84,6 +84,7 @@ h1, h2, h3, h4, h5, h6 {
 .fluid-display {
     margin: 0;
     line-height: 0;
+    padding-bottom: 2rem;
     /* Headline takes the theme accent. The SVG <text> inside uses
      * fill="currentColor" so this propagates down through inheritance. */
     color: var(--accent);
@@ -259,15 +260,23 @@ body {
     margin-block-start: 1rem;
 }
 
-.article-fluid-link:hover .article-fluid-svg text,
-.article-fluid-link:focus-visible .article-fluid-svg text {
-    text-decoration: underline;
-    text-decoration-thickness: 0.06em;
-    text-underline-offset: 0.06em;
+/* SVG-rect underline appended to every .article-fluid-svg by fit-text.js.
+ * Lives in the SVG coordinate space (so it scales with the title and isn't
+ * clipped by tight viewBoxes). Hidden by default, opacity-toggled on link
+ * hover / focus. */
+.hover-underline {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
 }
 
-/* Same hover treatment for the HTML fallback (shown when SVG would
- * render below 16px). */
+.article-fluid-link:hover .hover-underline,
+.article-fluid-link:focus-visible .hover-underline {
+    opacity: 1;
+}
+
+/* HTML fallback (shown when SVG would render below 16px) — text-decoration
+ * works natively here. */
 .article-fluid-link:hover .article-fluid-fallback,
 .article-fluid-link:focus-visible .article-fluid-fallback {
     text-decoration: underline;

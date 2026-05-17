@@ -63,12 +63,38 @@ function measureInk(text) {
     };
 }
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
 function applyFit(svg, ink) {
     const text = svg.querySelector("text");
     if (!text) return;
     text.setAttribute("x", ink.boxLeft);
     text.setAttribute("y", ink.ascent);
-    svg.setAttribute("viewBox", `0 0 ${ink.inkWidth} ${ink.inkHeight}`);
+
+    // For article-link titles, append a hover-underline <rect> in the SVG
+    // coord space. Plain CSS text-decoration on SVG <text> is unreliable
+    // (clipped by viewBox; spotty cross-browser support); a dedicated SVG
+    // rect always paints. CSS toggles its opacity on the link's :hover /
+    // :focus-visible.
+    let viewBoxHeight = ink.inkHeight;
+    if (
+        svg.classList.contains("article-fluid-svg") &&
+        !svg.querySelector(".hover-underline")
+    ) {
+        const offset = ink.fontSize * 0.06;
+        const thickness = ink.fontSize * 0.06;
+        const underline = document.createElementNS(SVG_NS, "rect");
+        underline.setAttribute("class", "hover-underline");
+        underline.setAttribute("x", "0");
+        underline.setAttribute("y", String(ink.ascent + offset));
+        underline.setAttribute("width", String(ink.inkWidth));
+        underline.setAttribute("height", String(thickness));
+        underline.setAttribute("fill", "currentColor");
+        svg.appendChild(underline);
+        // Make sure the viewBox includes the underline so it isn't clipped.
+        viewBoxHeight = Math.max(ink.inkHeight, ink.ascent + offset + thickness);
+    }
+    svg.setAttribute("viewBox", `0 0 ${ink.inkWidth} ${viewBoxHeight}`);
 }
 
 function checkSize(svg, ink) {
