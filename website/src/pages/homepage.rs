@@ -4,6 +4,7 @@ use eng_markup::{html, view};
 
 use super::articles::ARTICLES;
 use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use crate::asset_url;
 
 const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
 
@@ -142,13 +143,13 @@ pub async fn index() -> Html<String> {
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>"ENG MANAGER"</title>
-                <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href="/assets/styles.css" />
-                <script src="/assets/scripts/fit-text.js" defer></script>
-                <script src="/assets/scripts/big-cursor.js" defer></script>
-                <script src="/assets/scripts/keyboard-nav.js" defer></script>
+                <link rel="stylesheet" href={ asset_url("styles.css") } />
+                <script src={ asset_url("scripts/fit-text.js") } defer></script>
+                <script src={ asset_url("scripts/big-cursor.js") } defer></script>
+                <script src={ asset_url("scripts/keyboard-nav.js") } defer></script>
             </head>
             <body class="homepage">
                 <EngHeadline />

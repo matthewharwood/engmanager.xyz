@@ -6,6 +6,7 @@ use eng_markup::{html, view};
 use rust_embed::RustEmbed;
 
 use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use crate::asset_url;
 
 // Article bodies live in `website/articles/{slug}.md`. They're embedded into
 // the binary at compile time alongside the rest of the static content (so the
@@ -62,14 +63,14 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>{ title }</title>
-                <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href="/assets/styles.css" />
+                <link rel="stylesheet" href={ asset_url("styles.css") } />
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
-                <script src="/assets/scripts/copy-code.js" defer></script>
-                <script src="/assets/scripts/auteurs-shader.js" defer></script>
+                <script src={ asset_url("scripts/copy-code.js") } defer></script>
+                <script src={ asset_url("scripts/auteurs-shader.js") } defer></script>
             </head>
             <body class="articles-page">
                 <nav class="article-nav">
