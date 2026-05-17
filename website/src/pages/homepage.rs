@@ -106,6 +106,7 @@ pub async fn index() -> Html<String> {
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>"engmanager.xyz"</title>
+                <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href="/assets/styles.css" />

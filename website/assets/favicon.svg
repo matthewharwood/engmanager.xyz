@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- Sage base, lighter top → darker bottom: gives the spherical shading. -->
+    <radialGradient id="base" cx="50%" cy="38%" r="70%">
+      <stop offset="0%" stop-color="#b8c895"/>
+      <stop offset="100%" stop-color="#8aa067"/>
+    </radialGradient>
+
+    <!-- Blue/lavender tint in the upper-left. -->
+    <radialGradient id="blue" cx="22%" cy="22%" r="48%">
+      <stop offset="0%" stop-color="#a8b8e0" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#a8b8e0" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Warm orange tint on the right. -->
+    <radialGradient id="orange" cx="82%" cy="62%" r="56%">
+      <stop offset="0%" stop-color="#e8a060" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#e8a060" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Cream highlight at the bottom-left, like light hitting the underside. -->
+    <radialGradient id="cream" cx="30%" cy="92%" r="55%">
+      <stop offset="0%" stop-color="#f5ead0" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f5ead0" stop-opacity="0"/>
+    </radialGradient>
+
+    <clipPath id="orb">
+      <circle cx="50" cy="50" r="49"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#orb)">
+    <rect width="100" height="100" fill="url(#base)"/>
+    <rect width="100" height="100" fill="url(#blue)"/>
+    <rect width="100" height="100" fill="url(#orange)"/>
+    <rect width="100" height="100" fill="url(#cream)"/>
+  </g>
+</svg>
