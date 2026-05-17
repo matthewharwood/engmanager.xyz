@@ -5,7 +5,7 @@ use eng_domain::HtmlFragment;
 use eng_markup::{html, view};
 use rust_embed::RustEmbed;
 
-use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
 use crate::asset_url;
 
 // Article bodies live in `website/articles/{slug}.md`. They're embedded into
@@ -118,8 +118,19 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let body = view! {
                 <article class="article">
                     <h1 class="article-title">{ page_title }</h1>
-                    <p class="article-byline">"Matthew Harwood · Engineering Manager @ Uber"</p>
-                    <p class="article-date">{ a.date }</p>
+                    <header class="article-meta">
+                        <img class="article-meta-avatar"
+                             src=AVATAR_SRC
+                             alt="Matthew Harwood"
+                             width="40"
+                             height="40"
+                             loading="lazy" />
+                        <div class="article-meta-author">
+                            <div class="article-meta-name">"Matthew Harwood"</div>
+                            <div class="article-meta-role">"Engineering Manager @ Uber"</div>
+                        </div>
+                        <time class="article-meta-date">{ a.date }</time>
+                    </header>
                     { inner }
                 </article>
             };

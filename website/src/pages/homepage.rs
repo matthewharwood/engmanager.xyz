@@ -3,10 +3,8 @@ use eng_domain::{Component, HtmlFragment};
 use eng_markup::{html, view};
 
 use super::articles::ARTICLES;
-use super::{GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
 use crate::asset_url;
-
-const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
 
 pub struct EngHeadline;
 pub struct EngHeadlineProps;
