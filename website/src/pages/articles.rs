@@ -108,6 +108,11 @@ pub async fn index() -> Html<String> {
     Html(layout("Articles · engmanager.xyz", body).into_string())
 }
 
+// Marker in auteurs.md that gets string-replaced with the live Discord
+// widget HTML at render time. Pulldown-cmark passes raw HTML blocks
+// through verbatim, so the comment survives Markdown rendering.
+const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
+
 pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode> {
     let article = ARTICLES.iter().find(|a| a.slug == slug);
     match article {
@@ -115,6 +120,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
             let inner = article_body(&slug).unwrap_or_else(HtmlFragment::empty);
+            let inner = splice_discord_widget(&slug, inner).await;
             let body = view! {
                 <article class="article">
                     <h1 class="article-title">{ page_title }</h1>
@@ -138,6 +144,23 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
         }
         None => Err(StatusCode::NOT_FOUND),
     }
+}
+
+// Renders the live Discord widget into the body HTML if the article has
+// a `<!--auteurs-discord-widget-->` sentinel and we have a fresh snapshot.
+// When the snapshot is cold or the article doesn't reference the widget,
+// the sentinel is dropped (empty string) and the article's static fallback
+// (QR code + invite link) remains as the join CTA.
+async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
+    let body_str = body.as_str();
+    if !body_str.contains(DISCORD_WIDGET_SENTINEL) {
+        return body;
+    }
+    let replacement = match crate::discord::snapshot().await {
+        Some(snap) if slug == "auteurs" => crate::discord::render(&snap).into_string(),
+        _ => String::new(),
+    };
+    HtmlFragment::new(body_str.replace(DISCORD_WIDGET_SENTINEL, &replacement))
 }
 
 // Loads the Markdown for an article slug, parses it with pulldown-cmark, and
