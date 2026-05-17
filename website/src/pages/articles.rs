@@ -23,6 +23,12 @@ pub struct Article {
 
 pub const ARTICLES: &[Article] = &[
     Article {
+        slug: "auteurs",
+        title: "https://discord.gg/sTzQBrbnBM",
+        date: "March 14, 2026",
+        summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
+    },
+    Article {
         slug: "claude-code-lsp",
         title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
         date: "December 29, 2025",
@@ -51,6 +57,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
                 <script src="/assets/scripts/copy-code.js" defer></script>
+                <script src="/assets/scripts/auteurs-shader.js" defer></script>
             </head>
             <body class="articles-page">
                 <nav class="article-nav">

@@ -260,40 +260,24 @@ body {
     margin-block-start: 1rem;
 }
 
-/* Hover underline is drawn as an absolutely-positioned pseudo-element on the
- * link itself — pure CSS, no JS race conditions, scales with the title's
- * container width. The transform: scaleX animation gives a subtle sweep-in
- * effect from the left. */
+/* Hover treatment: lift the link with a 1.2x scale and a soft elevation
+ * shadow under the text. drop-shadow follows the actual glyph outlines
+ * (and the SVG content) rather than the bounding box, so the shadow
+ * tracks the text shape. The link can clip past the viewport on hover —
+ * that's intentional. */
 .article-fluid-link {
-    position: relative;
-    padding-block-end: 0.5rem;
-}
-
-.article-fluid-link::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    inset-block-end: 0;
-    block-size: clamp(0.1875rem, 0.4vw, 0.4375rem);
-    background: currentColor;
-    transform: scaleX(0);
+    transform: scale(1);
     transform-origin: left center;
-    transition: transform 220ms ease;
-    pointer-events: none;
+    transition:
+        transform 220ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
+        filter 220ms ease;
+    will-change: transform, filter;
 }
 
-.article-fluid-link:hover::after,
-.article-fluid-link:focus-visible::after {
-    transform: scaleX(1);
-}
-
-/* HTML fallback (shown when SVG would render below 16px) — native CSS
- * text-decoration works fine on real HTML elements. */
-.article-fluid-link:hover .article-fluid-fallback,
-.article-fluid-link:focus-visible .article-fluid-fallback {
-    text-decoration: underline;
-    text-underline-offset: 0.1em;
-    text-decoration-thickness: 0.05em;
+.article-fluid-link:hover,
+.article-fluid-link:focus-visible {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0.75rem 1.5rem rgba(76, 79, 105, 0.25));
 }
 
 /*
@@ -801,4 +785,148 @@ body {
 
 .article .token.bold { font-weight: 700; }
 .article .token.italic { font-style: italic; }
+
+/* ===========================================================================
+ * Auteurs article: shader canvas, QR + discord link, workflow, products grid.
+ * =========================================================================== */
+
+.auteurs-shader {
+    display: block;
+    inline-size: min(100%, 32rem);
+    aspect-ratio: 1;
+    margin: 1rem auto 2rem;
+}
+
+.auteurs-join {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block: 1.75rem;
+}
+
+.auteurs-qr {
+    inline-size: min(70%, 14rem);
+    block-size: auto;
+    display: block;
+    border-radius: 0.5rem;
+    background: #fff;
+    padding: 0.5rem;
+    border: 1px solid var(--ctp-surface0);
+}
+
+.auteurs-discord-link {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--ctp-mauve);
+    text-decoration: none;
+}
+
+.auteurs-discord-link:hover,
+.auteurs-discord-link:focus-visible {
+    color: var(--ctp-blue);
+    text-decoration: underline;
+}
+
+/* Workflow diagram: horizontal flex of stage cards connected by →.
+ * Reflows to a vertical stack on narrow viewports; arrows rotate 90deg. */
+.workflow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-block: 2rem;
+    padding: 1.25rem;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.75rem;
+}
+
+.workflow-stage {
+    flex: 1 1 0;
+    min-inline-size: 7.5rem;
+    padding: 0.875rem 1rem;
+    background: var(--ctp-base);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    color: var(--ctp-text);
+}
+
+.workflow-stage-single {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ctp-subtext0);
+}
+
+.workflow-stage-title {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ctp-subtext0);
+    margin-block-end: 0.5rem;
+}
+
+.workflow-stage-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ctp-text);
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.workflow-arrow {
+    align-self: center;
+    color: var(--ctp-overlay1);
+    font-size: 1.25rem;
+    user-select: none;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+    .workflow { flex-direction: column; }
+    .workflow-arrow { transform: rotate(90deg); }
+    .workflow-stage { flex: 0 0 auto; }
+}
+
+/* Products grid */
+.auteurs-products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    margin-block: 1.5rem 2rem;
+}
+
+.auteurs-product {
+    padding: 2rem 1rem;
+    background: var(--ctp-base);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.5rem;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    color: var(--ctp-text);
+}
+
+.auteurs-product-stamp {
+    color: var(--ctp-maroon);
+    border-color: var(--ctp-maroon);
+    border-width: 2px;
+}
 
