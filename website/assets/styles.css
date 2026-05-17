@@ -280,6 +280,21 @@ body {
     filter: drop-shadow(0 0.75rem 1.5rem rgba(76, 79, 105, 0.25));
 }
 
+/* Chunky maroon focus ring for keyboard nav (ArrowDown/Up between titles).
+ *
+ *   outline-offset: 1rem  — paints the ring 1rem outside the element,
+ *                          leaving a 1rem gap between element and ring
+ *                          (the "padding on the inside" of the ring).
+ *   outline-width:  1rem  — 1rem-thick stroke on all four sides.
+ *   outline-color:  var(--accent)  — same maroon as the title fills.
+ *
+ * outline doesn't participate in layout, so this never causes a reflow when
+ * focus moves between links. */
+.article-fluid-link:focus-visible {
+    outline: 1rem solid var(--accent);
+    outline-offset: 1rem;
+}
+
 /*
  * Avatar pinned to the bottom-right of the viewport.
  * The fixed positioning lives on the <button> wrapper now so clicks open
