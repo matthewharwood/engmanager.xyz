@@ -96,16 +96,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /*
- * ENG MANAGER lives in a top-level <div class="fluid-display-wrap"> directly
- * under <body>. Body has padding-inline: 1rem so non-headline content has a
- * comfortable gutter, but the headline is meant to be truly edge-to-edge.
- * Negative-margin the wrap by the same amount so the SVG extends to the
- * viewport's left and right edges. body { overflow-x: clip; } prevents any
- * sub-pixel overshoot from creating a horizontal scrollbar.
+ * ENG MANAGER and the article-link titles share the same fluid-display-wrap.
+ * Both sit inside body's padding-inline gutter so their left edges line up.
+ * (Previously the headline used a negative margin to bleed to the viewport
+ * edges, but that misaligned it from the stacked article titles below on
+ * narrow screens — now they all share the same left rail.)
  */
-body > .fluid-display-wrap {
-    margin-inline: -1rem;
-}
 
 /*
  * HTML fallback for article-link titles when the fluid SVG would render the
