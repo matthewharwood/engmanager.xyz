@@ -8,6 +8,8 @@ We are a global group of folks across roles and time zones who care about how so
 
 Join us.
 
+<!--auteurs-discord-widget-->
+
 <div class="auteurs-join">
   <img class="auteurs-qr" src="/assets/auteurs/discord-qr.png" alt="Scan to join the Auteurs Discord" width="280" height="280" loading="lazy" />
   <a class="auteurs-discord-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">

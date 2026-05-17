@@ -9,6 +9,8 @@ tokio = { workspace = true }
 rust-embed = { workspace = true }
 listenfd = { workspace = true, optional = true }
 pulldown-cmark = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
 eng-markup = { workspace = true }
 eng-domain = { workspace = true }
 

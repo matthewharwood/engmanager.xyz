@@ -9,7 +9,13 @@ use axum::routing::get;
 use rust_embed::RustEmbed;
 use tokio::net::TcpListener;
 
+pub mod discord;
 mod pages;
+
+// Discord invite code for the Auteurs server. Hardcoded because it's the
+// only server the site embeds; the refresh task resolves the guild ID
+// from this code at startup.
+const AUTEURS_INVITE_CODE: &str = "sTzQBrbnBM";
 
 const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;
@@ -147,6 +153,11 @@ async fn html_cache_layer(
 
 #[tokio::main]
 async fn main() {
+    // Polls the Discord widget + invite endpoints for the Auteurs server
+    // every 60s into an in-memory snapshot. Handlers read the snapshot
+    // synchronously with a tokio RwLock — zero I/O on the hot path.
+    tokio::spawn(discord::refresh_loop(AUTEURS_INVITE_CODE));
+
     let app = Router::new()
         .route("/", get(pages::homepage::index))
         .route("/articles/", get(pages::articles::index))
