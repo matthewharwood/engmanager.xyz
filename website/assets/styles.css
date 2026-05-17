@@ -40,6 +40,10 @@
     --ctp-base:      #eff1f5;
     --ctp-mantle:    #e6e9ef;
     --ctp-crust:     #dce0e8;
+
+    /* Theme accent: change this one line to repaint the headline, focus
+     * rings, and any other "accent" surface. Defaults to Catppuccin Mauve. */
+    --accent: var(--ctp-mauve);
 }
 
 html {
@@ -80,6 +84,9 @@ h1, h2, h3, h4, h5, h6 {
 .fluid-display {
     margin: 0;
     line-height: 0;
+    /* Headline takes the theme accent. The SVG <text> inside uses
+     * fill="currentColor" so this propagates down through inheritance. */
+    color: var(--accent);
 }
 
 .fluid-display-svg {
@@ -320,10 +327,33 @@ body {
     color: var(--ctp-text);
 }
 
-.articles-index,
-.article {
+.articles-index {
     font-family: var(--font-mono);
     max-inline-size: 50rem;
+}
+
+/* ===========================================================================
+ * Article body typography
+ *
+ * Reusable for every /articles/{slug}. The only per-article content is the
+ * Markdown — these styles cover every element pulldown-cmark might emit.
+ *
+ * Editorial defaults pulled from Medium / Obsidian / well-set blogs:
+ *   - Comfortable measure: max-inline-size ≈ 38rem (~62–70 ch in Archivo)
+ *   - Body 17px / line-height 1.7 for relaxed reading
+ *   - Clear visual hierarchy: title (display) → h2 → h3 → body
+ *   - Generous block spacing between sections, tight inside sections
+ *   - Links carry a thin underline rather than colour-only emphasis
+ *   - Blockquote pulled left, italicized, slightly larger
+ * =========================================================================== */
+.article {
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    color: var(--ctp-text);
+    max-inline-size: 38rem;
+    margin-inline: auto;
+    padding-block-end: 4rem;
 }
 
 .article-nav {
@@ -341,14 +371,25 @@ body {
     text-decoration: underline;
 }
 
-.articles-index-title,
-.article-title {
-    font-family: inherit;
+.articles-index-title {
+    font-family: var(--font-mono);
     font-size: 1.25rem;
     font-weight: 700;
     margin: 0 0 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+}
+
+.article-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(1.875rem, 1.2rem + 2.4vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--ctp-text);
+    margin: 1rem 0 0.75rem;
+    /* Override the older uppercase rule from .articles-index-title family. */
+    text-transform: none;
 }
 
 .article-list {
@@ -379,61 +420,130 @@ body {
 }
 
 .article-entry-date,
-.article-date,
-.article-byline {
+.article-entry-summary {
     color: var(--ctp-subtext0);
     font-size: 0.75rem;
-    display: block;
     margin-block-start: 0.25rem;
 }
 
 .article-entry-summary {
-    font-size: 0.75rem;
     line-height: 1.5;
     margin: 0.5rem 0 0;
     color: var(--ctp-text);
 }
 
-.article p {
+/* Article byline: byline + date on a single line, separated by a middot. */
+.article-byline,
+.article-date {
+    font-family: var(--font-sans);
     font-size: 0.875rem;
-    line-height: 1.7;
-    margin-block: 1rem;
+    color: var(--ctp-subtext0);
+    margin: 0;
+}
+
+.article-byline { margin-block-start: 0.25rem; }
+
+.article-date { margin-block-end: 2rem; }
+
+.article-date::before {
+    content: "·";
+    margin-inline: 0.5rem;
+}
+
+.article-byline + .article-date {
+    display: inline;
+}
+
+/* Body content */
+.article p {
+    margin-block: 1.25rem;
 }
 
 .article ul,
 .article ol {
-    font-size: 0.875rem;
-    line-height: 1.7;
+    margin-block: 1.25rem;
     padding-inline-start: 1.5rem;
 }
 
-.article h2,
-.article h3 {
-    font-family: inherit;
-    font-weight: 700;
-    margin-block-start: 2rem;
-    margin-block-end: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
+.article li + li {
+    margin-block-start: 0.4rem;
 }
 
-.article h2 { font-size: 1rem; }
-.article h3 { font-size: 0.9375rem; }
+.article ul li::marker {
+    color: var(--ctp-overlay0);
+}
+
+.article strong {
+    font-weight: 700;
+    color: var(--ctp-text);
+}
+
+.article em {
+    font-style: italic;
+}
+
+/* Headings */
+.article h2,
+.article h3,
+.article h4 {
+    font-family: var(--font-sans);
+    color: var(--ctp-text);
+    line-height: 1.25;
+}
+
+.article h2 {
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-block: 3rem 0.75rem;
+}
+
+.article h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-block: 2.25rem 0.5rem;
+}
+
+.article h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ctp-subtext1);
+    margin-block: 1.75rem 0.5rem;
+}
 
 .article a {
     color: var(--ctp-blue);
     text-decoration: underline;
-    text-underline-offset: 0.15em;
+    text-decoration-thickness: 0.075em;
+    text-underline-offset: 0.2em;
+    transition: color 120ms ease;
+}
+
+.article a:hover {
+    color: var(--ctp-sapphire);
 }
 
 .article blockquote {
-    border-inline-start: 3px solid var(--ctp-mauve);
-    padding: 0.5rem 1rem;
-    margin: 1rem 0;
-    background: var(--ctp-mantle);
-    font-size: 0.875rem;
+    border-inline-start: 4px solid var(--ctp-mauve);
+    padding: 0.25rem 0 0.25rem 1.5rem;
+    margin: 1.75rem 0;
+    font-style: italic;
+    font-size: 1.125rem;
     line-height: 1.6;
     color: var(--ctp-subtext1);
+    background: none;
+}
+
+.article blockquote p {
+    margin: 0;
+}
+
+.article hr {
+    border: none;
+    border-block-start: 1px solid var(--ctp-surface0);
+    margin-block: 3rem;
 }
 
 .article table {
@@ -481,7 +591,7 @@ body {
     border: 1px solid var(--ctp-surface0);
     border-radius: 0.5rem;
     padding: 0;
-    margin: 1.5rem 0;
+    margin: 1.75rem 0;
     overflow: hidden;
     max-block-size: 32rem;
 }
@@ -489,13 +599,58 @@ body {
 .article pre::before {
     content: "";
     display: block;
-    block-size: 1.5rem;
+    block-size: 1.75rem;
     background-color: var(--ctp-crust);
     background-image:
-        radial-gradient(circle at 0.6rem 0.75rem, var(--ctp-red)    0.22rem, transparent 0.23rem),
-        radial-gradient(circle at 1.35rem 0.75rem, var(--ctp-yellow) 0.22rem, transparent 0.23rem),
-        radial-gradient(circle at 2.1rem 0.75rem, var(--ctp-green)  0.22rem, transparent 0.23rem);
+        radial-gradient(circle at 0.7rem 0.875rem, var(--ctp-red)    0.22rem, transparent 0.23rem),
+        radial-gradient(circle at 1.45rem 0.875rem, var(--ctp-yellow) 0.22rem, transparent 0.23rem),
+        radial-gradient(circle at 2.2rem 0.875rem, var(--ctp-green)  0.22rem, transparent 0.23rem);
     border-block-end: 1px solid var(--ctp-surface0);
+}
+
+/* Copy-to-clipboard pill, injected into each <pre> by scripts/copy-code.js.
+ * Sits in the right side of the editor-chrome title bar. Black pill with a
+ * tiny copy glyph and a 10px "Copy" label; turns green briefly after a
+ * successful clipboard write. */
+.code-copy {
+    position: absolute;
+    inset-block-start: 0.3125rem;
+    inset-inline-end: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-block: 0.1875rem;
+    padding-inline: 0.5rem 0.5625rem;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-family: var(--font-sans);
+    font-size: 0.625rem; /* 10px @ 16px root */
+    line-height: 1;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 120ms ease, transform 120ms ease;
+}
+
+.code-copy:hover {
+    background: var(--ctp-text);
+}
+
+.code-copy:active {
+    transform: translateY(0.0625rem);
+}
+
+.code-copy.is-copied {
+    background: var(--ctp-green);
+    color: #fff;
+}
+
+.code-copy-icon {
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    flex-shrink: 0;
 }
 
 .article pre > code {
