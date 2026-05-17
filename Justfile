@@ -25,7 +25,7 @@ dev:
             --watch website/assets \
             --watch Cargo.toml \
             --watch website/Cargo.toml \
-            -- cargo run
+            -- cargo run --features dev
 
 # Standard build / check / format.
 check:

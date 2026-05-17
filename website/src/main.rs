@@ -6,7 +6,6 @@ use axum::extract::Path;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use listenfd::ListenFd;
 use rust_embed::RustEmbed;
 use tokio::net::TcpListener;
 
@@ -89,36 +88,43 @@ async fn main() {
 
     let addr = resolve_server_address();
 
-    // Live-reload path: when launched via `systemfd ... -- watchexec ... cargo run`,
-    // systemfd opens the TCP socket once and passes it to each child via the
-    // LISTEN_FDS protocol. We pick it up here so restarts don't drop the port
-    // and we get instant rebuilds. In production (no LISTEN_FDS), this falls
-    // through to a normal bind.
-    let listener = match ListenFd::from_env().take_tcp_listener(0) {
-        Ok(Some(std_listener)) => {
-            std_listener
-                .set_nonblocking(true)
-                .expect("set listener non-blocking");
-            let local = std_listener.local_addr().ok();
-            let listener =
-                TcpListener::from_std(std_listener).expect("convert listenfd socket");
-            println!(
-                "Inherited listener from systemfd ({})",
-                local.map(|a| a.to_string()).unwrap_or_else(|| "?".into())
-            );
-            listener
-        }
-        _ => {
-            println!("Starting server on http://{addr}");
-            TcpListener::bind(addr)
-                .await
-                .unwrap_or_else(|e| panic!("Failed to bind to {addr}: {e}"))
-        }
+    let listener = if let Some(std_listener) = take_listenfd_listener() {
+        std_listener
+            .set_nonblocking(true)
+            .expect("set listener non-blocking");
+        let local = std_listener.local_addr().ok();
+        let listener = TcpListener::from_std(std_listener).expect("convert listenfd socket");
+        println!(
+            "Inherited listener from systemfd ({})",
+            local.map(|a| a.to_string()).unwrap_or_else(|| "?".into())
+        );
+        listener
+    } else {
+        println!("Starting server on http://{addr}");
+        TcpListener::bind(addr)
+            .await
+            .unwrap_or_else(|e| panic!("Failed to bind to {addr}: {e}"))
     };
 
     axum::serve(listener, app)
         .await
         .unwrap_or_else(|e| panic!("Server error: {e}"));
+}
+
+// Attempts to grab a listener handed down by `systemfd` via LISTEN_FDS. The
+// `dev` feature is the only path that links the `listenfd` crate; production
+// builds get the `None` stub at compile time, so no listenfd code ships.
+#[cfg(feature = "dev")]
+fn take_listenfd_listener() -> Option<std::net::TcpListener> {
+    listenfd::ListenFd::from_env()
+        .take_tcp_listener(0)
+        .ok()
+        .flatten()
+}
+
+#[cfg(not(feature = "dev"))]
+fn take_listenfd_listener() -> Option<std::net::TcpListener> {
+    None
 }
 
 fn resolve_server_address() -> SocketAddr {

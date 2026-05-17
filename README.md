@@ -65,6 +65,12 @@ the new binary inherits the listening socket from `systemfd` via the
 `LISTEN_FDS` protocol (handled by the [`listenfd`](https://crates.io/crates/listenfd)
 crate in `main.rs`). Restarts are sub-second once the build cache is warm.
 
+> **Production-safety note**: the `listenfd` crate is gated behind a `dev`
+> Cargo feature and is **not compiled** by `cargo build --release` (which is
+> what Render runs). The live-reload plumbing has zero presence in the
+> production binary — verified by checking that `cargo build --release`
+> never logs `Compiling listenfd`.
+
 **Pick a port**:
 
 ```bash

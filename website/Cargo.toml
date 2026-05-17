@@ -7,6 +7,12 @@ edition = "2024"
 axum = { workspace = true }
 tokio = { workspace = true }
 rust-embed = { workspace = true }
-listenfd = { workspace = true }
+listenfd = { workspace = true, optional = true }
 eng-markup = { workspace = true }
 eng-domain = { workspace = true }
+
+[features]
+# Enables live-reload via systemfd's LISTEN_FDS socket inheritance.
+# Used by `just dev` only. Production (`cargo build --release`) leaves
+# this off so `listenfd` is not linked into the binary at all.
+dev = ["dep:listenfd"]
