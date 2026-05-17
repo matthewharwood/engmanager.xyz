@@ -12,34 +12,91 @@ A minimal Axum site that renders a `hello-world` component via
 
 ## Run locally
 
+### Plain run (no live reload)
+
 ```bash
 cargo run --release
 ```
 
 Visit <http://127.0.0.1:3000>. Routes:
 
-- `GET /` → `<h1>hello-world</h1>` rendered via `view! { <HelloWorld /> }`
+- `GET /` → homepage
+- `GET /articles/` → article index
+- `GET /articles/{slug}` → individual article
 - `GET /health` → `OK`
 
-That's it — no database, no env vars required, no migrations.
+No database, no env vars required.
 
-### Optional: pick a port
+### Live reload (recommended for development)
+
+Auto-rebuild + restart on any change to `.rs` / `.toml` / `.css` / `.js` / `.svg`,
+with the TCP socket held open across restarts so connections don't flap.
+Mirrors the dev loop in [`auteur-rs`](https://github.com/eng-manager-xyz/auteur-rs).
+
+**One-time install** of the tooling:
 
 ```bash
-PORT=8080 cargo run --release
+# install just (task runner)
+brew install just                # macOS
+# OR: cargo install just --locked
+
+# install the dev-loop tools
+just bootstrap-tools             # installs systemfd + watchexec-cli
 ```
 
-When `PORT` is set, the server binds `0.0.0.0:$PORT` (production mode).
-Without it, it binds `127.0.0.1:3000` (dev mode).
+**Run it**:
+
+```bash
+just dev
+```
+
+What's happening:
+
+```
+systemfd ─ holds TCP socket open ─┐
+                                  ▼
+                       LISTEN_FDS=1 fd 3 → cargo run (your binary)
+                                  ▲
+watchexec ─ on file change ───────┘ kill+restart child; same socket reused
+```
+
+Edit any source file → watchexec kills the running binary → cargo rebuilds →
+the new binary inherits the listening socket from `systemfd` via the
+`LISTEN_FDS` protocol (handled by the [`listenfd`](https://crates.io/crates/listenfd)
+crate in `main.rs`). Restarts are sub-second once the build cache is warm.
+
+**Pick a port**:
+
+```bash
+PORT=8080 just dev
+```
+
+### Production-mode bind
+
+When `PORT` is set in the environment (without `systemfd`), the server binds
+`0.0.0.0:$PORT` (production mode). Without `PORT`, it binds `127.0.0.1:3000`
+(local dev mode).
 
 ## Project layout
 
 ```
 engmanager.xyz/
 ├── Cargo.toml             # workspace + shared deps
+├── Justfile               # dev-loop entry points (just dev / just check)
+├── rust-toolchain.toml    # pins nightly required by eng-markup
+├── scripts/               # cloudflare bootstrap + cache purge
 └── website/
     ├── Cargo.toml         # binary crate
-    └── src/main.rs        # router, HelloWorld component, server
+    ├── assets/            # embedded into binary via rust-embed
+    │   ├── styles.css
+    │   ├── favicon.svg
+    │   ├── fonts/
+    │   └── scripts/
+    └── src/
+        ├── main.rs        # router, asset handler, server bootstrap
+        └── pages/
+            ├── homepage.rs
+            └── articles.rs
 ```
 
 ## Deployment (Render.com)

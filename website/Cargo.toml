@@ -7,5 +7,6 @@ edition = "2024"
 axum = { workspace = true }
 tokio = { workspace = true }
 rust-embed = { workspace = true }
+listenfd = { workspace = true }
 eng-markup = { workspace = true }
 eng-domain = { workspace = true }
