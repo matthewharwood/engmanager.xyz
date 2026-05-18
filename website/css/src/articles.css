@@ -1,393 +1,6 @@
-@font-face {
-    font-family: "Monument Extended";
-    src: url("/assets/fonts/monumentextended-black-webfont.woff2") format("woff2"),
-         url("/assets/fonts/monumentextended-black-webfont.woff") format("woff");
-    font-weight: 900;
-    font-style: normal;
-    font-display: swap;
-}
-
-:root {
-    --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
-    --font-display: "Monument Extended", var(--font-sans);
-    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-        Consolas, "Liberation Mono", "Courier New", monospace;
-
-    /* Catppuccin Latte palette (https://catppuccin.com/palette/) */
-    --ctp-rosewater: #dc8a78;
-    --ctp-flamingo:  #dd7878;
-    --ctp-pink:      #ea76cb;
-    --ctp-mauve:     #8839ef;
-    --ctp-red:       #d20f39;
-    --ctp-maroon:    #e64553;
-    --ctp-peach:     #fe640b;
-    --ctp-yellow:    #df8e1d;
-    --ctp-green:     #40a02b;
-    --ctp-teal:      #179299;
-    --ctp-sky:       #04a5e5;
-    --ctp-sapphire:  #209fb5;
-    --ctp-blue:      #1e66f5;
-    --ctp-lavender:  #7287fd;
-    --ctp-text:      #4c4f69;
-    --ctp-subtext1:  #5c5f77;
-    --ctp-subtext0:  #6c6f85;
-    --ctp-overlay2:  #7c7f93;
-    --ctp-overlay1:  #8c8fa1;
-    --ctp-overlay0:  #9ca0b0;
-    --ctp-surface2:  #acb0be;
-    --ctp-surface1:  #bcc0cc;
-    --ctp-surface0:  #ccd0da;
-    --ctp-base:      #eff1f5;
-    --ctp-mantle:    #e6e9ef;
-    --ctp-crust:     #dce0e8;
-
-    /* Theme accent: change this one line to repaint the headline, article
-     * titles, and any other "accent" surface. */
-    --accent: var(--ctp-maroon);
-}
-
-html {
-    font-family: var(--font-sans);
-}
-
-body {
-    font-family: var(--font-sans);
-    margin: 0;
-    background: var(--ctp-base);
-    color: var(--ctp-text);
-    /* Belt + suspenders: never let any child cause a horizontal scrollbar. */
-    overflow-x: clip;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-}
-
-/*
- * Fluid display headline — "SVG Way" from
- * https://css-tricks.com/fitting-text-to-a-container/
- *
- * Markup is an SVG containing a <text> at a fixed user-space font-size.
- * On load (assets/scripts/fit-text.js), after web fonts are ready, JS reads
- * the text's getBBox() and sets viewBox to those exact bounds. With width:100%
- * + height:auto, the SVG (and the text inside it) scales perfectly with its
- * container — never clips, never wraps, never overflows. No glyph distortion.
- *
- * The initial viewBox (1200x200) is a generous fallback so things look sane
- * before the JS runs / if it fails. JS also overrides max-inline-size to cap
- * the visible height at 9rem (144px).
- */
-.fluid-display-wrap {
-    inline-size: 100%;
-}
-
-.fluid-display {
-    margin: 0;
-    line-height: 0;
-    padding-bottom: 2rem;
-    /* Headline takes the theme accent. The SVG <text> inside uses
-     * fill="currentColor" so this propagates down through inheritance. */
-    color: var(--accent);
-}
-
-.fluid-display-svg {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-}
-
-/*
- * ENG MANAGER and the article-link titles share the same fluid-display-wrap.
- * Both sit inside body's padding-inline gutter so their left edges line up.
- * (Previously the headline used a negative margin to bleed to the viewport
- * edges, but that misaligned it from the stacked article titles below on
- * narrow screens — now they all share the same left rail.)
- */
-
-/*
- * HTML fallback for article-link titles when the fluid SVG would render the
- * text below 16px. fit-text.js measures the effective font size at the
- * current container width and toggles .is-too-small on the SVG; CSS uses
- * the adjacent-sibling combinator to swap in the fallback.
- *
- * The fallback uses Archivo 900 at 1rem (16px @ 16px root), white-space:
- * nowrap + text-overflow: ellipsis to cleanly truncate long titles.
- */
-.article-fluid-fallback {
-    display: none;
-    font-family: "Archivo", sans-serif;
-    font-weight: 900;
-    font-size: 1rem;
-    line-height: 1.25;
-    color: inherit;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.article-fluid-svg.is-too-small {
-    display: none;
-}
-
-.article-fluid-svg.is-too-small + .article-fluid-fallback {
-    display: block;
-}
-
-/*
- * Pierre-style monospace resume block.
- *
- * 12px monospace text expressed in rem (0.75rem @ 16px root). Each line is
- * its own div with white-space: pre so leading spaces in "  - [...]" survive.
- * Markdown-syntax (`[text](url)`) is rendered as literal text with the URL
- * portion wrapped in an <a> so it's clickable.
- */
-.resume {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1.5;
-    color: var(--ctp-text);
-    margin-block-start: 2rem;
-}
-
-.resume-line {
-    white-space: pre;
-}
-
-.resume-heading {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-}
-
-/* Blinking block cursor after the heading text. */
-.resume-heading::after {
-    content: "";
-    display: inline-block;
-    inline-size: 0.55em;
-    block-size: 1em;
-    background: currentColor;
-    animation: resume-cursor-blink 1s steps(2, start) infinite;
-}
-
-@keyframes resume-cursor-blink {
-    to { background: transparent; }
-}
-
-.resume-sep {
-    margin-block: 0.75rem;
-}
-
-.resume-link {
-    color: var(--ctp-mauve);
-    text-decoration: none;
-    text-underline-offset: 0.15em;
-}
-
-.resume-link:hover,
-.resume-link:focus-visible {
-    color: var(--ctp-blue);
-    text-decoration: underline;
-}
-
-.resume-strike {
-    text-decoration: line-through;
-    color: var(--ctp-subtext0);
-}
-
-/*
- * 4×4px green status pip in the top-right corner of "ONLINE".
- *
- * - inline-block span so position: relative establishes a containing block
- *   for the absolutely-positioned pip.
- * - Radial gradient with the highlight off-center (top-left light source)
- *   gives a subtle 3D / spherical look.
- * - Box shadow: a soft drop shadow below for lift, plus a faint green glow
- *   to soften the edge against the white page.
- */
-.status-online {
-    position: relative;
-    display: inline-block;
-}
-
-.status-pip {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-end: -0.3125rem; /* nudge past the right edge */
-    inline-size: 0.25rem; /* 4px */
-    block-size: 0.25rem; /* 4px */
-    border-radius: 50%;
-    background: radial-gradient(
-        circle at 30% 30%,
-        #a6e3a1 0%,
-        var(--ctp-green) 50%,
-        #2d7d20 100%
-    );
-    box-shadow:
-        0 0.0625rem 0.125rem rgba(0, 0, 0, 0.25),
-        0 0 0.25rem rgba(64, 160, 43, 0.35);
-}
-
-/*
- * Full viewport height using `dvh` (dynamic viewport height): on iOS/mobile
- * Safari the value updates as the address bar shows/hides, unlike `vh` which
- * is frozen to the largest possible height and causes the page to be cut off.
- */
-html {
-    block-size: 100%;
-}
-
-body {
-    /* Page padding so the headline + resume don't touch the viewport edge. */
-    padding-block: 2rem;
-    padding-inline: 1rem;
-    min-block-size: 100dvh;
-    box-sizing: border-box;
-}
-
-/*
- * Stacked article-link titles under the main headline. Each is a fluid SVG
- * (same treatment as ENG MANAGER) wrapped in an <a>. Default underline hidden;
- * hover paints a chunky underline beneath the title.
- */
-.article-fluid-link {
-    display: block;
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.article-fluid-link + .article-fluid-link {
-    margin-block-start: 1rem;
-}
-
-/* Hover treatment: lift the link with a 1.2x scale and a soft elevation
- * shadow under the text. drop-shadow follows the actual glyph outlines
- * (and the SVG content) rather than the bounding box, so the shadow
- * tracks the text shape. The link can clip past the viewport on hover —
- * that's intentional. */
-.article-fluid-link {
-    transform: scale(1);
-    transform-origin: left center;
-    transition:
-        transform 220ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
-        filter 220ms ease;
-    will-change: transform, filter;
-}
-
-.article-fluid-link:hover,
-.article-fluid-link:focus-visible {
-    transform: scale(1.2);
-    filter: drop-shadow(0 0.75rem 1.5rem rgba(76, 79, 105, 0.25));
-}
-
-/* Chunky maroon focus ring for keyboard nav (ArrowDown/Up between titles).
- *
- *   outline-offset: 1rem  — paints the ring 1rem outside the element,
- *                          leaving a 1rem gap between element and ring
- *                          (the "padding on the inside" of the ring).
- *   outline-width:  1rem  — 1rem-thick stroke on all four sides.
- *   outline-color:  var(--accent)  — same maroon as the title fills.
- *
- * outline doesn't participate in layout, so this never causes a reflow when
- * focus moves between links. */
-.article-fluid-link:focus-visible {
-    outline: 1rem solid var(--accent);
-    outline-offset: 1rem;
-}
-
-/*
- * Avatar pinned to the bottom-right of the viewport.
- * The fixed positioning lives on the <button> wrapper now so clicks open
- * the bio popover. The <img> inside is static.
- */
-.avatar-button {
-    position: fixed;
-    inset-block-end: 1rem;
-    inset-inline-end: 1rem;
-    padding: 0;
-    margin: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    z-index: 10;
-    line-height: 0;
-    /* Named anchor for the bio popover (used by position-anchor below). */
-    anchor-name: --avatar;
-}
-
-.avatar-button:focus-visible {
-    outline: 2px solid #5b21b6;
-    outline-offset: 2px;
-    border-radius: 50%;
-}
-
-.avatar {
-    block-size: 3rem;
-    inline-size: auto;
-    display: block;
-}
-
-/*
- * Bio popover, anchored so its BOTTOM-RIGHT corner sits at the avatar's
- * TOP-LEFT corner.
- *
- * Two strategies layered:
- *
- *   1. Manual offset (universal): set top/left to auto and bottom/right to
- *      4rem. Avatar is 3rem square at 1rem inset, so its top-left lives 4rem
- *      from the viewport's right and bottom — setting our right and bottom
- *      to 4rem puts our bottom-right corner there. Each of top/right/bottom/
- *      left is set as a *longhand* (not the `inset` shorthand) because the
- *      shorthand fights the UA `inset: 0` rule less reliably across engines.
- *
- *   2. CSS Anchor Positioning (modern browsers, 2024+): position-anchor +
- *      position-area let the browser do the math from the .avatar-button
- *      anchor directly. The `top left` area places the popover above and to
- *      the left of the anchor, with its near corner kissing the anchor's
- *      far corner — which is exactly the alignment we want. Browsers that
- *      don't support anchor positioning silently ignore these properties
- *      and the manual offset above takes over.
- */
-#bio {
-    /* Override the UA popover defaults (inset: 0; margin: auto = centered). */
-    position: fixed;
-    top: auto;
-    left: auto;
-    right: 4rem;
-    bottom: 4rem;
-    margin: 0;
-
-    /* Sizing */
-    width: max-content;
-    max-width: 26rem;
-    height: auto;
-
-    /* Modern anchor positioning (Chrome 125+, Safari 17.4+, Firefox 137+). */
-    position-anchor: --avatar;
-    position-area: top left;
-
-    /* Visual */
-    padding: 1.25rem 1.5rem;
-    border: 1px solid var(--ctp-surface0);
-    border-radius: 0.75rem;
-    background: var(--ctp-base);
-    color: var(--ctp-text);
-    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(76, 79, 105, 0.18);
-}
-
-#bio::backdrop {
-    background: transparent;
-}
-
-/* Reset the .resume margin-block-start inside the popover; the popover has
- * its own padding now. */
-#bio .resume {
-    margin-block-start: 0;
-}
-
-/* =================================================================
- * Articles (monospace-only for now)
- * ================================================================= */
+/* Articles-only styles: nav, editorial typography, code blocks, Prism
+ * token colors, article meta block, Discord widget, callouts/figures,
+ * auteurs-specific visuals. Loaded by /articles/ and /articles/{slug}. */
 
 .articles-page {
     color: var(--ctp-text);
@@ -398,20 +11,6 @@ body {
     max-inline-size: 50rem;
 }
 
-/* ===========================================================================
- * Article body typography
- *
- * Reusable for every /articles/{slug}. The only per-article content is the
- * Markdown — these styles cover every element pulldown-cmark might emit.
- *
- * Editorial defaults pulled from Medium / Obsidian / well-set blogs:
- *   - Comfortable measure: max-inline-size ≈ 38rem (~62–70 ch in Archivo)
- *   - Body 17px / line-height 1.7 for relaxed reading
- *   - Clear visual hierarchy: title (display) → h2 → h3 → body
- *   - Generous block spacing between sections, tight inside sections
- *   - Links carry a thin underline rather than colour-only emphasis
- *   - Blockquote pulled left, italicized, slightly larger
- * =========================================================================== */
 .article {
     font-family: var(--font-sans);
     font-size: 1.0625rem;
@@ -422,18 +21,7 @@ body {
     padding-block-end: 4rem;
 }
 
-/* ===========================================================================
- * Site nav — sticky, glass-blurred, edge-to-edge.
- *
- * Mobile-first: a single row of brand + 3 links, always visible (no
- * hamburger — "less clicks is more valuable"). Bleeds past the body's
- * padding-inline so the blurred background reaches the viewport edge,
- * with its own internal padding for the row contents.
- *
- * `backdrop-filter` gives the live blur over scrolled content; the
- * semi-transparent base mantle keeps text readable when nothing's
- * behind it yet (top of page).
- * =========================================================================== */
+/* Site nav — sticky, glass-blurred, edge-to-edge. Mobile-first. */
 .site-nav {
     position: sticky;
     inset-block-start: 0;
@@ -470,9 +58,6 @@ body {
     transition: color 120ms ease;
 }
 
-/* Mobile-first: only the favicon orb shows up to small-tablet (30rem).
- * Three link labels + wordmark + brand orb overflow a Pixel-sized
- * viewport (~393px) otherwise. Wordmark un-hides at ≥30rem below. */
 .site-nav-wordmark {
     display: none;
 }
@@ -523,8 +108,6 @@ body {
     color: var(--accent);
 }
 
-/* From small-tablet up: bring back the wordmark + a touch more
- * breathing room throughout. */
 @media (min-width: 30rem) {
     .site-nav {
         gap: 1rem;
@@ -603,14 +186,7 @@ body {
     color: var(--ctp-text);
 }
 
-/* Article meta header — Vercel/changelog-flavored.
- *
- *   [avatar]  Matthew Harwood              [ May 31, 2025 ]
- *             Engineering Manager @ Uber
- *
- * Avatar on the left, author name + role stacked, date pushed to the
- * trailing edge as a subtle mono pill. On narrow viewports the date
- * wraps below and aligns with the author block. */
+/* Vercel-flavored author meta header. */
 .article-meta {
     display: flex;
     align-items: center;
@@ -690,7 +266,7 @@ body {
     }
 }
 
-/* Body content */
+/* Article body typography. */
 .article p {
     margin-block: 1.25rem;
 }
@@ -718,7 +294,6 @@ body {
     font-style: italic;
 }
 
-/* Headings */
 .article h2,
 .article h3,
 .article h4 {
@@ -801,7 +376,6 @@ body {
     background: var(--ctp-mantle);
 }
 
-/* Inline backtick code (not inside a <pre>). */
 .article :not(pre) > code {
     font-family: var(--font-mono);
     background: var(--ctp-mantle);
@@ -811,16 +385,7 @@ body {
     font-size: 0.85em;
 }
 
-/* ===========================================================================
- * Code-block "editor" chrome (Zed-flavored wireframe).
- *
- * Each <pre> from pulldown-cmark becomes a faux editor window:
- *   - Rounded outer panel (mantle bg, subtle border)
- *   - Top "title bar" strip with three traffic-light dots, colored from the
- *     Catppuccin palette (red / yellow / green).
- *   - <code> body sits below with padding.
- * Everything stays scrollable via overflow-x on the <pre>.
- * =========================================================================== */
+/* Zed-style code-block chrome. */
 .article pre {
     position: relative;
     background: var(--ctp-mantle);
@@ -844,10 +409,6 @@ body {
     border-block-end: 1px solid var(--ctp-surface0);
 }
 
-/* Copy-to-clipboard pill, injected into each <pre> by scripts/copy-code.js.
- * Sits in the right side of the editor-chrome title bar. Black pill with a
- * tiny copy glyph and a 10px "Copy" label; turns green briefly after a
- * successful clipboard write. */
 .code-copy {
     position: absolute;
     inset-block-start: 0.3125rem;
@@ -862,7 +423,7 @@ body {
     border: none;
     border-radius: 999px;
     font-family: var(--font-sans);
-    font-size: 0.625rem; /* 10px @ 16px root */
+    font-size: 0.625rem;
     line-height: 1;
     letter-spacing: 0.02em;
     cursor: pointer;
@@ -898,15 +459,11 @@ body {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     line-height: 1.6;
-    /* Cap the inner scroll area so the <pre>'s max-block-size is respected. */
     max-block-size: calc(32rem - 1.5rem);
     box-sizing: border-box;
 }
 
-/* ===========================================================================
- * Prism.js token colors — Catppuccin Latte.
- * Targets the .token classes Prism adds inside <code class="language-X">.
- * =========================================================================== */
+/* Prism.js token colors — Catppuccin Latte. */
 .article code[class*="language-"],
 .article pre[class*="language-"],
 .article pre > code {
@@ -972,37 +529,7 @@ body {
 .article .token.bold { font-weight: 700; }
 .article .token.italic { font-style: italic; }
 
-/* ===========================================================================
- * Comically-large custom cursor on the homepage.
- *
- * The native cursor is hidden; scripts/big-cursor.js mounts a position:fixed
- * SVG arrow that follows the mouse. Sized at 256px — about 8x a typical
- * 32px system cursor.
- * =========================================================================== */
-.homepage,
-.homepage * {
-    cursor: none;
-}
-
-.big-cursor {
-    position: fixed;
-    inset-block-start: 0;
-    inset-inline-start: 0;
-    inline-size: 256px;
-    block-size: 256px;
-    pointer-events: none;
-    z-index: 9999;
-    /* Translate is driven by JS via requestAnimationFrame. Provide a subtle
-     * fade for cursor-enter / cursor-leave events. */
-    transition: opacity 150ms ease;
-    will-change: transform;
-    filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
-}
-
-/* ===========================================================================
- * Auteurs article: shader canvas, QR + discord link, workflow, products grid.
- * =========================================================================== */
-
+/* Auteurs-specific: shader canvas, QR + invite link, workflow, products. */
 .auteurs-shader {
     display: block;
     inline-size: min(100%, 32rem);
@@ -1041,15 +568,7 @@ body {
     text-decoration: underline;
 }
 
-/* ===========================================================================
- * Live Discord widget — Vercel-flavored card.
- *
- * Server-rendered from a cached snapshot of Discord's widget + invite
- * endpoints (see website/src/discord.rs). The card sits above the static
- * QR/link block in the Auteurs article; if the snapshot is cold or the
- * widget endpoint is disabled, the card is omitted and the static block
- * keeps working as the join CTA.
- * =========================================================================== */
+/* Live Discord widget card (server-rendered from cached snapshot). */
 .discord-widget {
     display: flex;
     flex-direction: column;
@@ -1186,12 +705,7 @@ body {
     font-weight: 700;
 }
 
-/* Filled accent button — sits flush-left so it doesn't hijack the whole
- * card width. Vercel-style: subtle gradient, soft elevation on hover.
- *
- * Scoped under .article to win specificity against `.article a` (which
- * paints the link blue and underlines it). Without this the join CTA
- * comes out blue-on-blurple with the article-body underline. */
+/* Scoped under .article to beat `.article a` (blue + underline). */
 .article .discord-widget-join {
     align-self: flex-start;
     display: inline-flex;
@@ -1228,12 +742,7 @@ body {
     line-height: 1;
 }
 
-/* ===========================================================================
- * Article inline visuals — callouts, captioned figures, small SVG diagrams.
- * Reusable across articles; first used by /articles/talking-not-typing.
- * =========================================================================== */
-
-/* Highlighted intro box. Soft gradient tint of the accent + a left rail. */
+/* Article inline visuals — callouts, captioned figures, SVG diagrams. */
 .article-callout {
     margin-block: 2rem;
     padding: 1.125rem 1.375rem;
@@ -1259,7 +768,6 @@ body {
     margin: 0;
 }
 
-/* Generic captioned-figure shell used by the SVG illustrations below. */
 .article figure {
     margin: 2rem 0;
     padding: 1.25rem;
@@ -1281,22 +789,19 @@ body {
     max-inline-size: 32ch;
 }
 
-/* iPad ⟷ GitHub tether. The dashed line animates via SMIL inside the SVG. */
 .tether-svg {
     inline-size: min(100%, 18rem);
     block-size: auto;
     color: var(--accent);
 }
 
-/* Crescent moon + ascending Zs. Z opacity loops via SMIL. */
 .moonloop-svg {
     inline-size: min(100%, 9rem);
     block-size: auto;
     color: var(--accent);
 }
 
-/* Workflow diagram: horizontal flex of stage cards connected by →.
- * Reflows to a vertical stack on narrow viewports; arrows rotate 90deg. */
+/* Workflow diagram (Auteurs article). */
 .workflow {
     display: flex;
     flex-wrap: wrap;
@@ -1369,7 +874,6 @@ body {
     .workflow-stage { flex: 0 0 auto; }
 }
 
-/* Products grid */
 .auteurs-products {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -1396,4 +900,3 @@ body {
     border-color: var(--ctp-maroon);
     border-width: 2px;
 }
-

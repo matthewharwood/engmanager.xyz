@@ -6,8 +6,9 @@ use axum::extract::Path;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use rust_embed::RustEmbed;
+use rust_embed::{EmbeddedFile, RustEmbed};
 use tokio::net::TcpListener;
+use tower_http::compression::CompressionLayer;
 
 pub mod discord;
 mod pages;
@@ -30,6 +31,24 @@ const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
 #[folder = "assets/"]
 pub struct Assets;
 
+// Minified CSS chunks emitted by build.rs (via lightningcss) into
+// $OUT_DIR/css-dist/{critical,homepage,articles}.css. Served at
+// /assets/css/{name}.{hash}.css through the same handler.
+#[derive(RustEmbed)]
+#[folder = "$OUT_DIR/css-dist/"]
+pub struct CssDist;
+
+// Two-tier lookup: paths prefixed with `css/` are minified chunks
+// produced at build time; everything else lives in `assets/`.
+fn lookup_asset(path: &str) -> Option<EmbeddedFile> {
+    if let Some(name) = path.strip_prefix("css/") {
+        if let Some(file) = CssDist::get(name) {
+            return Some(file);
+        }
+    }
+    Assets::get(path)
+}
+
 // Length of the hex hash segment baked into asset URLs. 8 hex chars = 4 bytes
 // of sha256 = ~4 billion buckets, plenty to make collisions across deploys
 // effectively impossible while keeping URLs short.
@@ -45,7 +64,7 @@ const ASSET_HASH_LEN: usize = 8;
 // or doesn't have an extension, so the request still 404s predictably
 // rather than silently rewriting to something else.
 pub fn asset_url(path: &str) -> String {
-    let Some(file) = Assets::get(path) else {
+    let Some(file) = lookup_asset(path) else {
         return format!("/assets/{path}");
     };
     let Some((stem, ext)) = path.rsplit_once('.') else {
@@ -96,8 +115,8 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
     // fall back to the literal path so flat URLs (fonts in CSS, Markdown
     // images) keep resolving.
     let file = strip_asset_hash(&path)
-        .and_then(|stripped| Assets::get(&stripped))
-        .or_else(|| Assets::get(&path));
+        .and_then(|stripped| lookup_asset(&stripped))
+        .or_else(|| lookup_asset(&path));
 
     match file {
         Some(file) => {
@@ -165,7 +184,11 @@ async fn main() {
         .route("/health", get(|| async { "OK" }))
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
         .route("/assets/{*path}", get(asset_handler))
-        .layer(axum::middleware::from_fn(html_cache_layer));
+        .layer(axum::middleware::from_fn(html_cache_layer))
+        // Brotli + gzip over the wire for any compressible response
+        // (text/css, text/html, application/javascript, etc.). Vary
+        // header is added automatically so caches key on encoding.
+        .layer(CompressionLayer::new());
 
     let addr = resolve_server_address();
 
