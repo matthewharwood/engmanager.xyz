@@ -80,8 +80,21 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src={ asset_url("scripts/auteurs-shader.js") } defer></script>
             </head>
             <body class="articles-page">
-                <nav class="article-nav">
-                    <a class="article-nav-link" href="/">"← engmanager.xyz"</a>
+                <nav class="site-nav" aria-label="Primary">
+                    <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
+                        <img class="site-nav-mark"
+                             src={ asset_url("favicon.svg") }
+                             alt=""
+                             width="20"
+                             height="20"
+                             aria-hidden="true" />
+                        <span class="site-nav-wordmark">"engmanager.xyz"</span>
+                    </a>
+                    <div class="site-nav-links">
+                        <a class="site-nav-link is-current" href="/articles/" aria-current="page">"Articles"</a>
+                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">"Discord"</a>
+                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener">"GitHub"</a>
+                    </div>
                 </nav>
                 { body }
             </body>
