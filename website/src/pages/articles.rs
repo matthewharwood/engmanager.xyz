@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::Html;
 use eng_domain::HtmlFragment;
 use eng_markup::{html, view};
+use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag, TagEnd};
 use rust_embed::RustEmbed;
 
 use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
@@ -77,8 +80,10 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
-                <script src={ asset_url("scripts/copy-code.js") } defer></script>
-                <script src={ asset_url("scripts/auteurs-shader.js") } defer></script>
+                <script src={ asset_url("js/copy-code.js") } defer></script>
+                <script src={ asset_url("js/auteurs-shader.js") } defer></script>
+                <script src={ asset_url("js/toc-waypoints.js") } defer></script>
+                <script src={ asset_url("js/to-top.js") } defer></script>
             </head>
             <body class="articles-page">
                 <nav class="site-nav" aria-label="Primary">
@@ -98,6 +103,16 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                     </div>
                 </nav>
                 { body }
+                <button class="to-top" type="button" aria-label="Scroll to top">
+                    <svg class="to-top-icon" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.6"
+                              stroke-linecap="round"
+                              stroke-linejoin="round" />
+                    </svg>
+                </button>
             </body>
         </html>
     }
@@ -140,8 +155,10 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
         Some(a) => {
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
-            let inner = article_body(&slug).unwrap_or_else(HtmlFragment::empty);
+            let (inner, headings) = article_body(&slug)
+                .unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
             let inner = splice_discord_widget(&slug, inner).await;
+            let toc = render_toc(&headings);
             let body = view! {
                 <article class="article">
                     <h1 class="article-title">{ page_title }</h1>
@@ -160,6 +177,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                     </header>
                     { inner }
                 </article>
+                { toc }
             };
             Ok(Html(layout(page_title, body).into_string()))
         }
@@ -184,12 +202,19 @@ async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
     HtmlFragment::new(body_str.replace(DISCORD_WIDGET_SENTINEL, &replacement))
 }
 
-// Loads the Markdown for an article slug, parses it with pulldown-cmark, and
-// returns the rendered HTML wrapped in an HtmlFragment (which view! splices
-// in without re-escaping). pulldown-cmark preserves language hints on code
-// fences as `<code class="language-X">`, which Prism's autoloader then targets
-// for syntax highlighting. Returns None for unknown slugs.
-fn article_body(slug: &str) -> Option<HtmlFragment> {
+// A heading destined for the on-this-page sidebar.
+pub struct Heading {
+    pub level: u32, // 2 or 3
+    pub slug: String,
+    pub text: String,
+}
+
+// Loads the Markdown for an article slug, parses it with pulldown-cmark,
+// assigns an `id` to each h2/h3 (so the sidebar TOC can scroll-anchor to
+// them), and returns the rendered HTML alongside the heading list. The
+// h1 from the article title is rendered by the outer layout, not the
+// Markdown, so headings here start at h2.
+fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
     let path = format!("{slug}.md");
     let file = ArticleSources::get(&path)?;
     let markdown = std::str::from_utf8(&file.data).ok()?;
@@ -201,8 +226,143 @@ fn article_body(slug: &str) -> Option<HtmlFragment> {
     options.insert(pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES);
 
     let parser = pulldown_cmark::Parser::new_ext(markdown, options);
+    let mut events: Vec<Event> = parser.collect();
+    let mut headings: Vec<Heading> = Vec::new();
+    let mut slug_counts: HashMap<String, u32> = HashMap::new();
+
+    let mut i = 0;
+    while i < events.len() {
+        let level = match &events[i] {
+            Event::Start(Tag::Heading {
+                level: l @ (HeadingLevel::H2 | HeadingLevel::H3),
+                id: None,
+                ..
+            }) => *l,
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+
+        // Walk to the matching End(Heading), gathering text content.
+        let mut text = String::new();
+        let mut j = i + 1;
+        while j < events.len() {
+            match &events[j] {
+                Event::End(TagEnd::Heading(_)) => break,
+                Event::Text(t) | Event::Code(t) => text.push_str(t),
+                _ => {}
+            }
+            j += 1;
+        }
+
+        let base_slug = slugify(&text);
+        if base_slug.is_empty() {
+            i = j + 1;
+            continue;
+        }
+        let count = slug_counts.entry(base_slug.clone()).or_insert(0);
+        let slug = if *count == 0 {
+            base_slug.clone()
+        } else {
+            format!("{base_slug}-{count}")
+        };
+        *count += 1;
+
+        if let Event::Start(Tag::Heading {
+            level: l,
+            id: _,
+            classes,
+            attrs,
+        }) = events[i].clone()
+        {
+            events[i] = Event::Start(Tag::Heading {
+                level: l,
+                id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
+                classes,
+                attrs,
+            });
+        }
+
+        headings.push(Heading {
+            level: match level {
+                HeadingLevel::H2 => 2,
+                HeadingLevel::H3 => 3,
+                _ => 2,
+            },
+            slug,
+            text,
+        });
+        i = j + 1;
+    }
+
     let mut html_output = String::new();
-    pulldown_cmark::html::push_html(&mut html_output, parser);
-    Some(HtmlFragment::new(html_output))
+    pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
+    Some((HtmlFragment::new(html_output), headings))
+}
+
+// CommonMark-friendly slugger: lowercase alphanumerics, single hyphens
+// between word breaks, trimmed at both ends. Sufficient for stable
+// anchor ids inside our own articles.
+fn slugify(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut prev_dash = true;
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    out.trim_matches('-').to_string()
+}
+
+// Sidebar "on this page" navigation. Empty when the article has no h2/h3
+// headings — the CSS hides the empty <aside> on small viewports anyway,
+// but skipping the render here is cleaner. h3 entries get the .is-h3
+// modifier for the indented sub-item treatment.
+fn render_toc(headings: &[Heading]) -> HtmlFragment {
+    if headings.is_empty() {
+        return HtmlFragment::empty();
+    }
+    let items: HtmlFragment = headings
+        .iter()
+        .map(|h| {
+            let class = if h.level == 3 {
+                "article-toc-link is-h3"
+            } else {
+                "article-toc-link"
+            };
+            view! {
+                <li>
+                    <a class={ class } href={ format!("#{}", h.slug) }>
+                        { h.text.clone() }
+                    </a>
+                </li>
+            }
+        })
+        .collect();
+
+    view! {
+        <aside class="article-toc" aria-label="On this page">
+            <div class="article-toc-heading">
+                <svg class="article-toc-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <g fill="none" stroke="currentColor" stroke-width="1.5"
+                       stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="6" y1="4" x2="14" y2="4" />
+                        <line x1="6" y1="8" x2="14" y2="8" />
+                        <line x1="6" y1="12" x2="14" y2="12" />
+                        <circle cx="3" cy="4" r="0.9" fill="currentColor" />
+                        <circle cx="3" cy="8" r="0.9" fill="currentColor" />
+                        <circle cx="3" cy="12" r="0.9" fill="currentColor" />
+                    </g>
+                </svg>
+                "On this page"
+            </div>
+            <ul class="article-toc-list">{ items }</ul>
+        </aside>
+    }
 }
 

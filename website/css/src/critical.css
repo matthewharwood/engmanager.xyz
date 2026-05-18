@@ -49,6 +49,9 @@
 html {
     font-family: var(--font-sans);
     block-size: 100%;
+    /* Smooth in-page anchor scrolling. Browsers honor prefers-reduced-motion
+     * automatically, so motion-sensitive readers still get instant jumps. */
+    scroll-behavior: smooth;
 }
 
 body {

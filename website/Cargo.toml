@@ -17,6 +17,12 @@ eng-domain = { workspace = true }
 
 [build-dependencies]
 lightningcss = { workspace = true }
+oxc_allocator = { workspace = true }
+oxc_codegen = { workspace = true }
+oxc_mangler = { workspace = true }
+oxc_minifier = { workspace = true }
+oxc_parser = { workspace = true }
+oxc_span = { workspace = true }
 
 [features]
 # Enables live-reload via systemfd's LISTEN_FDS socket inheritance.
