@@ -31,3 +31,28 @@ dev:
 check:
     cargo fmt --all --check
     cargo build --release
+
+# Expose the local dev server to the public internet via Tailscale Funnel.
+#
+# Prereqs (one-time, in the Tailscale admin console):
+#   - https://login.tailscale.com/admin/acls — grant `funnel` on this
+#     device's tag (or `autogroup:member`):
+#         "nodeAttrs": [{ "target": ["autogroup:member"], "attr": ["funnel"] }]
+#   - https://login.tailscale.com/admin/dns — turn on HTTPS certificates.
+#
+# Runtime: assumes the dev server is already listening on $PORT (default
+# 3000). Run `just dev` in another tab first. Funnel persists across
+# dev-server restarts since it only proxies the port.
+tunnel:
+    @command -v tailscale >/dev/null || { echo "tailscale CLI not found. brew install tailscale (or grab the .pkg)." >&2; exit 1; }
+    tailscale funnel --bg --https=443 http://127.0.0.1:{{port}}
+    @echo
+    @echo "Public URL:"
+    @tailscale funnel status | grep -E '^https://' | head -1
+    @echo
+
+# Tear down both funnel + serve, returning the device to private.
+untunnel:
+    -tailscale funnel --https=443 off
+    tailscale serve reset
+    @echo "Tunnel down."
