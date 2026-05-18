@@ -149,6 +149,7 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
+                <script src={ asset_url("js/hover-prefetch.js") } defer></script>
             </head>
             <body class="homepage">
                 <EngHeadline />
