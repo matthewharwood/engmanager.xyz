@@ -144,7 +144,8 @@ pub async fn index() -> Html<String> {
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("styles.css") } />
+                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
+                <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
                 <script src={ asset_url("scripts/fit-text.js") } defer></script>
                 <script src={ asset_url("scripts/big-cursor.js") } defer></script>
                 <script src={ asset_url("scripts/keyboard-nav.js") } defer></script>

@@ -1,0 +1,219 @@
+/* Homepage-only styles: fluid SVG headlines, article-link stack, resume
+ * popover, big custom cursor. Loaded only by `/`. */
+
+.fluid-display-wrap {
+    inline-size: 100%;
+}
+
+.fluid-display {
+    margin: 0;
+    line-height: 0;
+    padding-bottom: 2rem;
+    color: var(--accent);
+}
+
+.fluid-display-svg {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+}
+
+.article-fluid-fallback {
+    display: none;
+    font-family: "Archivo", sans-serif;
+    font-weight: 900;
+    font-size: 1rem;
+    line-height: 1.25;
+    color: inherit;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.article-fluid-svg.is-too-small {
+    display: none;
+}
+
+.article-fluid-svg.is-too-small + .article-fluid-fallback {
+    display: block;
+}
+
+/* Pierre-style monospace resume block, shown inside #bio popover. */
+.resume {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--ctp-text);
+    margin-block-start: 2rem;
+}
+
+.resume-line {
+    white-space: pre;
+}
+
+.resume-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.resume-heading::after {
+    content: "";
+    display: inline-block;
+    inline-size: 0.55em;
+    block-size: 1em;
+    background: currentColor;
+    animation: resume-cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes resume-cursor-blink {
+    to { background: transparent; }
+}
+
+.resume-sep {
+    margin-block: 0.75rem;
+}
+
+.resume-link {
+    color: var(--ctp-mauve);
+    text-decoration: none;
+    text-underline-offset: 0.15em;
+}
+
+.resume-link:hover,
+.resume-link:focus-visible {
+    color: var(--ctp-blue);
+    text-decoration: underline;
+}
+
+.resume-strike {
+    text-decoration: line-through;
+    color: var(--ctp-subtext0);
+}
+
+.status-online {
+    position: relative;
+    display: inline-block;
+}
+
+.status-pip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: -0.3125rem;
+    inline-size: 0.25rem;
+    block-size: 0.25rem;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at 30% 30%,
+        #a6e3a1 0%,
+        var(--ctp-green) 50%,
+        #2d7d20 100%
+    );
+    box-shadow:
+        0 0.0625rem 0.125rem rgba(0, 0, 0, 0.25),
+        0 0 0.25rem rgba(64, 160, 43, 0.35);
+}
+
+/* Stacked clickable article titles (each its own fluid SVG) under the
+ * main ENG MANAGER headline. */
+.article-fluid-link {
+    display: block;
+    color: var(--accent);
+    text-decoration: none;
+    transform: scale(1);
+    transform-origin: left center;
+    transition:
+        transform 220ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
+        filter 220ms ease;
+    will-change: transform, filter;
+}
+
+.article-fluid-link + .article-fluid-link {
+    margin-block-start: 1rem;
+}
+
+.article-fluid-link:hover,
+.article-fluid-link:focus-visible {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0.75rem 1.5rem rgba(76, 79, 105, 0.25));
+}
+
+.article-fluid-link:focus-visible {
+    outline: 1rem solid var(--accent);
+    outline-offset: 1rem;
+}
+
+/* Bottom-right avatar popover trigger + #bio anchored popover. */
+.avatar-button {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 0;
+    anchor-name: --avatar;
+}
+
+.avatar-button:focus-visible {
+    outline: 2px solid #5b21b6;
+    outline-offset: 2px;
+    border-radius: 50%;
+}
+
+.avatar {
+    block-size: 3rem;
+    inline-size: auto;
+    display: block;
+}
+
+#bio {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 4rem;
+    bottom: 4rem;
+    margin: 0;
+    width: max-content;
+    max-width: 26rem;
+    height: auto;
+    position-anchor: --avatar;
+    position-area: top left;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.75rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(76, 79, 105, 0.18);
+}
+
+#bio::backdrop {
+    background: transparent;
+}
+
+#bio .resume {
+    margin-block-start: 0;
+}
+
+/* Native cursor hidden; scripts/big-cursor.js mounts a 256px SVG arrow. */
+.homepage,
+.homepage * {
+    cursor: none;
+}
+
+.big-cursor {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 256px;
+    block-size: 256px;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 150ms ease;
+    will-change: transform;
+    filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
+}

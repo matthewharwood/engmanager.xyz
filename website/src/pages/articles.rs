@@ -73,7 +73,8 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("styles.css") } />
+                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
+                <link rel="stylesheet" href={ asset_url("css/articles.css") } />
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
                 <script src={ asset_url("scripts/copy-code.js") } defer></script>

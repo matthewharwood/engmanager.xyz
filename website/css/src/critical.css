@@ -1,0 +1,68 @@
+/* Tokens, fonts, and base element styles. Loaded on every page. */
+
+@font-face {
+    font-family: "Monument Extended";
+    src: url("/assets/fonts/monumentextended-black-webfont.woff2") format("woff2"),
+         url("/assets/fonts/monumentextended-black-webfont.woff") format("woff");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --font-sans: "Archivo", system-ui, -apple-system, sans-serif;
+    --font-display: "Monument Extended", var(--font-sans);
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+
+    /* Catppuccin Latte palette (https://catppuccin.com/palette/) */
+    --ctp-rosewater: #dc8a78;
+    --ctp-flamingo:  #dd7878;
+    --ctp-pink:      #ea76cb;
+    --ctp-mauve:     #8839ef;
+    --ctp-red:       #d20f39;
+    --ctp-maroon:    #e64553;
+    --ctp-peach:     #fe640b;
+    --ctp-yellow:    #df8e1d;
+    --ctp-green:     #40a02b;
+    --ctp-teal:      #179299;
+    --ctp-sky:       #04a5e5;
+    --ctp-sapphire:  #209fb5;
+    --ctp-blue:      #1e66f5;
+    --ctp-lavender:  #7287fd;
+    --ctp-text:      #4c4f69;
+    --ctp-subtext1:  #5c5f77;
+    --ctp-subtext0:  #6c6f85;
+    --ctp-overlay2:  #7c7f93;
+    --ctp-overlay1:  #8c8fa1;
+    --ctp-overlay0:  #9ca0b0;
+    --ctp-surface2:  #acb0be;
+    --ctp-surface1:  #bcc0cc;
+    --ctp-surface0:  #ccd0da;
+    --ctp-base:      #eff1f5;
+    --ctp-mantle:    #e6e9ef;
+    --ctp-crust:     #dce0e8;
+
+    --accent: var(--ctp-maroon);
+}
+
+html {
+    font-family: var(--font-sans);
+    block-size: 100%;
+}
+
+body {
+    font-family: var(--font-sans);
+    margin: 0;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    overflow-x: clip;
+    padding-block: 2rem;
+    padding-inline: 1rem;
+    min-block-size: 100dvh;
+    box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+}
