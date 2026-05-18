@@ -146,9 +146,9 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
-                <script src={ asset_url("scripts/fit-text.js") } defer></script>
-                <script src={ asset_url("scripts/big-cursor.js") } defer></script>
-                <script src={ asset_url("scripts/keyboard-nav.js") } defer></script>
+                <script src={ asset_url("js/fit-text.js") } defer></script>
+                <script src={ asset_url("js/big-cursor.js") } defer></script>
+                <script src={ asset_url("js/keyboard-nav.js") } defer></script>
             </head>
             <body class="homepage">
                 <EngHeadline />

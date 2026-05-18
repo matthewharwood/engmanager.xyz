@@ -12,6 +12,12 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 serde = { version = "1", features = ["derive"] }
 tower-http = { version = "0.6", features = ["compression-br", "compression-gzip"] }
 lightningcss = "1.0.0-alpha.69"
+oxc_allocator = "0.131"
+oxc_codegen = "0.131"
+oxc_mangler = "0.131"
+oxc_minifier = "0.131"
+oxc_parser = "0.131"
+oxc_span = "0.131"
 
 # eng-markup proc-macros + eng-domain runtime types, pulled from auteur-rs.
 # eng-domain MUST be a direct dep of any crate that uses view!/html!, because

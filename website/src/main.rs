@@ -38,11 +38,23 @@ pub struct Assets;
 #[folder = "$OUT_DIR/css-dist/"]
 pub struct CssDist;
 
-// Two-tier lookup: paths prefixed with `css/` are minified chunks
-// produced at build time; everything else lives in `assets/`.
+// Minified JS bundles emitted by build.rs (via oxc_minifier) into
+// $OUT_DIR/js-dist/{name}.js. Served at /assets/js/{name}.{hash}.js.
+#[derive(RustEmbed)]
+#[folder = "$OUT_DIR/js-dist/"]
+pub struct JsDist;
+
+// Three-tier lookup: `css/` paths come from the lightningcss-built
+// chunks, `js/` paths from the oxc-built bundles, everything else from
+// the static `assets/` tree (fonts, images, etc.).
 fn lookup_asset(path: &str) -> Option<EmbeddedFile> {
     if let Some(name) = path.strip_prefix("css/") {
         if let Some(file) = CssDist::get(name) {
+            return Some(file);
+        }
+    }
+    if let Some(name) = path.strip_prefix("js/") {
+        if let Some(file) = JsDist::get(name) {
             return Some(file);
         }
     }
