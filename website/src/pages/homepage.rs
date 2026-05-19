@@ -2,9 +2,76 @@ use axum::response::Html;
 use eng_domain::{Component, HtmlFragment};
 use eng_markup::{html, view};
 
-use super::articles::ARTICLES;
+use std::collections::BTreeSet;
+
+use super::articles::{ARTICLES, Category, Tag};
 use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
 use crate::asset_url;
+
+// Twin brutalist marquees that loop seamlessly above the article
+// stack. Categories scroll left-to-right; tags scroll the opposite
+// direction. Each row's chip group is rendered four times back-to-
+// back, so the CSS animation can move the track by -25% in a linear
+// loop and the visual continuity is unbroken at any practical
+// viewport width. Pure decoration — no clicks, no filtering, no JS.
+fn render_topic_marquees() -> HtmlFragment {
+    let category_group: HtmlFragment = Category::ALL
+        .iter()
+        .map(|c| {
+            view! {
+                <span class="chip chip-category">
+                    <span class="chip-emoji" aria-hidden="true">{ c.emoji() }</span>
+                    <span class="chip-label">{ c.label() }</span>
+                </span>
+            }
+        })
+        .collect();
+
+    let mut unique_tags: BTreeSet<Tag> = BTreeSet::new();
+    for article in ARTICLES {
+        for tag in article.tags {
+            unique_tags.insert(*tag);
+        }
+    }
+    let tag_group: HtmlFragment = unique_tags
+        .into_iter()
+        .map(|t| {
+            view! {
+                <span class="chip chip-tag">
+                    <span class="chip-emoji" aria-hidden="true">{ t.emoji() }</span>
+                    <span class="chip-label">{ t.label() }</span>
+                </span>
+            }
+        })
+        .collect();
+
+    let category_track = marquee_track(&category_group, "marquee-track-forward");
+    let tag_track = marquee_track(&tag_group, "marquee-track-reverse");
+
+    view! {
+        <aside class="marquee-bar" aria-label="Article topics">
+            <div class="marquee">{ category_track }</div>
+            <div class="marquee">{ tag_track }</div>
+        </aside>
+    }
+}
+
+// Renders a marquee track containing four back-to-back copies of the
+// given chip group. The first copy is the canonical (a11y-visible)
+// one; copies 2-4 are aria-hidden so screen readers don't repeat the
+// list. Four copies = 4× total width, with a -25% loop translate; even
+// at 4K viewports the visible band is fully covered through the loop.
+fn marquee_track(group: &HtmlFragment, direction_class: &str) -> HtmlFragment {
+    let track_class = format!("marquee-track {direction_class}");
+    view! {
+        <div class={ track_class }>
+            <div class="marquee-group">{ group.clone() }</div>
+            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
+            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
+            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
+        </div>
+    }
+}
 
 pub struct EngHeadline;
 pub struct EngHeadlineProps;
@@ -105,8 +172,33 @@ pub async fn index() -> Html<String> {
     let article_links: HtmlFragment = ARTICLES
         .iter()
         .map(|a| {
+            let tag_attr = a
+                .tags
+                .iter()
+                .map(|t| t.label())
+                .collect::<Vec<_>>()
+                .join(" ");
             view! {
-                <a class="article-fluid-link" href={ format!("/articles/{}", a.slug) }>
+                <a class="article-fluid-link"
+                   href={ format!("/articles/{}", a.slug) }
+                   style={ format!("view-transition-name: article-{}", a.slug) }
+                   data-slug={ a.slug }
+                   data-category={ a.category.slug() }
+                   data-tags={ tag_attr }>
+                    // Brutalist read-state checkbox. Persisted in
+                    // localStorage by js/visited-articles.js; first
+                    // click adds the slug to the visited set and the
+                    // checkmark + title strike-through fade in.
+                    <span class="article-check" aria-hidden="true">
+                        <svg class="article-check-mark" viewBox="0 0 16 16">
+                            <path d="M2.5 8.5 L6.5 12.5 L13.5 3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="3"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round" />
+                        </svg>
+                    </span>
                     <div class="fluid-display-wrap">
                         <svg class="fluid-display-svg article-fluid-svg"
                              viewBox="0 0 1200 200"
@@ -128,6 +220,9 @@ pub async fn index() -> Html<String> {
                         <span class="article-fluid-fallback" aria-hidden="true">
                             { a.title.to_uppercase() }
                         </span>
+                        // Strike-through bar — scaleX 0 → 1 when the
+                        // parent link gets `.is-visited`.
+                        <span class="article-strike" aria-hidden="true"></span>
                     </div>
                 </a>
             }
@@ -149,9 +244,12 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
+                <script src={ asset_url("js/view-transitions.js") } defer></script>
+                <script src={ asset_url("js/visited-articles.js") } defer></script>
             </head>
             <body class="homepage">
                 <EngHeadline />
+                { render_topic_marquees() }
                 { article_links }
 
                 // Avatar is a popover trigger via the native HTML Popover API.

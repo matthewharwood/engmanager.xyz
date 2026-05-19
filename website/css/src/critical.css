@@ -69,3 +69,38 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
 }
+
+/* Cross-document View Transitions (Chrome 126+). When both pages opt
+ * in (and they all do via this rule), full-page navigations animate
+ * instead of cutting. Browsers without support just navigate normally. */
+@view-transition {
+    navigation: auto;
+}
+
+/* Default root transition: a slow fade with a tiny vertical drift —
+ * subtle, not flashy. The shared-element morph (article-title named
+ * transition) overrides this for the morphing element only. */
+::view-transition-old(root) {
+    animation: vt-root-out 220ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+::view-transition-new(root) {
+    animation: vt-root-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes vt-root-out {
+    to { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes vt-root-in {
+    from { opacity: 0; transform: translateY(8px); }
+}
+
+/* The named article-title transition needs a longer duration so the
+ * morph feels weighty. anime.js's pagereveal handler refines this
+ * with spring physics where supported. */
+::view-transition-old(article-title),
+::view-transition-new(article-title) {
+    animation-duration: 480ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
