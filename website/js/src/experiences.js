@@ -294,8 +294,7 @@ function renderReceiptModal() {
 
     const discoveredCount = registry.items.filter((e) => e.discovered).length;
     statsEl.innerHTML =
-        `<span><strong>${discoveredCount}</strong> found</span>` +
-        `<span><strong>${total}</strong> APIs</span>` +
+        `<span><strong>${discoveredCount}</strong>/${total} found</span>` +
         `<span><strong>${supported}</strong> supported</span>` +
         `<span><strong>${active}</strong> active</span>`;
 
@@ -341,8 +340,50 @@ function escape(s) {
         .replace(/"/g, "&quot;");
 }
 
-// `?` anywhere on the site toggles the receipt modal. Ignored when an
-// input element has focus.
+// Receipt modal lifecycle.
+//
+//   - `?` anywhere on the page toggles the modal (ignored when an
+//     input is focused).
+//   - `?receipt` in the URL on load opens the modal automatically —
+//     deep-linkable.
+//   - Opening/closing the modal pushes/pops the `?receipt` query param
+//     so a shared URL re-opens for the recipient.
+//   - popstate (back/forward) syncs the modal to the URL.
+const RECEIPT_PARAM = "receipt";
+
+function urlHasReceipt() {
+    try {
+        return new URL(location.href).searchParams.has(RECEIPT_PARAM);
+    } catch {
+        return false;
+    }
+}
+
+function setReceiptInUrl(open) {
+    try {
+        const url = new URL(location.href);
+        if (open) url.searchParams.set(RECEIPT_PARAM, "");
+        else url.searchParams.delete(RECEIPT_PARAM);
+        // Use `replaceState` for toggles within the same page so we
+        // don't pile up history entries; `pushState` only when opening
+        // from a fresh URL so back-button closes.
+        if (open && !urlHasReceipt()) history.pushState({}, "", url);
+        else history.replaceState({}, "", url);
+    } catch {}
+}
+
+function openReceipt() {
+    const modal = document.getElementById("api-receipt-modal");
+    if (!modal || modal.matches(":popover-open")) return;
+    modal.showPopover();
+}
+
+function closeReceipt() {
+    const modal = document.getElementById("api-receipt-modal");
+    if (!modal || !modal.matches(":popover-open")) return;
+    modal.hidePopover();
+}
+
 window.addEventListener("keydown", (event) => {
     if (event.key !== "?" && event.key !== "/") return;
     const tag = document.activeElement?.tagName;
@@ -351,8 +392,33 @@ window.addEventListener("keydown", (event) => {
     const modal = document.getElementById("api-receipt-modal");
     if (!modal) return;
     event.preventDefault();
-    if (modal.matches(":popover-open")) modal.hidePopover();
-    else modal.showPopover();
+    if (modal.matches(":popover-open")) closeReceipt();
+    else openReceipt();
+});
+
+window.addEventListener("popstate", () => {
+    const should = urlHasReceipt();
+    const modal = document.getElementById("api-receipt-modal");
+    if (!modal) return;
+    const isOpen = modal.matches(":popover-open");
+    if (should && !isOpen) modal.showPopover();
+    else if (!should && isOpen) modal.hidePopover();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("api-receipt-modal");
+    if (!modal) return;
+    // Sync URL ↔ modal whenever the popover toggles itself (close
+    // button, Esc, outside click, our showPopover/hidePopover calls).
+    modal.addEventListener("toggle", (event) => {
+        setReceiptInUrl(event.newState === "open");
+    });
+    // Deep-link entry.
+    if (urlHasReceipt()) {
+        // Wait one frame so renderReceiptModal has had a chance to
+        // populate before we show the dialog.
+        requestAnimationFrame(() => modal.showPopover());
+    }
 });
 
 // =============================================================================

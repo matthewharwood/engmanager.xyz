@@ -318,8 +318,10 @@ fn article_meta_tools() -> HtmlFragment {
 }
 
 // Brutalist Web API Receipt modal. Opens on `?` key from anywhere on
-// the site. Static shell; the JS at js/experiences.js populates the
-// stats + grid from the registry after runAll() finishes.
+// the site OR when `?receipt` is in the URL on load. Toggling the
+// modal pushes/pops that query param so the state is deep-linkable.
+// Static shell; the JS at js/experiences.js populates the stats +
+// grid from the registry after runAll() finishes.
 fn receipt_modal() -> HtmlFragment {
     view! {
         <aside id="api-receipt-modal" popover="manual" class="api-receipt">
@@ -327,6 +329,7 @@ fn receipt_modal() -> HtmlFragment {
                 <header class="api-receipt-head">
                     <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
                     <h2 class="api-receipt-title">"Web API Receipt"</h2>
+                    <div class="api-receipt-stats" data-api-receipt-stats></div>
                     <button class="api-receipt-close"
                             type="button"
                             popovertarget="api-receipt-modal"
@@ -335,10 +338,9 @@ fn receipt_modal() -> HtmlFragment {
                         "✕"
                     </button>
                 </header>
-                <div class="api-receipt-stats" data-api-receipt-stats></div>
                 <div class="api-receipt-grid" data-api-receipt-grid></div>
                 <footer class="api-receipt-foot">
-                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close"</span>
+                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
                 </footer>
             </div>
         </aside>

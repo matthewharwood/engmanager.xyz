@@ -316,12 +316,15 @@ pub async fn index() -> Html<String> {
 
                 // Brutalist Web API Receipt modal (Popover API). `?` from
                 // anywhere on the site toggles it; experiences.js fills the
-                // grid + stats from the registry.
+                // grid + stats from the registry. Opens when ?receipt is
+                // in the URL on load, and toggling the modal pushes/pops
+                // that query param so the state is deep-linkable.
                 <aside id="api-receipt-modal" popover="manual" class="api-receipt">
                     <div class="api-receipt-frame">
                         <header class="api-receipt-head">
                             <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
                             <h2 class="api-receipt-title">"Web API Receipt"</h2>
+                            <div class="api-receipt-stats" data-api-receipt-stats></div>
                             <button class="api-receipt-close"
                                     type="button"
                                     popovertarget="api-receipt-modal"
@@ -330,10 +333,9 @@ pub async fn index() -> Html<String> {
                                 "✕"
                             </button>
                         </header>
-                        <div class="api-receipt-stats" data-api-receipt-stats></div>
                         <div class="api-receipt-grid" data-api-receipt-grid></div>
                         <footer class="api-receipt-foot">
-                            <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close"</span>
+                            <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
                         </footer>
                     </div>
                 </aside>
