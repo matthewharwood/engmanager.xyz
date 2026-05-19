@@ -79,6 +79,18 @@ function checkSize(svg, ink) {
     svg.classList.toggle("is-too-small", effectivePx < MIN_FONT_SIZE_PX);
 }
 
+// Writes the SVG's actual rendered height to a CSS custom property on
+// the enclosing .article-fluid-link, so the brutalist checkbox can
+// size itself proportionally to the title it sits beside (and re-size
+// on every viewport change). No-op for the ENG MANAGER headline,
+// which isn't wrapped in a link.
+function syncTitleHeight(svg) {
+    const link = svg.closest(".article-fluid-link");
+    if (!link) return;
+    const h = svg.getBoundingClientRect().height;
+    if (h > 0) link.style.setProperty("--title-h", `${h}px`);
+}
+
 (async () => {
     try {
         if (document.fonts && document.fonts.ready) {
@@ -94,10 +106,12 @@ function checkSize(svg, ink) {
             applyFit(svg, ink);
             measurements.set(svg, ink);
             checkSize(svg, ink);
+            syncTitleHeight(svg);
         }
 
-        // Re-evaluate the min-size check on viewport resize. The fit (viewBox)
-        // doesn't need re-running — it's container-relative via SVG scaling.
+        // Re-evaluate the min-size check + title-height var on viewport
+        // resize. The fit (viewBox) doesn't need re-running — it's
+        // container-relative via SVG scaling.
         let pending = false;
         const onResize = () => {
             if (pending) return;
@@ -106,6 +120,7 @@ function checkSize(svg, ink) {
                 pending = false;
                 for (const [svg, ink] of measurements) {
                     checkSize(svg, ink);
+                    syncTitleHeight(svg);
                 }
             });
         };

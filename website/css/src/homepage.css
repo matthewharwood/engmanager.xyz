@@ -263,20 +263,32 @@
     position: relative;
 }
 
-/* Brutalist checkbox: chunky black-bordered square with a hard offset
- * shadow. Sized fluidly so it reads as proportionate next to the
- * fluid SVG title at any viewport. The checkmark inside is hidden
- * until `.is-visited` is set by JS (localStorage-backed). */
+/* Brutalist checkbox. Sized off `--title-h`, a CSS custom property
+ * that fit-text.js writes onto the parent .article-fluid-link after
+ * it measures the SVG title's rendered height (and on every viewport
+ * resize). Result: each checkbox is a perfect square that matches
+ * the height of the title it sits beside, so a long-title row gets
+ * a tiny checkbox and a short-title row gets a giant one. Left edges
+ * still align because the flex parent has consistent inline padding.
+ *
+ * font-size is set to the same `--title-h` so border + offset shadow
+ * scale in em — chunky on big checkboxes, proportional on small ones,
+ * never out of balance.
+ *
+ * Fallback for the brief window before fit-text.js runs (or if it
+ * fails) is a fluid clamp so the checkbox never renders absurdly. */
 .article-check {
     flex-shrink: 0;
-    inline-size: clamp(2.25rem, 7vw, 4rem);
-    block-size: clamp(2.25rem, 7vw, 4rem);
+    align-self: center;
+    inline-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
+    block-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
+    font-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: var(--ctp-base);
-    border: 3px solid var(--ctp-text);
-    box-shadow: 4px 4px 0 0 var(--ctp-text);
+    border: 0.08em solid var(--ctp-text);
+    box-shadow: 0.1em 0.1em 0 0 var(--ctp-text);
     color: transparent;
     transition:
         background-color 240ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
@@ -288,8 +300,8 @@
 
 .article-fluid-link:hover .article-check,
 .article-fluid-link:focus-visible .article-check {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 0 var(--ctp-text);
+    transform: translate(-0.05em, -0.05em);
+    box-shadow: 0.15em 0.15em 0 0 var(--ctp-text);
 }
 
 .article-check-mark {
