@@ -8,7 +8,10 @@ use eng_markup::{html, view};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
-use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use super::{
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
+    render_discovery_toasts, render_hunt_chip,
+};
 use crate::asset_url;
 
 // Article bodies live in `website/articles/{slug}.md`. They're embedded into
@@ -455,6 +458,8 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                               stroke-linejoin="round" />
                     </svg>
                 </button>
+                { render_hunt_chip() }
+                { render_discovery_toasts() }
                 { receipt_modal() }
             </body>
         </html>

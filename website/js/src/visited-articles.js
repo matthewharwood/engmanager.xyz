@@ -57,6 +57,11 @@ const saveVisited = (set) => {
             visited.add(slug);
             saveVisited(visited);
             link.classList.add("is-visited");
+            // Notifies the Broadcast Channel experience so other tabs
+            // get the same strike-through in real time.
+            document.dispatchEvent(
+                new CustomEvent("engmanager:visited", { detail: { slug } }),
+            );
         });
     });
 })();

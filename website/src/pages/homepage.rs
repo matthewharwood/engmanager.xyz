@@ -5,7 +5,10 @@ use eng_markup::{html, view};
 use std::collections::BTreeSet;
 
 use super::articles::{ARTICLES, Category, Tag};
-use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use super::{
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
+    render_discovery_toasts, render_hunt_chip,
+};
 use crate::asset_url;
 
 // Twin brutalist marquees that loop seamlessly above the article
@@ -274,6 +277,9 @@ pub async fn index() -> Html<String> {
                 <div id="bio" popover="auto">
                     <EngResume />
                 </div>
+
+                { render_hunt_chip() }
+                { render_discovery_toasts() }
 
                 // Brutalist Web API Receipt modal (Popover API). `?` from
                 // anywhere on the site toggles it; experiences.js fills the

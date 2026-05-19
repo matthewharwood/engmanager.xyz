@@ -321,6 +321,178 @@ body[data-paint="hatch"] .api-receipt-frame {
     color: var(--ctp-text);
 }
 
+/* ===========================================================================
+ * Scavenger hunt — visible, on-page surface.
+ *
+ *   .hunt-chip            persistent chip in the bottom-left of every
+ *                         page; opens the receipt modal on click. The
+ *                         numeric label is the live "discovered" count.
+ *   .discovery-toasts     fixed container in the bottom-right where
+ *                         experiences.js mounts a brutalist toast
+ *                         each time a new API is found.
+ *   .api-cell-badge       discovered/supported/unsupported pill that
+ *                         appears next to each entry in the receipt
+ *                         modal.
+ * =========================================================================== */
+
+.hunt-chip {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-start: 1rem;
+    z-index: 40;
+    appearance: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding-block: 0.5rem;
+    padding-inline: 0.75rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    border: 2px solid var(--ctp-text);
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 var(--ctp-text);
+    transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.hunt-chip:hover,
+.hunt-chip:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 0 var(--ctp-text);
+    outline: none;
+}
+
+.hunt-chip:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 var(--ctp-text);
+}
+
+.hunt-chip-glyph {
+    color: var(--accent);
+    font-size: 0.9em;
+    line-height: 1;
+}
+
+.hunt-chip-count {
+    color: var(--accent);
+    font-size: 0.875rem;
+    font-weight: 900;
+}
+
+.hunt-chip-suffix {
+    color: var(--ctp-subtext1);
+}
+
+.discovery-toasts {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4375rem;
+    pointer-events: none;
+}
+
+.discovery-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5625rem;
+    padding-block: 0.625rem;
+    padding-inline: 0.875rem;
+    background: var(--accent);
+    color: var(--ctp-base);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    line-height: 1;
+    border: 2px solid var(--ctp-text);
+    box-shadow: 4px 4px 0 0 var(--ctp-text);
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition:
+        opacity 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
+        transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.discovery-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.discovery-toast-glyph {
+    color: var(--ctp-base);
+    font-size: 0.875em;
+}
+
+.discovery-toast-tag {
+    background: var(--ctp-base);
+    color: var(--accent);
+    padding-block: 0.1875rem;
+    padding-inline: 0.375rem;
+    font-weight: 800;
+}
+
+.discovery-toast-name {
+    font-weight: 700;
+}
+
+.discovery-toast-count {
+    opacity: 0.85;
+    font-weight: 500;
+}
+
+/* Discovery badges on modal cells. */
+.api-cell-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.api-cell-badge {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-block: 0.125rem;
+    padding-inline: 0.3125rem;
+    border-radius: 0.1875rem;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.api-cell-badge-found {
+    background: var(--accent);
+    color: var(--ctp-base);
+    border: 1px solid var(--ctp-text);
+    box-shadow: 1.5px 1.5px 0 0 var(--ctp-text);
+}
+
+.api-cell-badge-passive {
+    color: var(--ctp-subtext0);
+    border: 1px solid var(--ctp-surface0);
+}
+
+.api-cell-badge-unsupported {
+    color: var(--ctp-overlay1);
+}
+
+.api-cell-discovered {
+    border-left-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 6%, transparent);
+}
+
 /* Cross-document View Transitions (Chrome 126+). When both pages opt
  * in (and they all do via this rule), full-page navigations animate
  * instead of cutting. Browsers without support just navigate normally. */

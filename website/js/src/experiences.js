@@ -35,6 +35,86 @@ function register(entry) {
     registry.byId.set(entry.id, entry);
 }
 
+// =============================================================================
+// SCAVENGER HUNT — `discoveries` is a localStorage-backed Set of API ids
+// the reader has *actively triggered* (clicked Share, dragged the avatar,
+// scrolled past 30%, typed the konami code, etc.). The receipt chip in
+// the corner shows `⌬ N FOUND`, the modal marks each entry DISCOVERED /
+// SUPPORTED / UNSUPPORTED, and a brutalist toast slides in from the
+// bottom-right when a new id is added to the set. Discoveries persist.
+// =============================================================================
+
+const DISCOVERY_KEY = "engmanager.discoveries";
+
+const discoveries = (() => {
+    try {
+        const raw = localStorage.getItem(DISCOVERY_KEY);
+        return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+        return new Set();
+    }
+})();
+
+function persistDiscoveries() {
+    try {
+        localStorage.setItem(DISCOVERY_KEY, JSON.stringify([...discoveries]));
+    } catch {}
+}
+
+const toastQueue = [];
+let toastShowing = false;
+
+function showNextToast() {
+    if (toastShowing) return;
+    const next = toastQueue.shift();
+    if (!next) return;
+    const root = document.querySelector("[data-discovery-toasts]");
+    if (!root) return;
+    toastShowing = true;
+    const node = document.createElement("div");
+    node.className = "discovery-toast";
+    node.innerHTML =
+        `<span class="discovery-toast-glyph" aria-hidden="true">⌬</span>` +
+        `<span class="discovery-toast-tag">Found</span>` +
+        `<span class="discovery-toast-name">${escape(next.name)}</span>` +
+        `<span class="discovery-toast-count">${discoveries.size}/${registry.items.length}</span>`;
+    root.appendChild(node);
+    // Force layout, then animate in.
+    void node.offsetWidth;
+    node.classList.add("is-visible");
+    setTimeout(() => {
+        node.classList.remove("is-visible");
+        node.addEventListener(
+            "transitionend",
+            () => {
+                node.remove();
+                toastShowing = false;
+                showNextToast();
+            },
+            { once: true },
+        );
+    }, 2600);
+}
+
+function discover(id) {
+    if (discoveries.has(id)) return;
+    discoveries.add(id);
+    persistDiscoveries();
+    const entry = registry.byId.get(id);
+    if (entry) entry.discovered = true;
+    refreshChip();
+    refreshModal();
+    if (entry) {
+        toastQueue.push({ id, name: entry.name });
+        showNextToast();
+    }
+}
+
+function refreshChip() {
+    const chipCount = document.querySelector("[data-hunt-chip-count]");
+    if (chipCount) chipCount.textContent = String(discoveries.size);
+}
+
 // Background-priority scheduler with rIC fallback.
 const defer = (fn) => {
     if ("scheduler" in globalThis && globalThis.scheduler?.postTask) {
@@ -65,14 +145,27 @@ const receipt = []; // { api, label, value }
 
 function makeCtx(entry) {
     return {
+        id: entry.id,
         name: entry.name,
         log: (label, value) => receipt.push({ api: entry.name, label, value: String(value) }),
         defer,
         onInteraction,
+        // The experience calls `api.discover()` from inside its trigger
+        // handler (e.g. button click). discover() is idempotent —
+        // safe to call on every click.
+        discover: () => discover(entry.id),
     };
 }
 
 async function runAll() {
+    // Hydrate previously-discovered ids onto the live entries first
+    // so the receipt + chip reflect persisted state from the very
+    // first paint.
+    for (const id of discoveries) {
+        const entry = registry.byId.get(id);
+        if (entry) entry.discovered = true;
+    }
+
     for (const entry of registry.items) {
         try {
             if (typeof entry.isSupported === "function" && !entry.isSupported()) {
@@ -92,6 +185,12 @@ async function runAll() {
     }
     defer(() => printReceipt());
     defer(() => renderReceiptModal());
+    defer(() => refreshChip());
+    defer(() => mountScavengerHooks());
+}
+
+function refreshModal() {
+    renderReceiptModal();
 }
 
 function printReceipt() {
@@ -193,7 +292,9 @@ function renderReceiptModal() {
         (e) => e.status === STATUS.ACTIVE,
     ).length;
 
+    const discoveredCount = registry.items.filter((e) => e.discovered).length;
     statsEl.innerHTML =
+        `<span><strong>${discoveredCount}</strong> found</span>` +
         `<span><strong>${total}</strong> APIs</span>` +
         `<span><strong>${supported}</strong> supported</span>` +
         `<span><strong>${active}</strong> active</span>`;
@@ -211,12 +312,17 @@ function renderReceiptModal() {
         if (!entries) continue;
         const items = entries
             .map((e) => {
-                const cls = `api-cell api-cell-${e.status}`;
+                const cls = `api-cell api-cell-${e.status}${e.discovered ? " api-cell-discovered" : ""}`;
                 const lines = receipt
                     .filter((r) => r.api === e.name)
                     .map((r) => `${r.label}: ${r.value}`)
                     .join(" · ");
-                return `<li class="${cls}"><span class="api-cell-name">${escape(e.name)}</span>${lines ? `<span class="api-cell-meta">${escape(lines)}</span>` : ""}</li>`;
+                const badge = e.discovered
+                    ? '<span class="api-cell-badge api-cell-badge-found">Found</span>'
+                    : e.status === STATUS.ACTIVE || e.status === STATUS.PASSIVE
+                      ? '<span class="api-cell-badge api-cell-badge-passive">Supported</span>'
+                      : '<span class="api-cell-badge api-cell-badge-unsupported">—</span>';
+                return `<li class="${cls}"><span class="api-cell-row"><span class="api-cell-name">${escape(e.name)}</span>${badge}</span>${lines ? `<span class="api-cell-meta">${escape(lines)}</span>` : ""}</li>`;
             })
             .join("");
         parts.push(
@@ -384,6 +490,8 @@ register({
             document
                 .querySelectorAll(`.article-fluid-link[data-slug="${CSS.escape(slug)}"]`)
                 .forEach((link) => link.classList.add("is-visited"));
+            // Receiving from another tab proves cross-tab sync works.
+            api.discover();
         });
         // Hook into the existing click handler by listening for our
         // own custom event dispatched by visited-articles.js.
@@ -417,6 +525,7 @@ register({
             if (text.length < 3) return;
             const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
             const needle = text.toLowerCase();
+            let matches = 0;
             let node;
             while ((node = walker.nextNode())) {
                 const haystack = node.nodeValue.toLowerCase();
@@ -427,10 +536,14 @@ register({
                         range.setStart(node, from);
                         range.setEnd(node, from + needle.length);
                         highlight.add(range);
+                        matches++;
                     } catch {}
                     from += needle.length;
                 }
             }
+            // Selection echo with multiple matches → user is using the
+            // highlight feature, not just selecting one word.
+            if (matches > 1) api.discover();
         });
         api.log("registry", "engmanager-echo");
     },
@@ -764,6 +877,7 @@ register({
                         "color:#8c8fa1;font-family:ui-monospace,Menlo,monospace",
                         `color:${result.sRGBHex};font-weight:700;font-family:ui-monospace,Menlo,monospace`,
                     );
+                    api.discover();
                 } catch {}
             });
         }
@@ -845,6 +959,7 @@ register({
             button.addEventListener("click", () => {
                 if (document.fullscreenElement) document.exitFullscreen();
                 else target.requestFullscreen?.();
+                api.discover();
             });
         }
         api.log("target", target ? "article" : "—");
@@ -933,6 +1048,7 @@ register({
             try {
                 localStorage.setItem(STORAGE, JSON.stringify({ x, y }));
             } catch {}
+            api.discover();
         });
         api.log("target", ".avatar-button");
     },
@@ -1398,6 +1514,7 @@ register({
                 sentinel.addEventListener("release", () => {
                     sentinel = null;
                 });
+                api.discover();
             } catch {}
         };
         const release = async () => {
@@ -1642,6 +1759,7 @@ register({
                             button.textContent = "Copied";
                             setTimeout(() => (button.textContent = "Share quote"), 1500);
                         }
+                        api.discover();
                     } catch {}
                 });
                 quote.appendChild(button);
@@ -1719,7 +1837,10 @@ register({
     init: (api) => {
         document.addEventListener("click", (event) => {
             if (event.target.closest(".article-fluid-link .article-check")) {
-                try { navigator.vibrate(25); } catch {}
+                try {
+                    navigator.vibrate(25);
+                    api.discover();
+                } catch {}
             }
         });
         api.log("trigger", "checkbox tap");
@@ -1808,6 +1929,7 @@ register({
                 osc.start();
                 osc.stop(ctx.currentTime + 0.04);
                 setTimeout(() => ctx.close(), 200);
+                api.discover();
             } catch {}
         });
         api.log("trigger", "first checkbox tap");
@@ -1933,6 +2055,7 @@ register({
                     title: document.title,
                     url: location.href,
                 });
+                api.discover();
             } catch {}
         });
         api.log("target", document.title);
@@ -1969,6 +2092,7 @@ register({
             speaking = true;
             button.dataset.state = "playing";
             button.textContent = "Stop";
+            api.discover();
         });
         api.log("voices", speechSynthesis.getVoices().length);
     },
@@ -2127,6 +2251,202 @@ register({
     group: "device",
     isSupported: () => "getScreenDetails" in window,
 });
+
+// =============================================================================
+// Scavenger hunt hooks.
+//
+// Quiet, discoverable interactions scattered across the site. Each one
+// awards one or more API discoveries. Some lean on hidden gestures
+// (konami, triple-click, long-press), others reward natural browsing
+// (resize, idle, tab-switch). Auto-discoveries at the end mark the
+// APIs the page itself exercises without any user gesture.
+// =============================================================================
+
+function mountScavengerHooks() {
+    // Auto-discover the always-on APIs that the page exercises by
+    // simply existing. These are "found" the moment a reader loads
+    // the site — they shouldn't require gesture.
+    const autoDiscover = [
+        "console", "dom", "html-dom", "url", "history",
+        "performance", "svg", "geometry-interfaces", "streams",
+        "cssom", "cssom-view", "intersection-observer",
+        "resize-observer", "css-font-loading", "view-transition",
+        "web-animations", "web-storage", "ui-events", "fetch",
+        "popover", "web-components", "selection",
+    ];
+    autoDiscover.forEach(discover);
+
+    // ── Konami code ──────────────────────────────────────────────
+    // ↑ ↑ ↓ ↓ ← → ← → B A  ⇒ discovers Keyboard API + Trusted Types
+    // + Reporting + Invoker Commands (the keyboard handler is the
+    // canonical "I used the keyboard" gesture).
+    const konami = [
+        "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown",
+        "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight",
+        "b", "a",
+    ];
+    let konamiCursor = 0;
+    window.addEventListener("keydown", (event) => {
+        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+        if (key === konami[konamiCursor]) {
+            konamiCursor++;
+            if (konamiCursor === konami.length) {
+                konamiCursor = 0;
+                ["keyboard", "trusted-types", "reporting", "invoker-commands"].forEach(
+                    discover,
+                );
+                // Flash the receipt chip + open the modal for the
+                // dopamine hit.
+                document
+                    .getElementById("api-receipt-modal")
+                    ?.showPopover();
+            }
+        } else {
+            konamiCursor = key === konami[0] ? 1 : 0;
+        }
+    });
+
+    // ── Triple-click anywhere ────────────────────────────────────
+    // Discovers Pointer Events + UI Events (both already auto, but
+    // double-mark is fine — discover() is idempotent).
+    let clickStreak = 0;
+    let clickResetTimer = null;
+    document.addEventListener("click", () => {
+        clickStreak++;
+        clearTimeout(clickResetTimer);
+        clickResetTimer = setTimeout(() => (clickStreak = 0), 400);
+        if (clickStreak >= 3) {
+            clickStreak = 0;
+            discover("pointer-events");
+            discover("ui-events");
+        }
+    });
+
+    // ── Long-press (touch) ───────────────────────────────────────
+    let pressTimer = null;
+    document.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "touch") return;
+        pressTimer = setTimeout(() => {
+            discover("touch-events");
+            discover("pointer-events");
+        }, 600);
+    });
+    ["pointerup", "pointercancel", "pointermove"].forEach((type) =>
+        document.addEventListener(type, () => {
+            clearTimeout(pressTimer);
+        }),
+    );
+
+    // ── Resize the window ────────────────────────────────────────
+    // Discovers Resize Observer + CSSOM view (visualViewport reads).
+    let resizeFlag = false;
+    window.addEventListener(
+        "resize",
+        () => {
+            if (resizeFlag) return;
+            resizeFlag = true;
+            discover("resize-observer");
+            discover("cssom-view");
+        },
+        { passive: true },
+    );
+
+    // ── Tab away and come back ───────────────────────────────────
+    // Discovers Page Visibility. (Visibility listener already runs
+    // synchronously, but we only mark on actual change.)
+    document.addEventListener("visibilitychange", () => {
+        discover("page-visibility");
+    });
+
+    // ── Idle for 30 seconds ──────────────────────────────────────
+    // Discovers Background Tasks + Prioritized Task Scheduling.
+    let idleTimer = setTimeout(() => {
+        discover("background-tasks");
+        discover("prioritized-task-scheduling");
+    }, 30_000);
+    ["pointermove", "keydown", "scroll"].forEach((type) =>
+        window.addEventListener(
+            type,
+            () => {
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    discover("background-tasks");
+                    discover("prioritized-task-scheduling");
+                }, 30_000);
+            },
+            { passive: true },
+        ),
+    );
+
+    // ── Scroll past 1000px ───────────────────────────────────────
+    // Discovers Intersection Observer (it's been firing all along).
+    let scrollFlag = false;
+    window.addEventListener(
+        "scroll",
+        () => {
+            if (scrollFlag || window.scrollY < 1000) return;
+            scrollFlag = true;
+            discover("intersection-observer");
+        },
+        { passive: true },
+    );
+
+    // ── Cross-document navigation ─────────────────────────────────
+    // Discovers View Transition + Navigation (auto-detected via
+    // Speculation Rules prerender too).
+    window.addEventListener("pageswap", () => discover("view-transition"));
+    window.addEventListener("pagereveal", (event) => {
+        discover("view-transition");
+        if (event.viewTransition) discover("speculation-rules");
+    });
+
+    // ── `?` already opens the modal (handler above). Doing it
+    // discovers Popover + Keyboard.
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "?" || event.key === "/") {
+            const tag = document.activeElement?.tagName;
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+            if (document.activeElement?.isContentEditable) return;
+            discover("popover");
+            discover("keyboard");
+        }
+    });
+
+    // ── Triple-click the ⌬ glyph in the modal ─────────────────────
+    // The "secret" interaction — opens up the easter egg of marking
+    // a handful of dormant APIs as "found" all at once.
+    let glyphStreak = 0;
+    document.addEventListener("click", (event) => {
+        const target = event.target.closest(".api-receipt-glyph");
+        if (!target) return;
+        glyphStreak++;
+        if (glyphStreak >= 3) {
+            glyphStreak = 0;
+            [
+                "compression-streams", "encoding", "web-crypto",
+                "web-locks", "channel-messaging", "web-workers",
+                "html-sanitizer",
+            ].forEach(discover);
+        }
+        setTimeout(() => (glyphStreak = 0), 800);
+    });
+
+    // ── Hover-prefetch happens on its own ─────────────────────────
+    // The hover-prefetch experience (not registered as an API)
+    // already exists; we mark Speculation Rules + Fetch as found
+    // on the first link hover.
+    document.querySelectorAll(".article-fluid-link, .nav-dropdown-item").forEach(
+        (link) =>
+            link.addEventListener(
+                "pointerenter",
+                () => {
+                    discover("speculation-rules");
+                    discover("fetch");
+                },
+                { once: true },
+            ),
+    );
+}
 
 // =============================================================================
 // Bootstrap.
