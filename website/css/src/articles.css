@@ -461,6 +461,73 @@
     }
 }
 
+/* Taxonomy row — Vercel-blog flavored. Lays out as a full-width
+ * second line of the meta header (flex-basis: 100%), so the avatar
+ * + byline + date pill stay aligned in the top row.
+ *
+ *   [CATEGORY]  tag  tag  tag  tag
+ *
+ * Category is one filled accent-tinted pill (the single primary
+ * section). Tags are ghost chips — surface-tinted with a faint
+ * border, mono lowercase. `data-category="..."` is exposed on the
+ * pill in case we ever route /category/{slug}. */
+.article-taxonomy {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.625rem;
+    margin-block-start: 0.5rem;
+}
+
+.article-category {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 0.25rem;
+    padding-inline: 0.5625rem;
+    background: color-mix(in oklab, var(--accent) 10%, transparent);
+    color: var(--accent);
+    border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+
+.article-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3125rem 0.4375rem;
+    min-inline-size: 0;
+}
+
+.article-tag {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 0.1875rem;
+    padding-inline: 0.4375rem;
+    background: color-mix(in oklab, var(--ctp-surface0) 45%, transparent);
+    color: var(--ctp-subtext1);
+    border: 1px solid color-mix(in oklab, var(--ctp-surface0) 80%, transparent);
+    border-radius: 0.3125rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+@media (max-width: 30rem) {
+    .article-taxonomy {
+        margin-inline-start: 3.25rem;
+    }
+}
+
 /* Article body typography. */
 .article p {
     margin-block: 1.25rem;

@@ -184,6 +184,12 @@ async fn html_cache_layer(
 
 #[tokio::main]
 async fn main() {
+    // Debug-only: panic at startup if any article slice carries duplicate
+    // tags. Release builds skip this since `unique_tags` dedups at render
+    // time anyway; this is just a faster signal for the author.
+    #[cfg(debug_assertions)]
+    pages::articles::debug_check_tag_uniqueness();
+
     // Polls the Discord widget + invite endpoints for the Auteurs server
     // every 60s into an in-memory snapshot. Handlers read the snapshot
     // synchronously with a tokio RwLock — zero I/O on the hot path.

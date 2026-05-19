@@ -115,10 +115,138 @@
         0 0 0.25rem rgba(64, 160, 43, 0.35);
 }
 
+/* ===========================================================================
+ * Twin brutalist marquees above the article stack.
+ *
+ * Categories scroll left-to-right (forward); tags scroll the opposite
+ * way (reverse) at a slightly slower speed for visual contrast. Each
+ * row's chip group is rendered four times back-to-back in the markup;
+ * the animation moves the track by -25% (one group width) per cycle,
+ * looping seamlessly. Edge mask softens the in/out so chips don't
+ * pop at the viewport boundaries.
+ *
+ * Pure CSS, pure decoration — no clicks, no filtering, no JS.
+ * =========================================================================== */
+.marquee-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin-block: 1.25rem 2rem;
+    /* Match the rest of the homepage padding rhythm. */
+    --marquee-fade: 4rem;
+}
+
+.marquee {
+    overflow: hidden;
+    /* Soft fade at both edges so chips appear from nothing rather
+     * than snap on. */
+    mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        black var(--marquee-fade),
+        black calc(100% - var(--marquee-fade)),
+        transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        black var(--marquee-fade),
+        black calc(100% - var(--marquee-fade)),
+        transparent 100%
+    );
+}
+
+.marquee-track {
+    display: flex;
+    inline-size: max-content;
+    will-change: transform;
+    /* The top row scrolls forward, the bottom row scrolls reverse;
+     * speeds are intentionally different so the two rows don't read
+     * as one big static thing. */
+}
+
+.marquee-track-forward {
+    animation: marquee-scroll 45s linear infinite;
+}
+
+.marquee-track-reverse {
+    animation: marquee-scroll 60s linear infinite reverse;
+}
+
+.marquee-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* Trailing gap so the group→group seam matches the inter-chip
+     * gap; otherwise the loop would visibly squish at the join. */
+    padding-inline-end: 0.5rem;
+    flex-shrink: 0;
+}
+
+@keyframes marquee-scroll {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-25%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track-forward,
+    .marquee-track-reverse {
+        animation: none;
+    }
+}
+
+/* Chunky chip used inside both marquees. Same brutalist silhouette
+ * as the previous filter chips (chunky border + hard offset shadow,
+ * uppercase display label, emoji prefix). No hover/active states
+ * since they're spans, not interactive. */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding-block: 0.5625rem;
+    padding-inline: 0.875rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.8125rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: 2px solid var(--ctp-text);
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 var(--ctp-text);
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.chip-tag {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    padding-block: 0.4375rem;
+    padding-inline: 0.625rem;
+    border-width: 1.5px;
+    box-shadow: 2px 2px 0 0 var(--ctp-text);
+    gap: 0.3125rem;
+}
+
+.chip-emoji {
+    line-height: 1;
+}
+
 /* Stacked clickable article titles (each its own fluid SVG) under the
- * main ENG MANAGER headline. */
+ * main ENG MANAGER headline. Flex row so a chunky brutalist checkbox
+ * can sit to the left of each title and a strike-through bar can
+ * overlay the fluid wrap when the article's been read (persisted in
+ * localStorage by js/visited-articles.js). */
 .article-fluid-link {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.625rem, 2vw, 1.25rem);
     color: var(--accent);
     text-decoration: none;
     transform: scale(1);
@@ -127,6 +255,74 @@
         transform 220ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
         filter 220ms ease;
     will-change: transform, filter;
+}
+
+.article-fluid-link .fluid-display-wrap {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    position: relative;
+}
+
+/* Brutalist checkbox: chunky black-bordered square with a hard offset
+ * shadow. Sized fluidly so it reads as proportionate next to the
+ * fluid SVG title at any viewport. The checkmark inside is hidden
+ * until `.is-visited` is set by JS (localStorage-backed). */
+.article-check {
+    flex-shrink: 0;
+    inline-size: clamp(2.25rem, 7vw, 4rem);
+    block-size: clamp(2.25rem, 7vw, 4rem);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ctp-base);
+    border: 3px solid var(--ctp-text);
+    box-shadow: 4px 4px 0 0 var(--ctp-text);
+    color: transparent;
+    transition:
+        background-color 240ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
+        color 200ms ease,
+        border-color 200ms ease,
+        transform 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.article-fluid-link:hover .article-check,
+.article-fluid-link:focus-visible .article-check {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--ctp-text);
+}
+
+.article-check-mark {
+    inline-size: 65%;
+    block-size: 65%;
+}
+
+.article-fluid-link.is-visited .article-check {
+    background: var(--accent);
+    color: var(--ctp-base);
+}
+
+/* Strike-through bar that scales in horizontally over the fluid SVG
+ * title when the article's been visited. Painted in the accent
+ * (same color as the title text) with a chunky white halo around it
+ * via box-shadow so it reads as a sticker laid on top of the title
+ * rather than a knock-out through it. */
+.article-strike {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
+    block-size: clamp(0.375rem, 1.4vw, 0.75rem);
+    background: var(--accent);
+    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--ctp-base);
+    transform: translateY(-50%) scaleX(0);
+    transform-origin: left center;
+    transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+}
+
+.article-fluid-link.is-visited .article-strike {
+    transform: translateY(-50%) scaleX(1);
 }
 
 .article-fluid-link + .article-fluid-link {

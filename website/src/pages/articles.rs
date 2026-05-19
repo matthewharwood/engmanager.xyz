@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use eng_domain::HtmlFragment;
 use eng_markup::{html, view};
-use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag, TagEnd};
+use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
 use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
@@ -17,6 +17,152 @@ use crate::asset_url;
 #[derive(RustEmbed)]
 #[folder = "articles/"]
 struct ArticleSources;
+
+// =============================================================================
+// Taxonomy — single source of truth for categories and tags.
+//
+// Both are enums so the article table is type-checked: a typo in a category
+// or tag fails to compile, and a renamed variant fans out across every
+// article that references it. Each variant carries a human label (for
+// rendering) and a URL slug (for any future /category/{slug} or
+// /tag/{slug} routes).
+//
+// Each article has ONE Category (single primary section) and a `&'static
+// [Tag]` slice. The slice is normalized into a unique, order-preserving
+// set at render time (see `unique_tags`) so authors can list tags in
+// whatever order makes sense without worrying about accidental duplicates.
+// A debug-only assertion at server startup also flags duplicate tags
+// during development.
+// =============================================================================
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Category {
+    EngineeringLeadership,
+    DeveloperTooling,
+    Workflow,
+    Community,
+    FrameworkDesign,
+}
+
+impl Category {
+    pub const ALL: &'static [Category] = &[
+        Self::Workflow,
+        Self::DeveloperTooling,
+        Self::FrameworkDesign,
+        Self::Community,
+        Self::EngineeringLeadership,
+    ];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::EngineeringLeadership => "Eng Leadership",
+            Self::DeveloperTooling => "Dev Tooling",
+            Self::Workflow => "Workflow",
+            Self::Community => "Community",
+            Self::FrameworkDesign => "Frameworks",
+        }
+    }
+
+    pub fn slug(self) -> &'static str {
+        match self {
+            Self::EngineeringLeadership => "engineering-leadership",
+            Self::DeveloperTooling => "developer-tooling",
+            Self::Workflow => "workflow",
+            Self::Community => "community",
+            Self::FrameworkDesign => "framework-design",
+        }
+    }
+
+    pub fn emoji(self) -> &'static str {
+        match self {
+            Self::EngineeringLeadership => "👔",
+            Self::DeveloperTooling => "🛠",
+            Self::Workflow => "🌀",
+            Self::Community => "👥",
+            Self::FrameworkDesign => "🧱",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Tag {
+    Ai,
+    ClaudeCode,
+    Rust,
+    Voice,
+    Mcp,
+    Discord,
+    Community,
+    Mentorship,
+    Lsp,
+    TypeScript,
+    DeveloperTooling,
+    Macros,
+    Framework,
+    JsxLike,
+    Workflow,
+    Solopreneur,
+    LocalFirst,
+}
+
+impl Tag {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Ai => "ai",
+            Self::ClaudeCode => "claude-code",
+            Self::Rust => "rust",
+            Self::Voice => "voice",
+            Self::Mcp => "mcp",
+            Self::Discord => "discord",
+            Self::Community => "community",
+            Self::Mentorship => "mentorship",
+            Self::Lsp => "lsp",
+            Self::TypeScript => "typescript",
+            Self::DeveloperTooling => "developer-tooling",
+            Self::Macros => "macros",
+            Self::Framework => "framework",
+            Self::JsxLike => "jsx-like",
+            Self::Workflow => "workflow",
+            Self::Solopreneur => "solopreneur",
+            Self::LocalFirst => "local-first",
+        }
+    }
+
+    pub fn emoji(self) -> &'static str {
+        match self {
+            Self::Ai => "🤖",
+            Self::ClaudeCode => "⚡",
+            Self::Rust => "🦀",
+            Self::Voice => "🎙",
+            Self::Mcp => "🔌",
+            Self::Discord => "💬",
+            Self::Community => "🧑‍🤝‍🧑",
+            Self::Mentorship => "🎓",
+            Self::Lsp => "🔎",
+            Self::TypeScript => "🟦",
+            Self::DeveloperTooling => "🛠",
+            Self::Macros => "🪄",
+            Self::Framework => "🏗",
+            Self::JsxLike => "⚛",
+            Self::Workflow => "🌀",
+            Self::Solopreneur => "🧑‍💻",
+            Self::LocalFirst => "📦",
+        }
+    }
+}
+
+// Order-preserving dedup. Backing data is a `&[Tag]` so authors can list
+// tags in significance order; we drop later duplicates and return a Vec
+// that the meta renderer iterates. Compile-time enum guarantees that
+// each variant is itself unique; this step protects against
+// human-authored repetition in the slice.
+fn unique_tags(tags: &[Tag]) -> Vec<Tag> {
+    let mut seen = std::collections::HashSet::with_capacity(tags.len());
+    tags.iter()
+        .copied()
+        .filter(|t| seen.insert(*t))
+        .collect()
+}
 
 pub struct Article {
     pub slug: &'static str,
@@ -30,6 +176,10 @@ pub struct Article {
     pub title_alias: Option<&'static str>,
     pub date: &'static str,
     pub summary: &'static str,
+    /// Primary section. Exactly one per article.
+    pub category: Category,
+    /// Free-form tags. Deduped to a set at render time via `unique_tags`.
+    pub tags: &'static [Tag],
 }
 
 pub const ARTICLES: &[Article] = &[
@@ -39,6 +189,17 @@ pub const ARTICLES: &[Article] = &[
         title_alias: None,
         date: "May 17, 2026",
         summary: "I built three Rust projects this week without typing a single line of code. Voice → Claude Code → pull requests. The floor is rising for everyone.",
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::ClaudeCode,
+            Tag::Voice,
+            Tag::Mcp,
+            Tag::Rust,
+            Tag::Workflow,
+            Tag::Solopreneur,
+            Tag::LocalFirst,
+        ],
     },
     Article {
         slug: "auteurs",
@@ -48,6 +209,8 @@ pub const ARTICLES: &[Article] = &[
         ),
         date: "March 14, 2026",
         summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
+        category: Category::Community,
+        tags: &[Tag::Community, Tag::Discord, Tag::Mentorship],
     },
     Article {
         slug: "claude-code-lsp",
@@ -55,6 +218,14 @@ pub const ARTICLES: &[Article] = &[
         title_alias: None,
         date: "December 29, 2025",
         summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
+        category: Category::DeveloperTooling,
+        tags: &[
+            Tag::ClaudeCode,
+            Tag::Lsp,
+            Tag::DeveloperTooling,
+            Tag::Rust,
+            Tag::TypeScript,
+        ],
     },
     Article {
         slug: "jsx-like-rust-macro",
@@ -62,8 +233,58 @@ pub const ARTICLES: &[Article] = &[
         title_alias: None,
         date: "May 31, 2025",
         summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
+        category: Category::FrameworkDesign,
+        tags: &[Tag::Rust, Tag::Macros, Tag::Framework, Tag::JsxLike],
     },
 ];
+
+// Debug-only: catch accidental tag duplicates during dev. Production
+// builds skip this since enums + `unique_tags` already guarantee a
+// clean rendered set; the check is just a faster signal for the
+// author than spotting "rust rust" in the rendered chip row.
+#[cfg(debug_assertions)]
+pub(crate) fn debug_check_tag_uniqueness() {
+    for article in ARTICLES {
+        let original = article.tags.len();
+        let unique = unique_tags(article.tags).len();
+        debug_assert_eq!(
+            original, unique,
+            "article `{}` has duplicate tags in its slice",
+            article.slug
+        );
+    }
+}
+
+// Category pill + ghost-style tag chips for the article-meta row.
+// Lays out as a full-width second row beneath the avatar/byline:
+//
+//   [CATEGORY]  tag  tag  tag  tag
+//
+// Category is a filled accent-tinted pill (single primary section);
+// tags are smaller muted chips. Tags are deduped via unique_tags
+// (set semantics) so authors can list them in significance order
+// without worrying about repetition.
+fn render_taxonomy(category: Category, tags: &[Tag]) -> HtmlFragment {
+    let tag_chips: HtmlFragment = unique_tags(tags)
+        .into_iter()
+        .map(|t| {
+            view! {
+                <span class="article-tag">{ t.label() }</span>
+            }
+        })
+        .collect();
+
+    view! {
+        <div class="article-taxonomy">
+            <span class="article-category" data-category={ category.slug() }>
+                { category.label() }
+            </span>
+            <div class="article-tags" aria-label="Tags">
+                { tag_chips }
+            </div>
+        </div>
+    }
+}
 
 // Vercel-style dropdown trigger + panel containing the latest three
 // articles. The trigger keeps the `.is-current` highlight so the nav
@@ -217,6 +438,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let inner = splice_discord_widget(&slug, inner).await;
             let toc = render_toc(&headings);
             let vt_name = format!("view-transition-name: article-{slug}");
+            let taxonomy = render_taxonomy(a.category, a.tags);
             let body = view! {
                 <article class="article">
                     <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
@@ -232,6 +454,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                             <div class="article-meta-role">"Engineering Manager @ Uber"</div>
                         </div>
                         <time class="article-meta-date">{ a.date }</time>
+                        { taxonomy }
                     </header>
                     { inner }
                 </article>
@@ -291,7 +514,7 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
     let mut i = 0;
     while i < events.len() {
         let level = match &events[i] {
-            Event::Start(Tag::Heading {
+            Event::Start(PmTag::Heading {
                 level: l @ (HeadingLevel::H2 | HeadingLevel::H3),
                 id: None,
                 ..
@@ -327,14 +550,14 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
         };
         *count += 1;
 
-        if let Event::Start(Tag::Heading {
+        if let Event::Start(PmTag::Heading {
             level: l,
             id: _,
             classes,
             attrs,
         }) = events[i].clone()
         {
-            events[i] = Event::Start(Tag::Heading {
+            events[i] = Event::Start(PmTag::Heading {
                 level: l,
                 id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
                 classes,
