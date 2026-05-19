@@ -317,12 +317,13 @@ function renderReceiptModal() {
                     .filter((r) => r.api === e.name)
                     .map((r) => `${r.label}: ${r.value}`)
                     .join(" · ");
-                const badge = e.discovered
-                    ? '<span class="api-cell-badge api-cell-badge-found">Found</span>'
-                    : e.status === STATUS.ACTIVE || e.status === STATUS.PASSIVE
-                      ? '<span class="api-cell-badge api-cell-badge-passive">Supported</span>'
-                      : '<span class="api-cell-badge api-cell-badge-unsupported">—</span>';
-                return `<li class="${cls}"><span class="api-cell-row"><span class="api-cell-name">${escape(e.name)}</span>${badge}</span>${lines ? `<span class="api-cell-meta">${escape(lines)}</span>` : ""}</li>`;
+                const check = `<span class="api-cell-check" aria-hidden="true">` +
+                    `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" ` +
+                    `stroke-width="3" stroke-linecap="round" stroke-linejoin="round">` +
+                    `<path d="M3 8 L7 12 L13 4"/></svg></span>`;
+                return `<li class="${cls}"><div class="api-cell-row">${check}` +
+                    `<span class="api-cell-name">${escape(e.name)}</span></div>` +
+                    `${lines ? `<span class="api-cell-meta">${escape(lines)}</span>` : ""}</li>`;
             })
             .join("");
         parts.push(

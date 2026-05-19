@@ -1,78 +1,93 @@
-// Theme toggle.
+// Theme cycler.
 //
-// Reads `engmanager.theme` from localStorage and applies it as
-// `<html data-theme="...">`. Wires the brutalist popover picker to
-// rewrite the value on click. Falls back to system preference when
-// nothing is persisted. Syncs across open tabs via the storage event,
-// so changing the theme in one tab updates every other.
+// One button (`.theme-picker[data-theme-cycle]`). Click advances
+// through the THEMES list below, persisting to localStorage and
+// applying as `<html data-theme="...">`. `auto` (the default) removes
+// the attribute so the OS preference + the `@media (prefers-color-
+// scheme: dark)` block in critical.css takes over.
+//
+// State sync across open tabs is via the `storage` event — changing
+// the theme in one tab updates every other tab without a reload.
+//
+// The script tag is intentionally not `defer` so the theme attribute
+// is on `<html>` before first paint, avoiding a flash of the wrong
+// palette.
 
 const STORAGE_KEY = "engmanager.theme";
-const DEFAULT_THEME = "auto";
+
+// (slug, label) — labels are uppercase to match the brutalist
+// chip aesthetic. Order = cycle order.
+const THEMES = [
+    ["auto",       "Auto"],
+    ["light",      "Light"],
+    ["dark",       "Dark"],
+    ["catppuccin", "Catppuccin"],
+    ["synthwave",  "Synthwave"],
+    ["cyberpunk",  "Cyberpunk"],
+    ["forest",     "Forest"],
+    ["lofi",       "Lofi"],
+    ["dracula",    "Dracula"],
+    ["luxury",     "Luxury"],
+];
 
 const root = document.documentElement;
 
 function readStored() {
     try {
-        return localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+        return localStorage.getItem(STORAGE_KEY) || "auto";
     } catch {
-        return DEFAULT_THEME;
+        return "auto";
     }
 }
 
 function persist(theme) {
     try {
-        if (theme === DEFAULT_THEME) localStorage.removeItem(STORAGE_KEY);
+        if (theme === "auto") localStorage.removeItem(STORAGE_KEY);
         else localStorage.setItem(STORAGE_KEY, theme);
     } catch {}
 }
 
 function apply(theme) {
-    if (theme === DEFAULT_THEME) {
+    if (theme === "auto") {
         root.removeAttribute("data-theme");
     } else {
         root.setAttribute("data-theme", theme);
     }
-    syncCurrent(theme);
+    syncLabel(theme);
 }
 
-function syncCurrent(theme) {
-    const tiles = document.querySelectorAll(".theme-tile");
-    tiles.forEach((tile) => {
-        tile.classList.toggle("is-current", tile.dataset.theme === theme);
-        tile.setAttribute(
-            "aria-pressed",
-            tile.dataset.theme === theme ? "true" : "false",
-        );
-    });
-    const label = document.querySelector("[data-theme-current-label]");
-    if (label) label.textContent = theme;
+function syncLabel(theme) {
+    const entry = THEMES.find(([slug]) => slug === theme);
+    const label = entry ? entry[1] : theme;
+    document
+        .querySelectorAll("[data-theme-current-label]")
+        .forEach((el) => (el.textContent = label));
 }
 
-// Apply persisted theme as early as possible so the user doesn't see
-// a flash of the wrong palette. The script tag is `defer`-loaded so
-// this runs after the DOM is parsed but before paint completes for
-// most browsers.
+function nextTheme(current) {
+    const idx = THEMES.findIndex(([slug]) => slug === current);
+    const next = THEMES[(idx + 1) % THEMES.length];
+    return next[0];
+}
+
+// Apply immediately so the theme attaches before paint.
 apply(readStored());
 
 document.addEventListener("DOMContentLoaded", () => {
-    syncCurrent(readStored());
+    syncLabel(readStored());
 
-    // Tile click → switch theme + persist + close popover.
-    document.querySelectorAll(".theme-tile").forEach((tile) => {
-        tile.addEventListener("click", () => {
-            const theme = tile.dataset.theme || DEFAULT_THEME;
-            apply(theme);
-            persist(theme);
-            document
-                .getElementById("theme-picker-panel")
-                ?.hidePopover();
+    document.querySelectorAll("[data-theme-cycle]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const current = readStored();
+            const next = nextTheme(current);
+            apply(next);
+            persist(next);
         });
     });
 
-    // Cross-tab sync — when another tab changes the theme, mirror it
-    // here without forcing a reload.
+    // Cross-tab sync.
     window.addEventListener("storage", (event) => {
         if (event.key !== STORAGE_KEY) return;
-        apply(event.newValue || DEFAULT_THEME);
+        apply(event.newValue || "auto");
     });
 });

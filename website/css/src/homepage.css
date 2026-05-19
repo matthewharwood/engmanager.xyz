@@ -325,8 +325,13 @@
     inset-inline-start: 0;
     inset-inline-end: 0;
     block-size: clamp(0.375rem, 1.4vw, 0.75rem);
-    background: var(--accent);
-    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--ctp-base);
+    /* Strike in the high-contrast text color so it stays visible across
+     * every theme. The SVG title fills with --accent (currentColor), so
+     * pinning the strike to that color makes them merge — text-1 keeps
+     * them distinct. Halo in the page bg knockouts the title text
+     * underneath, giving the sticker effect. */
+    background: var(--text-1);
+    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--surface-1);
     transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
     transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);

@@ -42,66 +42,19 @@ pub fn render_discovery_toasts() -> HtmlFragment {
     }
 }
 
-// All themes shipped in css/src/critical.css `@layer fp.themes`. Each
-// row also carries a pair of inline CSS variables for the picker tile
-// preview swatches (base + primary) so the panel previews each theme
-// without requiring duplicate JS state. Order matters: `auto` first
-// so it's the obvious default.
-//
-//   (slug, label, preview-base, preview-primary)
-const THEMES: &[(&str, &str, &str, &str)] = &[
-    ("auto",       "Auto",       "var(--surface-1)",       "var(--brand)"),
-    ("light",      "Light",      "oklch(99% 0.003 270)",   "oklch(52% 0.22 270)"),
-    ("dark",       "Dark",       "oklch(22% 0.012 270)",   "oklch(70% 0.20 270)"),
-    ("catppuccin", "Catppuccin", "oklch(96% 0.013 280)",   "oklch(63% 0.18 15)"),
-    ("synthwave",  "Synthwave",  "oklch(18% 0.04 290)",    "oklch(72% 0.25 340)"),
-    ("cyberpunk",  "Cyberpunk",  "oklch(91% 0.22 92)",     "oklch(65% 0.30 0)"),
-    ("forest",     "Forest",     "oklch(18% 0.03 155)",    "oklch(60% 0.16 155)"),
-    ("lofi",       "Lofi",       "oklch(98% 0.002 70)",    "oklch(15% 0.003 70)"),
-    ("dracula",    "Dracula",    "oklch(28% 0.018 280)",   "oklch(72% 0.13 290)"),
-    ("luxury",     "Luxury",     "oklch(8% 0.005 50)",     "oklch(75% 0.13 75)"),
-];
-
-// Brutalist theme picker. Trigger lives in the bottom-left next to the
-// scavenger hunt chip; clicking opens a popover panel of theme tiles.
-// Selection persists via js/theme-toggle.js (localStorage key
-// `engmanager.theme`) and syncs across open tabs on the storage event.
+// Brutalist theme cycler. Single chip in the bottom-left; clicking it
+// advances through the THEMES list defined in js/theme-toggle.js. The
+// label shows the current theme's name. State persists via
+// localStorage key `engmanager.theme` and syncs across open tabs via
+// the storage event.
 pub fn render_theme_picker() -> HtmlFragment {
-    let tiles: HtmlFragment = THEMES
-        .iter()
-        .map(|(slug, label, base, primary)| {
-            let style = format!(
-                "--preview-base: {base}; --preview-primary: {primary};"
-            );
-            view! {
-                <button class="theme-tile"
-                        type="button"
-                        data-theme={ *slug }
-                        style={ style }
-                        aria-pressed="false">
-                    <span class="theme-tile-swatch" aria-hidden="true"></span>
-                    <span class="theme-tile-name">{ *label }</span>
-                </button>
-            }
-        })
-        .collect();
-
     view! {
-        <div class="theme-picker">
-            <button class="theme-picker-trigger"
-                    type="button"
-                    popovertarget="theme-picker-panel"
-                    aria-label="Pick a theme">
-                <span class="theme-picker-glyph" aria-hidden="true">"◐"</span>
-                <span class="theme-picker-label">"Theme"</span>
-            </button>
-            <div id="theme-picker-panel"
-                 popover="auto"
-                 class="theme-picker-panel">
-                <div class="theme-picker-grid">
-                    { tiles }
-                </div>
-            </div>
-        </div>
+        <button class="theme-picker"
+                type="button"
+                data-theme-cycle
+                aria-label="Cycle to next theme">
+            <span class="theme-picker-glyph" aria-hidden="true">"◐"</span>
+            <span class="theme-picker-label" data-theme-current-label>"Auto"</span>
+        </button>
     }
 }
