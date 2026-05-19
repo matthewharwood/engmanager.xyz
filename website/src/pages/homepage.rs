@@ -3,6 +3,7 @@ use eng_domain::{Component, HtmlFragment};
 use eng_markup::{html, view};
 
 use std::collections::BTreeSet;
+use std::fmt::Write;
 
 use super::articles::{ARTICLES, Category, Tag};
 use super::{
@@ -10,6 +11,110 @@ use super::{
     render_discovery_toasts, render_hunt_chip, render_theme_picker,
 };
 use crate::asset_url;
+
+// Serializes the article roster as a JSON island for the gacha
+// reveal card to read on click. JS reads this once on load and
+// looks up entries by slug. Hand-encoded to avoid pulling a serde
+// dependency through pages — the data is small + we control every
+// field, so escape() is sufficient.
+fn articles_data_json() -> String {
+    let mut out = String::from("{");
+    for (i, a) in ARTICLES.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        let title = a.title_alias.unwrap_or(a.title);
+        let mut tags = String::from("[");
+        for (j, t) in a.tags.iter().enumerate() {
+            if j > 0 {
+                tags.push(',');
+            }
+            let _ = write!(
+                tags,
+                "{{\"label\":\"{}\",\"emoji\":\"{}\"}}",
+                json_escape(t.label()),
+                json_escape(t.emoji()),
+            );
+        }
+        tags.push(']');
+        let _ = write!(
+            out,
+            "\"{slug}\":{{\"title\":\"{title}\",\"summary\":\"{summary}\",\"date\":\"{date}\",\"category\":{{\"label\":\"{cat_label}\",\"emoji\":\"{cat_emoji}\",\"slug\":\"{cat_slug}\"}},\"tags\":{tags},\"href\":\"/articles/{slug}\"}}",
+            slug = json_escape(a.slug),
+            title = json_escape(title),
+            summary = json_escape(a.summary),
+            date = json_escape(a.date),
+            cat_label = json_escape(a.category.label()),
+            cat_emoji = json_escape(a.category.emoji()),
+            cat_slug = json_escape(a.category.slug()),
+            tags = tags,
+        );
+    }
+    out.push('}');
+    out
+}
+
+fn json_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '<' => out.push_str("\\u003c"),
+            '>' => out.push_str("\\u003e"),
+            '&' => out.push_str("\\u0026"),
+            c if (c as u32) < 0x20 => {
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+// Gacha-style reveal card. Hidden popover that the click handler
+// in js/visited-articles.js fills with the clicked article's data
+// and opens with a spring-overshoot entrance. Continue button
+// drives navigation; Close dismisses + keeps the reader on the
+// homepage with the visited state intact.
+fn render_reveal_card() -> HtmlFragment {
+    view! {
+        <aside id="article-reveal" popover="manual" class="reveal-card">
+            <div class="reveal-card-frame">
+                <div class="reveal-card-glint" aria-hidden="true"></div>
+                <header class="reveal-card-head">
+                    <span class="reveal-card-emoji" data-reveal-emoji aria-hidden="true">"⌬"</span>
+                    <span class="reveal-card-category" data-reveal-category>"…"</span>
+                    <button class="reveal-card-close"
+                            type="button"
+                            popovertarget="article-reveal"
+                            popovertargetaction="hide"
+                            aria-label="Close">
+                        "✕"
+                    </button>
+                </header>
+                <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
+                <time class="reveal-card-date" data-reveal-date>"…"</time>
+                <p class="reveal-card-summary" data-reveal-summary>"…"</p>
+                <div class="reveal-card-tags" data-reveal-tags></div>
+                <footer class="reveal-card-actions">
+                    <button class="reveal-card-dismiss"
+                            type="button"
+                            popovertarget="article-reveal"
+                            popovertargetaction="hide">
+                        "Close"
+                    </button>
+                    <a class="reveal-card-continue" data-reveal-continue href="#">
+                        "Read →"
+                    </a>
+                </footer>
+            </div>
+        </aside>
+    }
+}
 
 // Twin brutalist marquees that loop seamlessly above the article
 // stack. Categories scroll left-to-right; tags scroll the opposite
@@ -309,6 +414,14 @@ pub async fn index() -> Html<String> {
                 <div id="bio" popover="auto">
                     <EngResume />
                 </div>
+
+                // JSON island + gacha-style reveal card. The card is
+                // populated + opened by js/visited-articles.js when a
+                // reader clicks an unread article in the stack.
+                <script type="application/json" id="articles-data">
+                    { HtmlFragment::new(articles_data_json()) }
+                </script>
+                { render_reveal_card() }
 
                 { render_hunt_chip() }
                 { render_theme_picker() }
