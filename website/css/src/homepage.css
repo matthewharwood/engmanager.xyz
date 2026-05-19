@@ -473,6 +473,30 @@ body[data-dragging="true"] .marquee-track {
     transform: translateY(-50%) scaleX(1);
 }
 
+/* `.is-visited-fresh` is set by visited-articles.js the instant the
+ * reader clicks a link. It triggers an extra-emphatic pop on the
+ * checkbox + a slower confident sweep on the strike so the state
+ * change is unmissable before the page transitions away. */
+.article-fluid-link.is-visited-fresh .article-check {
+    animation: visited-check-pop 380ms cubic-bezier(0.34, 1.7, 0.5, 1) both;
+}
+
+.article-fluid-link.is-visited-fresh .article-strike {
+    animation: visited-strike-sweep 420ms cubic-bezier(0.22, 0.96, 0.32, 1.08) both;
+}
+
+@keyframes visited-check-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.22) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes visited-strike-sweep {
+    0%   { transform: translateY(-50%) scaleX(0); }
+    65%  { transform: translateY(-50%) scaleX(1.04); }
+    100% { transform: translateY(-50%) scaleX(1); }
+}
+
 .article-fluid-link + .article-fluid-link {
     margin-block-start: 1rem;
 }
