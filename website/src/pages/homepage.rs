@@ -22,7 +22,8 @@ fn render_topic_marquees() -> HtmlFragment {
         .iter()
         .map(|c| {
             view! {
-                <span class="chip chip-category">
+                <span class="chip chip-category"
+                      data-chip-id={ format!("cat-{}", c.slug()) }>
                     <span class="chip-emoji" aria-hidden="true">{ c.emoji() }</span>
                     <span class="chip-label">{ c.label() }</span>
                 </span>
@@ -40,7 +41,8 @@ fn render_topic_marquees() -> HtmlFragment {
         .into_iter()
         .map(|t| {
             view! {
-                <span class="chip chip-tag">
+                <span class="chip chip-tag"
+                      data-chip-id={ format!("tag-{}", t.label()) }>
                     <span class="chip-emoji" aria-hidden="true">{ t.emoji() }</span>
                     <span class="chip-label">{ t.label() }</span>
                 </span>
@@ -250,10 +252,12 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/visited-articles.js") } defer></script>
+                <script src={ asset_url("js/trash-drag.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
-                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
+                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\",trashSfx:\"{}\"}};",
                     asset_url("js/paint-brutalist-hatch.js"),
                     asset_url("js/worker-crypto.js"),
+                    asset_url("trash-drop.mp3"),
                 )) }</script>
                 <script src={ asset_url("js/experiences.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
@@ -272,6 +276,33 @@ pub async fn index() -> Html<String> {
                          alt="Matthew Harwood"
                          height="48" />
                 </button>
+
+                // Trash can. Reader can grab any chip from the marquees and
+                // drag it here; on drop inside the dashed blast radius the
+                // chip is consumed (hidden across every marquee copy), the
+                // counter ticks up, and the ElevenLabs-generated trash-drop
+                // SFX plays. Misses fly back. js/trash-drag.js owns the
+                // pointer DnD logic.
+                <div class="trash" data-trash>
+                    <button class="trash-can" type="button" aria-label="Trash" tabindex="-1">
+                        <svg class="trash-icon"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2.2"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M4 7 L20 7" />
+                            <path d="M9 7 L9 4.5 L15 4.5 L15 7" />
+                            <path d="M5.5 7 L6.5 19.5 A1 1 0 0 0 7.5 20.5 L16.5 20.5 A1 1 0 0 0 17.5 19.5 L18.5 7" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        <span class="trash-count" data-trash-count="0">"0"</span>
+                    </button>
+                    <span class="trash-blast" aria-hidden="true"></span>
+                </div>
 
                 // Resume bio. Anchored so its bottom-right corner touches the
                 // avatar's top-left corner (math in styles.css → #bio).

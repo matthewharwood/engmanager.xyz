@@ -238,6 +238,137 @@
     line-height: 1;
 }
 
+/* ===========================================================================
+ * Trash can + blast radius. Pinned next to the bottom-right avatar.
+ *
+ * The trashcan is a brutalist square button with a count badge. The
+ * blast radius is a dashed theme-colored ring around the trash that
+ * appears while dragging (`body[data-dragging="true"]`). A `--trash-glow`
+ * CSS custom property — written by js/trash-drag.js per pointermove —
+ * drives a brand-tinted box-shadow that intensifies as the dragged
+ * chip approaches the can.
+ *
+ * Ghost chip (a clone of whichever chip the reader picked up) lives
+ * outside the marquee in body, position: fixed, follows the pointer.
+ * On release inside the blast accept zone we animate it into the can;
+ * on miss we fly it back to its origin with a spring.
+ * ========================================================================== */
+
+.trash {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 4.75rem;
+    z-index: 10;
+}
+
+.trash-can {
+    appearance: none;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    inline-size: 3rem;
+    block-size: 3rem;
+    padding: 0;
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 2px solid var(--text-1);
+    border-radius: 0;
+    box-shadow:
+        3px 3px 0 0 var(--text-1),
+        0 0 calc(40px * var(--trash-glow, 0)) calc(8px * var(--trash-glow, 0))
+            color-mix(in oklab, var(--brand) 80%, transparent);
+    transition:
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.trash-icon {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+}
+
+.trash-count {
+    position: absolute;
+    inset-block-start: -0.4375rem;
+    inset-inline-end: -0.4375rem;
+    min-inline-size: 1.125rem;
+    block-size: 1.125rem;
+    padding-inline: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand);
+    color: var(--brand-text);
+    border: 1.5px solid var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 800;
+    line-height: 1;
+    will-change: transform;
+}
+
+.trash-count[data-trash-count="0"] {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.trash-blast {
+    position: fixed;
+    inset-block-end: -3.5rem;
+    inset-inline-end: -3.5rem;
+    inline-size: 13.5rem;
+    block-size: 13.5rem;
+    border: 2px dashed color-mix(in oklab, var(--brand) 70%, transparent);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        color-mix(in oklab, var(--brand) calc(15% * var(--trash-glow, 0)), transparent),
+        transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: bottom right;
+    transition: opacity 220ms ease, transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    pointer-events: none;
+    z-index: 9;
+}
+
+body[data-dragging="true"] .trash-blast {
+    opacity: 1;
+    transform: scale(1);
+}
+
+body[data-dragging="true"] .trash-can {
+    transform: scale(1.04);
+}
+
+/* Pause every marquee while a chip is being dragged. */
+body[data-dragging="true"] .marquee-track {
+    animation-play-state: paused;
+}
+
+/* The cloned ghost chip following the pointer. Inherits its sibling
+ * .chip styling (since it's a clone) and just adds a tiny lift +
+ * rotation so the reader feels like they're picking it up. */
+.chip-ghost {
+    box-shadow: 5px 5px 0 0 var(--text-1) !important;
+    transform: rotate(-2deg) scale(1.06);
+    transform-origin: center;
+    cursor: grabbing;
+}
+
+/* Hint to the cursor that marquee chips are grabbable. */
+.marquee .chip {
+    cursor: grab;
+    touch-action: none;
+}
+
+.marquee .chip:active {
+    cursor: grabbing;
+}
+
 /* Stacked clickable article titles (each its own fluid SVG) under the
  * main ENG MANAGER headline. Flex row so a chunky brutalist checkbox
  * can sit to the left of each title and a strike-through bar can
