@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use axum::Router;
 use axum::extract::Path;
-use axum::http::{StatusCode, header};
+use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use rust_embed::{EmbeddedFile, RustEmbed};
@@ -11,6 +11,7 @@ use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
 
 pub mod discord;
+pub mod experiences;
 mod pages;
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
@@ -122,6 +123,29 @@ fn strip_asset_hash(path: &str) -> Option<String> {
     }
 }
 
+// Serves the Service Worker at its canonical root path with the
+// `Service-Worker-Allowed: /` header so it can claim the whole origin.
+// SW source lives inside the OXC-minified JsDist bundle alongside the
+// other scripts, but we expose it here at /sw.js (not under /assets/)
+// so the registration call can stay url-stable across deploys.
+async fn sw_handler() -> Response {
+    match JsDist::get("sw.js") {
+        Some(file) => (
+            [
+                (header::CONTENT_TYPE, "application/javascript".to_string()),
+                (header::CACHE_CONTROL, "no-cache, max-age=0".to_string()),
+                (
+                    HeaderName::from_static("service-worker-allowed"),
+                    "/".to_string(),
+                ),
+            ],
+            file.data.into_owned(),
+        )
+            .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
 async fn asset_handler(Path(path): Path<String>) -> Response {
     // Try the hashed form first (rewriting `styles.HASH.css` → `styles.css`);
     // fall back to the literal path so flat URLs (fonts in CSS, Markdown
@@ -201,6 +225,7 @@ async fn main() {
         .route("/articles/{slug}", get(pages::articles::detail))
         .route("/health", get(|| async { "OK" }))
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
+        .route("/sw.js", get(sw_handler))
         .route("/assets/{*path}", get(asset_handler))
         .layer(axum::middleware::from_fn(html_cache_layer))
         // Brotli + gzip over the wire for any compressible response

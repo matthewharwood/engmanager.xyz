@@ -246,6 +246,14 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/visited-articles.js") } defer></script>
+                <script>{ HtmlFragment::new(format!(
+                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
+                    asset_url("js/paint-brutalist-hatch.js"),
+                    asset_url("js/worker-crypto.js"),
+                )) }</script>
+                <script src={ asset_url("js/experiences.js") } defer></script>
+                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
+                <meta name="theme-color" content="#e64553" />
             </head>
             <body class="homepage">
                 <EngHeadline />
@@ -266,6 +274,30 @@ pub async fn index() -> Html<String> {
                 <div id="bio" popover="auto">
                     <EngResume />
                 </div>
+
+                // Brutalist Web API Receipt modal (Popover API). `?` from
+                // anywhere on the site toggles it; experiences.js fills the
+                // grid + stats from the registry.
+                <aside id="api-receipt-modal" popover="manual" class="api-receipt">
+                    <div class="api-receipt-frame">
+                        <header class="api-receipt-head">
+                            <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
+                            <h2 class="api-receipt-title">"Web API Receipt"</h2>
+                            <button class="api-receipt-close"
+                                    type="button"
+                                    popovertarget="api-receipt-modal"
+                                    popovertargetaction="hide"
+                                    aria-label="Close">
+                                "✕"
+                            </button>
+                        </header>
+                        <div class="api-receipt-stats" data-api-receipt-stats></div>
+                        <div class="api-receipt-grid" data-api-receipt-grid></div>
+                        <footer class="api-receipt-foot">
+                            <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close"</span>
+                        </footer>
+                    </div>
+                </aside>
             </body>
         </html>
     };

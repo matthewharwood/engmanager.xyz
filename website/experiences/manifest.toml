@@ -1,0 +1,739 @@
+# Web API Experiences — canonical manifest.
+#
+# Source of truth for `website/js/src/experiences.js`. A Rust unit test
+# (website/src/experiences.rs) asserts every `id` here has a matching
+# `id: "..."` entry in the JS file. Add a row here and the build will
+# fail until the JS catches up.
+#
+# `group` matches the bucket the entry appears under in the DevTools
+# Web API Receipt and the brutalist receipt modal.
+
+[[api]]
+id = "attribution-reporting"
+name = "Attribution Reporting API"
+group = "privacy"
+
+[[api]]
+id = "audio-output-devices"
+name = "Audio Output Devices API"
+group = "media"
+
+[[api]]
+id = "audio-session"
+name = "Audio Session API"
+group = "media"
+
+[[api]]
+id = "background-fetch"
+name = "Background Fetch API"
+group = "background"
+
+[[api]]
+id = "background-synchronization"
+name = "Background Synchronization API"
+group = "background"
+
+[[api]]
+id = "background-tasks"
+name = "Background Tasks API"
+group = "background"
+
+[[api]]
+id = "badging"
+name = "Badging API"
+group = "pwa"
+
+[[api]]
+id = "barcode-detection"
+name = "Barcode Detection API"
+group = "meta"
+
+[[api]]
+id = "battery-status"
+name = "Battery Status API"
+group = "device"
+
+[[api]]
+id = "beacon"
+name = "Beacon API"
+group = "network"
+
+[[api]]
+id = "broadcast-channel"
+name = "Broadcast Channel API"
+group = "meta"
+
+[[api]]
+id = "css-custom-highlight"
+name = "CSS Custom Highlight API"
+group = "graphics"
+
+[[api]]
+id = "css-font-loading"
+name = "CSS Font Loading API"
+group = "graphics"
+
+[[api]]
+id = "css-painting"
+name = "CSS Painting API"
+group = "graphics"
+
+[[api]]
+id = "css-properties-and-values"
+name = "CSS Properties and Values API"
+group = "graphics"
+
+[[api]]
+id = "css-typed-object-model"
+name = "CSS Typed Object Model API"
+group = "graphics"
+
+[[api]]
+id = "cssom"
+name = "CSS Object Model (CSSOM)"
+group = "graphics"
+
+[[api]]
+id = "cssom-view"
+name = "CSSOM view API"
+group = "graphics"
+
+[[api]]
+id = "canvas"
+name = "Canvas API"
+group = "media"
+
+[[api]]
+id = "channel-messaging"
+name = "Channel Messaging API"
+group = "meta"
+
+[[api]]
+id = "clipboard"
+name = "Clipboard API"
+group = "input"
+
+[[api]]
+id = "compression-streams"
+name = "Compression Streams API"
+group = "meta"
+
+[[api]]
+id = "compute-pressure"
+name = "Compute Pressure API"
+group = "device"
+
+[[api]]
+id = "console"
+name = "Console API"
+group = "meta"
+
+[[api]]
+id = "contact-picker"
+name = "Contact Picker API"
+group = "input"
+
+[[api]]
+id = "content-index"
+name = "Content Index API"
+group = "pwa"
+
+[[api]]
+id = "cookie-store"
+name = "Cookie Store API"
+group = "storage"
+
+[[api]]
+id = "credential-management"
+name = "Credential Management API"
+group = "security"
+
+[[api]]
+id = "dom"
+name = "Document Object Model (DOM)"
+group = "meta"
+
+[[api]]
+id = "device-memory"
+name = "Device Memory API"
+group = "device"
+
+[[api]]
+id = "device-orientation-events"
+name = "Device orientation events"
+group = "device"
+
+[[api]]
+id = "device-posture"
+name = "Device Posture API"
+group = "device"
+
+[[api]]
+id = "document-picture-in-picture"
+name = "Document Picture-in-Picture API"
+group = "media"
+
+[[api]]
+id = "edit-context"
+name = "EditContext API"
+group = "input"
+
+[[api]]
+id = "encoding"
+name = "Encoding API"
+group = "security"
+
+[[api]]
+id = "encrypted-media-extensions"
+name = "Encrypted Media Extensions API"
+group = "media"
+
+[[api]]
+id = "eyedropper"
+name = "EyeDropper API"
+group = "input"
+
+[[api]]
+id = "federated-credential-management"
+name = "Federated Credential Management (FedCM) API"
+group = "security"
+
+[[api]]
+id = "fenced-frame"
+name = "Fenced Frame API"
+group = "security"
+
+[[api]]
+id = "fetch"
+name = "Fetch API"
+group = "network"
+
+[[api]]
+id = "file"
+name = "File API"
+group = "storage"
+
+[[api]]
+id = "file-system"
+name = "File System API"
+group = "storage"
+
+[[api]]
+id = "file-and-directory-entries"
+name = "File and Directory Entries API"
+group = "storage"
+
+[[api]]
+id = "force-touch-events"
+name = "Force Touch events"
+group = "input"
+
+[[api]]
+id = "fullscreen"
+name = "Fullscreen API"
+group = "meta"
+
+[[api]]
+id = "gamepad"
+name = "Gamepad API"
+group = "input"
+
+[[api]]
+id = "geolocation"
+name = "Geolocation API"
+group = "hardware"
+
+[[api]]
+id = "geometry-interfaces"
+name = "Geometry interfaces"
+group = "graphics"
+
+[[api]]
+id = "html-dom"
+name = "HTML DOM API"
+group = "meta"
+
+[[api]]
+id = "html-drag-and-drop"
+name = "HTML Drag and Drop API"
+group = "input"
+
+[[api]]
+id = "html-sanitizer"
+name = "HTML Sanitizer API"
+group = "security"
+
+[[api]]
+id = "history"
+name = "History API"
+group = "meta"
+
+[[api]]
+id = "houdini-apis"
+name = "Houdini APIs"
+group = "graphics"
+
+[[api]]
+id = "idle-detection"
+name = "Idle Detection API"
+group = "hardware"
+
+[[api]]
+id = "indexeddb"
+name = "IndexedDB API"
+group = "storage"
+
+[[api]]
+id = "ink"
+name = "Ink API"
+group = "input"
+
+[[api]]
+id = "input-device-capabilities"
+name = "InputDeviceCapabilities API"
+group = "input"
+
+[[api]]
+id = "insertable-streams"
+name = "Insertable Streams for MediaStreamTrack API"
+group = "media"
+
+[[api]]
+id = "intersection-observer"
+name = "Intersection Observer API"
+group = "graphics"
+
+[[api]]
+id = "invoker-commands"
+name = "Invoker Commands API"
+group = "meta"
+
+[[api]]
+id = "js-self-profiling"
+name = "JS Self-Profiling API"
+group = "background"
+
+[[api]]
+id = "keyboard"
+name = "Keyboard API"
+group = "input"
+
+[[api]]
+id = "launch-handler"
+name = "Launch Handler API"
+group = "pwa"
+
+[[api]]
+id = "local-font-access"
+name = "Local Font Access API"
+group = "hardware"
+
+[[api]]
+id = "mediastream-image-capture"
+name = "MediaStream Image Capture API"
+group = "media"
+
+[[api]]
+id = "media-capabilities"
+name = "Media Capabilities API"
+group = "media"
+
+[[api]]
+id = "media-capture-and-streams"
+name = "Media Capture and Streams API"
+group = "media"
+
+[[api]]
+id = "media-session"
+name = "Media Session API"
+group = "media"
+
+[[api]]
+id = "media-source"
+name = "Media Source API"
+group = "media"
+
+[[api]]
+id = "mediastream-recording"
+name = "MediaStream Recording API"
+group = "media"
+
+[[api]]
+id = "navigation"
+name = "Navigation API"
+group = "meta"
+
+[[api]]
+id = "network-information"
+name = "Network Information API"
+group = "device"
+
+[[api]]
+id = "notifications"
+name = "Notifications API"
+group = "pwa"
+
+[[api]]
+id = "page-visibility"
+name = "Page Visibility API"
+group = "meta"
+
+[[api]]
+id = "payment-request"
+name = "Payment Request API"
+group = "meta"
+
+[[api]]
+id = "performance"
+name = "Performance APIs"
+group = "meta"
+
+[[api]]
+id = "permissions"
+name = "Permissions API"
+group = "privacy"
+
+[[api]]
+id = "picture-in-picture"
+name = "Picture-in-Picture API"
+group = "media"
+
+[[api]]
+id = "pointer-events"
+name = "Pointer events"
+group = "input"
+
+[[api]]
+id = "pointer-lock"
+name = "Pointer Lock API"
+group = "input"
+
+[[api]]
+id = "popover"
+name = "Popover API"
+group = "meta"
+
+[[api]]
+id = "presentation"
+name = "Presentation API"
+group = "privacy"
+
+[[api]]
+id = "prioritized-task-scheduling"
+name = "Prioritized Task Scheduling API"
+group = "background"
+
+[[api]]
+id = "private-state-token"
+name = "Private State Token API"
+group = "privacy"
+
+[[api]]
+id = "push"
+name = "Push API"
+group = "pwa"
+
+[[api]]
+id = "remote-playback"
+name = "Remote Playback API"
+group = "media"
+
+[[api]]
+id = "reporting"
+name = "Reporting API"
+group = "privacy"
+
+[[api]]
+id = "resize-observer"
+name = "Resize Observer API"
+group = "graphics"
+
+[[api]]
+id = "svg"
+name = "SVG API"
+group = "graphics"
+
+[[api]]
+id = "screen-capture"
+name = "Screen Capture API"
+group = "hardware"
+
+[[api]]
+id = "screen-orientation"
+name = "Screen Orientation API"
+group = "device"
+
+[[api]]
+id = "screen-wake-lock"
+name = "Screen Wake Lock API"
+group = "meta"
+
+[[api]]
+id = "selection"
+name = "Selection API"
+group = "input"
+
+[[api]]
+id = "sensor"
+name = "Sensor APIs"
+group = "device"
+
+[[api]]
+id = "server-sent-events"
+name = "Server-sent events"
+group = "network"
+
+[[api]]
+id = "service-worker"
+name = "Service Worker API"
+group = "background"
+
+[[api]]
+id = "shared-storage"
+name = "Shared Storage API"
+group = "privacy"
+
+[[api]]
+id = "speculation-rules"
+name = "Speculation Rules API"
+group = "meta"
+
+[[api]]
+id = "storage"
+name = "Storage API"
+group = "storage"
+
+[[api]]
+id = "storage-access"
+name = "Storage Access API"
+group = "storage"
+
+[[api]]
+id = "streams"
+name = "Streams API"
+group = "network"
+
+[[api]]
+id = "summarizer"
+name = "Summarizer API"
+group = "meta"
+
+[[api]]
+id = "topics"
+name = "Topics API"
+group = "privacy"
+
+[[api]]
+id = "touch-events"
+name = "Touch events"
+group = "input"
+
+[[api]]
+id = "translator-language-detector"
+name = "Translator and Language Detector APIs"
+group = "meta"
+
+[[api]]
+id = "trusted-types"
+name = "Trusted Types API"
+group = "security"
+
+[[api]]
+id = "ui-events"
+name = "UI Events"
+group = "input"
+
+[[api]]
+id = "url"
+name = "URL API"
+group = "network"
+
+[[api]]
+id = "url-fragment-text-directives"
+name = "URL Fragment Text Directives"
+group = "network"
+
+[[api]]
+id = "url-pattern"
+name = "URL Pattern API"
+group = "network"
+
+[[api]]
+id = "user-preferences"
+name = "User Preferences API"
+group = "meta"
+
+[[api]]
+id = "user-agent-client-hints"
+name = "User-Agent Client Hints API"
+group = "device"
+
+[[api]]
+id = "vibration"
+name = "Vibration API"
+group = "hardware"
+
+[[api]]
+id = "view-transition"
+name = "View Transition API"
+group = "graphics"
+
+[[api]]
+id = "viewport-segments"
+name = "Viewport Segments API"
+group = "meta"
+
+[[api]]
+id = "virtual-keyboard"
+name = "VirtualKeyboard API"
+group = "input"
+
+[[api]]
+id = "web-bluetooth"
+name = "Web Bluetooth API"
+group = "hardware"
+
+[[api]]
+id = "web-periodic-background-synchronization"
+name = "Web Periodic Background Synchronization API"
+group = "background"
+
+[[api]]
+id = "web-animations"
+name = "Web Animations API"
+group = "graphics"
+
+[[api]]
+id = "web-audio"
+name = "Web Audio API"
+group = "media"
+
+[[api]]
+id = "web-authentication"
+name = "Web Authentication API"
+group = "security"
+
+[[api]]
+id = "web-components"
+name = "Web Components"
+group = "graphics"
+
+[[api]]
+id = "web-crypto"
+name = "Web Crypto API"
+group = "security"
+
+[[api]]
+id = "web-locks"
+name = "Web Locks API"
+group = "meta"
+
+[[api]]
+id = "web-midi"
+name = "Web MIDI API"
+group = "hardware"
+
+[[api]]
+id = "web-nfc"
+name = "Web NFC API"
+group = "hardware"
+
+[[api]]
+id = "web-serial"
+name = "Web Serial API"
+group = "hardware"
+
+[[api]]
+id = "web-share"
+name = "Web Share API"
+group = "meta"
+
+[[api]]
+id = "web-speech"
+name = "Web Speech API"
+group = "media"
+
+[[api]]
+id = "web-storage"
+name = "Web Storage API"
+group = "storage"
+
+[[api]]
+id = "web-workers"
+name = "Web Workers API"
+group = "background"
+
+[[api]]
+id = "web-based-payment-handler"
+name = "Web-based Payment Handler API"
+group = "meta"
+
+[[api]]
+id = "webcodecs"
+name = "WebCodecs API"
+group = "media"
+
+[[api]]
+id = "webgl"
+name = "WebGL: 2D and 3D graphics for the web"
+group = "media"
+
+[[api]]
+id = "webgpu"
+name = "WebGPU API"
+group = "media"
+
+[[api]]
+id = "webhid"
+name = "WebHID API"
+group = "hardware"
+
+[[api]]
+id = "webotp"
+name = "WebOTP API"
+group = "hardware"
+
+[[api]]
+id = "webrtc"
+name = "WebRTC API"
+group = "media"
+
+[[api]]
+id = "websocket"
+name = "WebSocket API"
+group = "network"
+
+[[api]]
+id = "webtransport"
+name = "WebTransport API"
+group = "network"
+
+[[api]]
+id = "webusb"
+name = "WebUSB API"
+group = "hardware"
+
+[[api]]
+id = "webvr"
+name = "WebVR API"
+group = "media"
+
+[[api]]
+id = "webvtt"
+name = "WebVTT API"
+group = "media"
+
+[[api]]
+id = "webxr"
+name = "WebXR Device API"
+group = "hardware"
+
+[[api]]
+id = "window-controls-overlay"
+name = "Window Controls Overlay API"
+group = "pwa"
+
+[[api]]
+id = "window-management"
+name = "Window Management API"
+group = "device"
