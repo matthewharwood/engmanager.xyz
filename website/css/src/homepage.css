@@ -421,12 +421,12 @@ body[data-dragging="true"] .marquee-track {
     border: 0.08em solid var(--ctp-text);
     box-shadow: 0.1em 0.1em 0 0 var(--ctp-text);
     color: transparent;
-    transition:
-        background-color 240ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
-        color 200ms ease,
-        border-color 200ms ease,
-        transform 180ms ease,
-        box-shadow 180ms ease;
+    /* Only the hover lift transitions. background/color change instantly
+     * on .is-visited so cross-document View Transitions can't fire a
+     * mid-transition snapshot that snaps back when the live element
+     * is revealed. The fresh-click pop animation is opt-in via
+     * .is-visited-fresh — handles the one moment we want motion. */
+    transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .article-fluid-link:hover .article-check,
@@ -465,8 +465,13 @@ body[data-dragging="true"] .marquee-track {
     box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--surface-1);
     transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
-    transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
+    /* Intentionally no transition. The .is-visited state snaps to
+     * scaleX(1) instantly; the fresh-click sweep is opt-in via
+     * .is-visited-fresh. Without a transition here, cross-document
+     * View Transitions can't trigger a stale snapshot → live reveal
+     * regression where the strike blinks in and then animates back
+     * to zero (the bug this comment exists to fix). */
 }
 
 .article-fluid-link.is-visited .article-strike {
