@@ -106,7 +106,9 @@ pub async fn index() -> Html<String> {
         .iter()
         .map(|a| {
             view! {
-                <a class="article-fluid-link" href={ format!("/articles/{}", a.slug) }>
+                <a class="article-fluid-link"
+                   href={ format!("/articles/{}", a.slug) }
+                   style={ format!("view-transition-name: article-{}", a.slug) }>
                     <div class="fluid-display-wrap">
                         <svg class="fluid-display-svg article-fluid-svg"
                              viewBox="0 0 1200 200"
@@ -149,6 +151,7 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
+                <script src={ asset_url("js/view-transitions.js") } defer></script>
             </head>
             <body class="homepage">
                 <EngHeadline />

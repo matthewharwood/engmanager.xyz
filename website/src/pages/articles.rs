@@ -65,6 +65,61 @@ pub const ARTICLES: &[Article] = &[
     },
 ];
 
+// Vercel-style dropdown trigger + panel containing the latest three
+// articles. The trigger keeps the `.is-current` highlight so the nav
+// reads identically to before for users on browsers without JS — the
+// markup is still a clickable disclosure with all targets inside.
+fn render_articles_dropdown() -> HtmlFragment {
+    let items: HtmlFragment = ARTICLES
+        .iter()
+        .take(3)
+        .enumerate()
+        .map(|(i, a)| {
+            let display = a.title_alias.unwrap_or(a.title);
+            view! {
+                <a class="nav-dropdown-item"
+                   href={ format!("/articles/{}", a.slug) }
+                   role="menuitem">
+                    <span class="nav-dropdown-item-index" aria-hidden="true">
+                        { format!("{}", i + 1) }
+                    </span>
+                    <div class="nav-dropdown-item-body">
+                        <div class="nav-dropdown-item-title">{ display }</div>
+                        <div class="nav-dropdown-item-date">{ a.date }</div>
+                    </div>
+                </a>
+            }
+        })
+        .collect();
+
+    view! {
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-trigger is-current"
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded="false">
+                "Articles"
+                <svg class="nav-dropdown-chevron" viewBox="0 0 10 10" aria-hidden="true">
+                    <path d="M2 4 L5 7 L8 4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round" />
+                </svg>
+            </button>
+            <div class="nav-dropdown-panel" role="menu">
+                { items }
+                <hr class="nav-dropdown-divider" />
+                <a class="nav-dropdown-all" href="/articles/" role="menuitem">
+                    "All articles"
+                    <span class="nav-dropdown-all-arrow" aria-hidden="true">"→"</span>
+                </a>
+            </div>
+        </div>
+    }
+}
+
 fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
     html! {
         <!DOCTYPE html>
@@ -84,6 +139,8 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src={ asset_url("js/auteurs-shader.js") } defer></script>
                 <script src={ asset_url("js/toc-waypoints.js") } defer></script>
                 <script src={ asset_url("js/to-top.js") } defer></script>
+                <script src={ asset_url("js/nav-dropdown.js") } defer></script>
+                <script src={ asset_url("js/view-transitions.js") } defer></script>
             </head>
             <body class="articles-page">
                 <nav class="site-nav" aria-label="Primary">
@@ -97,7 +154,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                         <span class="site-nav-wordmark">"engmanager.xyz"</span>
                     </a>
                     <div class="site-nav-links">
-                        <a class="site-nav-link is-current" href="/articles/" aria-current="page">"Articles"</a>
+                        { render_articles_dropdown() }
                         <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">"Discord"</a>
                         <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener">"GitHub"</a>
                     </div>
@@ -159,9 +216,10 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                 .unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
             let inner = splice_discord_widget(&slug, inner).await;
             let toc = render_toc(&headings);
+            let vt_name = format!("view-transition-name: article-{slug}");
             let body = view! {
                 <article class="article">
-                    <h1 class="article-title">{ page_title }</h1>
+                    <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
                     <header class="article-meta">
                         <img class="article-meta-avatar"
                              src=AVATAR_SRC
