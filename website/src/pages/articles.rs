@@ -10,7 +10,7 @@ use rust_embed::RustEmbed;
 
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_discovery_toasts, render_hunt_chip,
+    render_discovery_toasts, render_hunt_chip, render_theme_picker,
 };
 use crate::asset_url;
 
@@ -413,6 +413,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
+                <script src={ asset_url("js/theme-toggle.js") }></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
                 <script src={ asset_url("js/copy-code.js") } defer></script>
@@ -459,6 +460,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                     </svg>
                 </button>
                 { render_hunt_chip() }
+                { render_theme_picker() }
                 { render_discovery_toasts() }
                 { receipt_modal() }
             </body>

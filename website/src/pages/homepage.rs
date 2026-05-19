@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use super::articles::{ARTICLES, Category, Tag};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_discovery_toasts, render_hunt_chip,
+    render_discovery_toasts, render_hunt_chip, render_theme_picker,
 };
 use crate::asset_url;
 
@@ -244,6 +244,7 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
+                <script src={ asset_url("js/theme-toggle.js") }></script>
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
@@ -279,6 +280,7 @@ pub async fn index() -> Html<String> {
                 </div>
 
                 { render_hunt_chip() }
+                { render_theme_picker() }
                 { render_discovery_toasts() }
 
                 // Brutalist Web API Receipt modal (Popover API). `?` from
