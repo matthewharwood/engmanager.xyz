@@ -72,4 +72,25 @@
     window.addEventListener("mousemove", onMove, { passive: true });
     document.addEventListener("mouseleave", onLeave);
     document.addEventListener("mouseenter", onEnter);
+
+    // Top-layer hop. Popover API elements render in the browser's
+    // top layer, which sits above every z-index in the regular
+    // stacking context. A z-index: 9999 cursor in <body> is still
+    // BELOW a popover, so it disappears the moment a modal opens.
+    //
+    // Fix: when any popover opens, append the cursor as its last
+    // child — the cursor inherits the popover's top-layer position
+    // and renders above the modal's content. When the popover
+    // closes, the cursor moves back to <body>. position: fixed
+    // means parent-swapping never affects screen position.
+    document.addEventListener("toggle", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.hasAttribute("popover")) return;
+        if (event.newState === "open") {
+            target.appendChild(cursor);
+        } else if (cursor.parentElement === target) {
+            document.body.appendChild(cursor);
+        }
+    });
 })();
