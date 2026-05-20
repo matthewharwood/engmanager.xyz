@@ -145,7 +145,7 @@ fn minify_js(source: &str, path: &Path) -> String {
     };
     let minifier_ret = Minifier::new(minifier_options).minify(&allocator, &mut program);
 
-    Codegen::new()
+    let code = Codegen::new()
         .with_options(CodegenOptions {
             minify: true,
             comments: CommentOptions::disabled(),
@@ -153,5 +153,11 @@ fn minify_js(source: &str, path: &Path) -> String {
         })
         .with_scoping(minifier_ret.scoping)
         .build(&program)
-        .code
+        .code;
+
+    // Each file is served as its own classic script tag, which means
+    // top-level `let`/`const` declarations share the page's global lexical
+    // scope. Scope every emitted asset so common names like STORAGE_KEY or
+    // ANIME_URL cannot collide across independently loaded scripts.
+    format!("(()=>{{{code}\n}})();")
 }

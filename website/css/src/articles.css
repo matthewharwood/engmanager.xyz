@@ -26,6 +26,35 @@
     padding-block-end: min(60dvh, 32rem);
 }
 
+/* When the reader hits the Fullscreen toolbar button (Fullscreen API
+ * promotes <article class="article"> to the browser's top layer),
+ * the default UA rule is `width:100% height:100% overflow:visible`,
+ * which clips long articles to a single viewport-worth and leaves
+ * them unscrollable. We override: take the full screen, give it real
+ * scroll, restore the site surface color (the UA paints
+ * background:black by default), and pad the edges so the long-form
+ * column doesn't kiss the bezels. The :-webkit-full-screen alias
+ * keeps Safari happy. */
+.article:fullscreen,
+.article:-webkit-full-screen {
+    inline-size: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: var(--surface-1, var(--ctp-base));
+    padding-block: clamp(1.5rem, 5vh, 4rem);
+    padding-inline: clamp(1rem, 6vw, 4rem);
+}
+/* Inside the fullscreen surface the reading column should still be
+ * centered and capped, not stretched to bezels. */
+.article:fullscreen > *,
+.article:-webkit-full-screen > * {
+    max-inline-size: 38rem;
+    margin-inline: auto;
+}
+
 /* Site nav — sticky, glass-blurred, edge-to-edge. Mobile-first. */
 .site-nav {
     position: sticky;
@@ -527,6 +556,92 @@
         margin-inline-start: 3.25rem;
     }
 }
+
+/* Toolbar of API-driven actions in the article-meta header. Every
+ * button starts `hidden`; experiences.js un-hides each one after the
+ * relevant Web API feature-detect passes (Web Share, Speech Synthesis,
+ * Fullscreen, EyeDropper). Same brutalist pill silhouette as the
+ * existing tag chips. */
+.article-meta-tools {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-block-start: 0.5rem;
+}
+
+.article-meta-tool {
+    appearance: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-block: 0.3125rem;
+    padding-inline: 0.625rem;
+    background: var(--ctp-base);
+    color: var(--ctp-subtext1);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.3125rem;
+    transition:
+        color 150ms ease,
+        background 150ms ease,
+        border-color 150ms ease;
+}
+
+.article-meta-tool:hover,
+.article-meta-tool:focus-visible {
+    color: var(--accent);
+    border-color: color-mix(in oklab, var(--accent) 50%, var(--ctp-surface0));
+    background: color-mix(in oklab, var(--accent) 6%, var(--ctp-base));
+    outline: none;
+}
+
+.article-meta-tool[data-state="playing"] {
+    color: var(--ctp-base);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+@media (max-width: 30rem) {
+    .article-meta-tools {
+        margin-inline-start: 3.25rem;
+    }
+}
+
+/* "Share quote" pill that the URL Fragment Text Directives experience
+ * appends to each <blockquote>. Float-right, hover to surface. */
+.share-quote {
+    appearance: none;
+    border: 1px solid var(--ctp-surface0);
+    background: var(--ctp-base);
+    color: var(--ctp-subtext1);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-block: 0.1875rem;
+    padding-inline: 0.4375rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    margin-block-start: 0.375rem;
+    opacity: 0.4;
+    transition: opacity 200ms ease, color 150ms ease;
+}
+
+.article blockquote:hover .share-quote,
+.share-quote:focus-visible {
+    opacity: 1;
+    color: var(--accent);
+}
+
+/* `.api-receipt*` modal styles live in critical.css since the modal is
+ * mounted on both homepage and article pages. */
 
 /* Article body typography. */
 .article p {

@@ -238,6 +238,417 @@
     line-height: 1;
 }
 
+/* ===========================================================================
+ * Gacha-style article reveal card.
+ *
+ * Opens when the reader clicks an unread article in the homepage stack
+ * (see js/visited-articles.js). The card is a brutalist Popover-API
+ * modal that holds for as long as the reader wants — `Read →` drives
+ * navigation, `Close` (or Esc / outside-click) dismisses with the
+ * visited state intact. No auto-timeout: the reader pulls the lever,
+ * gets the card, decides what to do.
+ *
+ * Entrance is a spring-overshoot scale + rotate, paired with a quick
+ * sheen sweep that runs once per open so the surface feels foil-y.
+ * =========================================================================== */
+
+.reveal-card {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    border: 0;
+    padding: 1rem;
+    background: transparent;
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    max-block-size: none;
+    overflow: hidden;
+}
+
+.reveal-card::backdrop {
+    background: color-mix(in oklab, var(--surface-1) 60%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    backdrop-filter: saturate(180%) blur(18px);
+    opacity: 0;
+    animation: reveal-card-backdrop 200ms ease-out forwards;
+}
+
+@keyframes reveal-card-backdrop {
+    to { opacity: 1; }
+}
+
+.reveal-card:popover-open {
+    display: grid;
+    place-items: center;
+}
+
+.reveal-card-frame {
+    position: relative;
+    inline-size: min(28rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 4rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 3px solid var(--text-1);
+    box-shadow: 10px 10px 0 0 var(--text-1);
+    overflow: hidden;
+    transform-origin: center;
+    /* Spring-overshoot entrance: starts small + rotated, overshoots to
+     * 1.06 + 2deg, settles. 520ms cubic-bezier(0.34, 1.56, 0.64, 1)
+     * matches the rest of the brutalist motion language on the site. */
+    animation: reveal-card-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes reveal-card-in {
+    0%   { opacity: 0; transform: scale(0.62) rotate(-6deg); }
+    65%  { opacity: 1; transform: scale(1.06) rotate(2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+/* One-shot diagonal sheen so the card reads as a foil pull. The
+ * gradient lives in a fixed overlay; the keyframe translates it
+ * across the frame and the overlay clips it to the frame's bounds. */
+.reveal-card-glint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.reveal-card-glint::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: -60%;
+    inline-size: 40%;
+    background: linear-gradient(
+        110deg,
+        transparent 0%,
+        color-mix(in oklab, var(--brand) 35%, transparent) 45%,
+        color-mix(in oklab, var(--brand) 55%, transparent) 50%,
+        color-mix(in oklab, var(--brand) 35%, transparent) 55%,
+        transparent 100%
+    );
+    transform: skewX(-12deg);
+    animation: reveal-card-glint 1100ms ease-out 320ms 1 both;
+}
+
+@keyframes reveal-card-glint {
+    0%   { inset-inline-start: -60%; opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { inset-inline-start: 120%; opacity: 0; }
+}
+
+.reveal-card-head {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reveal-card-emoji {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.reveal-card-category {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--brand);
+    background: color-mix(in oklab, var(--brand) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--brand) 32%, transparent);
+    padding: 0.3125rem 0.5rem;
+    line-height: 1;
+}
+
+.reveal-card-close {
+    appearance: none;
+    cursor: pointer;
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    padding: 0;
+    border: 1.5px solid var(--text-1);
+    background: var(--surface-1);
+    color: var(--text-1);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 2px 2px 0 0 var(--text-1);
+    transition: transform 100ms ease, box-shadow 100ms ease;
+    flex-shrink: 0;
+}
+
+.reveal-card-close:hover,
+.reveal-card-close:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 0 var(--text-1);
+    outline: none;
+}
+
+.reveal-card-close:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--text-1);
+}
+
+.reveal-card-title {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: var(--text-1);
+    word-break: break-word;
+}
+
+.reveal-card-date {
+    position: relative;
+    z-index: 2;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.reveal-card-summary {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--text-2);
+}
+
+.reveal-card-tags {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3125rem;
+}
+
+.reveal-card-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.4375rem;
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 1.5px solid var(--text-1);
+    box-shadow: 2px 2px 0 0 var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.reveal-card-actions {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 0.5rem;
+    margin-block-start: 0.25rem;
+}
+
+.reveal-card-dismiss,
+.reveal-card-continue {
+    flex: 1;
+    appearance: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4375rem;
+    padding: 0.625rem 0.875rem;
+    border: 2px solid var(--text-1);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.875rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    box-shadow: 3px 3px 0 0 var(--text-1);
+    transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.reveal-card-dismiss {
+    background: var(--surface-1);
+    color: var(--text-1);
+    flex: 0 0 auto;
+    padding-inline: 1rem;
+}
+
+.reveal-card-continue {
+    background: var(--brand);
+    color: var(--brand-text);
+}
+
+.reveal-card-dismiss:hover,
+.reveal-card-dismiss:focus-visible,
+.reveal-card-continue:hover,
+.reveal-card-continue:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 0 var(--text-1);
+    outline: none;
+}
+
+.reveal-card-dismiss:active,
+.reveal-card-continue:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 var(--text-1);
+}
+
+/* ===========================================================================
+ * Trash can + blast radius. Pinned next to the bottom-right avatar.
+ *
+ * The trashcan is a brutalist square button with a count badge. The
+ * blast radius is a dashed theme-colored ring around the trash that
+ * appears while dragging (`body[data-dragging="true"]`). A `--trash-glow`
+ * CSS custom property — written by js/trash-drag.js per pointermove —
+ * drives a brand-tinted box-shadow that intensifies as the dragged
+ * chip approaches the can.
+ *
+ * Ghost chip (a clone of whichever chip the reader picked up) lives
+ * outside the marquee in body, position: fixed, follows the pointer.
+ * On release inside the blast accept zone we animate it into the can;
+ * on miss we fly it back to its origin with a spring.
+ * ========================================================================== */
+
+.trash {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 4.75rem;
+    z-index: 10;
+}
+
+.trash-can {
+    appearance: none;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    inline-size: 3rem;
+    block-size: 3rem;
+    padding: 0;
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 2px solid var(--text-1);
+    border-radius: 0;
+    box-shadow:
+        3px 3px 0 0 var(--text-1),
+        0 0 calc(40px * var(--trash-glow, 0)) calc(8px * var(--trash-glow, 0))
+            color-mix(in oklab, var(--brand) 80%, transparent);
+    transition:
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.trash-icon {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+}
+
+.trash-count {
+    position: absolute;
+    inset-block-start: -0.4375rem;
+    inset-inline-end: -0.4375rem;
+    min-inline-size: 1.125rem;
+    block-size: 1.125rem;
+    padding-inline: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand);
+    color: var(--brand-text);
+    border: 1.5px solid var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 800;
+    line-height: 1;
+    will-change: transform;
+}
+
+.trash-count[data-trash-count="0"] {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.trash-blast {
+    position: fixed;
+    inset-block-end: -3.5rem;
+    inset-inline-end: -3.5rem;
+    inline-size: 13.5rem;
+    block-size: 13.5rem;
+    border: 2px dashed color-mix(in oklab, var(--brand) 70%, transparent);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        color-mix(in oklab, var(--brand) calc(15% * var(--trash-glow, 0)), transparent),
+        transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0.6);
+    transform-origin: bottom right;
+    transition: opacity 220ms ease, transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    pointer-events: none;
+    z-index: 9;
+}
+
+body[data-dragging="true"] .trash-blast {
+    opacity: 1;
+    transform: scale(1);
+}
+
+body[data-dragging="true"] .trash-can {
+    transform: scale(1.04);
+}
+
+/* Pause every marquee while a chip is being dragged. */
+body[data-dragging="true"] .marquee-track {
+    animation-play-state: paused;
+}
+
+/* The cloned ghost chip following the pointer. Inherits its sibling
+ * .chip styling (since it's a clone) and just adds a tiny lift +
+ * rotation so the reader feels like they're picking it up. */
+.chip-ghost {
+    box-shadow: 5px 5px 0 0 var(--text-1) !important;
+    transform: rotate(-2deg) scale(1.06);
+    transform-origin: center;
+    cursor: grabbing;
+}
+
+/* Hint to the cursor that marquee chips are grabbable. */
+.marquee .chip {
+    cursor: grab;
+    touch-action: none;
+}
+
+.marquee .chip:active {
+    cursor: grabbing;
+}
+
 /* Stacked clickable article titles (each its own fluid SVG) under the
  * main ENG MANAGER headline. Flex row so a chunky brutalist checkbox
  * can sit to the left of each title and a strike-through bar can
@@ -290,12 +701,12 @@
     border: 0.08em solid var(--ctp-text);
     box-shadow: 0.1em 0.1em 0 0 var(--ctp-text);
     color: transparent;
-    transition:
-        background-color 240ms cubic-bezier(0.2, 0.7, 0.3, 1.0),
-        color 200ms ease,
-        border-color 200ms ease,
-        transform 180ms ease,
-        box-shadow 180ms ease;
+    /* Only the hover lift transitions. background/color change instantly
+     * on .is-visited so cross-document View Transitions can't fire a
+     * mid-transition snapshot that snaps back when the live element
+     * is revealed. The fresh-click pop animation is opt-in via
+     * .is-visited-fresh — handles the one moment we want motion. */
+    transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .article-fluid-link:hover .article-check,
@@ -325,16 +736,50 @@
     inset-inline-start: 0;
     inset-inline-end: 0;
     block-size: clamp(0.375rem, 1.4vw, 0.75rem);
-    background: var(--accent);
-    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--ctp-base);
+    /* Strike in the high-contrast text color so it stays visible across
+     * every theme. The SVG title fills with --accent (currentColor), so
+     * pinning the strike to that color makes them merge — text-1 keeps
+     * them distinct. Halo in the page bg knockouts the title text
+     * underneath, giving the sticker effect. */
+    background: var(--text-1);
+    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--surface-1);
     transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
-    transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
+    /* Intentionally no transition. The .is-visited state snaps to
+     * scaleX(1) instantly; the fresh-click sweep is opt-in via
+     * .is-visited-fresh. Without a transition here, cross-document
+     * View Transitions can't trigger a stale snapshot → live reveal
+     * regression where the strike blinks in and then animates back
+     * to zero (the bug this comment exists to fix). */
 }
 
 .article-fluid-link.is-visited .article-strike {
     transform: translateY(-50%) scaleX(1);
+}
+
+/* `.is-visited-fresh` is set by visited-articles.js the instant the
+ * reader clicks a link. It triggers an extra-emphatic pop on the
+ * checkbox + a slower confident sweep on the strike so the state
+ * change is unmissable before the page transitions away. */
+.article-fluid-link.is-visited-fresh .article-check {
+    animation: visited-check-pop 380ms cubic-bezier(0.34, 1.7, 0.5, 1) both;
+}
+
+.article-fluid-link.is-visited-fresh .article-strike {
+    animation: visited-strike-sweep 420ms cubic-bezier(0.22, 0.96, 0.32, 1.08) both;
+}
+
+@keyframes visited-check-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.22) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes visited-strike-sweep {
+    0%   { transform: translateY(-50%) scaleX(0); }
+    65%  { transform: translateY(-50%) scaleX(1.04); }
+    100% { transform: translateY(-50%) scaleX(1); }
 }
 
 .article-fluid-link + .article-fluid-link {
@@ -424,4 +869,30 @@
     transition: opacity 150ms ease;
     will-change: transform;
     filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
+}
+
+/* Three cursor shapes are mounted side-by-side and toggled by
+ * data-mode set in big-cursor.js: arrow (default), open (hovering a
+ * draggable chip), grab (chip held / drag in progress). */
+.big-cursor .cursor-shape {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    display: none;
+}
+.big-cursor[data-mode="arrow"] .cursor-arrow,
+.big-cursor[data-mode="open"]  .cursor-open,
+.big-cursor[data-mode="grab"]  .cursor-grab {
+    display: block;
+}
+/* Tiny pop when transitioning into grab mode — picked-up feel. */
+.big-cursor[data-mode="grab"] .cursor-grab {
+    animation: cursor-grab-pop 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: 0 0;
+}
+@keyframes cursor-grab-pop {
+    0%   { transform: scale(0.86); }
+    60%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
 }

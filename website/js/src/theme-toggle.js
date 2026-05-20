@@ -1,0 +1,93 @@
+// Theme cycler.
+//
+// One button (`.theme-picker[data-theme-cycle]`). Click advances
+// through the THEMES list below, persisting to localStorage and
+// applying as `<html data-theme="...">`. `auto` (the default) removes
+// the attribute so the OS preference + the `@media (prefers-color-
+// scheme: dark)` block in critical.css takes over.
+//
+// State sync across open tabs is via the `storage` event — changing
+// the theme in one tab updates every other tab without a reload.
+//
+// The script tag is intentionally not `defer` so the theme attribute
+// is on `<html>` before first paint, avoiding a flash of the wrong
+// palette.
+
+const STORAGE_KEY = "engmanager.theme";
+
+// (slug, label) — labels are uppercase to match the brutalist
+// chip aesthetic. Order = cycle order.
+const THEMES = [
+    ["auto",       "Auto"],
+    ["light",      "Light"],
+    ["dark",       "Dark"],
+    ["catppuccin", "Catppuccin"],
+    ["synthwave",  "Synthwave"],
+    ["cyberpunk",  "Cyberpunk"],
+    ["forest",     "Forest"],
+    ["lofi",       "Lofi"],
+    ["dracula",    "Dracula"],
+    ["luxury",     "Luxury"],
+];
+
+const root = document.documentElement;
+
+function readStored() {
+    try {
+        return localStorage.getItem(STORAGE_KEY) || "auto";
+    } catch {
+        return "auto";
+    }
+}
+
+function persist(theme) {
+    try {
+        if (theme === "auto") localStorage.removeItem(STORAGE_KEY);
+        else localStorage.setItem(STORAGE_KEY, theme);
+    } catch {}
+}
+
+function apply(theme) {
+    if (theme === "auto") {
+        root.removeAttribute("data-theme");
+    } else {
+        root.setAttribute("data-theme", theme);
+    }
+    syncLabel(theme);
+}
+
+function syncLabel(theme) {
+    const entry = THEMES.find(([slug]) => slug === theme);
+    const label = entry ? entry[1] : theme;
+    document
+        .querySelectorAll("[data-theme-current-label]")
+        .forEach((el) => (el.textContent = label));
+}
+
+function nextTheme(current) {
+    const idx = THEMES.findIndex(([slug]) => slug === current);
+    const next = THEMES[(idx + 1) % THEMES.length];
+    return next[0];
+}
+
+// Apply immediately so the theme attaches before paint.
+apply(readStored());
+
+document.addEventListener("DOMContentLoaded", () => {
+    syncLabel(readStored());
+
+    document.querySelectorAll("[data-theme-cycle]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const current = readStored();
+            const next = nextTheme(current);
+            apply(next);
+            persist(next);
+        });
+    });
+
+    // Cross-tab sync.
+    window.addEventListener("storage", (event) => {
+        if (event.key !== STORAGE_KEY) return;
+        apply(event.newValue || "auto");
+    });
+});

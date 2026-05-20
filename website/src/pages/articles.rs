@@ -8,7 +8,11 @@ use eng_markup::{html, view};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
-use super::{AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF};
+use super::{
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
+    render_dev_meta, render_discovery_toasts, render_hunt_chip,
+    render_theme_picker,
+};
 use crate::asset_url;
 
 // Article bodies live in `website/articles/{slug}.md`. They're embedded into
@@ -286,6 +290,64 @@ fn render_taxonomy(category: Category, tags: &[Tag]) -> HtmlFragment {
     }
 }
 
+// Toolbar of API-driven actions in the article-meta header. Each
+// button starts `hidden`; the corresponding experience in
+// experiences.js un-hides it after a successful feature-detect, then
+// wires the click handler. Unsupported buttons stay hidden so layout
+// matches reality on every browser.
+fn article_meta_tools() -> HtmlFragment {
+    view! {
+        <div class="article-meta-tools" aria-label="Article tools">
+            <button class="article-meta-tool" type="button" data-share hidden>
+                <span aria-hidden="true">"↗"</span>
+                <span>"Share"</span>
+            </button>
+            <button class="article-meta-tool" type="button" data-read-aloud hidden>
+                <span aria-hidden="true">"▶"</span>
+                <span>"Read aloud"</span>
+            </button>
+            <button class="article-meta-tool" type="button" data-fullscreen hidden>
+                <span aria-hidden="true">"⛶"</span>
+                <span>"Fullscreen"</span>
+            </button>
+            <button class="article-meta-tool" type="button" data-eyedropper hidden>
+                <span aria-hidden="true">"◉"</span>
+                <span>"Recolor"</span>
+            </button>
+        </div>
+    }
+}
+
+// Brutalist Web API Receipt modal. Opens on `?` key from anywhere on
+// the site OR when `?receipt` is in the URL on load. Toggling the
+// modal pushes/pops that query param so the state is deep-linkable.
+// Static shell; the JS at js/experiences.js populates the stats +
+// grid from the registry after runAll() finishes.
+fn receipt_modal() -> HtmlFragment {
+    view! {
+        <aside id="api-receipt-modal" popover="manual" class="api-receipt">
+            <div class="api-receipt-frame">
+                <header class="api-receipt-head">
+                    <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
+                    <h2 class="api-receipt-title">"Web API Receipt"</h2>
+                    <div class="api-receipt-stats" data-api-receipt-stats></div>
+                    <button class="api-receipt-close"
+                            type="button"
+                            popovertarget="api-receipt-modal"
+                            popovertargetaction="hide"
+                            aria-label="Close">
+                        "✕"
+                    </button>
+                </header>
+                <div class="api-receipt-grid" data-api-receipt-grid></div>
+                <footer class="api-receipt-foot">
+                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
+                </footer>
+            </div>
+        </aside>
+    }
+}
+
 // Vercel-style dropdown trigger + panel containing the latest three
 // articles. The trigger keeps the `.is-current` highlight so the nav
 // reads identically to before for users on browsers without JS — the
@@ -354,6 +416,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
+                <script src={ asset_url("js/theme-toggle.js") }></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
                 <script src={ asset_url("js/copy-code.js") } defer></script>
@@ -362,6 +425,15 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src={ asset_url("js/to-top.js") } defer></script>
                 <script src={ asset_url("js/nav-dropdown.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
+                <script>{ HtmlFragment::new(format!(
+                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
+                    asset_url("js/paint-brutalist-hatch.js"),
+                    asset_url("js/worker-crypto.js"),
+                )) }</script>
+                <script src={ asset_url("js/experiences.js") } defer></script>
+                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
+                <meta name="theme-color" content="#e64553" />
+                { render_dev_meta() }
             </head>
             <body class="articles-page">
                 <nav class="site-nav" aria-label="Primary">
@@ -391,6 +463,10 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                               stroke-linejoin="round" />
                     </svg>
                 </button>
+                { render_hunt_chip() }
+                { render_theme_picker() }
+                { render_discovery_toasts() }
+                { receipt_modal() }
             </body>
         </html>
     }
@@ -454,6 +530,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                             <div class="article-meta-role">"Engineering Manager @ Uber"</div>
                         </div>
                         <time class="article-meta-date">{ a.date }</time>
+                        { article_meta_tools() }
                         { taxonomy }
                     </header>
                     { inner }

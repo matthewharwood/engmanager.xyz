@@ -1,0 +1,18 @@
+{
+  "name": "engmanager.xyz",
+  "short_name": "engmanager",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eff1f5",
+  "theme_color": "#e64553",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "developer"],
+  "description": "Engineering manager · brutalist Rust web framework experiment"
+}
