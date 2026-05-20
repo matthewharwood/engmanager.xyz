@@ -106,7 +106,7 @@ fn render_reveal_card() -> HtmlFragment {
                             type="button"
                             popovertarget="article-reveal"
                             popovertargetaction="hide">
-                        "Close"
+                        "Nahhh"
                     </button>
                     <a class="reveal-card-continue" data-reveal-continue href="#">
                         "Read →"
