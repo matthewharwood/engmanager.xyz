@@ -13,6 +13,20 @@ pub const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtx
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 
+// Emits a marker meta tag when the binary was built with the `dev`
+// cargo feature (i.e. via `just dev`). js/experiences.js reads this
+// tag in the Service Worker experience and, when set, unregisters any
+// installed worker + purges all caches instead of registering a new
+// one — so source edits show up on next reload without manual DevTools
+// cache-busting.
+pub fn render_dev_meta() -> HtmlFragment {
+    if cfg!(feature = "dev") {
+        view! { <meta name="engmanager-mode" content="dev" /> }
+    } else {
+        HtmlFragment::empty()
+    }
+}
+
 // Persistent scavenger-hunt chip in the bottom-left of every page.
 // Opens the Web API Receipt modal on click. The discovered count is
 // rewritten by js/experiences.js after the registry runs and every

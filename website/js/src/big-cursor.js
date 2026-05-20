@@ -83,7 +83,12 @@
     // and renders above the modal's content. When the popover
     // closes, the cursor moves back to <body>. position: fixed
     // means parent-swapping never affects screen position.
-    document.addEventListener("toggle", (event) => {
+    //
+    // IMPORTANT: the `toggle` event does NOT bubble. We have to
+    // listen in the CAPTURE phase to catch it from document level
+    // — otherwise the handler never fires, the cursor stays in
+    // <body>, and disappears behind every modal.
+    const hopToTopLayer = (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
         if (!target.hasAttribute("popover")) return;
@@ -92,5 +97,7 @@
         } else if (cursor.parentElement === target) {
             document.body.appendChild(cursor);
         }
-    });
+    };
+    document.addEventListener("toggle", hopToTopLayer, true);
+    document.addEventListener("beforetoggle", hopToTopLayer, true);
 })();

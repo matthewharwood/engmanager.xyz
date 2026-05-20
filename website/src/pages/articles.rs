@@ -10,7 +10,8 @@ use rust_embed::RustEmbed;
 
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_discovery_toasts, render_hunt_chip, render_theme_picker,
+    render_dev_meta, render_discovery_toasts, render_hunt_chip,
+    render_theme_picker,
 };
 use crate::asset_url;
 
@@ -432,6 +433,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src={ asset_url("js/experiences.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
                 <meta name="theme-color" content="#e64553" />
+                { render_dev_meta() }
             </head>
             <body class="articles-page">
                 <nav class="site-nav" aria-label="Primary">

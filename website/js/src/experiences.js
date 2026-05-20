@@ -1649,6 +1649,31 @@ register({
     isSupported: () =>
         "serviceWorker" in navigator && location.protocol !== "file:",
     init: async (api) => {
+        // Dev mode (built with `--features dev`, i.e. `just dev`):
+        // unregister any installed SW + nuke every cache so source
+        // edits show up on next reload without manual DevTools work.
+        // The dev marker is emitted by render_dev_meta() in pages/mod.rs.
+        const isDev =
+            document.querySelector('meta[name="engmanager-mode"]')?.content ===
+            "dev";
+        if (isDev) {
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map((r) => r.unregister()));
+                if ("caches" in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map((k) => caches.delete(k)));
+                }
+                api.log(
+                    "dev",
+                    `SW purged · ${regs.length} reg · caches cleared`,
+                );
+            } catch (err) {
+                api.log("dev-purge-error", err.message);
+            }
+            return false; // passive — no SW in dev
+        }
+
         try {
             const reg = await navigator.serviceWorker.register("/sw.js", {
                 scope: "/",
