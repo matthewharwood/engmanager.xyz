@@ -1,15 +1,31 @@
 // Comically-large custom cursor for the homepage.
 //
-// CSS cursor: url() caps at 128px in most browsers, so to get a genuine
-// 8x scale we render an SVG arrow as a position: fixed element and translate
-// it with the mouse. The native cursor is hidden via CSS while pointer
-// movements are still captured normally — clicks, hovers, links all work.
+// CSS cursor: url() caps at 128px in most browsers, so to get a real
+// 8x scale we render an SVG cursor as a fixed-position wrapper that
+// follows the pointer. Three shapes ship side-by-side; the wrapper's
+// `data-mode` swaps which one is visible:
 //
-// Self-guards: only activates inside <body class="homepage">.
+//   arrow   default
+//   open    hovering a draggable marquee chip (CSS `grab` analogue)
+//   grab    a chip is being dragged (CSS `grabbing` analogue)
+//
+// Pointer Events throughout — `pointermove` instead of `mousemove`,
+// because trash-drag.js calls preventDefault() on pointerdown which
+// causes Chrome to suppress the synthesized mouse events for the
+// duration of the gesture. The cursor would freeze where the user
+// clicked. pointermove fires regardless.
+//
+// Top-layer hop in capture phase: Popover API elements render above
+// every z-index, so when a modal opens the cursor would disappear
+// behind it. Listener moves the cursor into the open popover so it
+// inherits the top-layer stacking context. `toggle` doesn't bubble —
+// `{ capture: true }` is mandatory.
+//
+// Self-guards: only activates inside <body class="homepage">,
+// respects prefers-reduced-motion and pointer: coarse.
 
 (function () {
     if (!document.body || !document.body.classList.contains("homepage")) return;
-    // Reduce-motion and pointer-coarse (touch) users get the default cursor.
     if (
         window.matchMedia &&
         (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
@@ -18,28 +34,41 @@
         return;
     }
 
-    const SVG_NS = "http://www.w3.org/2000/svg";
-    const SIZE = 256; // ~8x a typical 32px system cursor
+    const SIZE = 256;
 
-    const cursor = document.createElementNS(SVG_NS, "svg");
-    cursor.setAttribute("class", "big-cursor");
-    cursor.setAttribute("width", String(SIZE));
-    cursor.setAttribute("height", String(SIZE));
-    cursor.setAttribute("viewBox", "0 0 24 24");
+    const cursor = document.createElement("div");
+    cursor.className = "big-cursor";
     cursor.setAttribute("aria-hidden", "true");
+    cursor.dataset.mode = "arrow";
 
-    // Classic arrow shape with the tip at (0, 0) so the hotspot is the
-    // upper-left corner of the SVG bounding box.
-    const path = document.createElementNS(SVG_NS, "path");
-    path.setAttribute(
-        "d",
-        "M0 0 L0 16 L4 12 L7 20 L10 19 L7 11 L14 11 Z",
-    );
-    path.setAttribute("fill", "var(--accent, #e64553)");
-    path.setAttribute("stroke", "white");
-    path.setAttribute("stroke-width", "1.2");
-    path.setAttribute("stroke-linejoin", "round");
-    cursor.appendChild(path);
+    // Shared SVG style attrs. Repeated inline so the cursor is one
+    // self-contained HTML chunk — no CSS dependencies for the shapes.
+    const ATTR = 'fill="var(--accent, #e64553)" stroke="white" stroke-width="1.2" stroke-linejoin="round"';
+
+    // All three shapes have their hotspot at SVG (0, 0), matching the
+    // wrapper's top-left — so the click point lines up with the user's
+    // actual pointer position regardless of which shape is shown.
+    cursor.innerHTML = `
+        <svg class="cursor-shape cursor-arrow" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 0 L0 16 L4 12 L7 20 L10 19 L7 11 L14 11 Z" ${ATTR}/>
+        </svg>
+        <svg class="cursor-shape cursor-open" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="3" height="12" rx="1.5" ${ATTR}/>
+            <rect x="4" y="1" width="3" height="11" rx="1.5" ${ATTR}/>
+            <rect x="8" y="3" width="3" height="9" rx="1.5" ${ATTR}/>
+            <rect x="12" y="6" width="3" height="7" rx="1.5" ${ATTR}/>
+            <path d="M15 8 Q19 8 19 12 L19 14 L15 14 Z" ${ATTR}/>
+            <rect x="-1" y="11" width="21" height="11" rx="3" ${ATTR}/>
+        </svg>
+        <svg class="cursor-shape cursor-grab" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
+            <rect x="4" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
+            <rect x="8" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
+            <rect x="12" y="3" width="3" height="4" rx="1.5" ${ATTR}/>
+            <rect x="-1" y="6" width="20" height="12" rx="3" ${ATTR}/>
+            <path d="M15 7 Q19 7 19 10 L19 13 L15 13 Z" ${ATTR}/>
+        </svg>
+    `;
 
     document.body.appendChild(cursor);
 
@@ -52,9 +81,23 @@
         cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
     }
 
+    function detectMode(target) {
+        if (document.body.dataset.dragging === "true") return "grab";
+        const chip = target?.closest?.(".marquee .chip");
+        if (chip && chip.dataset.trashed !== "true") {
+            return "open";
+        }
+        return "arrow";
+    }
+
+    function setMode(mode) {
+        if (cursor.dataset.mode !== mode) cursor.dataset.mode = mode;
+    }
+
     function onMove(e) {
         mouseX = e.clientX;
         mouseY = e.clientY;
+        setMode(detectMode(e.target));
         if (!pending) {
             pending = true;
             requestAnimationFrame(paint);
@@ -69,25 +112,23 @@
         cursor.style.opacity = "1";
     }
 
-    window.addEventListener("mousemove", onMove, { passive: true });
-    document.addEventListener("mouseleave", onLeave);
-    document.addEventListener("mouseenter", onEnter);
+    // pointermove instead of mousemove — see top-of-file note.
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerleave", onLeave);
+    document.addEventListener("pointerenter", onEnter);
 
-    // Top-layer hop. Popover API elements render in the browser's
-    // top layer, which sits above every z-index in the regular
-    // stacking context. A z-index: 9999 cursor in <body> is still
-    // BELOW a popover, so it disappears the moment a modal opens.
-    //
-    // Fix: when any popover opens, append the cursor as its last
-    // child — the cursor inherits the popover's top-layer position
-    // and renders above the modal's content. When the popover
-    // closes, the cursor moves back to <body>. position: fixed
-    // means parent-swapping never affects screen position.
-    //
-    // IMPORTANT: the `toggle` event does NOT bubble. We have to
-    // listen in the CAPTURE phase to catch it from document level
-    // — otherwise the handler never fires, the cursor stays in
-    // <body>, and disappears behind every modal.
+    // While a drag is in progress, body[data-dragging] is set by
+    // trash-drag.js. The pointer might not move during the start of
+    // the gesture, so flip to grab mode the instant dragging starts.
+    const dragObserver = new MutationObserver(() => {
+        setMode(detectMode(document.elementFromPoint(mouseX, mouseY)));
+    });
+    dragObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["data-dragging"],
+    });
+
+    // Top-layer hop (capture phase — toggle doesn't bubble).
     const hopToTopLayer = (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;

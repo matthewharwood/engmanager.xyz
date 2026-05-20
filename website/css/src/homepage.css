@@ -870,3 +870,29 @@ body[data-dragging="true"] .marquee-track {
     will-change: transform;
     filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
 }
+
+/* Three cursor shapes are mounted side-by-side and toggled by
+ * data-mode set in big-cursor.js: arrow (default), open (hovering a
+ * draggable chip), grab (chip held / drag in progress). */
+.big-cursor .cursor-shape {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    display: none;
+}
+.big-cursor[data-mode="arrow"] .cursor-arrow,
+.big-cursor[data-mode="open"]  .cursor-open,
+.big-cursor[data-mode="grab"]  .cursor-grab {
+    display: block;
+}
+/* Tiny pop when transitioning into grab mode — picked-up feel. */
+.big-cursor[data-mode="grab"] .cursor-grab {
+    animation: cursor-grab-pop 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: 0 0;
+}
+@keyframes cursor-grab-pop {
+    0%   { transform: scale(0.86); }
+    60%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}

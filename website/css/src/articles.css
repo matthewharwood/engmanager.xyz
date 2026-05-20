@@ -26,6 +26,35 @@
     padding-block-end: min(60dvh, 32rem);
 }
 
+/* When the reader hits the Fullscreen toolbar button (Fullscreen API
+ * promotes <article class="article"> to the browser's top layer),
+ * the default UA rule is `width:100% height:100% overflow:visible`,
+ * which clips long articles to a single viewport-worth and leaves
+ * them unscrollable. We override: take the full screen, give it real
+ * scroll, restore the site surface color (the UA paints
+ * background:black by default), and pad the edges so the long-form
+ * column doesn't kiss the bezels. The :-webkit-full-screen alias
+ * keeps Safari happy. */
+.article:fullscreen,
+.article:-webkit-full-screen {
+    inline-size: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: var(--surface-1, var(--ctp-base));
+    padding-block: clamp(1.5rem, 5vh, 4rem);
+    padding-inline: clamp(1rem, 6vw, 4rem);
+}
+/* Inside the fullscreen surface the reading column should still be
+ * centered and capped, not stretched to bezels. */
+.article:fullscreen > *,
+.article:-webkit-full-screen > * {
+    max-inline-size: 38rem;
+    margin-inline: auto;
+}
+
 /* Site nav — sticky, glass-blurred, edge-to-edge. Mobile-first. */
 .site-nav {
     position: sticky;
