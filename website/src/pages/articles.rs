@@ -10,8 +10,7 @@ use rust_embed::RustEmbed;
 
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_dev_meta, render_discovery_toasts, render_hunt_chip,
-    render_theme_picker,
+    render_dev_meta, render_discovery_toasts, render_quick_actions,
 };
 use crate::asset_url;
 
@@ -39,6 +38,7 @@ struct ArticleSources;
 // during development.
 // =============================================================================
 
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Category {
     EngineeringLeadership,
@@ -88,6 +88,7 @@ impl Category {
     }
 }
 
+#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Tag {
     Ai,
@@ -107,6 +108,10 @@ pub enum Tag {
     Workflow,
     Solopreneur,
     LocalFirst,
+    Blender,
+    ThreeDPrinting,
+    Makerspace,
+    Parenting,
 }
 
 impl Tag {
@@ -129,6 +134,10 @@ impl Tag {
             Self::Workflow => "workflow",
             Self::Solopreneur => "solopreneur",
             Self::LocalFirst => "local-first",
+            Self::Blender => "blender",
+            Self::ThreeDPrinting => "3d-printing",
+            Self::Makerspace => "makerspace",
+            Self::Parenting => "parenting",
         }
     }
 
@@ -151,6 +160,10 @@ impl Tag {
             Self::Workflow => "🌀",
             Self::Solopreneur => "🧑‍💻",
             Self::LocalFirst => "📦",
+            Self::Blender => "🧊",
+            Self::ThreeDPrinting => "🖨",
+            Self::Makerspace => "🧰",
+            Self::Parenting => "🧒",
         }
     }
 }
@@ -168,6 +181,46 @@ fn unique_tags(tags: &[Tag]) -> Vec<Tag> {
         .collect()
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ArticleDate {
+    pub year: i32,
+    pub month: u8,
+    pub day: u8,
+}
+
+impl ArticleDate {
+    pub const fn new(year: i32, month: u8, day: u8) -> Self {
+        Self { year, month, day }
+    }
+
+    pub fn label(self) -> String {
+        format!("{} {}, {}", self.month_name(), self.day, self.year)
+    }
+
+    pub fn iso(self) -> String {
+        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
+    }
+
+    fn month_name(self) -> &'static str {
+        match self.month {
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => "Undated",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub struct Article {
     pub slug: &'static str,
     /// Title shown on the homepage's fluid-SVG stack. Can be anything —
@@ -178,21 +231,25 @@ pub struct Article {
     /// should differ from the article page's heading — e.g. a Discord URL
     /// on the stack but a real headline on the article itself.
     pub title_alias: Option<&'static str>,
-    pub date: &'static str,
+    pub date: ArticleDate,
     pub summary: &'static str,
+    /// Hidden articles are directly routable but excluded from public article
+    /// surfaces and rendered with a robots noindex meta tag.
+    pub indexed: bool,
     /// Primary section. Exactly one per article.
     pub category: Category,
     /// Free-form tags. Deduped to a set at render time via `unique_tags`.
     pub tags: &'static [Tag],
 }
 
-pub const ARTICLES: &[Article] = &[
+const ARTICLE_LIST: &[Article] = &[
     Article {
         slug: "talking-not-typing",
         title: "I Ship Sites By Talking, Not Typing",
         title_alias: None,
-        date: "May 17, 2026",
+        date: ArticleDate::new(2026, 5, 17),
         summary: "I built three Rust projects this week without typing a single line of code. Voice → Claude Code → pull requests. The floor is rising for everyone.",
+        indexed: true,
         category: Category::Workflow,
         tags: &[
             Tag::Ai,
@@ -211,8 +268,9 @@ pub const ARTICLES: &[Article] = &[
         title_alias: Some(
             "Auteur's a discord for managing early career engineers, product and designers",
         ),
-        date: "March 14, 2026",
+        date: ArticleDate::new(2026, 3, 14),
         summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
+        indexed: true,
         category: Category::Community,
         tags: &[Tag::Community, Tag::Discord, Tag::Mentorship],
     },
@@ -220,8 +278,9 @@ pub const ARTICLES: &[Article] = &[
         slug: "claude-code-lsp",
         title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
         title_alias: None,
-        date: "December 29, 2025",
+        date: ArticleDate::new(2025, 12, 29),
         summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
+        indexed: true,
         category: Category::DeveloperTooling,
         tags: &[
             Tag::ClaudeCode,
@@ -235,12 +294,197 @@ pub const ARTICLES: &[Article] = &[
         slug: "jsx-like-rust-macro",
         title: "Making an JSX like Rust Macro",
         title_alias: None,
-        date: "May 31, 2025",
+        date: ArticleDate::new(2025, 5, 31),
         summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
+        indexed: true,
         category: Category::FrameworkDesign,
         tags: &[Tag::Rust, Tag::Macros, Tag::Framework, Tag::JsxLike],
     },
+    Article {
+        slug: "mcp-blender-library-3d-print",
+        title: "Making a tiny war-hammer hero with MCP, Blender, and a library 3D printer",
+        title_alias: None,
+        date: ArticleDate::new(2026, 5, 21),
+        summary: "A parent-and-kid tutorial for using Codex or Claude Code, MCP, and Blender to design an original tiny hammer hero, validate it for FDM printing, and bring an STL to a public-library makerspace.",
+        indexed: false,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::ClaudeCode,
+            Tag::Mcp,
+            Tag::Blender,
+            Tag::ThreeDPrinting,
+            Tag::Makerspace,
+            Tag::Parenting,
+        ],
+    },
 ];
+
+pub const ARTICLES: &[Article] = ARTICLE_LIST;
+const ARTICLE_COUNT: usize = ARTICLE_LIST.len();
+
+pub fn public_articles() -> impl Iterator<Item = &'static Article> {
+    ARTICLES.iter().filter(|article| article.indexed)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ArticleRelations {
+    pub newer: Option<usize>,
+    pub older: Option<usize>,
+    pub related: Option<usize>,
+}
+
+impl ArticleRelations {
+    const EMPTY: Self = Self {
+        newer: None,
+        older: None,
+        related: None,
+    };
+}
+
+pub const ARTICLE_RELATIONS: [ArticleRelations; ARTICLE_COUNT] = build_article_relations();
+
+pub fn relevance_score(current: &Article, candidate: &Article) -> u16 {
+    relevance_score_articles(*current, *candidate)
+}
+
+const fn build_article_relations() -> [ArticleRelations; ARTICLE_COUNT] {
+    let mut relations = [ArticleRelations::EMPTY; ARTICLE_COUNT];
+    let mut index = 0;
+    while index < ARTICLE_COUNT {
+        relations[index] = ArticleRelations {
+            newer: find_newer_index(index),
+            older: find_older_index(index),
+            related: find_related_index(index),
+        };
+        index += 1;
+    }
+    relations
+}
+
+const fn find_newer_index(current_index: usize) -> Option<usize> {
+    let current = ARTICLE_LIST[current_index];
+    if !current.indexed {
+        return None;
+    }
+    let mut best: Option<usize> = None;
+    let mut index = 0;
+    while index < ARTICLE_COUNT {
+        if ARTICLE_LIST[index].indexed
+            && index != current_index
+            && date_is_after(ARTICLE_LIST[index].date, current.date)
+        {
+            let replace_best = match best {
+                Some(best_index) => {
+                    date_is_before(ARTICLE_LIST[index].date, ARTICLE_LIST[best_index].date)
+                }
+                None => true,
+            };
+            if replace_best {
+                best = Some(index);
+            }
+        }
+        index += 1;
+    }
+    best
+}
+
+const fn find_older_index(current_index: usize) -> Option<usize> {
+    let current = ARTICLE_LIST[current_index];
+    if !current.indexed {
+        return None;
+    }
+    let mut best: Option<usize> = None;
+    let mut index = 0;
+    while index < ARTICLE_COUNT {
+        if ARTICLE_LIST[index].indexed
+            && index != current_index
+            && date_is_before(ARTICLE_LIST[index].date, current.date)
+        {
+            let replace_best = match best {
+                Some(best_index) => {
+                    date_is_after(ARTICLE_LIST[index].date, ARTICLE_LIST[best_index].date)
+                }
+                None => true,
+            };
+            if replace_best {
+                best = Some(index);
+            }
+        }
+        index += 1;
+    }
+    best
+}
+
+const fn find_related_index(current_index: usize) -> Option<usize> {
+    let current = ARTICLE_LIST[current_index];
+    if !current.indexed {
+        return None;
+    }
+    let mut best: Option<usize> = None;
+    let mut best_score = 0;
+    let mut index = 0;
+    while index < ARTICLE_COUNT {
+        if ARTICLE_LIST[index].indexed && index != current_index {
+            let candidate = ARTICLE_LIST[index];
+            let score = relevance_score_articles(current, candidate);
+            if score > best_score
+                || (score == best_score && related_tie_breaker(candidate, best))
+            {
+                best = Some(index);
+                best_score = score;
+            }
+        }
+        index += 1;
+    }
+    best
+}
+
+const fn related_tie_breaker(candidate: Article, best: Option<usize>) -> bool {
+    match best {
+        Some(best_index) => date_is_after(candidate.date, ARTICLE_LIST[best_index].date),
+        None => true,
+    }
+}
+
+const fn relevance_score_articles(current: Article, candidate: Article) -> u16 {
+    let mut score = 0;
+    if current.category as u8 == candidate.category as u8 {
+        score += 10;
+    }
+
+    let mut index = 0;
+    while index < current.tags.len() {
+        if contains_tag(candidate.tags, current.tags[index]) {
+            score += 3;
+        }
+        index += 1;
+    }
+    score
+}
+
+const fn contains_tag(tags: &[Tag], needle: Tag) -> bool {
+    let mut index = 0;
+    while index < tags.len() {
+        if tags[index] as u8 == needle as u8 {
+            return true;
+        }
+        index += 1;
+    }
+    false
+}
+
+const fn date_is_after(a: ArticleDate, b: ArticleDate) -> bool {
+    a.year > b.year
+        || (a.year == b.year
+            && (a.month > b.month || (a.month == b.month && a.day > b.day)))
+}
+
+const fn date_is_before(a: ArticleDate, b: ArticleDate) -> bool {
+    a.year < b.year
+        || (a.year == b.year
+            && (a.month < b.month || (a.month == b.month && a.day < b.day)))
+}
 
 // Debug-only: catch accidental tag duplicates during dev. Production
 // builds skip this since enums + `unique_tags` already guarantee a
@@ -353,8 +597,7 @@ fn receipt_modal() -> HtmlFragment {
 // reads identically to before for users on browsers without JS — the
 // markup is still a clickable disclosure with all targets inside.
 fn render_articles_dropdown() -> HtmlFragment {
-    let items: HtmlFragment = ARTICLES
-        .iter()
+    let items: HtmlFragment = public_articles()
         .take(3)
         .enumerate()
         .map(|(i, a)| {
@@ -368,7 +611,7 @@ fn render_articles_dropdown() -> HtmlFragment {
                     </span>
                     <div class="nav-dropdown-item-body">
                         <div class="nav-dropdown-item-title">{ display }</div>
-                        <div class="nav-dropdown-item-date">{ a.date }</div>
+                        <div class="nav-dropdown-item-date">{ a.date.label() }</div>
                     </div>
                 </a>
             }
@@ -403,7 +646,15 @@ fn render_articles_dropdown() -> HtmlFragment {
     }
 }
 
-fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
+fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
+    let robots_meta = if indexed {
+        HtmlFragment::empty()
+    } else {
+        view! {
+            <meta name="robots" content="noindex,nofollow" />
+        }
+    };
+
     html! {
         <!DOCTYPE html>
         <html lang="en">
@@ -411,6 +662,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>{ title }</title>
+                { robots_meta }
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
@@ -425,6 +677,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                 <script src={ asset_url("js/to-top.js") } defer></script>
                 <script src={ asset_url("js/nav-dropdown.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
+                <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
                     "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
                     asset_url("js/paint-brutalist-hatch.js"),
@@ -463,8 +716,7 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
                               stroke-linejoin="round" />
                     </svg>
                 </button>
-                { render_hunt_chip() }
-                { render_theme_picker() }
+                { render_quick_actions() }
                 { render_discovery_toasts() }
                 { receipt_modal() }
             </body>
@@ -473,15 +725,14 @@ fn layout(title: &str, body: HtmlFragment) -> HtmlFragment {
 }
 
 pub async fn index() -> Html<String> {
-    let entries: HtmlFragment = ARTICLES
-        .iter()
+    let entries: HtmlFragment = public_articles()
         .map(|a| {
             view! {
                 <li class="article-entry">
                     <a class="article-entry-title" href={ format!("/articles/{}", a.slug) }>
                         { a.title }
                     </a>
-                    <span class="article-entry-date">{ a.date }</span>
+                    <span class="article-entry-date">{ a.date.label() }</span>
                     <p class="article-entry-summary">{ a.summary }</p>
                 </li>
             }
@@ -495,7 +746,136 @@ pub async fn index() -> Html<String> {
         </section>
     };
 
-    Html(layout("Articles · engmanager.xyz", body).into_string())
+    Html(layout("Articles · engmanager.xyz", body, true).into_string())
+}
+
+fn render_article_navigation(current_index: usize) -> HtmlFragment {
+    let relations = ARTICLE_RELATIONS[current_index];
+    let older = relations
+        .older
+        .map(|index| render_pager_card(index, "prev", "Older article", "←"));
+    let newer = relations
+        .newer
+        .map(|index| render_pager_card(index, "next", "Newer article", "→"));
+    let related = relations
+        .related
+        .map(|index| render_related_article(current_index, index))
+        .unwrap_or_else(HtmlFragment::empty);
+
+    if older.is_none() && newer.is_none() && relations.related.is_none() {
+        return HtmlFragment::empty();
+    }
+
+    view! {
+        <footer class="article-nextup" aria-label="Article navigation">
+            <nav class="article-pager" aria-label="Previous and next articles">
+                { older.unwrap_or_else(HtmlFragment::empty) }
+                { newer.unwrap_or_else(HtmlFragment::empty) }
+            </nav>
+            { related }
+        </footer>
+    }
+}
+
+fn render_pager_card(
+    article_index: usize,
+    rel: &'static str,
+    label: &'static str,
+    arrow: &'static str,
+) -> HtmlFragment {
+    let article = &ARTICLES[article_index];
+    let title = article.title_alias.unwrap_or(article.title);
+    let class = if rel == "next" {
+        "article-pager-card article-pager-card-next"
+    } else {
+        "article-pager-card article-pager-card-prev"
+    };
+
+    view! {
+        <a class={ class }
+           rel={ rel }
+           href={ format!("/articles/{}", article.slug) }>
+            <span class="article-pager-label">
+                <span aria-hidden="true">{ arrow }</span>
+                { label }
+            </span>
+            <strong class="article-pager-title">{ title }</strong>
+            <time class="article-pager-date" datetime={ article.date.iso() }>
+                { article.date.label() }
+            </time>
+        </a>
+    }
+}
+
+fn render_related_article(current_index: usize, related_index: usize) -> HtmlFragment {
+    let current = &ARTICLES[current_index];
+    let related = &ARTICLES[related_index];
+    let title = related.title_alias.unwrap_or(related.title);
+    let score = relevance_score(current, related);
+    let heading = if score > 0 {
+        "Next by topic"
+    } else {
+        "Closest article"
+    };
+    let chips = render_relevance_chips(current, related);
+
+    view! {
+        <section class="article-related" aria-label="Related article">
+            <a class="article-related-link"
+               href={ format!("/articles/{}", related.slug) }
+               data-relevance-score={ format!("{}", score) }>
+                <span class="article-related-kicker">"Related"</span>
+                <span class="article-related-body">
+                    <span class="article-related-heading">{ heading }</span>
+                    <strong class="article-related-title">{ title }</strong>
+                    <span class="article-related-chips" aria-label="Relevance signals">
+                        { chips }
+                    </span>
+                </span>
+                <span class="article-related-arrow" aria-hidden="true">"→"</span>
+            </a>
+        </section>
+    }
+}
+
+fn render_relevance_chips(current: &Article, related: &Article) -> HtmlFragment {
+    let has_shared_category = current.category == related.category;
+    let category = if has_shared_category {
+        view! {
+            <span class="article-related-chip article-related-chip-category">
+                { current.category.label() }
+            </span>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
+
+    let shared_tags: Vec<Tag> = unique_tags(current.tags)
+        .into_iter()
+        .filter(|tag| related.tags.contains(tag))
+        .collect();
+    let tags: HtmlFragment = shared_tags
+        .iter()
+        .copied()
+        .map(|tag| {
+            view! {
+                <span class="article-related-chip">{ tag.label() }</span>
+            }
+        })
+        .collect();
+    let fallback = if !has_shared_category && shared_tags.is_empty() {
+        view! {
+            <span class="article-related-chip">"nearest date"</span>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
+
+    view! {
+        { category }
+        { tags }
+        { fallback }
+    }
 }
 
 // Marker in auteurs.md that gets string-replaced with the live Discord
@@ -504,9 +884,10 @@ pub async fn index() -> Html<String> {
 const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
 
 pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode> {
-    let article = ARTICLES.iter().find(|a| a.slug == slug);
+    let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
-        Some(a) => {
+        Some(article_index) => {
+            let a = &ARTICLES[article_index];
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
             let (inner, headings) = article_body(&slug)
@@ -515,6 +896,7 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let toc = render_toc(&headings);
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
+            let article_navigation = render_article_navigation(article_index);
             let body = view! {
                 <article class="article">
                     <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
@@ -529,15 +911,24 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                             <div class="article-meta-name">"Matthew Harwood"</div>
                             <div class="article-meta-role">"Engineering Manager @ Uber"</div>
                         </div>
-                        <time class="article-meta-date">{ a.date }</time>
-                        { article_meta_tools() }
-                        { taxonomy }
+                        <time class="article-meta-date" datetime={ a.date.iso() }>
+                            { a.date.label() }
+                        </time>
+                        <details class="article-meta-disclosure article-meta-disclosure-tools">
+                            <summary class="article-meta-summary">"Actions"</summary>
+                            { article_meta_tools() }
+                        </details>
+                        <details class="article-meta-disclosure article-meta-disclosure-taxonomy">
+                            <summary class="article-meta-summary">"Topics"</summary>
+                            { taxonomy }
+                        </details>
                     </header>
                     { inner }
+                    { article_navigation }
                 </article>
                 { toc }
             };
-            Ok(Html(layout(page_title, body).into_string()))
+            Ok(Html(layout(page_title, body, a.indexed).into_string()))
         }
         None => Err(StatusCode::NOT_FOUND),
     }
@@ -723,4 +1114,3 @@ fn render_toc(headings: &[Heading]) -> HtmlFragment {
         </aside>
     }
 }
-

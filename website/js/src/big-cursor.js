@@ -6,8 +6,8 @@
 // `data-mode` swaps which one is visible:
 //
 //   arrow   default
-//   open    hovering a draggable marquee chip (CSS `grab` analogue)
-//   grab    a chip is being dragged (CSS `grabbing` analogue)
+//   open    hovering a draggable marquee chip or visited article check
+//   grab    a chip/article is being dragged (CSS `grabbing` analogue)
 //
 // Pointer Events throughout — `pointermove` instead of `mousemove`,
 // because trash-drag.js calls preventDefault() on pointerdown which
@@ -85,6 +85,12 @@
         if (document.body.dataset.dragging === "true") return "grab";
         const chip = target?.closest?.(".marquee .chip");
         if (chip && chip.dataset.trashed !== "true") {
+            return "open";
+        }
+        const articleTrash = target?.closest?.(
+            ".article-fluid-link.is-visited .article-check",
+        );
+        if (articleTrash) {
             return "open";
         }
         return "arrow";

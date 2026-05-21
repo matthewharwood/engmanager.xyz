@@ -27,10 +27,9 @@ pub fn render_dev_meta() -> HtmlFragment {
     }
 }
 
-// Persistent scavenger-hunt chip in the bottom-left of every page.
-// Opens the Web API Receipt modal on click. The discovered count is
-// rewritten by js/experiences.js after the registry runs and every
-// time a new API is found.
+// Persistent scavenger-hunt chip. On desktop it is positioned directly
+// by CSS; on mobile it lives inside `render_quick_actions()` as one of
+// the expandable FAB actions.
 pub fn render_hunt_chip() -> HtmlFragment {
     view! {
         <button class="hunt-chip"
@@ -56,11 +55,8 @@ pub fn render_discovery_toasts() -> HtmlFragment {
     }
 }
 
-// Brutalist theme cycler. Single chip in the bottom-left; clicking it
-// advances through the THEMES list defined in js/theme-toggle.js. The
-// label shows the current theme's name. State persists via
-// localStorage key `engmanager.theme` and syncs across open tabs via
-// the storage event.
+// Brutalist theme cycler. On desktop it remains a fixed chip; on mobile
+// it becomes one of the expandable quick-action bubbles.
 pub fn render_theme_picker() -> HtmlFragment {
     view! {
         <button class="theme-picker"
@@ -70,5 +66,29 @@ pub fn render_theme_picker() -> HtmlFragment {
             <span class="theme-picker-glyph" aria-hidden="true">"◐"</span>
             <span class="theme-picker-label" data-theme-current-label>"Auto"</span>
         </button>
+    }
+}
+
+// Shared quick-action surface. Desktop CSS treats the wrapper as
+// `display: contents`, preserving the existing two fixed chips. Mobile
+// CSS turns the same controls into a tucked right-edge FAB that expands
+// to reveal theme + Web API receipt actions.
+pub fn render_quick_actions() -> HtmlFragment {
+    view! {
+        <div class="quick-actions"
+             data-quick-actions
+             data-state="collapsed">
+            <button class="quick-actions-peek"
+                    type="button"
+                    data-quick-actions-toggle
+                    aria-label="Open quick actions"
+                    aria-expanded="false">
+                <span class="quick-actions-arrow" aria-hidden="true">"←"</span>
+            </button>
+            <div class="quick-actions-bubbles" aria-label="Quick actions">
+                { render_theme_picker() }
+                { render_hunt_chip() }
+            </div>
+        </div>
     }
 }

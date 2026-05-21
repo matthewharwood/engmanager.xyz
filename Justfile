@@ -22,7 +22,10 @@ dev:
         watchexec --restart \
             --exts rs,toml,css,js,svg \
             --watch website/src \
+            --watch website/css/src \
+            --watch website/js/src \
             --watch website/assets \
+            --watch website/articles \
             --watch Cargo.toml \
             --watch website/Cargo.toml \
             -- cargo run --features dev
