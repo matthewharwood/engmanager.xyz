@@ -15,15 +15,15 @@
 // Minimum font-size enforcement (article-fluid-svg only):
 //   - Effective rendered font-size at the current container width =
 //     fontSize * (containerWidth / inkWidth). Compute that on every layout
-//     event. If it falls below MIN_FONT_SIZE_PX (16px), add .is-too-small
+//     event. If it falls below MIN_FONT_SIZE_PX (20px), add .is-too-small
 //     to the SVG. CSS hides the SVG and reveals the .article-fluid-fallback
-//     <span>, which renders the title at 16px with text-overflow: ellipsis.
+//     <span>, which renders the title at 20px with text-overflow: ellipsis.
 //
 // References:
 //   https://css-tricks.com/fitting-text-to-a-container/
 //   https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics
 
-const MIN_FONT_SIZE_PX = 16;
+const MIN_FONT_SIZE_PX = 20;
 
 // Convert a font-family attribute value into a Canvas-safe family list.
 // Family names containing whitespace need quotes for the CSS font shorthand.
@@ -71,24 +71,48 @@ function applyFit(svg, ink) {
     svg.setAttribute("viewBox", `0 0 ${ink.inkWidth} ${ink.inkHeight}`);
 }
 
-function checkSize(svg, ink) {
-    if (!svg.classList.contains("article-fluid-svg")) return;
-    const containerWidth = svg.getBoundingClientRect().width;
-    if (!containerWidth) return;
-    const effectivePx = ink.fontSize * (containerWidth / ink.inkWidth);
-    svg.classList.toggle("is-too-small", effectivePx < MIN_FONT_SIZE_PX);
+function setPx(el, name, value) {
+    const next = `${Math.round(value * 100) / 100}px`;
+    if (el.style.getPropertyValue(name) !== next) {
+        el.style.setProperty(name, next);
+    }
 }
 
-// Writes the SVG's actual rendered height to a CSS custom property on
-// the enclosing .article-fluid-link, so the brutalist checkbox can
-// size itself proportionally to the title it sits beside (and re-size
-// on every viewport change). No-op for the ENG MANAGER headline,
-// which isn't wrapped in a link.
-function syncTitleHeight(svg) {
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+// Writes the fitted title metrics to CSS custom properties on the
+// enclosing .article-fluid-link. The checkbox and strike-through then
+// size from the same measured font scale as the SVG/fallback title,
+// instead of from a fixed mobile clamp.
+function syncTitleMetrics(svg, ink) {
     const link = svg.closest(".article-fluid-link");
-    if (!link) return;
-    const h = svg.getBoundingClientRect().height;
-    if (h > 0) link.style.setProperty("--title-h", `${h}px`);
+    if (!link) return false;
+
+    const wrap = svg.closest(".fluid-display-wrap");
+    const containerWidth =
+        wrap?.getBoundingClientRect().width || svg.getBoundingClientRect().width;
+    if (!containerWidth) return false;
+
+    const scale = containerWidth / ink.inkWidth;
+    const effectivePx = ink.fontSize * scale;
+    const renderedInkHeight = ink.inkHeight * scale;
+    const usesFallback =
+        effectivePx < MIN_FONT_SIZE_PX || renderedInkHeight < MIN_FONT_SIZE_PX;
+    const visibleFontPx = usesFallback ? MIN_FONT_SIZE_PX : effectivePx;
+    const lineBoxPx = usesFallback ? visibleFontPx * 1.25 : renderedInkHeight;
+
+    const checkSize = clamp(lineBoxPx * 0.92, 26, 72);
+    const strikeSize = clamp(visibleFontPx * 0.11, 2, 8);
+    const strikeHalo = clamp(strikeSize * 0.45, 1, 3);
+
+    setPx(link, "--title-h", lineBoxPx);
+    setPx(link, "--title-check-size", checkSize);
+    setPx(link, "--title-strike-size", strikeSize);
+    setPx(link, "--title-strike-halo", strikeHalo);
+
+    return usesFallback;
 }
 
 (async () => {
@@ -105,13 +129,13 @@ function syncTitleHeight(svg) {
             if (!ink) continue;
             applyFit(svg, ink);
             measurements.set(svg, ink);
-            checkSize(svg, ink);
-            syncTitleHeight(svg);
+            const usesFallback = syncTitleMetrics(svg, ink);
+            svg.classList.toggle("is-too-small", usesFallback);
         }
 
-        // Re-evaluate the min-size check + title-height var on viewport
-        // resize. The fit (viewBox) doesn't need re-running — it's
-        // container-relative via SVG scaling.
+        // Re-evaluate the fallback threshold and fitted title metrics
+        // whenever row width changes. The fit (viewBox) doesn't need
+        // re-running — it's container-relative via SVG scaling.
         let pending = false;
         const onResize = () => {
             if (pending) return;
@@ -119,12 +143,21 @@ function syncTitleHeight(svg) {
             requestAnimationFrame(() => {
                 pending = false;
                 for (const [svg, ink] of measurements) {
-                    checkSize(svg, ink);
-                    syncTitleHeight(svg);
+                    const usesFallback = syncTitleMetrics(svg, ink);
+                    svg.classList.toggle("is-too-small", usesFallback);
                 }
             });
         };
         window.addEventListener("resize", onResize);
+
+        if ("ResizeObserver" in window) {
+            const observer = new ResizeObserver(onResize);
+            for (const svg of measurements.keys()) {
+                observer.observe(svg.closest(".fluid-display-wrap") || svg);
+            }
+        }
+
+        requestAnimationFrame(onResize);
     } catch (_err) {
         // Measurement failed — leave the fallback viewBox in place.
     }

@@ -6,8 +6,8 @@
 // `data-mode` swaps which one is visible:
 //
 //   arrow   default
-//   open    hovering a draggable marquee chip (CSS `grab` analogue)
-//   grab    a chip is being dragged (CSS `grabbing` analogue)
+//   open    hovering a draggable marquee chip or visited article check
+//   grab    a chip/article is being dragged (CSS `grabbing` analogue)
 //
 // Pointer Events throughout — `pointermove` instead of `mousemove`,
 // because trash-drag.js calls preventDefault() on pointerdown which
@@ -87,11 +87,48 @@
         if (chip && chip.dataset.trashed !== "true") {
             return "open";
         }
+        const articleTrash = target?.closest?.(
+            ".article-fluid-link.is-visited .article-check",
+        );
+        if (articleTrash) {
+            return "open";
+        }
         return "arrow";
     }
 
+    // Asymmetric debounce on de-engagement. Engaging a chip
+    // (arrow → open) and drag transitions (any → grab, grab → *)
+    // flip instantly so pickup / release feel tactile. Only the
+    // open → arrow downshift lingers for 300ms — long enough for
+    // the pointer to cross the seam between adjacent marquee chips
+    // without the cursor flicking fist ↔ arrow ↔ fist.
+    const MODE_LINGER_MS = 300;
+    let modeDebounce = null;
     function setMode(mode) {
-        if (cursor.dataset.mode !== mode) cursor.dataset.mode = mode;
+        if (cursor.dataset.mode === mode) {
+            // Re-engaged the same mode before the timer fired —
+            // cancel the pending downgrade.
+            if (modeDebounce !== null) {
+                clearTimeout(modeDebounce);
+                modeDebounce = null;
+            }
+            return;
+        }
+        const isDownshift =
+            cursor.dataset.mode === "open" && mode === "arrow";
+        if (isDownshift) {
+            if (modeDebounce !== null) clearTimeout(modeDebounce);
+            modeDebounce = setTimeout(() => {
+                cursor.dataset.mode = mode;
+                modeDebounce = null;
+            }, MODE_LINGER_MS);
+            return;
+        }
+        if (modeDebounce !== null) {
+            clearTimeout(modeDebounce);
+            modeDebounce = null;
+        }
+        cursor.dataset.mode = mode;
     }
 
     function onMove(e) {

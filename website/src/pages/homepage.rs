@@ -5,11 +5,10 @@ use eng_markup::{html, view};
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
-use super::articles::{ARTICLES, Category, Tag};
+use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_dev_meta, render_discovery_toasts, render_hunt_chip,
-    render_theme_picker,
+    render_dev_meta, render_discovery_toasts, render_quick_actions,
 };
 use crate::asset_url;
 
@@ -20,10 +19,12 @@ use crate::asset_url;
 // field, so escape() is sufficient.
 fn articles_data_json() -> String {
     let mut out = String::from("{");
-    for (i, a) in ARTICLES.iter().enumerate() {
-        if i > 0 {
+    let mut first = true;
+    for a in public_articles() {
+        if !first {
             out.push(',');
         }
+        first = false;
         let title = a.title_alias.unwrap_or(a.title);
         let mut tags = String::from("[");
         for (j, t) in a.tags.iter().enumerate() {
@@ -38,13 +39,14 @@ fn articles_data_json() -> String {
             );
         }
         tags.push(']');
+        let date = a.date.label();
         let _ = write!(
             out,
             "\"{slug}\":{{\"title\":\"{title}\",\"summary\":\"{summary}\",\"date\":\"{date}\",\"category\":{{\"label\":\"{cat_label}\",\"emoji\":\"{cat_emoji}\",\"slug\":\"{cat_slug}\"}},\"tags\":{tags},\"href\":\"/articles/{slug}\"}}",
             slug = json_escape(a.slug),
             title = json_escape(title),
             summary = json_escape(a.summary),
-            date = json_escape(a.date),
+            date = json_escape(&date),
             cat_label = json_escape(a.category.label()),
             cat_emoji = json_escape(a.category.emoji()),
             cat_slug = json_escape(a.category.slug()),
@@ -106,7 +108,7 @@ fn render_reveal_card() -> HtmlFragment {
                             type="button"
                             popovertarget="article-reveal"
                             popovertargetaction="hide">
-                        "Close"
+                        "Nahhh"
                     </button>
                     <a class="reveal-card-continue" data-reveal-continue href="#">
                         "Read →"
@@ -138,7 +140,7 @@ fn render_topic_marquees() -> HtmlFragment {
         .collect();
 
     let mut unique_tags: BTreeSet<Tag> = BTreeSet::new();
-    for article in ARTICLES {
+    for article in public_articles() {
         for tag in article.tags {
             unique_tags.insert(*tag);
         }
@@ -280,8 +282,7 @@ pub async fn index() -> Html<String> {
     // Each article rendered as its own fluid SVG title, Archivo Black, linked
     // to the article detail page. Stacked under <EngHeadline />. Titles auto-fit
     // their container width via assets/scripts/fit-text.js.
-    let article_links: HtmlFragment = ARTICLES
-        .iter()
+    let article_links: HtmlFragment = public_articles()
         .map(|a| {
             let tag_attr = a
                 .tags
@@ -308,6 +309,19 @@ pub async fn index() -> Html<String> {
                                   stroke-width="3"
                                   stroke-linecap="round"
                                   stroke-linejoin="round" />
+                        </svg>
+                        <svg class="article-trash-mark"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2.4"
+                             stroke-linecap="round"
+                             stroke-linejoin="round">
+                            <path d="M4 7 L20 7" />
+                            <path d="M9 7 L9 4.5 L15 4.5 L15 7" />
+                            <path d="M6 7 L7 20 L17 20 L18 7" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
                         </svg>
                     </span>
                     <div class="fluid-display-wrap">
@@ -359,6 +373,7 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/visited-articles.js") } defer></script>
                 <script src={ asset_url("js/trash-drag.js") } defer></script>
+                <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
                     "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\",trashSfx:\"{}\"}};",
                     asset_url("js/paint-brutalist-hatch.js"),
@@ -425,8 +440,7 @@ pub async fn index() -> Html<String> {
                 </script>
                 { render_reveal_card() }
 
-                { render_hunt_chip() }
-                { render_theme_picker() }
+                { render_quick_actions() }
                 { render_discovery_toasts() }
 
                 // Brutalist Web API Receipt modal (Popover API). `?` from

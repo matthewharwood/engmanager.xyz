@@ -22,7 +22,7 @@
     display: none;
     font-family: "Archivo", sans-serif;
     font-weight: 900;
-    font-size: 1rem;
+    font-size: 1.25rem;
     line-height: 1.25;
     color: inherit;
     letter-spacing: 0.01em;
@@ -624,6 +624,12 @@ body[data-dragging="true"] .trash-can {
     transform: scale(1.04);
 }
 
+@media (max-width: 48rem) {
+    .homepage .quick-actions {
+        inset-block-end: max(5.25rem, calc(env(safe-area-inset-bottom) + 5.25rem));
+    }
+}
+
 /* Pause every marquee while a chip is being dragged. */
 body[data-dragging="true"] .marquee-track {
     animation-play-state: paused;
@@ -655,6 +661,9 @@ body[data-dragging="true"] .marquee-track {
  * overlay the fluid wrap when the article's been read (persisted in
  * localStorage by js/visited-articles.js). */
 .article-fluid-link {
+    --title-check-size: clamp(1.75rem, 6vw, 3rem);
+    --title-strike-size: clamp(0.125rem, 0.8vw, 0.375rem);
+    --title-strike-halo: clamp(0.0625rem, 0.35vw, 0.1875rem);
     display: flex;
     align-items: center;
     gap: clamp(0.625rem, 2vw, 1.25rem);
@@ -674,26 +683,16 @@ body[data-dragging="true"] .marquee-track {
     position: relative;
 }
 
-/* Brutalist checkbox. Sized off `--title-h`, a CSS custom property
- * that fit-text.js writes onto the parent .article-fluid-link after
- * it measures the SVG title's rendered height (and on every viewport
- * resize). Result: each checkbox is a perfect square that matches
- * the height of the title it sits beside, so a long-title row gets
- * a tiny checkbox and a short-title row gets a giant one. Left edges
- * still align because the flex parent has consistent inline padding.
- *
- * font-size is set to the same `--title-h` so border + offset shadow
- * scale in em — chunky on big checkboxes, proportional on small ones,
- * never out of balance.
- *
- * Fallback for the brief window before fit-text.js runs (or if it
- * fails) is a fluid clamp so the checkbox never renders absurdly. */
+/* Brutalist checkbox. Sized from fit-text.js via --title-check-size so
+ * it follows the same measured font scale as the SVG/fallback title.
+ * The fallback clamp keeps the first paint reasonable before JS settles. */
 .article-check {
     flex-shrink: 0;
     align-self: center;
-    inline-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
-    block-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
-    font-size: var(--title-h, clamp(2.25rem, 7vw, 4rem));
+    position: relative;
+    inline-size: var(--title-check-size);
+    block-size: var(--title-check-size);
+    font-size: var(--title-check-size);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -709,20 +708,56 @@ body[data-dragging="true"] .marquee-track {
     transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
+.article-fluid-link.is-visited .article-check {
+    cursor: grab;
+    touch-action: none;
+}
+
+.article-fluid-link.is-visited .article-check:active {
+    cursor: grabbing;
+}
+
 .article-fluid-link:hover .article-check,
 .article-fluid-link:focus-visible .article-check {
     transform: translate(-0.05em, -0.05em);
     box-shadow: 0.15em 0.15em 0 0 var(--ctp-text);
 }
 
-.article-check-mark {
+.article-check-mark,
+.article-trash-mark {
+    position: absolute;
     inline-size: 65%;
     block-size: 65%;
+    transition:
+        opacity 140ms ease,
+        transform 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.article-check-mark {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+}
+
+.article-trash-mark {
+    opacity: 0;
+    transform: scale(0.75) rotate(-8deg);
 }
 
 .article-fluid-link.is-visited .article-check {
     background: var(--accent);
     color: var(--ctp-base);
+}
+
+.article-fluid-link.is-visited .article-check:hover .article-check-mark,
+.article-fluid-link.is-visited .article-check:active .article-check-mark {
+    opacity: 0;
+    transform: scale(0.72) rotate(8deg);
+}
+
+.article-fluid-link.is-visited .article-check:hover .article-trash-mark,
+.article-fluid-link.is-visited .article-check:active .article-trash-mark {
+    opacity: 1;
+    transform: scale(1) rotate(0);
 }
 
 /* Strike-through bar that scales in horizontally over the fluid SVG
@@ -735,14 +770,14 @@ body[data-dragging="true"] .marquee-track {
     inset-block-start: 50%;
     inset-inline-start: 0;
     inset-inline-end: 0;
-    block-size: clamp(0.375rem, 1.4vw, 0.75rem);
+    block-size: var(--title-strike-size);
     /* Strike in the high-contrast text color so it stays visible across
      * every theme. The SVG title fills with --accent (currentColor), so
      * pinning the strike to that color makes them merge — text-1 keeps
      * them distinct. Halo in the page bg knockouts the title text
      * underneath, giving the sticker effect. */
     background: var(--text-1);
-    box-shadow: 0 0 0 clamp(0.1875rem, 0.5vw, 0.3125rem) var(--surface-1);
+    box-shadow: 0 0 0 var(--title-strike-halo) var(--surface-1);
     transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
     pointer-events: none;
@@ -752,6 +787,12 @@ body[data-dragging="true"] .marquee-track {
      * View Transitions can't trigger a stale snapshot → live reveal
      * regression where the strike blinks in and then animates back
      * to zero (the bug this comment exists to fix). */
+}
+
+@media (max-width: 42rem) {
+    .article-fluid-link {
+        gap: clamp(0.4375rem, 2vw, 0.75rem);
+    }
 }
 
 .article-fluid-link.is-visited .article-strike {
@@ -795,6 +836,22 @@ body[data-dragging="true"] .marquee-track {
 .article-fluid-link:focus-visible {
     outline: 1rem solid var(--accent);
     outline-offset: 1rem;
+}
+
+.article-trash-ghost {
+    transition: none !important;
+    filter: drop-shadow(0 1rem 1.5rem rgba(0, 0, 0, 0.24));
+    will-change: left, top, transform, opacity;
+    cursor: grabbing;
+}
+
+.article-trash-ghost .article-check-mark {
+    opacity: 0;
+}
+
+.article-trash-ghost .article-trash-mark {
+    opacity: 1;
+    transform: scale(1) rotate(0);
 }
 
 /* Bottom-right avatar popover trigger + #bio anchored popover. */
