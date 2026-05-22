@@ -2,10 +2,11 @@ use std::env::var;
 use std::net::SocketAddr;
 
 use axum::Router;
+use axum::body::Bytes;
 use axum::extract::Path;
 use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use rust_embed::{EmbeddedFile, RustEmbed};
 use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
@@ -13,6 +14,7 @@ use tower_http::compression::CompressionLayer;
 pub mod discord;
 pub mod experiences;
 mod pages;
+mod sitemap;
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
 // only server the site embeds; the refresh task resolves the guild ID
@@ -146,6 +148,20 @@ async fn sw_handler() -> Response {
     }
 }
 
+async fn offline_handler() -> Response {
+    (
+        [
+            (header::CONTENT_TYPE, "text/html; charset=utf-8".to_string()),
+            (
+                header::CACHE_CONTROL,
+                "public, max-age=3600, stale-while-revalidate=86400".to_string(),
+            ),
+        ],
+        OFFLINE_HTML,
+    )
+        .into_response()
+}
+
 async fn asset_handler(Path(path): Path<String>) -> Response {
     // Try the hashed form first (rewriting `styles.HASH.css` → `styles.css`);
     // fall back to the literal path so flat URLs (fonts in CSS, Markdown
@@ -176,6 +192,17 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
     }
 }
 
+// First-party real-user monitoring sink. The browser sends small Core Web
+// Vitals / navigation diagnostics with sendBeacon or keepalive fetch. We do
+// not persist yet; accepting the payload gives the client a stable endpoint
+// and keeps the path free of third-party analytics.
+async fn rum_handler(body: Bytes) -> Response {
+    if body.len() > 16 * 1024 {
+        return StatusCode::PAYLOAD_TOO_LARGE.into_response();
+    }
+    StatusCode::NO_CONTENT.into_response()
+}
+
 // Cache-Control for HTML responses.
 //   max-age=60       → browser caches 1 min (so reload is snappy but fresh-ish)
 //   s-maxage=3600    → Cloudflare caches at edge for 1 hour
@@ -183,8 +210,32 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
 //                                  re-fetching in the background
 // Cloudflare still needs a Cache Rule to opt HTML into edge caching, but
 // once enabled it will honor these s-maxage / SWR directives.
-const HTML_CACHE_CONTROL: &str =
-    "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
+const HTML_CACHE_CONTROL: &str = "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
+
+const OFFLINE_HTML: &str = r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Offline - engmanager.xyz</title>
+<style>
+html{font-family:system-ui,sans-serif;background:#eff1f5;color:#11111b}
+body{min-height:100svh;margin:0;display:grid;place-items:center;padding:2rem}
+main{max-width:34rem;border:2px solid currentColor;box-shadow:8px 8px 0 currentColor;padding:1.25rem;background:#fff}
+h1{margin:0 0 .75rem;font-size:clamp(2rem,8vw,4rem);line-height:.9;text-transform:uppercase}
+p{font-size:1rem;line-height:1.5}
+a{color:#4c4fdd;font-weight:800}
+</style>
+</head>
+<body>
+<main>
+<h1>Offline</h1>
+<p>This page is not in the local cache yet. Reconnect and try again, or go back to a page you have already opened.</p>
+<p><a href="/">Back home</a></p>
+</main>
+</body>
+</html>"#;
 
 async fn html_cache_layer(
     req: axum::http::Request<axum::body::Body>,
@@ -206,6 +257,43 @@ async fn html_cache_layer(
     response
 }
 
+async fn security_headers_layer(
+    req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> Response {
+    let mut response = next.run(req).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        HeaderName::from_static("x-content-type-options"),
+        axum::http::HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        HeaderName::from_static("referrer-policy"),
+        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    headers.insert(
+        HeaderName::from_static("x-frame-options"),
+        axum::http::HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        HeaderName::from_static("cross-origin-opener-policy"),
+        axum::http::HeaderValue::from_static("same-origin-allow-popups"),
+    );
+    headers.insert(
+        HeaderName::from_static("permissions-policy"),
+        axum::http::HeaderValue::from_static(
+            "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()",
+        ),
+    );
+    headers.insert(
+        HeaderName::from_static("content-security-policy-report-only"),
+        axum::http::HeaderValue::from_static(
+            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; media-src 'self'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests",
+        ),
+    );
+    response
+}
+
 #[tokio::main]
 async fn main() {
     // Debug-only: panic at startup if any article slice carries duplicate
@@ -223,10 +311,16 @@ async fn main() {
         .route("/", get(pages::homepage::index))
         .route("/articles/", get(pages::articles::index))
         .route("/articles/{slug}", get(pages::articles::detail))
+        .route("/sitemap.xml", get(sitemap::sitemap_handler))
+        .route("/sitemaps.xml", get(sitemap::sitemap_handler))
+        .route("/robots.txt", get(sitemap::robots_handler))
         .route("/health", get(|| async { "OK" }))
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
+        .route("/__rum", post(rum_handler))
+        .route("/offline.html", get(offline_handler))
         .route("/sw.js", get(sw_handler))
         .route("/assets/{*path}", get(asset_handler))
+        .layer(axum::middleware::from_fn(security_headers_layer))
         .layer(axum::middleware::from_fn(html_cache_layer))
         // Brotli + gzip over the wire for any compressible response
         // (text/css, text/html, application/javascript, etc.). Vary

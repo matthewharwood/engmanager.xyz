@@ -103,7 +103,7 @@ function beginDrag(session) {
     drag = session;
     document.body.dataset.dragging = "true";
 
-    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointermove", onMove, { passive: true });
     document.addEventListener("pointerup", onUp);
     document.addEventListener("pointercancel", onUp);
 }

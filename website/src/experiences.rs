@@ -100,20 +100,25 @@ mod tests {
     fn manifest_ids_unique() {
         let mut seen = std::collections::HashSet::new();
         for entry in all() {
-            assert!(
-                seen.insert(entry.id),
-                "duplicate manifest id: {}",
-                entry.id
-            );
+            assert!(seen.insert(entry.id), "duplicate manifest id: {}", entry.id);
         }
     }
 
     #[test]
     fn groups_are_known() {
         const VALID: &[&str] = &[
-            "device", "input", "storage", "network", "background",
-            "media", "graphics", "security", "pwa", "hardware",
-            "privacy", "meta",
+            "device",
+            "input",
+            "storage",
+            "network",
+            "background",
+            "media",
+            "graphics",
+            "security",
+            "pwa",
+            "hardware",
+            "privacy",
+            "meta",
         ];
         for entry in all() {
             assert!(

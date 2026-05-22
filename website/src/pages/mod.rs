@@ -1,17 +1,42 @@
 pub mod articles;
 pub mod homepage;
 
-pub const OPEN_PROPS_HREF: &str =
-    "https://unpkg.com/open-props@1.7.23/open-props.min.css";
+use eng_domain::HtmlFragment;
+use eng_markup::view;
+
+pub const OPEN_PROPS_HREF: &str = "https://unpkg.com/open-props@1.7.23/open-props.min.css";
 pub const GOOGLE_FONTS_HREF: &str =
     "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap";
 
 // Cloudflare Images proxy for the author avatar. Reused by the homepage
 // (bottom-right popover trigger) and the article-page meta block.
+const AVATAR_DELIVERY_BASE: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300";
 pub const AVATAR_SRC: &str = "https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public";
 
-use eng_domain::HtmlFragment;
-use eng_markup::view;
+pub fn avatar_variant(width: u16) -> String {
+    format!("{AVATAR_DELIVERY_BASE}/w={width},fit=cover,format=auto")
+}
+
+pub fn avatar_srcset(widths: &[u16]) -> String {
+    widths
+        .iter()
+        .map(|width| format!("{} {}w", avatar_variant(*width), width))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+pub fn render_resource_hints() -> HtmlFragment {
+    HtmlFragment::new(
+        r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" href="/assets/fonts/monumentextended-black-webfont.woff2" as="font" type="font/woff2" crossorigin>"#
+            .to_string(),
+    )
+}
+
+pub fn render_sitemap_link() -> HtmlFragment {
+    view! {
+        <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+    }
+}
 
 // Emits a marker meta tag when the binary was built with the `dev`
 // cargo feature (i.e. via `just dev`). js/experiences.js reads this

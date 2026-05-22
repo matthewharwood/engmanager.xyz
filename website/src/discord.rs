@@ -10,8 +10,8 @@
 //     member count. Always available; used to discover the guild ID on
 //     startup and to enrich the widget snapshot with a member total.
 //
-// If the widget endpoint 403s (widget disabled), we fall back to an
-// invite-only snapshot — the card still shows online + member counts.
+// If the widget endpoint 403s (widget disabled), we log once and fall back
+// to invite-only snapshots — the card still shows online + member counts.
 
 use std::sync::Arc;
 use std::sync::LazyLock;
@@ -20,6 +20,7 @@ use std::time::Duration;
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 use reqwest::Client;
+use reqwest::StatusCode;
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
@@ -71,7 +72,7 @@ pub async fn snapshot() -> Option<DiscordSnapshot> {
 }
 
 // Spawned at startup. Discovers the guild ID from the invite once, then
-// polls both endpoints every WIDGET_REFRESH_INTERVAL.
+// polls the invite plus the optional widget every WIDGET_REFRESH_INTERVAL.
 pub async fn refresh_loop(invite_code: &'static str) {
     let fallback_invite_url = format!("https://discord.gg/{invite_code}");
 
@@ -88,37 +89,72 @@ pub async fn refresh_loop(invite_code: &'static str) {
         tokio::time::sleep(STARTUP_RETRY_INTERVAL).await;
     };
 
+    let mut widget_enabled = true;
+
     loop {
-        if let Some(snap) = fetch_snapshot(&guild_id, invite_code, &fallback_invite_url).await {
+        let fetch =
+            fetch_snapshot(&guild_id, invite_code, &fallback_invite_url, widget_enabled).await;
+        if fetch.widget_disabled && widget_enabled {
+            eprintln!(
+                "discord: server widget is disabled for guild {guild_id}; using invite counts only"
+            );
+            widget_enabled = false;
+        }
+        if let Some(snap) = fetch.snapshot {
             *SNAPSHOT.write().await = Some(snap);
         }
         tokio::time::sleep(WIDGET_REFRESH_INTERVAL).await;
     }
 }
 
+struct SnapshotFetch {
+    snapshot: Option<DiscordSnapshot>,
+    widget_disabled: bool,
+}
+
 async fn fetch_snapshot(
     guild_id: &str,
     invite_code: &str,
     fallback_invite_url: &str,
-) -> Option<DiscordSnapshot> {
-    let (widget, invite) =
-        tokio::join!(fetch_widget(guild_id), fetch_invite(invite_code));
+    widget_enabled: bool,
+) -> SnapshotFetch {
+    let widget_fetch = async {
+        if widget_enabled {
+            fetch_widget(guild_id).await
+        } else {
+            WidgetFetch::Disabled
+        }
+    };
+    let (widget, invite) = tokio::join!(widget_fetch, fetch_invite(invite_code));
 
-    let widget = widget
-        .map_err(|e| eprintln!("discord: widget fetch failed: {e}"))
-        .ok();
+    let widget_disabled = matches!(widget, WidgetFetch::Disabled);
+    let widget = match widget {
+        WidgetFetch::Available(widget) => Some(widget),
+        WidgetFetch::Disabled => None,
+        WidgetFetch::Failed(e) => {
+            eprintln!("discord: widget fetch failed: {e}");
+            None
+        }
+    };
     let invite = invite
         .map_err(|e| eprintln!("discord: invite fetch failed: {e}"))
         .ok();
 
     if widget.is_none() && invite.is_none() {
-        return None;
+        return SnapshotFetch {
+            snapshot: None,
+            widget_disabled,
+        };
     }
 
     let guild_name = widget
         .as_ref()
         .map(|w| w.name.clone())
-        .or_else(|| invite.as_ref().and_then(|i| i.guild.as_ref().map(|g| g.name.clone())))
+        .or_else(|| {
+            invite
+                .as_ref()
+                .and_then(|i| i.guild.as_ref().map(|g| g.name.clone()))
+        })
         .unwrap_or_default();
 
     let instant_invite = widget
@@ -152,30 +188,52 @@ async fn fetch_snapshot(
         .map(|w| {
             w.channels
                 .iter()
-                .map(|c| VoiceChannel { name: c.name.clone() })
+                .map(|c| VoiceChannel {
+                    name: c.name.clone(),
+                })
                 .collect()
         })
         .unwrap_or_default();
 
-    Some(DiscordSnapshot {
-        guild_name,
-        instant_invite,
-        member_count,
-        online_count,
-        members,
-        voice_channels,
-    })
+    SnapshotFetch {
+        snapshot: Some(DiscordSnapshot {
+            guild_name,
+            instant_invite,
+            member_count,
+            online_count,
+            members,
+            voice_channels,
+        }),
+        widget_disabled,
+    }
 }
 
-async fn fetch_widget(guild_id: &str) -> Result<WidgetResponse, reqwest::Error> {
+enum WidgetFetch {
+    Available(WidgetResponse),
+    Disabled,
+    Failed(reqwest::Error),
+}
+
+async fn fetch_widget(guild_id: &str) -> WidgetFetch {
     let url = format!("{DISCORD_API}/guilds/{guild_id}/widget.json");
-    HTTP_CLIENT
-        .get(url)
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await
+    let response = match HTTP_CLIENT.get(url).send().await {
+        Ok(response) => response,
+        Err(e) => return WidgetFetch::Failed(e),
+    };
+
+    if response.status() == StatusCode::FORBIDDEN {
+        return WidgetFetch::Disabled;
+    }
+
+    let response = match response.error_for_status() {
+        Ok(response) => response,
+        Err(e) => return WidgetFetch::Failed(e),
+    };
+
+    match response.json().await {
+        Ok(widget) => WidgetFetch::Available(widget),
+        Err(e) => WidgetFetch::Failed(e),
+    }
 }
 
 async fn fetch_invite(invite_code: &str) -> Result<InviteResponse, reqwest::Error> {

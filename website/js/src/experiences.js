@@ -143,6 +143,63 @@ const onInteraction = (fn) => interactionHandlers.push(fn);
 
 const receipt = []; // { api, label, value }
 
+function upsertReceipt(api, label, value) {
+    const stringValue = String(value);
+    const existing = receipt.find((row) => row.api === api && row.label === label);
+    if (existing) {
+        existing.value = stringValue;
+    } else {
+        receipt.push({ api, label, value: stringValue });
+    }
+}
+
+const rumState = {
+    vitals: {},
+    navigation: {},
+    sentReasons: new Set(),
+};
+
+function recordRumMetric(name, value, detail = {}) {
+    if (value == null || Number.isNaN(value)) return;
+    const rounded = typeof value === "number" ? Math.round(value) : value;
+    rumState.vitals[name] = { value: rounded, ...detail };
+    upsertReceipt("Web Vitals", name, rounded);
+    refreshModal();
+}
+
+function sendRum(reason) {
+    if (rumState.sentReasons.has(reason)) return;
+    rumState.sentReasons.add(reason);
+    const payload = JSON.stringify({
+        reason,
+        path: location.pathname,
+        href: location.href,
+        visibilityState: document.visibilityState,
+        connection: navigator.connection
+            ? {
+                effectiveType: navigator.connection.effectiveType,
+                saveData: navigator.connection.saveData,
+                downlink: navigator.connection.downlink,
+            }
+            : null,
+        vitals: rumState.vitals,
+        navigation: rumState.navigation,
+        sentAt: new Date().toISOString(),
+    });
+    try {
+        if ("sendBeacon" in navigator) {
+            const blob = new Blob([payload], { type: "application/json" });
+            if (navigator.sendBeacon("/__rum", blob)) return;
+        }
+        fetch("/__rum", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+            keepalive: true,
+        }).catch(() => {});
+    } catch {}
+}
+
 function makeCtx(entry) {
     return {
         id: entry.id,
@@ -1379,14 +1436,91 @@ register({
     isSupported: () => "performance" in globalThis,
     init: (api) => {
         let longTasks = 0;
+        let cls = 0;
+        let inp = 0;
         try {
             const po = new PerformanceObserver((list) => {
                 longTasks += list.getEntries().length;
             });
             po.observe({ type: "longtask", buffered: true });
             // Read after a short delay to capture initial bursts.
-            setTimeout(() => api.log("longTasks", longTasks), 2000);
+            setTimeout(() => {
+                api.log("longTasks", longTasks);
+                recordRumMetric("longTasks", longTasks);
+            }, 2000);
         } catch {}
+
+        try {
+            const lcpObserver = new PerformanceObserver((list) => {
+                const entries = list.getEntries();
+                const last = entries[entries.length - 1];
+                if (last) {
+                    recordRumMetric("LCP", last.startTime, {
+                        element: last.element?.tagName || null,
+                    });
+                }
+            });
+            lcpObserver.observe({ type: "largest-contentful-paint", buffered: true });
+        } catch {}
+
+        try {
+            const clsObserver = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (!entry.hadRecentInput) cls += entry.value;
+                }
+                recordRumMetric("CLS", Math.round(cls * 1000) / 1000);
+            });
+            clsObserver.observe({ type: "layout-shift", buffered: true });
+        } catch {}
+
+        try {
+            const inpObserver = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (entry.interactionId && entry.duration > inp) {
+                        inp = entry.duration;
+                    }
+                }
+                if (inp) recordRumMetric("INP", inp);
+            });
+            inpObserver.observe({ type: "event", buffered: true, durationThreshold: 16 });
+        } catch {}
+
+        try {
+            const paint = performance.getEntriesByType("paint");
+            const fcp = paint.find((entry) => entry.name === "first-contentful-paint");
+            if (fcp) recordRumMetric("FCP", fcp.startTime);
+            const nav = performance.getEntriesByType("navigation")[0];
+            if (nav) {
+                const ttfb = nav.responseStart - nav.requestStart;
+                rumState.navigation = {
+                    type: nav.type,
+                    transferSize: nav.transferSize,
+                    encodedBodySize: nav.encodedBodySize,
+                    decodedBodySize: nav.decodedBodySize,
+                    notRestoredReasons: nav.notRestoredReasons || null,
+                };
+                recordRumMetric("TTFB", ttfb);
+                api.log("nav", nav.type);
+                if (nav.notRestoredReasons) {
+                    api.log("bfcache-blockers", JSON.stringify(nav.notRestoredReasons));
+                }
+            }
+        } catch {}
+
+        window.addEventListener("pageshow", (event) => {
+            const status = event.persisted ? "restored" : "normal";
+            upsertReceipt("Performance APIs", "bfcache", status);
+            rumState.navigation.bfcache = status;
+            refreshModal();
+        });
+        window.addEventListener("pagehide", (event) => {
+            rumState.navigation.pagehidePersisted = event.persisted;
+            sendRum("pagehide");
+        });
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") sendRum("hidden");
+        });
+        setTimeout(() => sendRum("settled"), 5000);
         api.log("now", `${Math.round(performance.now())} ms`);
     },
 });
@@ -1680,6 +1814,10 @@ register({
             });
             api.log("scope", reg.scope);
             api.log("state", reg.active?.state ?? reg.installing?.state ?? "registering");
+            if ("navigationPreload" in reg) {
+                const enabled = await reg.navigationPreload.getState();
+                api.log("navigationPreload", enabled.enabled ? "enabled" : "disabled");
+            }
         } catch (err) {
             api.log("error", err.message);
             throw err;
@@ -1704,16 +1842,50 @@ register({
         HTMLScriptElement.supports?.("speculationrules") ?? false,
     init: (api) => {
         if (document.querySelector('script[type="speculationrules"]')) {
-            api.log("rules", "prerender /articles/*");
+            api.log("rules", "server-provided");
             return;
+        }
+        const sameOriginPath = (href) => {
+            try {
+                const url = new URL(href, location.href);
+                return url.origin === location.origin ? url.pathname : null;
+            } catch {
+                return null;
+            }
+        };
+        const articleNavUrls = [
+            ...document.querySelectorAll(
+                'a[rel="next"], a[rel="prev"], .article-related-link',
+            ),
+        ]
+            .map((link) => sameOriginPath(link.href))
+            .filter(Boolean);
+        const navPrefetchUrls = [...document.querySelectorAll(".nav-dropdown-item")]
+            .slice(0, 3)
+            .map((link) => sameOriginPath(link.href))
+            .filter(Boolean);
+        const unique = (items) => [...new Set(items)].filter((url) => url !== location.pathname);
+        const prerenderUrls = unique(articleNavUrls).slice(0, 3);
+        const prefetchUrls = unique(navPrefetchUrls).slice(0, 3);
+        if (!prerenderUrls.length && !prefetchUrls.length) {
+            api.log("rules", "no candidates");
+            return false;
         }
         const script = document.createElement("script");
         script.type = "speculationrules";
-        script.textContent = JSON.stringify({
-            prerender: [{ where: { href_matches: "/articles/*" } }],
-        });
+        const rules = {};
+        if (prerenderUrls.length) {
+            rules.prerender = [{ urls: prerenderUrls, eagerness: "moderate" }];
+        }
+        if (prefetchUrls.length) {
+            rules.prefetch = [{ urls: prefetchUrls, eagerness: "conservative" }];
+        }
+        script.textContent = JSON.stringify(rules);
         document.head.appendChild(script);
-        api.log("rules", "prerender /articles/*");
+        api.log(
+            "rules",
+            `${prerenderUrls.length} prerender · ${prefetchUrls.length} prefetch`,
+        );
     },
 });
 
@@ -1727,6 +1899,10 @@ register({
         const est = await navigator.storage.estimate();
         const mb = (n) => `${Math.round(n / 1024 / 1024)} MB`;
         api.log("usage", `${mb(est.usage)} / ${mb(est.quota)}`);
+        if ("persisted" in navigator.storage) {
+            const persisted = await navigator.storage.persisted();
+            api.log("persisted", persisted ? "yes" : "no");
+        }
     },
 });
 

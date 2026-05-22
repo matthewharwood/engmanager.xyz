@@ -877,8 +877,10 @@ body[data-dragging="true"] .marquee-track {
 
 .avatar {
     block-size: 3rem;
-    inline-size: auto;
+    inline-size: 3rem;
+    aspect-ratio: 1;
     display: block;
+    object-fit: cover;
 }
 
 #bio {

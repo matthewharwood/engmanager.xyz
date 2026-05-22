@@ -24,6 +24,9 @@ oxc_minifier = { workspace = true }
 oxc_parser = { workspace = true }
 oxc_span = { workspace = true }
 
+[dev-dependencies]
+roxmltree = "0.20"
+
 [features]
 # Enables live-reload via systemfd's LISTEN_FDS socket inheritance.
 # Used by `just dev` only. Production (`cargo build --release`) leaves

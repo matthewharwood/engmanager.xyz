@@ -7,8 +7,8 @@ use std::fmt::Write;
 
 use super::articles::{Category, Tag, public_articles};
 use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_dev_meta, render_discovery_toasts, render_quick_actions,
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
+    render_discovery_toasts, render_quick_actions, render_resource_hints, render_sitemap_link,
 };
 use crate::asset_url;
 
@@ -194,7 +194,7 @@ impl Component for EngHeadline {
 
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
         view! {
-            <div class="fluid-display-wrap">
+            <div id="main" class="fluid-display-wrap" tabindex="-1">
                 <h1 class="fluid-display">
                     <svg class="fluid-display-svg"
                          viewBox="0 0 1200 200"
@@ -362,6 +362,8 @@ pub async fn index() -> Html<String> {
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>"ENG MANAGER"</title>
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
+                { render_sitemap_link() }
+                { render_resource_hints() }
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
@@ -386,6 +388,7 @@ pub async fn index() -> Html<String> {
                 { render_dev_meta() }
             </head>
             <body class="homepage">
+                <a class="skip-link" href="#main">"Skip to content"</a>
                 <EngHeadline />
                 { render_topic_marquees() }
                 { article_links }
@@ -395,8 +398,13 @@ pub async fn index() -> Html<String> {
                 <button class="avatar-button" type="button" popovertarget="bio" aria-label="Open bio">
                     <img class="avatar"
                          src=AVATAR_SRC
+                         srcset={ avatar_srcset(&[48, 96, 144]) }
+                         sizes="48px"
                          alt="Matthew Harwood"
-                         height="48" />
+                         width="48"
+                         height="48"
+                         loading="eager"
+                         decoding="async" />
                 </button>
 
                 // Trash can. Reader can grab any chip from the marquees and

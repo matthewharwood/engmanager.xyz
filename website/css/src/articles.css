@@ -456,6 +456,7 @@
 .article-meta-avatar {
     inline-size: 2.5rem;
     block-size: 2.5rem;
+    aspect-ratio: 1;
     border-radius: 50%;
     background: var(--ctp-mantle);
     border: 1px solid var(--ctp-surface0);
@@ -666,6 +667,7 @@
 
 @media (max-width: 30rem) {
     .article-taxonomy {
+        grid-column: 1 / -1;
         margin-inline-start: 0;
     }
 }
@@ -1041,6 +1043,7 @@
 .auteurs-qr {
     inline-size: min(70%, 14rem);
     block-size: auto;
+    aspect-ratio: 1;
     display: block;
     border-radius: 0.5rem;
     background: #fff;
@@ -1396,20 +1399,17 @@
 
 /* ===========================================================================
  * Article footer navigation. Server-rendered from the compile-time article
- * table: chronological older/newer pagination plus one relevance-ranked
- * topic match from the current article's category + tags.
+ * table: one cyclical next article plus one relevance-ranked next-by-topic
+ * article. Both cards intentionally share one shape and one arrow direction.
  * =========================================================================== */
 .article-nextup {
     margin-block-start: clamp(3rem, 8vw, 5rem);
     border-block: 2px solid var(--text-1);
-    display: grid;
-    gap: 0;
 }
 
-.article-pager {
+.article-next-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-block-end: 1px solid var(--border-subtle);
 }
 
 .article-nextup a {
@@ -1417,12 +1417,14 @@
     text-decoration: none;
 }
 
-.article-pager-card {
+.article-next-card {
     min-block-size: 0;
     display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 0.375rem;
-    padding-block: 0.875rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding-block: 0.875rem 1rem;
     padding-inline: 0;
     background: transparent;
     border: 0;
@@ -1430,34 +1432,27 @@
     transition: color 140ms ease, background 140ms ease;
 }
 
-.article-pager-card:only-child {
+.article-next-card:only-child {
     grid-column: 1 / -1;
 }
 
-.article-pager-card + .article-pager-card {
+.article-next-card + .article-next-card {
     border-inline-start: 1px solid var(--border-subtle);
     padding-inline-start: 1rem;
 }
 
-.article-pager-card-prev {
+.article-next-card:first-child {
     padding-inline-end: 1rem;
 }
 
-.article-pager-card-next {
-    align-items: flex-end;
-    text-align: end;
-}
-
-.article-pager-card:hover,
-.article-pager-card:focus-visible,
-.article-related-link:hover,
-.article-related-link:focus-visible {
+.article-next-card:hover,
+.article-next-card:focus-visible {
     color: var(--accent);
     outline: none;
 }
 
-.article-pager-label,
-.article-related-kicker {
+.article-next-kicker {
+    grid-column: 1 / -1;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
@@ -1470,41 +1465,15 @@
     color: var(--accent);
 }
 
-.article-pager-title {
-    font-family: var(--font-sans);
-    font-size: clamp(0.9375rem, 1vw, 1.0625rem);
-    line-height: 1.35;
-    font-weight: 800;
-    letter-spacing: 0;
-    max-inline-size: 24rem;
-}
-
-.article-pager-date {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    color: var(--text-muted);
-}
-
-.article-related {
-    min-inline-size: 0;
-}
-
-.article-related-link {
-    display: grid;
-    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 1rem;
-    padding-block: 0.875rem 1rem;
-    transition: color 140ms ease;
-}
-
-.article-related-body {
+.article-next-body {
+    grid-column: 1;
+    grid-row: 2;
     min-inline-size: 0;
     display: grid;
     gap: 0.375rem;
 }
 
-.article-related-heading {
+.article-next-context {
     display: block;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
@@ -1514,7 +1483,7 @@
     color: var(--text-muted);
 }
 
-.article-related-title {
+.article-next-title {
     font-family: var(--font-sans);
     font-size: clamp(1rem, 1.15vw, 1.125rem);
     line-height: 1.3;
@@ -1522,13 +1491,13 @@
     letter-spacing: 0;
 }
 
-.article-related-chips {
+.article-next-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
 }
 
-.article-related-chip {
+.article-next-chip {
     display: inline-flex;
     align-items: center;
     min-block-size: 1.375rem;
@@ -1543,12 +1512,14 @@
     line-height: 1;
 }
 
-.article-related-chip-category {
+.article-next-chip-category {
     border-color: color-mix(in oklab, var(--accent) 48%, var(--border-subtle));
     color: var(--accent);
 }
 
-.article-related-arrow {
+.article-next-arrow {
+    grid-column: 2;
+    grid-row: 2;
     inline-size: 2rem;
     block-size: 2rem;
     display: inline-flex;
@@ -1565,40 +1536,39 @@
     transition: transform 140ms ease, box-shadow 140ms ease;
 }
 
-.article-related-link:hover .article-related-arrow,
-.article-related-link:focus-visible .article-related-arrow {
+.article-next-card:hover .article-next-arrow,
+.article-next-card:focus-visible .article-next-arrow {
     transform: translate(-1px, -1px);
     box-shadow: 3px 3px 0 var(--text-1);
 }
 
-@media (max-width: 42rem) {
-    .article-pager {
-        grid-template-columns: 1fr;
-        border-block-end: 1px solid var(--border-subtle);
+@supports (content-visibility: auto) {
+    .article-nextup,
+    .discord-widget,
+    .auteurs-product-stamp,
+    .article :where(figure, pre, blockquote) {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 24rem;
     }
 
-    .article-pager-card + .article-pager-card {
+    .article-nextup {
+        contain-intrinsic-size: auto 18rem;
+    }
+}
+
+@media (max-width: 42rem) {
+    .article-next-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .article-next-card + .article-next-card {
         border-inline-start: 0;
         border-block-start: 1px solid var(--border-subtle);
         padding-inline-start: 0;
     }
 
-    .article-pager-card-prev {
+    .article-next-card:first-child {
         padding-inline-end: 0;
-    }
-
-    .article-pager-card-next {
-        align-items: flex-start;
-        text-align: start;
-    }
-
-    .article-related-link {
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 0.75rem;
-    }
-
-    .article-related-kicker {
-        grid-column: 1 / -1;
     }
 }
 

@@ -624,6 +624,36 @@
         font-family: var(--font-display);
     }
 
+    .skip-link {
+        position: fixed;
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        z-index: 10000;
+        padding: 0.625rem 0.875rem;
+        border: 2px solid var(--text-1);
+        background: var(--surface-1);
+        color: var(--text-1);
+        box-shadow: 3px 3px 0 var(--text-1);
+        font-family: var(--font-mono);
+        font-size: 0.875rem;
+        font-weight: 900;
+        line-height: 1;
+        text-decoration: none;
+        text-transform: uppercase;
+        transform: translateY(-150%);
+        transition: transform 140ms ease;
+    }
+
+    .skip-link:focus-visible {
+        transform: translateY(0);
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+    }
+
+    #main:focus {
+        outline: none;
+    }
+
     /* Page Visibility experience parks the marquees when the tab is hidden.
      * Network Information sets a "slow" data-attr that does the same on
      * slow connections. */
@@ -632,12 +662,42 @@
         animation-play-state: paused;
     }
 
+    @media (prefers-reduced-data: reduce) {
+        body {
+            background-image: none;
+            background-attachment: scroll;
+        }
+
+        .marquee-track,
+        .discovery-toast,
+        .api-receipt-panel {
+            animation: none !important;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
             scroll-behavior: auto !important;
+        }
+    }
+
+    @media (prefers-contrast: more) {
+        :where(a, button, summary):focus-visible {
+            outline-width: 3px;
+            outline-offset: 3px;
+        }
+    }
+
+    @media (forced-colors: active) {
+        body {
+            background-image: none;
+        }
+
+        :where(a, button, summary):focus-visible {
+            outline: 2px solid CanvasText;
         }
     }
 }
