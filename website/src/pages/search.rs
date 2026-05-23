@@ -9,7 +9,7 @@ use serde::Deserialize;
 use super::{
     GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, nav_icon_discord, nav_icon_folder, nav_icon_github,
     render_dev_meta, render_global_search, render_nav_search_toggle, render_resource_hints,
-    render_sitemap_link, render_theme_sfx_urls,
+    render_sfx_urls, render_sitemap_link,
 };
 use crate::AppState;
 use crate::asset_url;
@@ -148,8 +148,10 @@ fn render_page(
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/search.css") } />
                 <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_theme_sfx_urls() }
+                { render_sfx_urls() }
+                <script src={ asset_url("js/audio.js") } defer></script>
                 <script src={ asset_url("js/search.js") } defer></script>
+                <script src={ asset_url("js/search-keyclick.js") } defer></script>
                 <script src={ asset_url("js/popover-registry.js") } defer></script>
                 <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>

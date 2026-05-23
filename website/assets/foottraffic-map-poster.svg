@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Project FootTraffic regional map poster</title>
+  <desc id="desc">A stylized loading poster showing operator pins in Portland, Los Angeles, Austin, and Detroit.</desc>
+  <defs>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#d7d9e5" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="8" dy="8" stdDeviation="0" flood-color="#11111b" flood-opacity="0.26"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="675" fill="#eff1f5"/>
+  <rect width="1200" height="675" fill="url(#grid)" opacity="0.8"/>
+  <path d="M181 243 244 194l118-22 132 28 105-13 113 35 130 6 106 48 83 12 44 58-32 67-79 35-44 56-128 25-107-11-111 28-128-10-100 29-98-47-75 6-48-66 28-88-52-55Z" fill="#ccd1e3" stroke="#11111b" stroke-width="5" stroke-linejoin="round" filter="url(#shadow)"/>
+  <path d="M244 194 337 303l74 110 83-213M599 187 574 413l111 105M712 222 694 398l98 131M948 276 840 393l80 111" fill="none" stroke="#8c8fa1" stroke-width="3" stroke-dasharray="10 10" opacity="0.85"/>
+  <g fill="#e64553" stroke="#11111b" stroke-width="5">
+    <circle cx="227" cy="208" r="18"/>
+    <circle cx="338" cy="415" r="18"/>
+    <circle cx="618" cy="470" r="18"/>
+    <circle cx="924" cy="293" r="18"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="800" fill="#11111b" font-size="26" letter-spacing="0">
+    <text x="255" y="216">Portland</text>
+    <text x="366" y="423">Los Angeles</text>
+    <text x="646" y="478">Austin</text>
+    <text x="952" y="301">Detroit</text>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#4c4f69">
+    <text x="64" y="84" font-size="48" font-weight="900" letter-spacing="0">PROJECT FOOTTRAFFIC</text>
+    <text x="68" y="126" font-size="20" font-weight="700" letter-spacing="0">regional operator map loading</text>
+  </g>
+  <path d="M68 574h1064" stroke="#11111b" stroke-width="5"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" fill="#4c4f69" font-size="18" font-weight="700">
+    <text x="68" y="618">platform / core services / product</text>
+    <text x="802" y="618">pins + radius overlays ready</text>
+  </g>
+</svg>

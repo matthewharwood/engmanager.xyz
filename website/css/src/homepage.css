@@ -250,6 +250,91 @@ body[data-dragging="true"] {
     border-radius: 1rem;
 }
 
+.home-keyboard {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: calc(100% + 0.65rem);
+    z-index: 84;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.65rem;
+    background:
+        repeating-linear-gradient(
+            -45deg,
+            color-mix(in oklab, var(--accent) 16%, var(--ctp-base)),
+            color-mix(in oklab, var(--accent) 16%, var(--ctp-base)) 0.45rem,
+            var(--ctp-base) 0.45rem,
+            var(--ctp-base) 0.9rem
+        );
+    border: 0.12em solid var(--ctp-text);
+    border-radius: 1.1rem;
+    box-shadow: 0.35rem 0.35rem 0 0 var(--ctp-text);
+}
+
+.home-keyboard[hidden] {
+    display: none;
+}
+
+.home-keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.home-key {
+    flex: 1 1 0;
+    min-inline-size: 2.2rem;
+    min-block-size: 2.35rem;
+    padding: 0.35rem 0.45rem;
+    appearance: none;
+    color: var(--ctp-text);
+    background: var(--ctp-base);
+    border: 0.1em solid var(--ctp-text);
+    border-radius: 0.45rem;
+    box-shadow: 0.16rem 0.16rem 0 0 var(--ctp-text);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    touch-action: manipulation;
+    transition: transform 80ms ease, box-shadow 80ms ease, background-color 80ms ease;
+}
+
+.home-key-wide {
+    flex-grow: 2.2;
+}
+
+.home-key-accent {
+    color: var(--ctp-base);
+    background: var(--accent);
+}
+
+.home-key:hover,
+.home-key:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 0.22rem 0.22rem 0 0 var(--ctp-text);
+    outline: none;
+}
+
+.home-key:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--ctp-text);
+}
+
+@media (max-width: 47.99rem), (hover: none), (pointer: coarse) {
+    .home-keyboard {
+        display: none;
+    }
+}
+
+@media (min-width: 48rem) and (hover: hover) and (pointer: fine) {
+    .home-search[data-keyboard-open="true"] .home-search-results {
+        inset-block-end: calc(100% + 13rem);
+    }
+}
+
 /* Lift every fixed-bottom piece of chrome above the floating bar so
  * nothing overlaps. All read the same variable triad — retune the bar
  * and everything else follows. */

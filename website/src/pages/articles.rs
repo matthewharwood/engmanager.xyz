@@ -12,7 +12,7 @@ use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
     nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
     render_global_search, render_nav_search_toggle, render_quick_actions, render_resource_hints,
-    render_sitemap_link, render_theme_sfx_urls,
+    render_sfx_urls, render_sitemap_link,
 };
 use crate::asset_url;
 
@@ -281,6 +281,23 @@ pub struct Article {
 }
 
 const ARTICLE_LIST: &[Article] = &[
+    Article {
+        slug: "project-foottraffic",
+        title: "Project FootTraffic: A Real Estate Boom for Small Business",
+        title_alias: None,
+        date: ArticleDate::new(2026, 5, 23),
+        summary: "A startup sketch for turning local plazas into destinations: AI-assisted service design, regional operators, and a compounding platform funded one small business at a time.",
+        indexed: true,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::Workflow,
+            Tag::Solopreneur,
+            Tag::LocalFirst,
+            Tag::DeveloperTooling,
+            Tag::Community,
+        ],
+    },
     Article {
         slug: "talking-not-typing",
         title: "I Ship Sites By Talking, Not Typing",
@@ -683,7 +700,43 @@ fn render_articles_dropdown() -> HtmlFragment {
     }
 }
 
-fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
+#[derive(Clone, Copy)]
+struct ArticlePageAssets {
+    region_map: bool,
+}
+
+impl ArticlePageAssets {
+    const NONE: Self = Self { region_map: false };
+
+    fn for_slug(slug: &str) -> Self {
+        match slug {
+            "project-foottraffic" => Self { region_map: true },
+            _ => Self::NONE,
+        }
+    }
+}
+
+fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
+    if !assets.region_map {
+        return HtmlFragment::empty();
+    }
+
+    view! {
+        <link rel="preconnect" href="https://unpkg.com" />
+        <link rel="preconnect" href="https://tile.openstreetmap.org" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+        <script src={ asset_url("js/region-map.js") } defer></script>
+    }
+}
+
+fn layout(
+    title: &str,
+    body: HtmlFragment,
+    indexed: bool,
+    page_assets: ArticlePageAssets,
+) -> HtmlFragment {
     let robots_meta = if indexed {
         HtmlFragment::empty()
     } else {
@@ -708,11 +761,14 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
                 <link rel="stylesheet" href={ asset_url("css/comments.css") } />
+                { render_article_page_assets(page_assets) }
                 <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_theme_sfx_urls() }
+                { render_sfx_urls() }
+                <script src={ asset_url("js/audio.js") } defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
                 <script src={ asset_url("js/search.js") } defer></script>
+                <script src={ asset_url("js/search-keyclick.js") } defer></script>
                 <script src={ asset_url("js/copy-code.js") } defer></script>
                 <script src={ asset_url("js/auteurs-shader.js") } defer></script>
                 <script src={ asset_url("js/comments.js") } defer></script>
@@ -800,7 +856,15 @@ pub async fn index() -> Html<String> {
         </section>
     };
 
-    Html(layout("Articles · engmanager.xyz", body, true).into_string())
+    Html(
+        layout(
+            "Articles · engmanager.xyz",
+            body,
+            true,
+            ArticlePageAssets::NONE,
+        )
+        .into_string(),
+    )
 }
 
 fn render_article_navigation(current_index: usize) -> HtmlFragment {
@@ -878,6 +942,7 @@ fn render_article_topic_chips(article: &Article) -> HtmlFragment {
 // widget HTML at render time. Pulldown-cmark passes raw HTML blocks
 // through verbatim, so the comment survives Markdown rendering.
 const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
+const FOOTTRAFFIC_MAP_SENTINEL: &str = "<!--foottraffic-map-->";
 
 pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode> {
     let article = ARTICLES.iter().position(|a| a.slug == slug);
@@ -889,10 +954,12 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let (inner, headings) =
                 article_body(&slug).unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
             let inner = splice_discord_widget(&slug, inner).await;
+            let inner = splice_foottraffic_map(&slug, inner);
             let toc = render_toc(&headings);
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
+            let page_assets = ArticlePageAssets::for_slug(&slug);
             let body = view! {
                 <article id="main"
                          class="article"
@@ -939,7 +1006,9 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                 </section>
                 { toc }
             };
-            Ok(Html(layout(page_title, body, a.indexed).into_string()))
+            Ok(Html(
+                layout(page_title, body, a.indexed, page_assets).into_string(),
+            ))
         }
         None => Err(StatusCode::NOT_FOUND),
     }
@@ -960,6 +1029,99 @@ async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
         _ => String::new(),
     };
     HtmlFragment::new(body_str.replace(DISCORD_WIDGET_SENTINEL, &replacement))
+}
+
+fn splice_foottraffic_map(slug: &str, body: HtmlFragment) -> HtmlFragment {
+    let body_str = body.as_str();
+    if !body_str.contains(FOOTTRAFFIC_MAP_SENTINEL) {
+        return body;
+    }
+    let replacement = if slug == "project-foottraffic" {
+        render_foottraffic_map().into_string()
+    } else {
+        String::new()
+    };
+    HtmlFragment::new(body_str.replace(FOOTTRAFFIC_MAP_SENTINEL, &replacement))
+}
+
+fn render_foottraffic_map() -> HtmlFragment {
+    let config = r#"{
+  "label": "Project FootTraffic regional operators",
+  "center": [39.8283, -98.5795],
+  "zoom": 4,
+  "minZoom": 3,
+  "maxZoom": 12,
+  "pins": [
+    {
+      "name": "Matthew",
+      "role": "Portland operator",
+      "city": "Portland, Oregon",
+      "coords": [45.5152, -122.6784],
+      "radiusMiles": 160
+    },
+    {
+      "name": "Marcus",
+      "role": "LA operator",
+      "city": "Los Angeles, California",
+      "coords": [34.0522, -118.2437],
+      "radiusMiles": 180
+    },
+    {
+      "name": "Jason",
+      "role": "Austin operator",
+      "city": "Austin, Texas",
+      "coords": [30.2672, -97.7431],
+      "radiusMiles": 170
+    },
+    {
+      "name": "Alex",
+      "role": "Detroit operator",
+      "city": "Detroit, Michigan",
+      "coords": [42.3314, -83.0458],
+      "radiusMiles": 160
+    }
+  ]
+}"#;
+
+    view! {
+        <figure class="region-map" data-region-map aria-labelledby="foottraffic-map-title">
+            <div class="region-map-copy">
+                <h2 id="foottraffic-map-title">"Regional Operator Map"</h2>
+                <p>
+                    "A first pass at the territory model: one operator per region, with the same map module ready for later heat-map and blast-radius layers."
+                </p>
+            </div>
+            <div class="region-map-shell">
+                <div class="region-map-canvas"
+                     data-region-map-canvas
+                     role="application"
+                     tabindex="0"
+                     aria-label="Interactive map of Project FootTraffic operators"></div>
+                <div class="region-map-poster" data-region-map-poster>
+                    <img src={ asset_url("foottraffic-map-poster.svg") }
+                         alt=""
+                         width="1200"
+                         height="675"
+                         loading="eager"
+                         decoding="async" />
+                    <div class="region-map-status" data-region-map-status role="status">
+                        "Loading interactive map"
+                    </div>
+                </div>
+            </div>
+            <figcaption>
+                "Pins show Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
+            </figcaption>
+            <script type="application/json" data-region-map-config>
+                { HtmlFragment::new(config.to_string()) }
+            </script>
+            <noscript>
+                <p>
+                    "Map locations: Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
+                </p>
+            </noscript>
+        </figure>
+    }
 }
 
 // A heading destined for the on-this-page sidebar.
