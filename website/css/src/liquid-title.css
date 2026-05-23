@@ -1,0 +1,176 @@
+.liquid-title-defs {
+    block-size: 0;
+    inline-size: 0;
+    position: absolute;
+}
+
+.liquid-title {
+    --liquid-title-primary: var(--accent);
+    --liquid-title-secondary: var(--ctp-sky);
+    --liquid-title-tertiary: var(--ctp-mauve);
+    --liquid-title-depth: var(--ctp-crust);
+    --liquid-title-glow: color-mix(in oklab, var(--accent) 36%, transparent);
+    isolation: isolate;
+    position: relative;
+    text-rendering: geometricPrecision;
+    transform: translateZ(0);
+    will-change: filter, text-shadow;
+}
+
+.article-title.liquid-title {
+    cursor: default;
+    display: block;
+}
+
+.article-title.liquid-title::before,
+.article-title.liquid-title::after {
+    color: var(--liquid-title-primary);
+    content: attr(data-liquid-title-text);
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    text-transform: inherit;
+    transition: opacity 120ms ease;
+}
+
+.article-title.liquid-title::before {
+    color: var(--liquid-title-secondary);
+    mix-blend-mode: screen;
+}
+
+.article-title.liquid-title::after {
+    color: var(--liquid-title-tertiary);
+    mix-blend-mode: multiply;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .article-title.liquid-title:hover,
+    .article-title.liquid-title:focus-visible {
+        animation: liquid-title-refract 1.7s linear infinite;
+        filter: var(--liquid-title-filter, none);
+        text-shadow:
+            0.035em 0 var(--liquid-title-secondary),
+            -0.03em 0 var(--liquid-title-tertiary),
+            0 0 0.65em var(--liquid-title-glow);
+    }
+
+    .article-title.liquid-title:hover::before,
+    .article-title.liquid-title:focus-visible::before {
+        animation: liquid-title-shear-a 1.35s ease-in-out infinite;
+        opacity: 0.34;
+    }
+
+    .article-title.liquid-title:hover::after,
+    .article-title.liquid-title:focus-visible::after {
+        animation: liquid-title-shear-b 1.55s ease-in-out infinite;
+        opacity: 0.22;
+    }
+}
+
+.liquid-title-always .liquid-title-svg {
+    filter: var(--liquid-title-filter, none);
+    overflow: visible;
+}
+
+.liquid-title-always .liquid-title-svg-main {
+    fill: var(--liquid-title-primary);
+}
+
+.liquid-title-always .liquid-title-svg-copy {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.liquid-title-always .liquid-title-svg-copy-a {
+    animation: liquid-title-shear-a 1.35s ease-in-out infinite;
+    fill: var(--liquid-title-secondary);
+    mix-blend-mode: screen;
+    opacity: 0.34;
+}
+
+.liquid-title-always .liquid-title-svg-copy-b {
+    animation: liquid-title-shear-b 1.55s ease-in-out infinite;
+    fill: var(--liquid-title-tertiary);
+    mix-blend-mode: multiply;
+    opacity: 0.24;
+}
+
+@keyframes liquid-title-refract {
+    0% {
+        text-shadow:
+            0.03em 0 var(--liquid-title-secondary),
+            -0.025em 0 var(--liquid-title-tertiary),
+            0 0 0.48em var(--liquid-title-glow);
+    }
+    28% {
+        text-shadow:
+            -0.018em 0.008em var(--liquid-title-secondary),
+            0.038em -0.006em var(--liquid-title-tertiary),
+            0 0 0.8em var(--liquid-title-glow);
+    }
+    54% {
+        text-shadow:
+            0.044em -0.006em var(--liquid-title-secondary),
+            -0.012em 0.012em var(--liquid-title-tertiary),
+            0 0 0.55em var(--liquid-title-glow);
+    }
+    78% {
+        text-shadow:
+            -0.026em -0.008em var(--liquid-title-secondary),
+            0.024em 0.01em var(--liquid-title-tertiary),
+            0 0 0.72em var(--liquid-title-glow);
+    }
+    100% {
+        text-shadow:
+            0.03em 0 var(--liquid-title-secondary),
+            -0.025em 0 var(--liquid-title-tertiary),
+            0 0 0.48em var(--liquid-title-glow);
+    }
+}
+
+@keyframes liquid-title-shear-a {
+    0%, 100% {
+        clip-path: inset(0 0 66% 0);
+        transform: translate3d(-0.018em, -0.01em, 0) skewX(-2deg);
+    }
+    33% {
+        clip-path: inset(22% 0 38% 0);
+        transform: translate3d(0.028em, 0.006em, 0) skewX(3deg);
+    }
+    66% {
+        clip-path: inset(54% 0 8% 0);
+        transform: translate3d(-0.032em, 0.012em, 0) skewX(-4deg);
+    }
+}
+
+@keyframes liquid-title-shear-b {
+    0%, 100% {
+        clip-path: inset(58% 0 12% 0);
+        transform: translate3d(0.02em, 0.012em, 0) skewX(4deg);
+    }
+    42% {
+        clip-path: inset(8% 0 64% 0);
+        transform: translate3d(-0.026em, -0.008em, 0) skewX(-3deg);
+    }
+    72% {
+        clip-path: inset(28% 0 34% 0);
+        transform: translate3d(0.034em, 0.004em, 0) skewX(2deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .article-title.liquid-title:hover,
+    .article-title.liquid-title:focus-visible,
+    .article-title.liquid-title:hover::before,
+    .article-title.liquid-title:focus-visible::before,
+    .article-title.liquid-title:hover::after,
+    .article-title.liquid-title:focus-visible::after,
+    .liquid-title-always .liquid-title-svg-copy {
+        animation: none;
+    }
+
+    .liquid-title-always .liquid-title-svg {
+        filter: none;
+    }
+}
