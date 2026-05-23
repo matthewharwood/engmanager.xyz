@@ -112,7 +112,12 @@ function discover(id) {
 
 function refreshChip() {
     const chipCount = document.querySelector("[data-hunt-chip-count]");
-    if (chipCount) chipCount.textContent = String(discoveries.size);
+    if (!chipCount) return;
+    const value = String(discoveries.size);
+    chipCount.textContent = value;
+    // Mirror the count into the attribute value so CSS can dim the
+    // badge when nothing has been discovered yet.
+    chipCount.dataset.huntChipCount = value;
 }
 
 // Background-priority scheduler with rIC fallback.
@@ -330,6 +335,243 @@ function printReceipt() {
     console.groupEnd();
 }
 
+const DISCOVERY_GUIDES = {
+    "background-tasks": {
+        hint: "Move once, then let the tab sit still for 30 seconds.",
+        answer: "You idled after interacting; the background chore clocked in.",
+    },
+    "broadcast-channel": {
+        hint: "Open the homepage twice, then mark an article in one tab.",
+        answer: "Another tab heard the visited-article broadcast.",
+    },
+    "channel-messaging": {
+        hint: "Triple-click the receipt glyph. The little sigil has a stash.",
+        answer: "The receipt glyph spilled its hidden message-channel bundle.",
+    },
+    "compression-streams": {
+        hint: "Triple-click the receipt glyph; it likes compact secrets.",
+        answer: "The glyph stash unlocked the compression helper clue.",
+    },
+    "css-custom-highlight": {
+        hint: "On an article, select a word that appears more than once.",
+        answer: "Your selection echoed across matching words.",
+    },
+    "cssom-view": {
+        hint: "Resize the window after the page settles.",
+        answer: "The viewport moved; CSSOM View noticed.",
+    },
+    "encoding": {
+        hint: "Triple-click the receipt glyph. Tiny text becomes bytes.",
+        answer: "The glyph stash revealed the byte counter.",
+    },
+    "eyedropper": {
+        hint: "On an article, tap the dropper in the toolbar.",
+        answer: "You sampled a color and bent the accent to it.",
+    },
+    "fetch": {
+        hint: "Hover an article or nav link; the site sniffs ahead.",
+        answer: "A hover-prefetch pulled the thread.",
+    },
+    "fullscreen": {
+        hint: "On an article, hit the fullscreen tool.",
+        answer: "The article went big-screen.",
+    },
+    "html-drag-and-drop": {
+        hint: "Drag the floating avatar and leave it somewhere rude.",
+        answer: "You dragged the avatar into a new corner.",
+    },
+    "html-sanitizer": {
+        hint: "Triple-click the receipt glyph. It cleans up nicely.",
+        answer: "The glyph stash exposed the sanitizer probe.",
+    },
+    "intersection-observer": {
+        hint: "Scroll past the deep marker. Keep going.",
+        answer: "You crossed the scroll tripwire.",
+    },
+    "invoker-commands": {
+        hint: "Enter the old-school code: up up down down left right left right B A.",
+        answer: "The Konami route opened the command cabinet.",
+    },
+    "keyboard": {
+        hint: "Press ? anywhere outside a form field.",
+        answer: "You opened the receipt from the keyboard.",
+    },
+    "page-visibility": {
+        hint: "Switch away from the tab, then come back.",
+        answer: "You vanished from the page and returned.",
+    },
+    "pointer-events": {
+        hint: "Triple-click anywhere, or long-press on touch.",
+        answer: "Three quick clicks woke the pointer stack.",
+    },
+    "popover": {
+        hint: "Press ? or poke the receipt chip.",
+        answer: "This popover receipt is the scene of the crime.",
+    },
+    "prioritized-task-scheduling": {
+        hint: "Interact once, then let the tab breathe for 30 seconds.",
+        answer: "The post-interaction idle task got scheduled.",
+    },
+    "reporting": {
+        hint: "Enter the Konami code. Yes, that one.",
+        answer: "The Konami route revealed the reporting shelf.",
+    },
+    "resize-observer": {
+        hint: "Resize the window after the page settles.",
+        answer: "The layout watcher caught the resize.",
+    },
+    "screen-wake-lock": {
+        hint: "Read 30% down an article. Commitment has perks.",
+        answer: "The reader lock kept the screen awake.",
+    },
+    "selection": {
+        hint: "On an article, highlight a repeat word.",
+        answer: "Your selected text became the signal.",
+    },
+    "speculation-rules": {
+        hint: "Hover article links or navigate between pages.",
+        answer: "The page peeked ahead before you arrived.",
+    },
+    "touch-events": {
+        hint: "On a touch screen, long-press the page.",
+        answer: "A long press on glass found it.",
+    },
+    "trusted-types": {
+        hint: "Enter the Konami code; the safety gear is hidden there.",
+        answer: "The Konami route checked the trusted-types lock.",
+    },
+    "ui-events": {
+        hint: "Triple-click anywhere. Loudly enough for the DOM to hear.",
+        answer: "A click streak lit up the UI event trail.",
+    },
+    "url-fragment-text-directives": {
+        hint: "Find an article quote and tap Share quote.",
+        answer: "You minted a link straight to the quote.",
+    },
+    "vibration": {
+        hint: "Tap a homepage article check on a device that can buzz.",
+        answer: "The checkbox gave a tiny haptic nod.",
+    },
+    "view-transition": {
+        hint: "Navigate between pages; let the scene swap do its trick.",
+        answer: "A page transition carried you across.",
+    },
+    "web-audio": {
+        hint: "Tap the first homepage article check and listen close.",
+        answer: "The checkbox chirped a tiny square-wave beep.",
+    },
+    "web-crypto": {
+        hint: "Triple-click the receipt glyph, or inspect an article hash.",
+        answer: "The glyph stash revealed the crypto hash work.",
+    },
+    "web-locks": {
+        hint: "Triple-click the receipt glyph. This one likes exclusivity.",
+        answer: "The glyph stash showed the brief init lock.",
+    },
+    "web-share": {
+        hint: "On an article, tap the share tool.",
+        answer: "The native share sheet opened from the article.",
+    },
+    "web-speech": {
+        hint: "On an article, hit Read aloud.",
+        answer: "The browser started narrating the article.",
+    },
+    "web-workers": {
+        hint: "Triple-click the receipt glyph, then look for hash work.",
+        answer: "The glyph stash pointed at the hash worker.",
+    },
+};
+
+const DISCOVERY_GROUP_GUIDES = {
+    background: {
+        hint: (name) => `Look behind the page: ${name} hides in background support.`,
+        answer: (name) => `The background probe found ${name} waiting backstage.`,
+    },
+    device: {
+        hint: (name) => `Bring the right device/browser; ${name} lives in hardware tells.`,
+        answer: (name) => `The device probe spotted ${name} in the cabinet.`,
+    },
+    graphics: {
+        hint: (name) => `Watch the surface: ${name} is tucked into paint, layout, or motion.`,
+        answer: (name) => `The visual layer gave up ${name}.`,
+    },
+    hardware: {
+        hint: (name) => `Hardware shelf: ${name} appears only when the browser exposes it.`,
+        answer: (name) => `The hardware probe saw ${name}; no scary prompt fired.`,
+    },
+    input: {
+        hint: (name) => `Hands on the page: click, type, select, drag, or tap for ${name}.`,
+        answer: (name) => `Your input trail led to ${name}.`,
+    },
+    media: {
+        hint: (name) => `Media shelf: ${name} shows up around sound, canvas, video, or voice.`,
+        answer: (name) => `The media probe caught ${name} in the stack.`,
+    },
+    meta: {
+        hint: (name) => `Site machinery: ${name} is tucked into receipts, popovers, or navigation.`,
+        answer: (name) => `The site machinery exposed ${name}.`,
+    },
+    network: {
+        hint: (name) => `Follow the URLs: ${name} hides in links, requests, and exits.`,
+        answer: (name) => `The network trail led to ${name}.`,
+    },
+    privacy: {
+        hint: (name) => `Privacy vault: ${name} is support-checked, not poked.`,
+        answer: (name) => `The privacy probe found ${name} without opening the vault.`,
+    },
+    pwa: {
+        hint: (name) => `App-shell shelf: ${name} lights up in install-minded browsers.`,
+        answer: (name) => `The PWA probe found ${name} in the app shell.`,
+    },
+    security: {
+        hint: (name) => `Security drawer: ${name} appears in hashes, policies, or credentials.`,
+        answer: (name) => `The security probe found ${name} locked and labeled.`,
+    },
+    storage: {
+        hint: (name) => `State stash: ${name} hides where visits and preferences stick.`,
+        answer: (name) => `The storage stash gave up ${name}.`,
+    },
+};
+
+function apiGuideName(entry) {
+    return entry.name
+        .replace(/\s*\([^)]*\)/g, "")
+        .replace(/\s+API$/i, "")
+        .replace(/\s+APIs$/i, "")
+        .trim();
+}
+
+function discoveryGuideFor(entry) {
+    const exact = DISCOVERY_GUIDES[entry.id];
+    if (exact) return exact;
+    const fallback = DISCOVERY_GROUP_GUIDES[entry.group] || DISCOVERY_GROUP_GUIDES.meta;
+    const name = apiGuideName(entry);
+    return {
+        hint: fallback.hint(name),
+        answer: fallback.answer(name),
+    };
+}
+
+function renderGuideButton(entry) {
+    const guide = discoveryGuideFor(entry);
+    const tooltipId = `api-hint-${entry.id}`;
+    const ariaLabel = entry.discovered
+        ? `Hint for ${entry.name}. ${guide.hint} Answer: ${guide.answer}`
+        : `Hint for ${entry.name}. ${guide.hint}`;
+    const answer = entry.discovered
+        ? `<span class="api-cell-tooltip-label">Answer</span>` +
+          `<span class="api-cell-tooltip-text">${escape(guide.answer)}</span>`
+        : "";
+    return `<button class="api-cell-hint" type="button" ` +
+        `aria-label="${escape(ariaLabel)}" aria-describedby="${escape(tooltipId)}">` +
+        `<span aria-hidden="true">?</span>` +
+        `<span class="api-cell-tooltip" role="tooltip" id="${escape(tooltipId)}">` +
+        `<span class="api-cell-tooltip-label">Hint</span>` +
+        `<span class="api-cell-tooltip-text">${escape(guide.hint)}</span>` +
+        answer +
+        `</span></button>`;
+}
+
 // Renders the brutalist on-page receipt modal (Popover API). Triggered
 // by pressing `?` anywhere on the page. The modal lives in both layouts
 // at #api-receipt-modal and is populated by this function.
@@ -377,7 +619,8 @@ function renderReceiptModal() {
                     `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" ` +
                     `stroke-width="3" stroke-linecap="round" stroke-linejoin="round">` +
                     `<path d="M3 8 L7 12 L13 4"/></svg></span>`;
-                return `<li class="${cls}"><div class="api-cell-row">${check}` +
+                return `<li class="${cls}" data-api-id="${escape(e.id)}">` +
+                    `${renderGuideButton(e)}<div class="api-cell-row">${check}` +
                     `<span class="api-cell-name">${escape(e.name)}</span></div>` +
                     `${lines ? `<span class="api-cell-meta">${escape(lines)}</span>` : ""}</li>`;
             })
@@ -2524,26 +2767,13 @@ register({
 // Scavenger hunt hooks.
 //
 // Quiet, discoverable interactions scattered across the site. Each one
-// awards one or more API discoveries. Some lean on hidden gestures
-// (konami, triple-click, long-press), others reward natural browsing
-// (resize, idle, tab-switch). Auto-discoveries at the end mark the
-// APIs the page itself exercises without any user gesture.
+// awards one or more API discoveries only after the reader does
+// something: a hidden gesture, real browsing, navigation, or a tool click.
+// The page can exercise APIs on boot for the receipt, but first-load
+// activity must not count as scavenger-hunt progress.
 // =============================================================================
 
 function mountScavengerHooks() {
-    // Auto-discover the always-on APIs that the page exercises by
-    // simply existing. These are "found" the moment a reader loads
-    // the site — they shouldn't require gesture.
-    const autoDiscover = [
-        "console", "dom", "html-dom", "url", "history",
-        "performance", "svg", "geometry-interfaces", "streams",
-        "cssom", "cssom-view", "intersection-observer",
-        "resize-observer", "css-font-loading", "view-transition",
-        "web-animations", "web-storage", "ui-events", "fetch",
-        "popover", "web-components", "selection",
-    ];
-    autoDiscover.forEach(discover);
-
     // ── Konami code ──────────────────────────────────────────────
     // ↑ ↑ ↓ ↓ ← → ← → B A  ⇒ discovers Keyboard API + Trusted Types
     // + Reporting + Invoker Commands (the keyboard handler is the
@@ -2575,11 +2805,11 @@ function mountScavengerHooks() {
     });
 
     // ── Triple-click anywhere ────────────────────────────────────
-    // Discovers Pointer Events + UI Events (both already auto, but
-    // double-mark is fine — discover() is idempotent).
+    // Discovers Pointer Events + UI Events.
     let clickStreak = 0;
     let clickResetTimer = null;
-    document.addEventListener("click", () => {
+    document.addEventListener("click", (event) => {
+        if (event.target.closest(".api-cell-hint")) return;
         clickStreak++;
         clearTimeout(clickResetTimer);
         clickResetTimer = setTimeout(() => (clickStreak = 0), 400);
@@ -2608,11 +2838,20 @@ function mountScavengerHooks() {
     // ── Resize the window ────────────────────────────────────────
     // Discovers Resize Observer + CSSOM view (visualViewport reads).
     let resizeFlag = false;
+    let resizeReady = false;
+    let lastViewportSize = `${window.innerWidth}x${window.innerHeight}`;
+    setTimeout(() => (resizeReady = true), 1000);
     window.addEventListener(
         "resize",
         () => {
+            const nextViewportSize = `${window.innerWidth}x${window.innerHeight}`;
+            if (!resizeReady || nextViewportSize === lastViewportSize) {
+                lastViewportSize = nextViewportSize;
+                return;
+            }
             if (resizeFlag) return;
             resizeFlag = true;
+            lastViewportSize = nextViewportSize;
             discover("resize-observer");
             discover("cssom-view");
         },
@@ -2626,22 +2865,21 @@ function mountScavengerHooks() {
         discover("page-visibility");
     });
 
-    // ── Idle for 30 seconds ──────────────────────────────────────
-    // Discovers Background Tasks + Prioritized Task Scheduling.
-    let idleTimer = setTimeout(() => {
-        discover("background-tasks");
-        discover("prioritized-task-scheduling");
-    }, 30_000);
-    ["pointermove", "keydown", "scroll"].forEach((type) =>
+    // ── Idle after interaction ───────────────────────────────────
+    // Discovers Background Tasks + Prioritized Task Scheduling once
+    // the reader has actually browsed or interacted, then pauses.
+    let idleTimer = null;
+    const scheduleIdleDiscovery = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            discover("background-tasks");
+            discover("prioritized-task-scheduling");
+        }, 30_000);
+    };
+    ["pointermove", "keydown", "scroll", "click"].forEach((type) =>
         window.addEventListener(
             type,
-            () => {
-                clearTimeout(idleTimer);
-                idleTimer = setTimeout(() => {
-                    discover("background-tasks");
-                    discover("prioritized-task-scheduling");
-                }, 30_000);
-            },
+            scheduleIdleDiscovery,
             { passive: true },
         ),
     );
@@ -2660,12 +2898,13 @@ function mountScavengerHooks() {
     );
 
     // ── Cross-document navigation ─────────────────────────────────
-    // Discovers View Transition + Navigation (auto-detected via
-    // Speculation Rules prerender too).
+    // Discovers View Transition during real navigations. `pagereveal`
+    // may fire for initial presentation, so require an actual transition.
     window.addEventListener("pageswap", () => discover("view-transition"));
     window.addEventListener("pagereveal", (event) => {
+        if (!event.viewTransition) return;
         discover("view-transition");
-        if (event.viewTransition) discover("speculation-rules");
+        discover("speculation-rules");
     });
 
     // ── `?` already opens the modal (handler above). Doing it

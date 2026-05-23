@@ -9,8 +9,10 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
 use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
-    render_discovery_toasts, render_quick_actions, render_resource_hints, render_sitemap_link,
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
+    nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
+    render_global_search, render_nav_search_toggle, render_quick_actions, render_resource_hints,
+    render_sitemap_link, render_theme_sfx_urls,
 };
 use crate::asset_url;
 
@@ -77,6 +79,13 @@ impl Category {
         }
     }
 
+    pub fn from_slug(slug: &str) -> Option<Self> {
+        Self::ALL
+            .iter()
+            .copied()
+            .find(|category| category.slug() == slug)
+    }
+
     pub fn emoji(self) -> &'static str {
         match self {
             Self::EngineeringLeadership => "👔",
@@ -115,6 +124,30 @@ pub enum Tag {
 }
 
 impl Tag {
+    pub const ALL: &'static [Tag] = &[
+        Self::Ai,
+        Self::ClaudeCode,
+        Self::Rust,
+        Self::Voice,
+        Self::Mcp,
+        Self::Discord,
+        Self::Community,
+        Self::Mentorship,
+        Self::Lsp,
+        Self::TypeScript,
+        Self::DeveloperTooling,
+        Self::Macros,
+        Self::Framework,
+        Self::JsxLike,
+        Self::Workflow,
+        Self::Solopreneur,
+        Self::LocalFirst,
+        Self::Blender,
+        Self::ThreeDPrinting,
+        Self::Makerspace,
+        Self::Parenting,
+    ];
+
     pub fn label(self) -> &'static str {
         match self {
             Self::Ai => "ai",
@@ -139,6 +172,14 @@ impl Tag {
             Self::Makerspace => "makerspace",
             Self::Parenting => "parenting",
         }
+    }
+
+    pub fn slug(self) -> &'static str {
+        self.label()
+    }
+
+    pub fn from_slug(slug: &str) -> Option<Self> {
+        Self::ALL.iter().copied().find(|tag| tag.slug() == slug)
     }
 
     pub fn emoji(self) -> &'static str {
@@ -322,6 +363,16 @@ const ARTICLE_COUNT: usize = ARTICLE_LIST.len();
 
 pub fn public_articles() -> impl Iterator<Item = &'static Article> {
     ARTICLES.iter().filter(|article| article.indexed)
+}
+
+pub fn article_by_slug(slug: &str) -> Option<&'static Article> {
+    ARTICLES.iter().find(|article| article.slug == slug)
+}
+
+pub fn article_markdown(slug: &str) -> Option<String> {
+    let path = format!("{slug}.md");
+    let file = ArticleSources::get(&path)?;
+    std::str::from_utf8(&file.data).ok().map(str::to_owned)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -607,8 +658,10 @@ fn render_articles_dropdown() -> HtmlFragment {
             <button class="nav-dropdown-trigger is-current"
                     type="button"
                     aria-haspopup="true"
-                    aria-expanded="false">
-                "Articles"
+                    aria-expanded="false"
+                    aria-label="Articles">
+                { nav_icon_folder() }
+                <span class="site-nav-link-label">"Articles"</span>
                 <svg class="nav-dropdown-chevron" viewBox="0 0 10 10" aria-hidden="true">
                     <path d="M2 4 L5 7 L8 4"
                           fill="none"
@@ -654,14 +707,20 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
+                <link rel="stylesheet" href={ asset_url("css/comments.css") } />
                 <script src={ asset_url("js/theme-toggle.js") }></script>
+                { render_theme_sfx_urls() }
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+                <script src={ asset_url("js/search.js") } defer></script>
                 <script src={ asset_url("js/copy-code.js") } defer></script>
                 <script src={ asset_url("js/auteurs-shader.js") } defer></script>
+                <script src={ asset_url("js/comments.js") } defer></script>
                 <script src={ asset_url("js/toc-waypoints.js") } defer></script>
                 <script src={ asset_url("js/to-top.js") } defer></script>
+                <script src={ asset_url("js/popover-registry.js") } defer></script>
                 <script src={ asset_url("js/nav-dropdown.js") } defer></script>
+                <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
@@ -686,10 +745,18 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                              aria-hidden="true" />
                         <span class="site-nav-wordmark">"engmanager.xyz"</span>
                     </a>
+                    { render_global_search("Search") }
                     <div class="site-nav-links">
+                        { render_nav_search_toggle() }
                         { render_articles_dropdown() }
-                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">"Discord"</a>
-                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener">"GitHub"</a>
+                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
+                            { nav_icon_discord() }
+                            <span class="site-nav-link-label">"Discord"</span>
+                        </a>
+                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
+                            { nav_icon_github() }
+                            <span class="site-nav-link-label">"GitHub"</span>
+                        </a>
                     </div>
                 </nav>
                 { body }
@@ -827,7 +894,11 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
             let body = view! {
-                <article id="main" class="article" tabindex="-1">
+                <article id="main"
+                         class="article"
+                         tabindex="-1"
+                         data-commentable-article
+                         data-article-slug={ slug.clone() }>
                     <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
                     <header class="article-meta">
                         <img class="article-meta-avatar"
@@ -855,6 +926,17 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                     { inner }
                     { article_navigation }
                 </article>
+                <section class="comments-panel"
+                         id="comments"
+                         data-comments-panel
+                         data-article-slug={ slug.clone() }
+                         aria-label="Article comments">
+                    <header class="comments-panel-head">
+                        <h2>"Comments"</h2>
+                        <p>"Select text in the article to leave an inline comment."</p>
+                    </header>
+                    <div class="comments-list" data-comments-list aria-live="polite"></div>
+                </section>
                 { toc }
             };
             Ok(Html(layout(page_title, body, a.indexed).into_string()))

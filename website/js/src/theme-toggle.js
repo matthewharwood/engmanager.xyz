@@ -15,19 +15,20 @@
 
 const STORAGE_KEY = "engmanager.theme";
 
-// (slug, label) — labels are uppercase to match the brutalist
-// chip aesthetic. Order = cycle order.
+// (slug, label, emoji) — label feeds the sr-only span + aria-label so
+// AT announces the active theme; emoji is the visible glyph in the
+// circular picker button. Order = cycle order.
 const THEMES = [
-    ["auto",       "Auto"],
-    ["light",      "Light"],
-    ["dark",       "Dark"],
-    ["catppuccin", "Catppuccin"],
-    ["synthwave",  "Synthwave"],
-    ["cyberpunk",  "Cyberpunk"],
-    ["forest",     "Forest"],
-    ["lofi",       "Lofi"],
-    ["dracula",    "Dracula"],
-    ["luxury",     "Luxury"],
+    ["auto",       "Auto",       "🪄"],
+    ["light",      "Light",      "☀️"],
+    ["dark",       "Dark",       "🌙"],
+    ["catppuccin", "Catppuccin", "🐱"],
+    ["synthwave",  "Synthwave",  "🌆"],
+    ["cyberpunk",  "Cyberpunk",  "🤖"],
+    ["forest",     "Forest",     "🌲"],
+    ["lofi",       "Lofi",       "🎧"],
+    ["dracula",    "Dracula",    "🧛"],
+    ["luxury",     "Luxury",     "💎"],
 ];
 
 const root = document.documentElement;
@@ -59,15 +60,48 @@ function apply(theme) {
 function syncLabel(theme) {
     const entry = THEMES.find(([slug]) => slug === theme);
     const label = entry ? entry[1] : theme;
+    const emoji = entry ? entry[2] : "";
     document
         .querySelectorAll("[data-theme-current-label]")
         .forEach((el) => (el.textContent = label));
+    document
+        .querySelectorAll("[data-theme-emoji]")
+        .forEach((el) => (el.textContent = emoji));
+    document.querySelectorAll("[data-theme-cycle]").forEach((btn) => {
+        btn.setAttribute("aria-label", `Cycle theme · current: ${label}`);
+    });
 }
 
 function nextTheme(current) {
     const idx = THEMES.findIndex(([slug]) => slug === current);
     const next = THEMES[(idx + 1) % THEMES.length];
     return next[0];
+}
+
+// One shared Audio instance so rapid clicks cancel the prior clip
+// instead of stacking. The URL map (`window.__engThemeSfx`) is injected
+// by pages/mod.rs::render_theme_sfx_urls so this script doesn't need to
+// know hashed asset paths.
+let currentSfx = null;
+
+function playThemeSfx(theme) {
+    const url = window.__engThemeSfx?.[theme];
+    if (!url) return;
+    if (currentSfx) {
+        try {
+            currentSfx.pause();
+            currentSfx.currentTime = 0;
+        } catch {}
+    }
+    try {
+        const audio = new Audio(url);
+        audio.volume = 0.5;
+        currentSfx = audio;
+        audio.addEventListener("ended", () => {
+            if (currentSfx === audio) currentSfx = null;
+        });
+        audio.play().catch(() => {});
+    } catch {}
 }
 
 // Apply immediately so the theme attaches before paint.
@@ -82,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const next = nextTheme(current);
             apply(next);
             persist(next);
+            playThemeSfx(next);
         });
     });
 

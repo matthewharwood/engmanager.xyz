@@ -1,0 +1,157 @@
+.comments-panel {
+    width: min(42rem, calc(100vw - 2rem));
+    margin: var(--size-xl) auto var(--size-2xl);
+    padding: var(--size-s);
+    background: var(--surface-1);
+    border: 2px solid var(--text-1);
+    border-radius: var(--radius-xs);
+    box-shadow: 6px 6px 0 var(--text-1);
+}
+
+.comments-panel-head {
+    display: grid;
+    gap: 0.35rem;
+    margin-block-end: var(--size-s);
+}
+
+.comments-panel h2,
+.comments-panel p {
+    margin: 0;
+}
+
+.comments-panel h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.comments-panel-head p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.comments-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.comment-card {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.8rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-xs);
+    transition: background var(--motion-hover), box-shadow var(--motion-hover);
+}
+
+.comment-card.is-active {
+    background: var(--selected-tint);
+    box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.comment-card header {
+    color: var(--text-1);
+    font-size: 0.85rem;
+    font-weight: 900;
+}
+
+.comment-card blockquote,
+.comment-card p {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.comment-card blockquote {
+    padding-inline-start: 0.65rem;
+    color: var(--text-muted);
+    border-inline-start: 3px solid var(--brand);
+    font-size: 0.85rem;
+}
+
+.comment-card p {
+    color: var(--text-2);
+}
+
+.comment-highlight {
+    cursor: pointer;
+    padding-inline: 0.08em;
+    background: color-mix(in oklab, var(--warning) 35%, transparent);
+    color: inherit;
+    border-radius: 0.12rem;
+}
+
+.comment-highlight:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.inline-comment-popover {
+    position: fixed;
+    z-index: 100;
+    display: grid;
+    gap: 0.75rem;
+    inline-size: min(20rem, calc(100vw - 2rem));
+    padding: 0.85rem;
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 2px solid var(--text-1);
+    border-radius: var(--radius-xs);
+    box-shadow: 7px 7px 0 var(--text-1);
+}
+
+.inline-comment-popover[hidden] {
+    display: none;
+}
+
+.inline-comment-popover label {
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.inline-comment-popover input[type="text"],
+.inline-comment-popover textarea {
+    inline-size: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem;
+    color: var(--text-1);
+    background: var(--surface-1);
+    border: 2px solid var(--text-1);
+    border-radius: var(--radius-2xs);
+    font: 700 0.9rem var(--font-sans);
+    text-transform: none;
+}
+
+.inline-comment-popover textarea {
+    resize: vertical;
+    min-block-size: 6rem;
+}
+
+.comment-slider-label {
+    padding: 0.55rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-xs);
+}
+
+.comment-slider {
+    accent-color: var(--brand);
+    cursor: grab;
+}
+
+.comment-slider:active {
+    cursor: grabbing;
+}
+
+.inline-comment-status {
+    min-block-size: 1.2rem;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+}

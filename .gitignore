@@ -31,6 +31,12 @@ Cargo.lock
 /data/*.db-shm
 /data/*.db-wal
 
+# Embedded SurrealDB local stores
+/data/*.surrealkv/
+
+# Rust compiler crash reports
+/rustc-ice-*.txt
+
 # Exclude content JSON files (user edits)
 /data/content/*.json
 

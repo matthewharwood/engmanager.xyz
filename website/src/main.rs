@@ -1,5 +1,6 @@
 use std::env::var;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Bytes;
@@ -11,9 +12,11 @@ use rust_embed::{EmbeddedFile, RustEmbed};
 use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
 
+pub mod comments;
 pub mod discord;
 pub mod experiences;
 mod pages;
+pub mod search;
 mod sitemap;
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
@@ -46,6 +49,12 @@ pub struct CssDist;
 #[derive(RustEmbed)]
 #[folder = "$OUT_DIR/js-dist/"]
 pub struct JsDist;
+
+#[derive(Clone)]
+pub struct AppState {
+    pub search: Arc<search::SearchEngine>,
+    pub comments: Arc<comments::CommentStore>,
+}
 
 // Three-tier lookup: `css/` paths come from the lightningcss-built
 // chunks, `js/` paths from the oxc-built bundles, everything else from
@@ -307,10 +316,31 @@ async fn main() {
     // synchronously with a tokio RwLock — zero I/O on the hot path.
     tokio::spawn(discord::refresh_loop(AUTEURS_INVITE_CODE));
 
+    let comments = Arc::new(
+        comments::CommentStore::connect_from_env()
+            .await
+            .expect("comment store must connect at startup"),
+    );
+    let existing_comments = comments
+        .all_visible()
+        .await
+        .expect("visible comments must load at startup");
+    let search = Arc::new(
+        search::SearchEngine::build_in_memory(pages::articles::ARTICLES, &existing_comments)
+            .expect("search index must build at startup"),
+    );
+    let state = AppState { search, comments };
+
     let app = Router::new()
         .route("/", get(pages::homepage::index))
         .route("/articles/", get(pages::articles::index))
         .route("/articles/{slug}", get(pages::articles::detail))
+        .route("/search", get(pages::search::page))
+        .route("/api/search/typeahead", get(pages::search::typeahead))
+        .route(
+            "/api/articles/{slug}/comments",
+            get(pages::comments::list).post(pages::comments::create),
+        )
         .route("/sitemap.xml", get(sitemap::sitemap_handler))
         .route("/sitemaps.xml", get(sitemap::sitemap_handler))
         .route("/robots.txt", get(sitemap::robots_handler))
@@ -320,6 +350,7 @@ async fn main() {
         .route("/offline.html", get(offline_handler))
         .route("/sw.js", get(sw_handler))
         .route("/assets/{*path}", get(asset_handler))
+        .with_state(state)
         .layer(axum::middleware::from_fn(security_headers_layer))
         .layer(axum::middleware::from_fn(html_cache_layer))
         // Brotli + gzip over the wire for any compressible response

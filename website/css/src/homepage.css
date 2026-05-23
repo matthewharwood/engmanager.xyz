@@ -18,6 +18,92 @@
     block-size: auto;
 }
 
+.homepage > :is(.skip-link, .fluid-display-wrap, .marquee-bar, .article-fluid-link) {
+    position: relative;
+    z-index: 1;
+}
+
+.dvd-bouncer {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: clamp(4.5rem, 8vw, 6.5rem);
+    aspect-ratio: 160 / 72;
+    z-index: 0;
+    color: var(--brand);
+    opacity: 0.32;
+    /* Was pointer-events: none, which made touches on the DVD land on
+     * the body underneath. Body's default touch-action: auto then
+     * turned the drag into a scroll on iOS — so the DVD could never
+     * actually be dragged into the trash. Making the DVD a real touch
+     * target with touch-action: none locks the gesture to drag.
+     * Search shell (z-85), articles (z-1), and the rest of the fixed
+     * UI all stack above the DVD (z-0), so this doesn't block their
+     * taps even when the DVD is geometrically underneath them. */
+    pointer-events: auto;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    transform:
+        translate3d(var(--dvd-x, 12vw), var(--dvd-y, 20vh), 0)
+        rotate(var(--dvd-tilt, -2deg));
+    transform-origin: center;
+    will-change: transform;
+    filter: saturate(1.1);
+}
+
+.dvd-bouncer:active {
+    cursor: grabbing;
+}
+
+/* Lock the whole page out of any pan/zoom while a drag is in flight.
+ * Belt-and-suspenders alongside per-element touch-action: none on the
+ * chip / visited check / DVD — if the captured pointer falls through
+ * to body during the gesture, this keeps iOS from hijacking it as a
+ * scroll. */
+body[data-dragging="true"] {
+    touch-action: none;
+}
+
+.dvd-bouncer[data-caught] {
+    opacity: 0.68;
+    filter:
+        saturate(1.35)
+        drop-shadow(0.35rem 0.35rem 0 color-mix(in oklab, var(--text-1) 55%, transparent));
+}
+
+.dvd-bouncer[data-tone="1"] { color: var(--color-secondary); }
+.dvd-bouncer[data-tone="2"] { color: var(--color-accent); }
+.dvd-bouncer[data-tone="3"] { color: var(--color-info); }
+.dvd-bouncer[data-tone="4"] { color: var(--color-success); }
+
+.dvd-bouncer-mark {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: visible;
+}
+
+.dvd-bouncer-mark text {
+    fill: currentColor;
+    stroke: var(--surface-1);
+    stroke-width: 1.75px;
+    paint-order: stroke fill;
+}
+
+.dvd-bouncer-mark path,
+.dvd-bouncer-plate {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.dvd-bouncer-plate {
+    stroke-width: 4;
+}
+
 .article-fluid-fallback {
     display: none;
     font-family: "Archivo", sans-serif;
@@ -37,6 +123,169 @@
 
 .article-fluid-svg.is-too-small + .article-fluid-fallback {
     display: block;
+}
+
+/* =====================================================================
+ * Floating homepage search bar.
+ *
+ * Rebuilt from scratch as a single <form> (no wrapper div) with the
+ * input flex-filling the left and a real <button type="submit"> as
+ * the rightmost circle. Tapping the input focuses it; tapping the
+ * circle submits the form. No decorative stamps that swallow taps.
+ *
+ * The form is the floating element directly — `position: fixed` on
+ * the form itself — so there's exactly one box to reason about for
+ * hit-testing, z-stacking, and iOS keyboard behavior.
+ *
+ * `--floating-search-h` is the reserved gutter above the viewport
+ * bottom that everything else in the page (hunt chip, trash, avatar,
+ * toasts, mobile FAB) reads from to stack above the bar instead of
+ * underneath. `--floating-search-gap` is the lift off the very edge.
+ * ===================================================================== */
+.homepage {
+    --floating-search-h: 4rem;
+    --floating-search-gap: 0.5rem;
+    padding-block-end: calc(var(--floating-search-h) + var(--floating-search-gap) + 1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+.home-search {
+    position: fixed;
+    inset-inline: var(--floating-search-gap);
+    inset-block-end: max(var(--floating-search-gap), env(safe-area-inset-bottom, 0px));
+    z-index: 85;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.4rem 0.4rem 1.1rem;
+    background: var(--ctp-base);
+    border: 0.12em solid var(--ctp-text);
+    border-radius: 999rem;
+    box-shadow: 0.25rem 0.25rem 0 0 var(--ctp-text);
+    color: var(--accent);
+    /* iOS Safari keyboard quirk safety: skip the platform's tap-delay
+     * heuristics on the whole bar so the input gets focused on first
+     * touch instead of the second one. */
+    touch-action: manipulation;
+}
+
+.home-search-input {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    min-block-size: 2.75rem;
+    padding: 0.5rem 0.25rem 0.5rem 0;
+    margin: 0;
+    color: var(--accent);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-family: "Archivo", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    touch-action: manipulation;
+}
+
+.home-search-input::placeholder {
+    color: color-mix(in oklab, var(--accent) 62%, var(--ctp-base));
+    opacity: 1;
+}
+
+.home-search-input::-webkit-search-decoration,
+.home-search-input::-webkit-search-cancel-button,
+.home-search-input::-webkit-search-results-button,
+.home-search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Real submit button — the circular accent on the right. Tapping it
+ * submits the form (navigates to /search?q=...). This is the search's
+ * primary interactive affordance after the input itself. */
+.home-search-submit {
+    flex-shrink: 0;
+    appearance: none;
+    cursor: pointer;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: var(--ctp-base);
+    border: 0.08em solid var(--ctp-text);
+    border-radius: 50%;
+    box-shadow: 0.18rem 0.18rem 0 0 var(--ctp-text);
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.home-search-submit:hover,
+.home-search-submit:focus-visible {
+    transform: translate(-1px, -1px);
+    box-shadow: 0.24rem 0.24rem 0 0 var(--ctp-text);
+    outline: none;
+}
+
+.home-search-submit:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--ctp-text);
+}
+
+/* Typeahead dropdown opens UPWARD from the bar's top edge — opening
+ * down would clip below the viewport. Inherits the global
+ * .site-search-results styles for padding/border/etc. */
+.home-search-results {
+    inset-block-start: auto;
+    inset-block-end: calc(100% + 0.4rem);
+    inset-inline: 0;
+    max-block-size: min(24rem, calc(100svh - var(--floating-search-h) - 4rem));
+    border-radius: 1rem;
+}
+
+/* Lift every fixed-bottom piece of chrome above the floating bar so
+ * nothing overlaps. All read the same variable triad — retune the bar
+ * and everything else follows. */
+.homepage .hunt-chip,
+.homepage .discovery-toasts,
+.homepage .trash,
+.homepage .avatar-button {
+    inset-block-end: calc(var(--floating-search-h) + var(--floating-search-gap) + 0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 48rem) {
+    .homepage .quick-actions {
+        inset-block-end: calc(var(--floating-search-h) + var(--floating-search-gap) + 0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (min-width: 48rem) {
+    .homepage {
+        --floating-search-h: 4.5rem;
+    }
+
+    .home-search {
+        gap: 0.625rem;
+        padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+    }
+
+    .home-search-input {
+        min-block-size: 3.25rem;
+        font-size: 1.4rem;
+    }
+
+    .home-search-submit {
+        inline-size: 3.25rem;
+        block-size: 3.25rem;
+        font-size: 1.5rem;
+    }
 }
 
 /* Pierre-style monospace resume block, shown inside #bio popover. */
@@ -534,10 +783,15 @@
  * on miss we fly it back to its origin with a spring.
  * ========================================================================== */
 
+/* Trash + avatar are pinned to the LEFT on the homepage so the right
+ * side of the viewport can belong to the floating search bar's
+ * magnifier stamp + the mobile quick-actions FAB without crowding.
+ * The block-end value is overridden further up by the
+ * `--floating-search-h` clearance rule so they stack above the bar. */
 .trash {
     position: fixed;
     inset-block-end: 1rem;
-    inset-inline-end: 4.75rem;
+    inset-inline-start: 4.75rem;
     z-index: 10;
 }
 
@@ -597,7 +851,7 @@
 .trash-blast {
     position: fixed;
     inset-block-end: -3.5rem;
-    inset-inline-end: -3.5rem;
+    inset-inline-start: -3.5rem;
     inline-size: 13.5rem;
     block-size: 13.5rem;
     border: 2px dashed color-mix(in oklab, var(--brand) 70%, transparent);
@@ -609,7 +863,7 @@
     );
     opacity: 0;
     transform: scale(0.6);
-    transform-origin: bottom right;
+    transform-origin: bottom left;
     transition: opacity 220ms ease, transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
     pointer-events: none;
     z-index: 9;
@@ -622,12 +876,6 @@ body[data-dragging="true"] .trash-blast {
 
 body[data-dragging="true"] .trash-can {
     transform: scale(1.04);
-}
-
-@media (max-width: 48rem) {
-    .homepage .quick-actions {
-        inset-block-end: max(5.25rem, calc(env(safe-area-inset-bottom) + 5.25rem));
-    }
 }
 
 /* Pause every marquee while a chip is being dragged. */
@@ -854,11 +1102,21 @@ body[data-dragging="true"] .marquee-track {
     transform: scale(1) rotate(0);
 }
 
-/* Bottom-right avatar popover trigger + #bio anchored popover. */
+.dvd-bouncer-ghost {
+    opacity: 0.95 !important;
+    filter:
+        saturate(1.35)
+        drop-shadow(0.45rem 0.45rem 0 color-mix(in oklab, var(--text-1) 70%, transparent));
+    cursor: grabbing;
+}
+
+/* Bottom-LEFT avatar popover trigger + #bio anchored popover. Moved
+ * to the left edge so the right side belongs to the search marker +
+ * mobile quick-actions FAB. */
 .avatar-button {
     position: fixed;
     inset-block-end: 1rem;
-    inset-inline-end: 1rem;
+    inset-inline-start: 1rem;
     padding: 0;
     margin: 0;
     border: none;
@@ -886,15 +1144,15 @@ body[data-dragging="true"] .marquee-track {
 #bio {
     position: fixed;
     top: auto;
-    left: auto;
-    right: 4rem;
+    right: auto;
+    left: 4rem;
     bottom: 4rem;
     margin: 0;
     width: max-content;
     max-width: 26rem;
     height: auto;
     position-anchor: --avatar;
-    position-area: top left;
+    position-area: top right;
     padding: 1.25rem 1.5rem;
     border: 1px solid var(--ctp-surface0);
     border-radius: 0.75rem;

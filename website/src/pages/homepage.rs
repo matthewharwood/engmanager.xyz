@@ -9,6 +9,7 @@ use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
     render_discovery_toasts, render_quick_actions, render_resource_hints, render_sitemap_link,
+    render_theme_sfx_urls,
 };
 use crate::asset_url;
 
@@ -369,6 +370,8 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
                 <script src={ asset_url("js/theme-toggle.js") }></script>
+                { render_theme_sfx_urls() }
+                <script src={ asset_url("js/search.js") } defer></script>
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
@@ -389,8 +392,63 @@ pub async fn index() -> Html<String> {
             </head>
             <body class="homepage">
                 <a class="skip-link" href="#main">"Skip to content"</a>
+                <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
+                    <svg class="dvd-bouncer-mark"
+                         viewBox="0 0 160 72"
+                         focusable="false"
+                         aria-hidden="true">
+                        <rect class="dvd-bouncer-plate"
+                              x="3"
+                              y="3"
+                              width="154"
+                              height="66"
+                              rx="6" />
+                        <text x="80"
+                              y="42"
+                              text-anchor="middle"
+                              font-family="Arial Black, Archivo, sans-serif"
+                              font-size="34"
+                              font-weight="900"
+                              letter-spacing="2">
+                            "DVD"
+                        </text>
+                        <path d="M34 52 C52 62, 108 62, 126 52" />
+                    </svg>
+                </div>
                 <EngHeadline />
                 { render_topic_marquees() }
+                // Fixed-bottom floating search. Real submit button on the
+                // right (the circle) so the rightmost tap target is
+                // functional, not just decoration. Typeahead is wired up
+                // by js/search.js through the [data-search-form] +
+                // [data-search-results] hooks.
+                <form class="home-search"
+                      action="/search"
+                      method="get"
+                      role="search"
+                      data-search-form>
+                    <label class="sr-only" for="site-search-input">
+                        "Search articles and comments"
+                    </label>
+                    <input class="home-search-input"
+                           id="site-search-input"
+                           type="search"
+                           name="q"
+                           autocomplete="off"
+                           role="combobox"
+                           aria-expanded="false"
+                           aria-controls="site-search-results"
+                           aria-autocomplete="list"
+                           placeholder="e.g. rust, voice, ai" />
+                    <ul class="site-search-results home-search-results"
+                        id="site-search-results"
+                        role="listbox"
+                        hidden
+                        data-search-results></ul>
+                    <button class="home-search-submit" type="submit" aria-label="Search">
+                        <span aria-hidden="true">"🔍"</span>
+                    </button>
+                </form>
                 { article_links }
 
                 // Avatar is a popover trigger via the native HTML Popover API.

@@ -7,25 +7,52 @@
 //     The row is cloned, the original is kept invisible in-flow so the
 //     stack does not collapse, and the clone shrinks/rotates into the
 //     reader's hand until dropped.
+//   - the background DVD logo: pointer-transparent, coordinate-caught,
+//     and draggable into the same can.
 
 const TRASH_SELECTOR = ".trash-can";
 const CHIP_SELECTOR = ".marquee .chip";
 const ARTICLE_CHECK_SELECTOR = ".article-fluid-link.is-visited .article-check";
 const ARTICLE_LINK_SELECTOR = ".article-fluid-link.is-visited";
+const DVD_SELECTOR = "[data-dvd-bouncer]";
+const DVD_PROTECTED_TARGETS = ".trash, .quick-actions, .avatar-button, .home-search, #bio, #article-reveal, #api-receipt-modal";
 const ACCEPT_RADIUS_PX = 110;
 const GLOW_RADIUS_PX = 200;
 const ARTICLE_GHOST_SCALE = 0.18;
+const DVD_SPEED_X = 38;
+const DVD_SPEED_Y = 27;
+const DVD_CATCH_PAD_PX = 2;
 
 let drag = null;
 let suppressNextArticleClick = false;
+let dvdState = null;
+
+// During an active drag the original element is hidden but must stay
+// in the hit-test tree so pointer capture remains valid on its
+// captured descendant. `visibility:hidden` breaks that on iOS — use
+// opacity + pointer-events instead. Resets are paired in showOriginal.
+function hideOriginal(el) {
+    el.style.opacity = "0";
+    el.style.pointerEvents = "none";
+}
+
+function showOriginal(el) {
+    el.style.opacity = "";
+    el.style.pointerEvents = "";
+}
 
 function startDrag(event) {
     if (event.button !== undefined && event.button !== 0) return;
 
+    if (isDvdCatch(event) && !event.target.closest?.(DVD_PROTECTED_TARGETS)) {
+        startDvdDrag(event);
+        return;
+    }
+
     const articleCheck = event.target.closest?.(ARTICLE_CHECK_SELECTOR);
     const article = articleCheck?.closest(ARTICLE_LINK_SELECTOR);
     if (article && article.dataset.trashed !== "true") {
-        startArticleDrag(event, article);
+        startArticleDrag(event, article, articleCheck);
         return;
     }
 
@@ -34,6 +61,18 @@ function startDrag(event) {
     if (chip.dataset.trashed === "true") return;
     if (chip.getAttribute("aria-hidden") === "true") return; // skip clone copies
     startChipDrag(event, chip);
+}
+
+function isDvdCatch(event) {
+    const logo = dvdState?.node || document.querySelector(DVD_SELECTOR);
+    if (!logo || logo.dataset.trashed === "true") return false;
+    const rect = logo.getBoundingClientRect();
+    return (
+        event.clientX >= rect.left - DVD_CATCH_PAD_PX &&
+        event.clientX <= rect.right + DVD_CATCH_PAD_PX &&
+        event.clientY >= rect.top - DVD_CATCH_PAD_PX &&
+        event.clientY <= rect.bottom + DVD_CATCH_PAD_PX
+    );
 }
 
 function startChipDrag(event, chip) {
@@ -54,7 +93,12 @@ function startChipDrag(event, chip) {
     });
     document.body.appendChild(ghost);
 
-    chip.style.visibility = "hidden";
+    // Use opacity (not visibility) so the original stays interactive
+    // enough for pointer capture on its descendants — iOS Safari drops
+    // the capture if the captured node cascades into visibility:hidden,
+    // and the touch then falls through to body where touch-action:auto
+    // turns the drag into a scroll.
+    hideOriginal(chip);
     beginDrag({
         type: "chip",
         original: chip,
@@ -62,10 +106,11 @@ function startChipDrag(event, chip) {
         origin: rect,
         offset: { x: event.clientX - rect.left, y: event.clientY - rect.top },
         pointerId: event.pointerId,
+        captureTarget: event.target,
     });
 }
 
-function startArticleDrag(event, article) {
+function startArticleDrag(event, article, articleCheck) {
     event.preventDefault();
     event.stopPropagation();
     suppressNextArticleClick = true;
@@ -88,7 +133,7 @@ function startArticleDrag(event, article) {
     });
     document.body.appendChild(ghost);
 
-    article.style.visibility = "hidden";
+    hideOriginal(article);
     beginDrag({
         type: "article",
         original: article,
@@ -96,6 +141,46 @@ function startArticleDrag(event, article) {
         origin: rect,
         offset: { x: rect.width / 2, y: rect.height / 2 },
         pointerId: event.pointerId,
+        captureTarget: articleCheck,
+    });
+}
+
+function startDvdDrag(event) {
+    const logo = dvdState?.node || document.querySelector(DVD_SELECTOR);
+    if (!logo || logo.dataset.trashed === "true") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    pauseDvdBouncer();
+
+    const rect = logo.getBoundingClientRect();
+    const ghost = logo.cloneNode(true);
+    ghost.classList.add("dvd-bouncer-ghost");
+    ghost.removeAttribute("data-dvd-bouncer");
+    ghost.removeAttribute("data-caught");
+    Object.assign(ghost.style, {
+        position: "fixed",
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        margin: "0",
+        zIndex: "1000",
+        pointerEvents: "none",
+        transform: "scale(1.08) rotate(-3deg)",
+        transformOrigin: "center",
+    });
+    document.body.appendChild(ghost);
+
+    hideOriginal(logo);
+    beginDrag({
+        type: "dvd",
+        original: logo,
+        ghost,
+        origin: rect,
+        offset: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        pointerId: event.pointerId,
+        captureTarget: document.body,
     });
 }
 
@@ -103,9 +188,14 @@ function beginDrag(session) {
     drag = session;
     document.body.dataset.dragging = "true";
 
-    document.addEventListener("pointermove", onMove, { passive: true });
-    document.addEventListener("pointerup", onUp);
-    document.addEventListener("pointercancel", onUp);
+    try {
+        session.captureTarget?.setPointerCapture?.(session.pointerId);
+    } catch {}
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("blur", cancelDrag);
 }
 
 function onMove(event) {
@@ -119,23 +209,67 @@ function onMove(event) {
 
 async function onUp(event) {
     if (!drag || event.pointerId !== drag.pointerId) return;
-    document.removeEventListener("pointermove", onMove);
-    document.removeEventListener("pointerup", onUp);
-    document.removeEventListener("pointercancel", onUp);
-
-    const { original, ghost, origin, type } = drag;
+    const session = drag;
     drag = null;
+    removeDragListeners();
+    releasePointerCapture(session);
 
+    const { original, ghost, origin, type } = session;
     const trash = document.querySelector(TRASH_SELECTOR);
     const inRange = trash ? isInTrashRange(event, trash) : false;
     document.documentElement.style.setProperty("--trash-glow", "0");
+    finishDragState(type);
 
-    if (inRange && trash) {
-        await consume(ghost, trash, original, type);
-    } else {
-        await flyBack(ghost, origin, original, type);
+    try {
+        if (inRange && trash) {
+            await consume(ghost, trash, original, type);
+        } else {
+            await flyBack(ghost, origin, original, type);
+        }
+    } catch {
+        ghost.remove();
+        showOriginal(original);
+        if (type === "dvd") resumeDvdBouncer(origin);
     }
+}
 
+function onCancel(event) {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    void cancelDrag();
+}
+
+async function cancelDrag() {
+    if (!drag) return;
+    const session = drag;
+    drag = null;
+    removeDragListeners();
+    releasePointerCapture(session);
+    document.documentElement.style.setProperty("--trash-glow", "0");
+    finishDragState(session.type);
+
+    try {
+        await flyBack(session.ghost, session.origin, session.original, session.type);
+    } catch {
+        session.ghost.remove();
+        showOriginal(session.original);
+        if (session.type === "dvd") resumeDvdBouncer(session.origin);
+    }
+}
+
+function removeDragListeners() {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("blur", cancelDrag);
+}
+
+function releasePointerCapture(session) {
+    try {
+        session.captureTarget?.releasePointerCapture?.(session.pointerId);
+    } catch {}
+}
+
+function finishDragState(type) {
     delete document.body.dataset.dragging;
     if (type === "article") {
         setTimeout(() => {
@@ -169,7 +303,7 @@ async function consume(ghost, trash, original, type) {
     const height = parseFloat(ghost.style.height || "0");
     const dropX = tr.left + tr.width / 2 - width / 2;
     const dropY =
-        type === "article" ? tr.top + tr.height / 2 - height / 2 : tr.top - 4;
+        type === "chip" ? tr.top - 4 : tr.top + tr.height / 2 - height / 2;
     const startTransform =
         ghost.style.transform ||
         (type === "article"
@@ -178,7 +312,9 @@ async function consume(ghost, trash, original, type) {
     const endTransform =
         type === "article"
             ? "scale(0.035) rotate(18deg)"
-            : "scale(0.18) rotate(380deg)";
+            : type === "dvd"
+              ? "scale(0.04) rotate(560deg)"
+              : "scale(0.18) rotate(380deg)";
 
     await ghost.animate(
         [
@@ -202,6 +338,10 @@ async function consume(ghost, trash, original, type) {
 
     if (type === "chip") {
         hideChipCopies(original);
+    } else if (type === "dvd") {
+        original.style.visibility = "hidden";
+        original.dataset.trashed = "true";
+        stopDvdBouncer();
     } else {
         original.style.visibility = "hidden";
         original.dataset.trashed = "true";
@@ -282,6 +422,19 @@ async function flyBack(ghost, origin, original, type) {
                       transform: "scale(1) rotate(0deg)",
                   },
               ]
+            : type === "dvd"
+              ? [
+                    {
+                        left: ghost.style.left,
+                        top: ghost.style.top,
+                        transform: ghost.style.transform,
+                    },
+                    {
+                        left: `${origin.left}px`,
+                        top: `${origin.top}px`,
+                        transform: "scale(1) rotate(0deg)",
+                    },
+                ]
             : [
                   { left: ghost.style.left, top: ghost.style.top },
                   { left: `${origin.left}px`, top: `${origin.top}px` },
@@ -293,10 +446,139 @@ async function flyBack(ghost, origin, original, type) {
         fill: "forwards",
     }).finished;
     ghost.remove();
-    original.style.visibility = "";
+    showOriginal(original);
+    if (type === "dvd") resumeDvdBouncer(origin);
+}
+
+function initDvdBouncer() {
+    const node = document.querySelector(DVD_SELECTOR);
+    if (!node) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        node.hidden = true;
+        return;
+    }
+
+    dvdState = {
+        node,
+        x: Math.max(20, window.innerWidth * 0.16),
+        y: Math.max(20, window.innerHeight * 0.18),
+        vx: DVD_SPEED_X,
+        vy: DVD_SPEED_Y,
+        last: performance.now(),
+        raf: 0,
+        paused: false,
+        tone: 0,
+    };
+
+    clampDvdBouncer();
+    setDvdPosition();
+    dvdState.raf = requestAnimationFrame(tickDvdBouncer);
+
+    window.addEventListener("resize", () => {
+        clampDvdBouncer();
+        setDvdPosition();
+    }, { passive: true });
+
+    document.addEventListener("pointermove", updateDvdCatchState, { passive: true });
+    document.addEventListener("pointerleave", () => {
+        node.removeAttribute("data-caught");
+    });
+}
+
+function tickDvdBouncer(now) {
+    if (!dvdState || dvdState.node.dataset.trashed === "true") return;
+    if (dvdState.paused || document.hidden) {
+        dvdState.last = now;
+        dvdState.raf = requestAnimationFrame(tickDvdBouncer);
+        return;
+    }
+
+    const dt = Math.min(0.05, (now - dvdState.last) / 1000);
+    dvdState.last = now;
+    const { maxX, maxY } = dvdLimits();
+    let bounced = false;
+
+    dvdState.x += dvdState.vx * dt;
+    dvdState.y += dvdState.vy * dt;
+
+    if (dvdState.x <= 0 || dvdState.x >= maxX) {
+        dvdState.x = Math.max(0, Math.min(maxX, dvdState.x));
+        dvdState.vx *= -1;
+        bounced = true;
+    }
+    if (dvdState.y <= 0 || dvdState.y >= maxY) {
+        dvdState.y = Math.max(0, Math.min(maxY, dvdState.y));
+        dvdState.vy *= -1;
+        bounced = true;
+    }
+
+    if (bounced) bumpDvdTone();
+    setDvdPosition();
+    dvdState.raf = requestAnimationFrame(tickDvdBouncer);
+}
+
+function dvdLimits() {
+    const rect = dvdState.node.getBoundingClientRect();
+    return {
+        maxX: Math.max(0, window.innerWidth - rect.width),
+        maxY: Math.max(0, window.innerHeight - rect.height),
+    };
+}
+
+function clampDvdBouncer() {
+    if (!dvdState) return;
+    const { maxX, maxY } = dvdLimits();
+    dvdState.x = Math.max(0, Math.min(maxX, dvdState.x));
+    dvdState.y = Math.max(0, Math.min(maxY, dvdState.y));
+}
+
+function setDvdPosition() {
+    if (!dvdState) return;
+    dvdState.node.style.setProperty("--dvd-x", `${Math.round(dvdState.x)}px`);
+    dvdState.node.style.setProperty("--dvd-y", `${Math.round(dvdState.y)}px`);
+    dvdState.node.style.setProperty(
+        "--dvd-tilt",
+        `${dvdState.vx > 0 ? -2 : 2}deg`,
+    );
+}
+
+function bumpDvdTone() {
+    if (!dvdState) return;
+    dvdState.tone = (dvdState.tone + 1) % 5;
+    dvdState.node.dataset.tone = String(dvdState.tone);
+}
+
+function pauseDvdBouncer() {
+    if (!dvdState) return;
+    dvdState.paused = true;
+    dvdState.node.removeAttribute("data-caught");
+}
+
+function resumeDvdBouncer(origin) {
+    if (!dvdState) return;
+    dvdState.x = origin.left;
+    dvdState.y = origin.top;
+    clampDvdBouncer();
+    setDvdPosition();
+    dvdState.node.removeAttribute("data-caught");
+    dvdState.last = performance.now();
+    dvdState.paused = false;
+}
+
+function stopDvdBouncer() {
+    if (!dvdState) return;
+    dvdState.paused = true;
+    cancelAnimationFrame(dvdState.raf);
+    dvdState.node.removeAttribute("data-caught");
+}
+
+function updateDvdCatchState(event) {
+    if (!dvdState || dvdState.node.dataset.trashed === "true" || dvdState.paused) return;
+    dvdState.node.toggleAttribute("data-caught", isDvdCatch(event));
 }
 
 document.addEventListener("pointerdown", startDrag);
+initDvdBouncer();
 
 document.addEventListener(
     "click",
