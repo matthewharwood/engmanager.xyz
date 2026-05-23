@@ -114,4 +114,123 @@ forms.forEach((form, formIndex) => {
     document.addEventListener("pointerdown", (event) => {
         if (!form.contains(event.target)) close();
     });
+
+    initHomeKeyboard(form, input, close);
 });
+
+function initHomeKeyboard(form, input, closeResults) {
+    if (!form.classList.contains("home-search")) return;
+    if (!window.matchMedia?.("(min-width: 48em) and (hover: hover) and (pointer: fine)").matches) {
+        return;
+    }
+
+    const keyboard = document.createElement("div");
+    keyboard.className = "home-keyboard";
+    keyboard.hidden = true;
+    keyboard.setAttribute("aria-label", "Clickable search keyboard");
+
+    const rows = [
+        ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+        ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+        ["Z", "X", "C", "V", "B", "N", "M", { label: "DEL", action: "backspace" }],
+        [
+            { label: "AI", text: "ai" },
+            { label: "RUST", text: "rust" },
+            { label: "VOICE", text: "voice" },
+            { label: "SPACE", action: "space", wide: true },
+            { label: "CLEAR", action: "clear" },
+            { label: "GO", action: "submit", accent: true },
+        ],
+    ];
+
+    rows.forEach((rowKeys) => {
+        const row = document.createElement("div");
+        row.className = "home-keyboard-row";
+        rowKeys.forEach((keyConfig) => {
+            const config =
+                typeof keyConfig === "string"
+                    ? { label: keyConfig, text: keyConfig.toLowerCase() }
+                    : keyConfig;
+            const key = document.createElement("button");
+            key.type = "button";
+            key.tabIndex = -1;
+            key.className = "home-key";
+            key.textContent = config.label;
+            if (config.wide) key.classList.add("home-key-wide");
+            if (config.accent) key.classList.add("home-key-accent");
+            key.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+            });
+            key.addEventListener("click", () => {
+                pressHomeKey(config);
+            });
+            row.append(key);
+        });
+        keyboard.append(row);
+    });
+
+    form.append(keyboard);
+    input.setAttribute("virtualkeyboardpolicy", "manual");
+
+    function showKeyboard() {
+        keyboard.hidden = false;
+        form.dataset.keyboardOpen = "true";
+    }
+
+    function hideKeyboard() {
+        keyboard.hidden = true;
+        delete form.dataset.keyboardOpen;
+    }
+
+    function pressHomeKey(config) {
+        input.focus({ preventScroll: true });
+        if (config.action === "backspace") {
+            backspace();
+        } else if (config.action === "space") {
+            insertText(" ");
+        } else if (config.action === "clear") {
+            input.value = "";
+            dispatchInput();
+            closeResults();
+        } else if (config.action === "submit") {
+            form.requestSubmit();
+        } else {
+            insertText(config.text || "");
+        }
+    }
+
+    function insertText(text) {
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? start;
+        input.value = `${input.value.slice(0, start)}${text}${input.value.slice(end)}`;
+        const next = start + text.length;
+        input.setSelectionRange(next, next);
+        dispatchInput();
+    }
+
+    function backspace() {
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? start;
+        if (start !== end) {
+            input.value = `${input.value.slice(0, start)}${input.value.slice(end)}`;
+            input.setSelectionRange(start, start);
+        } else if (start > 0) {
+            input.value = `${input.value.slice(0, start - 1)}${input.value.slice(start)}`;
+            input.setSelectionRange(start - 1, start - 1);
+        }
+        dispatchInput();
+    }
+
+    function dispatchInput() {
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    input.addEventListener("focus", showKeyboard);
+    input.addEventListener("pointerdown", showKeyboard);
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") hideKeyboard();
+    });
+    document.addEventListener("pointerdown", (event) => {
+        if (!form.contains(event.target)) hideKeyboard();
+    });
+}

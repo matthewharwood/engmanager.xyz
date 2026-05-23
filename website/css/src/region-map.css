@@ -1,0 +1,252 @@
+.article .region-map {
+    --region-map-tile-filter: saturate(0.78) contrast(1.04) brightness(1.02);
+    --region-map-tile-opacity: 0.9;
+    align-items: stretch;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.5rem;
+    display: grid;
+    gap: 1rem;
+    margin-block: 2.25rem;
+    padding: 1rem;
+}
+
+.region-map-copy {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.region-map-copy h2 {
+    color: var(--ctp-text);
+    font-family: var(--font-mono);
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    letter-spacing: 0;
+    line-height: 1.1;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.region-map-copy p {
+    color: var(--ctp-subtext0);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+    max-inline-size: 58rem;
+}
+
+.region-map-shell {
+    aspect-ratio: 16 / 9;
+    background: var(--ctp-base);
+    block-size: auto;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.5rem;
+    contain: layout paint;
+    isolation: isolate;
+    min-block-size: 22rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.region-map-canvas,
+.region-map-poster {
+    position: absolute;
+    inset: 0;
+}
+
+.region-map-canvas {
+    background: var(--ctp-base);
+    z-index: 1;
+}
+
+.region-map-poster {
+    background: var(--ctp-base);
+    display: grid;
+    place-items: stretch;
+    transition:
+        opacity 180ms ease,
+        visibility 180ms ease;
+    z-index: 2;
+}
+
+.region-map.is-loaded .region-map-poster {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.region-map-poster img {
+    block-size: 100%;
+    inline-size: 100%;
+    object-fit: cover;
+}
+
+.region-map-status {
+    align-self: end;
+    background: color-mix(in oklab, var(--ctp-base) 92%, transparent);
+    border-block-start: 1px solid var(--ctp-surface0);
+    color: var(--ctp-subtext0);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    inline-size: 100%;
+    justify-self: stretch;
+    letter-spacing: 0;
+    padding: 0.75rem 1rem;
+    position: absolute;
+    text-transform: uppercase;
+}
+
+.region-map figcaption {
+    color: var(--ctp-subtext0);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    margin: 0;
+    max-inline-size: 56ch;
+    text-align: start;
+}
+
+.region-map noscript p {
+    color: var(--ctp-subtext0);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.region-map .leaflet-container {
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font-family: var(--font-sans);
+}
+
+.region-map .leaflet-tile {
+    filter: var(--region-map-tile-filter);
+    opacity: var(--region-map-tile-opacity);
+    transition:
+        filter 180ms ease,
+        opacity 180ms ease;
+}
+
+.region-map .leaflet-control-container {
+    font-family: var(--font-mono);
+}
+
+.region-map .leaflet-control-zoom {
+    border: 1px solid var(--ctp-surface1);
+    box-shadow: 4px 4px 0 color-mix(in oklab, var(--ctp-crust) 80%, transparent);
+}
+
+.region-map .leaflet-control-zoom a {
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+}
+
+.region-map .leaflet-control-zoom a:hover,
+.region-map .leaflet-control-zoom a:focus-visible {
+    background: var(--accent);
+    color: var(--ctp-base);
+}
+
+.region-map .leaflet-popup-content-wrapper,
+.region-map .leaflet-popup-tip {
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+}
+
+.region-map .leaflet-popup-content-wrapper {
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.5rem;
+    box-shadow: 6px 6px 0 color-mix(in oklab, var(--ctp-crust) 78%, transparent);
+}
+
+.region-map .leaflet-popup-content {
+    margin: 0.75rem 0.875rem;
+}
+
+.region-map-popup {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.region-map-popup strong {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.region-map-popup span {
+    color: var(--ctp-text);
+    font-size: 0.875rem;
+    line-height: 1.35;
+}
+
+.region-map .leaflet-control-attribution {
+    background: color-mix(in oklab, var(--ctp-base) 86%, transparent);
+    color: var(--ctp-subtext0);
+    font-size: 0.6875rem;
+}
+
+.region-map .leaflet-control-attribution a {
+    color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .region-map {
+        --region-map-tile-filter: invert(0.92) hue-rotate(180deg) saturate(0.74) brightness(0.72) contrast(1.12);
+        --region-map-tile-opacity: 0.86;
+    }
+}
+
+[data-theme="dark"] .region-map {
+    --region-map-tile-filter: invert(0.92) hue-rotate(180deg) saturate(0.74) brightness(0.72) contrast(1.12);
+    --region-map-tile-opacity: 0.86;
+}
+
+[data-theme="catppuccin"] .region-map {
+    --region-map-tile-filter: saturate(0.82) sepia(0.12) hue-rotate(214deg) brightness(1.02) contrast(0.98);
+    --region-map-tile-opacity: 0.9;
+}
+
+[data-theme="synthwave"] .region-map {
+    --region-map-tile-filter: invert(0.9) hue-rotate(190deg) saturate(1.6) brightness(0.72) contrast(1.18);
+    --region-map-tile-opacity: 0.88;
+}
+
+[data-theme="cyberpunk"] .region-map {
+    --region-map-tile-filter: saturate(1.55) hue-rotate(18deg) brightness(1.02) contrast(1.12);
+    --region-map-tile-opacity: 0.9;
+}
+
+[data-theme="forest"] .region-map {
+    --region-map-tile-filter: invert(0.86) hue-rotate(132deg) saturate(0.92) brightness(0.64) contrast(1.08);
+    --region-map-tile-opacity: 0.86;
+}
+
+[data-theme="lofi"] .region-map {
+    --region-map-tile-filter: grayscale(1) contrast(1.16) brightness(1.04);
+    --region-map-tile-opacity: 0.86;
+}
+
+[data-theme="dracula"] .region-map {
+    --region-map-tile-filter: invert(0.9) hue-rotate(186deg) saturate(1.02) brightness(0.68) contrast(1.16);
+    --region-map-tile-opacity: 0.86;
+}
+
+[data-theme="luxury"] .region-map {
+    --region-map-tile-filter: invert(0.9) sepia(0.34) hue-rotate(8deg) saturate(0.9) brightness(0.58) contrast(1.18);
+    --region-map-tile-opacity: 0.84;
+}
+
+@media (max-width: 700px) {
+    .article .region-map {
+        margin-inline: calc(var(--article-gutter, 0px) * -1);
+        border-inline: 0;
+        border-radius: 0;
+    }
+
+    .region-map-shell {
+        aspect-ratio: 4 / 5;
+        min-block-size: 28rem;
+    }
+}

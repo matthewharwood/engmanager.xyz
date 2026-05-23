@@ -133,14 +133,21 @@ pub fn render_theme_picker() -> HtmlFragment {
     }
 }
 
-// Map of theme-slug → hashed sfx URL, exposed to js/theme-toggle.js via
-// `window.__engThemeSfx`. Must be rendered on every page that includes
-// theme-toggle.js so the cycler can play the matching sound effect.
+// Single URL map for every SFX in the codebase, exposed as
+// `window.__engSfxUrls` to consumers (theme-toggle.js, trash-drag.js,
+// search-keyclick.js, ...). All sounds route through js/audio.js;
+// this is the canonical place to register their hashed asset URLs.
 //
-// Sound effects are short (<1s) ElevenLabs-generated clips that play on
-// theme advance; theme-toggle.js cancels any previous in-flight clip so
-// rapid clicks don't stack.
-pub fn render_theme_sfx_urls() -> HtmlFragment {
+// Shape:
+//   window.__engSfxUrls = {
+//       themes: { auto: "...", light: "...", ... },
+//       trash: "...",
+//       keyclick: "...",
+//   }
+//
+// Must be rendered on every page that loads audio.js so the consumer
+// scripts find their URLs when their handlers fire.
+pub fn render_sfx_urls() -> HtmlFragment {
     const THEMES: &[&str] = &[
         "auto",
         "light",
@@ -153,7 +160,7 @@ pub fn render_theme_sfx_urls() -> HtmlFragment {
         "dracula",
         "luxury",
     ];
-    let entries = THEMES
+    let theme_entries = THEMES
         .iter()
         .map(|slug| {
             format!(
@@ -164,7 +171,9 @@ pub fn render_theme_sfx_urls() -> HtmlFragment {
         .collect::<Vec<_>>()
         .join(",");
     HtmlFragment::new(format!(
-        "<script>window.__engThemeSfx={{{entries}}};</script>"
+        "<script>window.__engSfxUrls={{themes:{{{theme_entries}}},trash:\"{}\",keyclick:\"{}\"}};</script>",
+        crate::asset_url("trash-drop.mp3"),
+        crate::asset_url("keyclick.mp3"),
     ))
 }
 

@@ -398,13 +398,7 @@ function shakeTrash(trash) {
 }
 
 function playTrashSfx() {
-    const sfxUrl = window.__engUrls?.trashSfx;
-    if (!sfxUrl) return;
-    try {
-        const audio = new Audio(sfxUrl);
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
-    } catch {}
+    window.__engAudio?.play("trash", window.__engSfxUrls?.trash);
 }
 
 async function flyBack(ghost, origin, original, type) {

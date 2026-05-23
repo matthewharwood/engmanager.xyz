@@ -55,6 +55,11 @@ function apply(theme) {
         root.setAttribute("data-theme", theme);
     }
     syncLabel(theme);
+    window.dispatchEvent(
+        new CustomEvent("engmanager:themechange", {
+            detail: { theme },
+        }),
+    );
 }
 
 function syncLabel(theme) {
@@ -78,30 +83,11 @@ function nextTheme(current) {
     return next[0];
 }
 
-// One shared Audio instance so rapid clicks cancel the prior clip
-// instead of stacking. The URL map (`window.__engThemeSfx`) is injected
-// by pages/mod.rs::render_theme_sfx_urls so this script doesn't need to
-// know hashed asset paths.
-let currentSfx = null;
-
+// Per-theme stinger on cycle. Routes through the shared audio service
+// (channel: "theme") so rapid clicks cancel + replay instead of
+// stacking. URL map is injected by pages/mod.rs::render_sfx_urls.
 function playThemeSfx(theme) {
-    const url = window.__engThemeSfx?.[theme];
-    if (!url) return;
-    if (currentSfx) {
-        try {
-            currentSfx.pause();
-            currentSfx.currentTime = 0;
-        } catch {}
-    }
-    try {
-        const audio = new Audio(url);
-        audio.volume = 0.5;
-        currentSfx = audio;
-        audio.addEventListener("ended", () => {
-            if (currentSfx === audio) currentSfx = null;
-        });
-        audio.play().catch(() => {});
-    } catch {}
+    window.__engAudio?.play("theme", window.__engSfxUrls?.themes?.[theme]);
 }
 
 // Apply immediately so the theme attaches before paint.

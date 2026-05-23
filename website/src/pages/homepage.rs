@@ -8,8 +8,8 @@ use std::fmt::Write;
 use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
-    render_discovery_toasts, render_quick_actions, render_resource_hints, render_sitemap_link,
-    render_theme_sfx_urls,
+    render_discovery_toasts, render_quick_actions, render_resource_hints, render_sfx_urls,
+    render_sitemap_link,
 };
 use crate::asset_url;
 
@@ -370,8 +370,10 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
                 <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_theme_sfx_urls() }
+                { render_sfx_urls() }
+                <script src={ asset_url("js/audio.js") } defer></script>
                 <script src={ asset_url("js/search.js") } defer></script>
+                <script src={ asset_url("js/search-keyclick.js") } defer></script>
                 <script src={ asset_url("js/fit-text.js") } defer></script>
                 <script src={ asset_url("js/big-cursor.js") } defer></script>
                 <script src={ asset_url("js/keyboard-nav.js") } defer></script>
@@ -380,10 +382,9 @@ pub async fn index() -> Html<String> {
                 <script src={ asset_url("js/trash-drag.js") } defer></script>
                 <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
-                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\",trashSfx:\"{}\"}};",
+                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
                     asset_url("js/paint-brutalist-hatch.js"),
                     asset_url("js/worker-crypto.js"),
-                    asset_url("trash-drop.mp3"),
                 )) }</script>
                 <script src={ asset_url("js/experiences.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
