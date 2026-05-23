@@ -11,8 +11,8 @@ use rust_embed::RustEmbed;
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
     nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
-    render_global_search, render_nav_search_toggle, render_quick_actions, render_resource_hints,
-    render_sfx_urls, render_sitemap_link,
+    render_global_search, render_liquid_title_filter, render_nav_search_toggle,
+    render_quick_actions, render_resource_hints, render_sfx_urls, render_sitemap_link,
 };
 use crate::asset_url;
 
@@ -702,32 +702,62 @@ fn render_articles_dropdown() -> HtmlFragment {
 
 #[derive(Clone, Copy)]
 struct ArticlePageAssets {
+    article_title_effect: bool,
     region_map: bool,
 }
 
 impl ArticlePageAssets {
-    const NONE: Self = Self { region_map: false };
+    const NONE: Self = Self {
+        article_title_effect: false,
+        region_map: false,
+    };
 
-    fn for_slug(slug: &str) -> Self {
-        match slug {
-            "project-foottraffic" => Self { region_map: true },
-            _ => Self::NONE,
+    fn for_article_detail(slug: &str) -> Self {
+        Self {
+            article_title_effect: true,
+            region_map: slug == "project-foottraffic",
         }
     }
 }
 
 fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
-    if !assets.region_map {
-        return HtmlFragment::empty();
-    }
+    let article_title_assets = if assets.article_title_effect {
+        view! {
+            <link rel="stylesheet" href={ asset_url("css/liquid-title.css") } />
+            <script src={ asset_url("js/liquid-title.js") } defer></script>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
+
+    let region_map_assets = if assets.region_map {
+        view! {
+            <link rel="preconnect" href="https://unpkg.com" />
+            <link rel="preconnect" href="https://tile.openstreetmap.org" />
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+            <script src={ asset_url("js/region-map.js") } defer></script>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
 
     view! {
-        <link rel="preconnect" href="https://unpkg.com" />
-        <link rel="preconnect" href="https://tile.openstreetmap.org" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-        <script src={ asset_url("js/region-map.js") } defer></script>
+        { article_title_assets }
+        { region_map_assets }
+    }
+}
+
+fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
+    view! {
+        { render_liquid_title_filter() }
+        <h1 class="article-title liquid-title"
+            style={ vt_name }
+            data-liquid-title
+            data-liquid-title-text={ title }>
+            { title }
+        </h1>
     }
 }
 
@@ -959,14 +989,15 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
-            let page_assets = ArticlePageAssets::for_slug(&slug);
+            let page_assets = ArticlePageAssets::for_article_detail(&slug);
+            let title = render_article_title(page_title, &vt_name);
             let body = view! {
                 <article id="main"
                          class="article"
                          tabindex="-1"
                          data-commentable-article
                          data-article-slug={ slug.clone() }>
-                    <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
+                    { title }
                     <header class="article-meta">
                         <img class="article-meta-avatar"
                              src=AVATAR_SRC

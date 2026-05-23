@@ -40,6 +40,48 @@ pub fn render_sitemap_link() -> HtmlFragment {
     }
 }
 
+pub fn render_liquid_title_filter() -> HtmlFragment {
+    view! {
+        <svg class="liquid-title-defs"
+             aria-hidden="true"
+             focusable="false"
+             width="0"
+             height="0">
+            <filter id="liquid-title-water"
+                    x="-10%"
+                    y="-40%"
+                    width="120%"
+                    height="180%"
+                    color-interpolation-filters="sRGB">
+                <feTurbulence type="fractalNoise"
+                              baseFrequency="0.012 0.07"
+                              numOctaves="2"
+                              seed="8"
+                              result="liquidNoise">
+                    <animate attributeName="baseFrequency"
+                             dur="2.8s"
+                             values="0.012 0.07;0.026 0.052;0.018 0.092;0.012 0.07"
+                             repeatCount="indefinite" />
+                    <animate attributeName="seed"
+                             dur="1.4s"
+                             values="2;9;17;2"
+                             repeatCount="indefinite" />
+                </feTurbulence>
+                <feDisplacementMap in="SourceGraphic"
+                                   in2="liquidNoise"
+                                   scale="7"
+                                   xChannelSelector="R"
+                                   yChannelSelector="G">
+                    <animate attributeName="scale"
+                             dur="1.9s"
+                             values="3;9;5;12;3"
+                             repeatCount="indefinite" />
+                </feDisplacementMap>
+            </filter>
+        </svg>
+    }
+}
+
 // Emits a marker meta tag when the binary was built with the `dev`
 // cargo feature (i.e. via `just dev`). js/experiences.js reads this
 // tag in the Service Worker experience and, when set, unregisters any

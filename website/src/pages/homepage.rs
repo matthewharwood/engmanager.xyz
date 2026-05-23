@@ -8,10 +8,12 @@ use std::fmt::Write;
 use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
-    render_discovery_toasts, render_quick_actions, render_resource_hints, render_sfx_urls,
-    render_sitemap_link,
+    render_discovery_toasts, render_liquid_title_filter, render_quick_actions,
+    render_resource_hints, render_sfx_urls, render_sitemap_link,
 };
 use crate::asset_url;
+
+const HOME_LIQUID_HEADLINE_ENABLED: bool = true;
 
 // Serializes the article roster as a JSON island for the gacha
 // reveal card to read on click. JS reads this once on load and
@@ -194,15 +196,66 @@ impl Component for EngHeadline {
     type Props = EngHeadlineProps;
 
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
+        let filter = if HOME_LIQUID_HEADLINE_ENABLED {
+            render_liquid_title_filter()
+        } else {
+            HtmlFragment::empty()
+        };
+        let headline_class = if HOME_LIQUID_HEADLINE_ENABLED {
+            "fluid-display liquid-title liquid-title-always"
+        } else {
+            "fluid-display"
+        };
+        let svg_class = if HOME_LIQUID_HEADLINE_ENABLED {
+            "fluid-display-svg liquid-title-svg"
+        } else {
+            "fluid-display-svg"
+        };
+        let text_class = if HOME_LIQUID_HEADLINE_ENABLED {
+            "fluid-display-text liquid-title-svg-main"
+        } else {
+            "fluid-display-text"
+        };
+        let liquid_copies = if HOME_LIQUID_HEADLINE_ENABLED {
+            view! {
+                <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-a"
+                      x="0"
+                      y="160"
+                      font-family="Monument Extended, sans-serif"
+                      font-weight="900"
+                      font-size="144"
+                      aria-hidden="true">
+                    "ENG MANAGER"
+                </text>
+                <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-b"
+                      x="0"
+                      y="160"
+                      font-family="Monument Extended, sans-serif"
+                      font-weight="900"
+                      font-size="144"
+                      aria-hidden="true">
+                    "ENG MANAGER"
+                </text>
+            }
+        } else {
+            HtmlFragment::empty()
+        };
+
         view! {
             <div id="main" class="fluid-display-wrap" tabindex="-1">
-                <h1 class="fluid-display">
-                    <svg class="fluid-display-svg"
+                { filter }
+                <h1 class={ headline_class }
+                    data-liquid-title={ if HOME_LIQUID_HEADLINE_ENABLED { "always" } else { "off" } }
+                    data-liquid-title-text="ENG MANAGER"
+                    data-liquid-title-mode={ if HOME_LIQUID_HEADLINE_ENABLED { "always" } else { "hover" } }>
+                    <svg class={ svg_class }
                          viewBox="0 0 1200 200"
                          preserveAspectRatio="xMidYMid meet"
                          role="img"
                          aria-label="ENG MANAGER">
-                        <text x="0"
+                        { liquid_copies }
+                        <text class={ text_class }
+                              x="0"
                               y="160"
                               font-family="Monument Extended, sans-serif"
                               font-weight="900"
@@ -354,6 +407,20 @@ pub async fn index() -> Html<String> {
             }
         })
         .collect();
+    let home_liquid_styles = if HOME_LIQUID_HEADLINE_ENABLED {
+        view! {
+            <link rel="stylesheet" href={ asset_url("css/liquid-title.css") } />
+        }
+    } else {
+        HtmlFragment::empty()
+    };
+    let home_liquid_script = if HOME_LIQUID_HEADLINE_ENABLED {
+        view! {
+            <script src={ asset_url("js/liquid-title.js") } defer></script>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
 
     let page = html! {
         <!DOCTYPE html>
@@ -369,9 +436,11 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
+                { home_liquid_styles }
                 <script src={ asset_url("js/theme-toggle.js") }></script>
                 { render_sfx_urls() }
                 <script src={ asset_url("js/audio.js") } defer></script>
+                { home_liquid_script }
                 <script src={ asset_url("js/search.js") } defer></script>
                 <script src={ asset_url("js/search-keyclick.js") } defer></script>
                 <script src={ asset_url("js/fit-text.js") } defer></script>
