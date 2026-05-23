@@ -22,9 +22,7 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use lightningcss::stylesheet::{
-    MinifyOptions, ParserOptions, PrinterOptions, StyleSheet,
-};
+use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions, CommentOptions};
 use oxc_mangler::MangleOptions;
@@ -47,8 +45,7 @@ fn process_css(out_dir: &Path) {
     println!("cargo:rerun-if-changed={CSS_SRC_DIR}");
 
     let dist_dir = out_dir.join(CSS_DIST_SUBDIR);
-    fs::create_dir_all(&dist_dir)
-        .unwrap_or_else(|e| panic!("create {}: {e}", dist_dir.display()));
+    fs::create_dir_all(&dist_dir).unwrap_or_else(|e| panic!("create {}: {e}", dist_dir.display()));
 
     let src = PathBuf::from(CSS_SRC_DIR);
     if !src.exists() {
@@ -68,8 +65,8 @@ fn process_css(out_dir: &Path) {
             .expect("filename")
             .to_string_lossy()
             .into_owned();
-        let css = fs::read_to_string(&path)
-            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let css =
+            fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
 
         let minified = minify_css(&css, &name);
         let out_path = dist_dir.join(&name);
@@ -97,8 +94,7 @@ fn process_js(out_dir: &Path) {
     println!("cargo:rerun-if-changed={JS_SRC_DIR}");
 
     let dist_dir = out_dir.join(JS_DIST_SUBDIR);
-    fs::create_dir_all(&dist_dir)
-        .unwrap_or_else(|e| panic!("create {}: {e}", dist_dir.display()));
+    fs::create_dir_all(&dist_dir).unwrap_or_else(|e| panic!("create {}: {e}", dist_dir.display()));
 
     let src = PathBuf::from(JS_SRC_DIR);
     if !src.exists() {
@@ -118,8 +114,8 @@ fn process_js(out_dir: &Path) {
             .expect("filename")
             .to_string_lossy()
             .into_owned();
-        let source = fs::read_to_string(&path)
-            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        let source =
+            fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
 
         let minified = minify_js(&source, &path);
         let out_path = dist_dir.join(&name);

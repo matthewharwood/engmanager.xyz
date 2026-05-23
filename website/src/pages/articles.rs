@@ -9,8 +9,10 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
 use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF,
-    render_dev_meta, render_discovery_toasts, render_quick_actions,
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
+    nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
+    render_global_search, render_nav_search_toggle, render_quick_actions, render_resource_hints,
+    render_sitemap_link, render_theme_sfx_urls,
 };
 use crate::asset_url;
 
@@ -77,6 +79,13 @@ impl Category {
         }
     }
 
+    pub fn from_slug(slug: &str) -> Option<Self> {
+        Self::ALL
+            .iter()
+            .copied()
+            .find(|category| category.slug() == slug)
+    }
+
     pub fn emoji(self) -> &'static str {
         match self {
             Self::EngineeringLeadership => "👔",
@@ -115,6 +124,30 @@ pub enum Tag {
 }
 
 impl Tag {
+    pub const ALL: &'static [Tag] = &[
+        Self::Ai,
+        Self::ClaudeCode,
+        Self::Rust,
+        Self::Voice,
+        Self::Mcp,
+        Self::Discord,
+        Self::Community,
+        Self::Mentorship,
+        Self::Lsp,
+        Self::TypeScript,
+        Self::DeveloperTooling,
+        Self::Macros,
+        Self::Framework,
+        Self::JsxLike,
+        Self::Workflow,
+        Self::Solopreneur,
+        Self::LocalFirst,
+        Self::Blender,
+        Self::ThreeDPrinting,
+        Self::Makerspace,
+        Self::Parenting,
+    ];
+
     pub fn label(self) -> &'static str {
         match self {
             Self::Ai => "ai",
@@ -139,6 +172,14 @@ impl Tag {
             Self::Makerspace => "makerspace",
             Self::Parenting => "parenting",
         }
+    }
+
+    pub fn slug(self) -> &'static str {
+        self.label()
+    }
+
+    pub fn from_slug(slug: &str) -> Option<Self> {
+        Self::ALL.iter().copied().find(|tag| tag.slug() == slug)
     }
 
     pub fn emoji(self) -> &'static str {
@@ -175,10 +216,7 @@ impl Tag {
 // human-authored repetition in the slice.
 fn unique_tags(tags: &[Tag]) -> Vec<Tag> {
     let mut seen = std::collections::HashSet::with_capacity(tags.len());
-    tags.iter()
-        .copied()
-        .filter(|t| seen.insert(*t))
-        .collect()
+    tags.iter().copied().filter(|t| seen.insert(*t)).collect()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -327,18 +365,26 @@ pub fn public_articles() -> impl Iterator<Item = &'static Article> {
     ARTICLES.iter().filter(|article| article.indexed)
 }
 
+pub fn article_by_slug(slug: &str) -> Option<&'static Article> {
+    ARTICLES.iter().find(|article| article.slug == slug)
+}
+
+pub fn article_markdown(slug: &str) -> Option<String> {
+    let path = format!("{slug}.md");
+    let file = ArticleSources::get(&path)?;
+    std::str::from_utf8(&file.data).ok().map(str::to_owned)
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct ArticleRelations {
-    pub newer: Option<usize>,
-    pub older: Option<usize>,
-    pub related: Option<usize>,
+    pub next: Option<usize>,
+    pub topic_next: Option<usize>,
 }
 
 impl ArticleRelations {
     const EMPTY: Self = Self {
-        newer: None,
-        older: None,
-        related: None,
+        next: None,
+        topic_next: None,
     };
 }
 
@@ -352,71 +398,41 @@ const fn build_article_relations() -> [ArticleRelations; ARTICLE_COUNT] {
     let mut relations = [ArticleRelations::EMPTY; ARTICLE_COUNT];
     let mut index = 0;
     while index < ARTICLE_COUNT {
+        let next = find_next_index(index);
         relations[index] = ArticleRelations {
-            newer: find_newer_index(index),
-            older: find_older_index(index),
-            related: find_related_index(index),
+            next,
+            topic_next: find_topic_next_index(index, next),
         };
         index += 1;
     }
     relations
 }
 
-const fn find_newer_index(current_index: usize) -> Option<usize> {
-    let current = ARTICLE_LIST[current_index];
-    if !current.indexed {
+const fn find_next_index(current_index: usize) -> Option<usize> {
+    if !ARTICLE_LIST[current_index].indexed {
         return None;
     }
-    let mut best: Option<usize> = None;
-    let mut index = 0;
+
+    let mut index = current_index + 1;
     while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed
-            && index != current_index
-            && date_is_after(ARTICLE_LIST[index].date, current.date)
-        {
-            let replace_best = match best {
-                Some(best_index) => {
-                    date_is_before(ARTICLE_LIST[index].date, ARTICLE_LIST[best_index].date)
-                }
-                None => true,
-            };
-            if replace_best {
-                best = Some(index);
-            }
+        if ARTICLE_LIST[index].indexed {
+            return Some(index);
         }
         index += 1;
     }
-    best
-}
 
-const fn find_older_index(current_index: usize) -> Option<usize> {
-    let current = ARTICLE_LIST[current_index];
-    if !current.indexed {
-        return None;
-    }
-    let mut best: Option<usize> = None;
-    let mut index = 0;
-    while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed
-            && index != current_index
-            && date_is_before(ARTICLE_LIST[index].date, current.date)
-        {
-            let replace_best = match best {
-                Some(best_index) => {
-                    date_is_after(ARTICLE_LIST[index].date, ARTICLE_LIST[best_index].date)
-                }
-                None => true,
-            };
-            if replace_best {
-                best = Some(index);
-            }
+    index = 0;
+    while index < current_index {
+        if ARTICLE_LIST[index].indexed {
+            return Some(index);
         }
         index += 1;
     }
-    best
+
+    None
 }
 
-const fn find_related_index(current_index: usize) -> Option<usize> {
+const fn find_topic_next_index(current_index: usize, avoid_index: Option<usize>) -> Option<usize> {
     let current = ARTICLE_LIST[current_index];
     if !current.indexed {
         return None;
@@ -425,22 +441,48 @@ const fn find_related_index(current_index: usize) -> Option<usize> {
     let mut best_score = 0;
     let mut index = 0;
     while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed && index != current_index {
+        let is_avoided = match avoid_index {
+            Some(avoid) => index == avoid,
+            None => false,
+        };
+        if ARTICLE_LIST[index].indexed && index != current_index && !is_avoided {
             let candidate = ARTICLE_LIST[index];
             let score = relevance_score_articles(current, candidate);
-            if score > best_score
-                || (score == best_score && related_tie_breaker(candidate, best))
-            {
+            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
                 best = Some(index);
                 best_score = score;
             }
         }
         index += 1;
     }
+
+    match best {
+        Some(_) => return best,
+        None => {}
+    }
+
+    match avoid_index {
+        Some(_) => {}
+        None => return None,
+    }
+
+    index = 0;
+    while index < ARTICLE_COUNT {
+        if ARTICLE_LIST[index].indexed && index != current_index {
+            let candidate = ARTICLE_LIST[index];
+            let score = relevance_score_articles(current, candidate);
+            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
+                best = Some(index);
+                best_score = score;
+            }
+        }
+        index += 1;
+    }
+
     best
 }
 
-const fn related_tie_breaker(candidate: Article, best: Option<usize>) -> bool {
+const fn topic_tie_breaker(candidate: Article, best: Option<usize>) -> bool {
     match best {
         Some(best_index) => date_is_after(candidate.date, ARTICLE_LIST[best_index].date),
         None => true,
@@ -476,14 +518,7 @@ const fn contains_tag(tags: &[Tag], needle: Tag) -> bool {
 
 const fn date_is_after(a: ArticleDate, b: ArticleDate) -> bool {
     a.year > b.year
-        || (a.year == b.year
-            && (a.month > b.month || (a.month == b.month && a.day > b.day)))
-}
-
-const fn date_is_before(a: ArticleDate, b: ArticleDate) -> bool {
-    a.year < b.year
-        || (a.year == b.year
-            && (a.month < b.month || (a.month == b.month && a.day < b.day)))
+        || (a.year == b.year && (a.month > b.month || (a.month == b.month && a.day > b.day)))
 }
 
 // Debug-only: catch accidental tag duplicates during dev. Production
@@ -623,8 +658,10 @@ fn render_articles_dropdown() -> HtmlFragment {
             <button class="nav-dropdown-trigger is-current"
                     type="button"
                     aria-haspopup="true"
-                    aria-expanded="false">
-                "Articles"
+                    aria-expanded="false"
+                    aria-label="Articles">
+                { nav_icon_folder() }
+                <span class="site-nav-link-label">"Articles"</span>
                 <svg class="nav-dropdown-chevron" viewBox="0 0 10 10" aria-hidden="true">
                     <path d="M2 4 L5 7 L8 4"
                           fill="none"
@@ -664,18 +701,26 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                 <title>{ title }</title>
                 { robots_meta }
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
+                { render_sitemap_link() }
+                { render_resource_hints() }
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/articles.css") } />
+                <link rel="stylesheet" href={ asset_url("css/comments.css") } />
                 <script src={ asset_url("js/theme-toggle.js") }></script>
+                { render_theme_sfx_urls() }
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
                 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+                <script src={ asset_url("js/search.js") } defer></script>
                 <script src={ asset_url("js/copy-code.js") } defer></script>
                 <script src={ asset_url("js/auteurs-shader.js") } defer></script>
+                <script src={ asset_url("js/comments.js") } defer></script>
                 <script src={ asset_url("js/toc-waypoints.js") } defer></script>
                 <script src={ asset_url("js/to-top.js") } defer></script>
+                <script src={ asset_url("js/popover-registry.js") } defer></script>
                 <script src={ asset_url("js/nav-dropdown.js") } defer></script>
+                <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
@@ -689,6 +734,7 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                 { render_dev_meta() }
             </head>
             <body class="articles-page">
+                <a class="skip-link" href="#main">"Skip to content"</a>
                 <nav class="site-nav" aria-label="Primary">
                     <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
                         <img class="site-nav-mark"
@@ -699,10 +745,18 @@ fn layout(title: &str, body: HtmlFragment, indexed: bool) -> HtmlFragment {
                              aria-hidden="true" />
                         <span class="site-nav-wordmark">"engmanager.xyz"</span>
                     </a>
+                    { render_global_search("Search") }
                     <div class="site-nav-links">
+                        { render_nav_search_toggle() }
                         { render_articles_dropdown() }
-                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">"Discord"</a>
-                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener">"GitHub"</a>
+                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
+                            { nav_icon_discord() }
+                            <span class="site-nav-link-label">"Discord"</span>
+                        </a>
+                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
+                            { nav_icon_github() }
+                            <span class="site-nav-link-label">"GitHub"</span>
+                        </a>
                     </div>
                 </nav>
                 { body }
@@ -751,130 +805,72 @@ pub async fn index() -> Html<String> {
 
 fn render_article_navigation(current_index: usize) -> HtmlFragment {
     let relations = ARTICLE_RELATIONS[current_index];
-    let older = relations
-        .older
-        .map(|index| render_pager_card(index, "prev", "Older article", "←"));
-    let newer = relations
-        .newer
-        .map(|index| render_pager_card(index, "next", "Newer article", "→"));
-    let related = relations
-        .related
-        .map(|index| render_related_article(current_index, index))
+    let next = relations
+        .next
+        .map(|index| render_next_article_card(current_index, index, "Article"))
+        .unwrap_or_else(HtmlFragment::empty);
+    let topic_next = relations
+        .topic_next
+        .map(|index| render_next_article_card(current_index, index, "By topic"))
         .unwrap_or_else(HtmlFragment::empty);
 
-    if older.is_none() && newer.is_none() && relations.related.is_none() {
+    if relations.next.is_none() && relations.topic_next.is_none() {
         return HtmlFragment::empty();
     }
 
     view! {
-        <footer class="article-nextup" aria-label="Article navigation">
-            <nav class="article-pager" aria-label="Previous and next articles">
-                { older.unwrap_or_else(HtmlFragment::empty) }
-                { newer.unwrap_or_else(HtmlFragment::empty) }
+        <footer class="article-nextup" aria-label="Next articles">
+            <nav class="article-next-grid" aria-label="Next articles">
+                { next }
+                { topic_next }
             </nav>
-            { related }
         </footer>
     }
 }
 
-fn render_pager_card(
+fn render_next_article_card(
+    current_index: usize,
     article_index: usize,
-    rel: &'static str,
-    label: &'static str,
-    arrow: &'static str,
+    context: &'static str,
 ) -> HtmlFragment {
+    let current = &ARTICLES[current_index];
     let article = &ARTICLES[article_index];
     let title = article.title_alias.unwrap_or(article.title);
-    let class = if rel == "next" {
-        "article-pager-card article-pager-card-next"
-    } else {
-        "article-pager-card article-pager-card-prev"
-    };
+    let score = relevance_score(current, article);
+    let chips = render_article_topic_chips(article);
 
     view! {
-        <a class={ class }
-           rel={ rel }
-           href={ format!("/articles/{}", article.slug) }>
-            <span class="article-pager-label">
-                <span aria-hidden="true">{ arrow }</span>
-                { label }
+        <a class="article-next-card"
+           href={ format!("/articles/{}", article.slug) }
+           data-relevance-score={ format!("{}", score) }>
+            <span class="article-next-kicker">"Next"</span>
+            <span class="article-next-body">
+                <span class="article-next-context">{ context }</span>
+                <strong class="article-next-title">{ title }</strong>
+                <span class="article-next-chips" aria-label="Article topics">
+                    { chips }
+                </span>
             </span>
-            <strong class="article-pager-title">{ title }</strong>
-            <time class="article-pager-date" datetime={ article.date.iso() }>
-                { article.date.label() }
-            </time>
+            <span class="article-next-arrow" aria-hidden="true">"→"</span>
         </a>
     }
 }
 
-fn render_related_article(current_index: usize, related_index: usize) -> HtmlFragment {
-    let current = &ARTICLES[current_index];
-    let related = &ARTICLES[related_index];
-    let title = related.title_alias.unwrap_or(related.title);
-    let score = relevance_score(current, related);
-    let heading = if score > 0 {
-        "Next by topic"
-    } else {
-        "Closest article"
-    };
-    let chips = render_relevance_chips(current, related);
-
-    view! {
-        <section class="article-related" aria-label="Related article">
-            <a class="article-related-link"
-               href={ format!("/articles/{}", related.slug) }
-               data-relevance-score={ format!("{}", score) }>
-                <span class="article-related-kicker">"Related"</span>
-                <span class="article-related-body">
-                    <span class="article-related-heading">{ heading }</span>
-                    <strong class="article-related-title">{ title }</strong>
-                    <span class="article-related-chips" aria-label="Relevance signals">
-                        { chips }
-                    </span>
-                </span>
-                <span class="article-related-arrow" aria-hidden="true">"→"</span>
-            </a>
-        </section>
-    }
-}
-
-fn render_relevance_chips(current: &Article, related: &Article) -> HtmlFragment {
-    let has_shared_category = current.category == related.category;
-    let category = if has_shared_category {
-        view! {
-            <span class="article-related-chip article-related-chip-category">
-                { current.category.label() }
-            </span>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-
-    let shared_tags: Vec<Tag> = unique_tags(current.tags)
+fn render_article_topic_chips(article: &Article) -> HtmlFragment {
+    let tags: HtmlFragment = unique_tags(article.tags)
         .into_iter()
-        .filter(|tag| related.tags.contains(tag))
-        .collect();
-    let tags: HtmlFragment = shared_tags
-        .iter()
-        .copied()
         .map(|tag| {
             view! {
-                <span class="article-related-chip">{ tag.label() }</span>
+                <span class="article-next-chip">{ tag.label() }</span>
             }
         })
         .collect();
-    let fallback = if !has_shared_category && shared_tags.is_empty() {
-        view! {
-            <span class="article-related-chip">"nearest date"</span>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
 
     view! {
-        { category }
+        <span class="article-next-chip article-next-chip-category">
+            { article.category.label() }
+        </span>
         { tags }
-        { fallback }
     }
 }
 
@@ -890,23 +886,30 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
             let a = &ARTICLES[article_index];
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
-            let (inner, headings) = article_body(&slug)
-                .unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
+            let (inner, headings) =
+                article_body(&slug).unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
             let inner = splice_discord_widget(&slug, inner).await;
             let toc = render_toc(&headings);
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
             let body = view! {
-                <article class="article">
+                <article id="main"
+                         class="article"
+                         tabindex="-1"
+                         data-commentable-article
+                         data-article-slug={ slug.clone() }>
                     <h1 class="article-title" style={ vt_name }>{ page_title }</h1>
                     <header class="article-meta">
                         <img class="article-meta-avatar"
                              src=AVATAR_SRC
+                             srcset={ avatar_srcset(&[40, 80, 120]) }
+                             sizes="40px"
                              alt="Matthew Harwood"
                              width="40"
                              height="40"
-                             loading="lazy" />
+                             loading="eager"
+                             decoding="async" />
                         <div class="article-meta-author">
                             <div class="article-meta-name">"Matthew Harwood"</div>
                             <div class="article-meta-role">"Engineering Manager @ Uber"</div>
@@ -918,14 +921,22 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                             <summary class="article-meta-summary">"Actions"</summary>
                             { article_meta_tools() }
                         </details>
-                        <details class="article-meta-disclosure article-meta-disclosure-taxonomy">
-                            <summary class="article-meta-summary">"Topics"</summary>
-                            { taxonomy }
-                        </details>
+                        { taxonomy }
                     </header>
                     { inner }
                     { article_navigation }
                 </article>
+                <section class="comments-panel"
+                         id="comments"
+                         data-comments-panel
+                         data-article-slug={ slug.clone() }
+                         aria-label="Article comments">
+                    <header class="comments-panel-head">
+                        <h2>"Comments"</h2>
+                        <p>"Select text in the article to leave an inline comment."</p>
+                    </header>
+                    <div class="comments-list" data-comments-list aria-live="polite"></div>
+                </section>
                 { toc }
             };
             Ok(Html(layout(page_title, body, a.indexed).into_string()))

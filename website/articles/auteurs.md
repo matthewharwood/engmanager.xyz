@@ -11,7 +11,7 @@ Join us.
 <!--auteurs-discord-widget-->
 
 <div class="auteurs-join">
-  <img class="auteurs-qr" src="/assets/auteurs/discord-qr.png" alt="Scan to join the Auteurs Discord" width="280" height="280" loading="lazy" />
+  <img class="auteurs-qr" src="/assets/auteurs/discord-qr.png" alt="Scan to join the Auteurs Discord" width="219" height="219" loading="lazy" decoding="async" />
   <a class="auteurs-discord-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener">
     discord.gg/sTzQBrbnBM
   </a>

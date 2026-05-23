@@ -11,9 +11,14 @@ listenfd = { workspace = true, optional = true }
 pulldown-cmark = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 tower-http = { workspace = true }
 eng-markup = { workspace = true }
 eng-domain = { workspace = true }
+tantivy = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+surrealdb = { workspace = true }
 
 [build-dependencies]
 lightningcss = { workspace = true }
@@ -23,6 +28,9 @@ oxc_mangler = { workspace = true }
 oxc_minifier = { workspace = true }
 oxc_parser = { workspace = true }
 oxc_span = { workspace = true }
+
+[dev-dependencies]
+roxmltree = "0.20"
 
 [features]
 # Enables live-reload via systemfd's LISTEN_FDS socket inheritance.

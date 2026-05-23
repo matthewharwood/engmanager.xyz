@@ -1,16 +1,42 @@
 {
+  "id": "/",
   "name": "engmanager.xyz",
   "short_name": "engmanager",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "background_color": "#eff1f5",
   "theme_color": "#e64553",
+  "orientation": "any",
   "icons": [
     {
       "src": "/assets/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/engmananager.xyz.png",
+      "sizes": "145x144",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Articles",
+      "short_name": "Articles",
+      "description": "Open the article index",
+      "url": "/articles/",
+      "icons": [{ "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Latest Article",
+      "short_name": "Latest",
+      "description": "Open the newest public article",
+      "url": "/articles/talking-not-typing",
+      "icons": [{ "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ],
   "categories": ["productivity", "developer"],

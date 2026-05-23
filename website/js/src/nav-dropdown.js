@@ -40,6 +40,9 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
     const open = async () => {
         if (isOpen) return;
         setOpenState(true);
+        // Tell the shared registry we're open so any other popover
+        // (search expander, future modals) closes itself.
+        window.__engPopovers?.open("nav-dropdown", () => close());
 
         const anime = await loadAnime();
         // The user may have closed before anime finished loading.
@@ -84,6 +87,7 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
     const close = async () => {
         if (!isOpen) return;
         setOpenState(false);
+        window.__engPopovers?.close("nav-dropdown");
 
         const anime = await loadAnime();
 

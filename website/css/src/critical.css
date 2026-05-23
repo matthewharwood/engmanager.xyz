@@ -36,6 +36,255 @@
 
 @layer fp.config, fp.tokens, fp.themes, fp.compat, fp.base, fp.overlay;
 
+@layer fp.base {
+    .sr-only {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+}
+
+@layer fp.overlay {
+    .site-nav {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding-block: 0.75rem;
+        padding-inline: 1rem;
+        background: color-mix(in oklab, var(--surface-1) 78%, transparent);
+        -webkit-backdrop-filter: saturate(180%) blur(14px);
+        backdrop-filter: saturate(180%) blur(14px);
+        border-block-end: 1px solid var(--border-subtle);
+    }
+
+    .site-nav-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-1);
+        font-family: var(--font-display);
+        font-size: 0.8125rem;
+        font-weight: 900;
+        line-height: 1;
+        text-decoration: none;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .site-nav-mark {
+        inline-size: 1.25rem;
+        block-size: 1.25rem;
+        border-radius: 50%;
+        display: block;
+        flex-shrink: 0;
+    }
+
+    .site-nav-wordmark {
+        display: none;
+    }
+
+    .site-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 0.125rem;
+    }
+
+    .site-nav-link {
+        color: var(--text-2);
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        line-height: 1;
+        padding-block: 0.5rem;
+        padding-inline: 0.5rem;
+        text-decoration: none;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Icons render at the link's currentColor and ride the existing
+     * hover/active states inherited from .site-nav-link. */
+    .site-nav-icon {
+        inline-size: 1.15rem;
+        block-size: 1.15rem;
+        flex-shrink: 0;
+        display: none;
+    }
+
+    /* Mobile-only magnifier button. Same affordance footprint as the
+     * other nav icons; opens the .site-search form when clicked. */
+    .site-search-toggle {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        padding-block: 0.5rem;
+        padding-inline: 0.5rem;
+        cursor: pointer;
+        color: var(--text-2);
+        line-height: 0;
+        display: none;
+    }
+
+    .site-search-toggle:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+
+    .site-search {
+        position: relative;
+        flex: 1 1 16rem;
+        max-inline-size: 26rem;
+        min-inline-size: 8rem;
+    }
+
+    .site-search-input {
+        inline-size: 100%;
+        min-block-size: 2.25rem;
+        padding: 0.45rem 0.7rem;
+        color: var(--text-1);
+        background: var(--surface-1);
+        border: 2px solid var(--text-1);
+        border-radius: var(--radius-xs);
+        box-shadow: 3px 3px 0 var(--text-1);
+        font: 700 0.8125rem var(--font-sans);
+    }
+
+    .site-search-input:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+
+    .site-search-results {
+        position: absolute;
+        inset-block-start: calc(100% + 0.5rem);
+        inset-inline: 0;
+        z-index: 90;
+        display: grid;
+        gap: 0.25rem;
+        max-block-size: min(24rem, calc(100svh - 7rem));
+        overflow: auto;
+        margin: 0;
+        padding: 0.35rem;
+        list-style: none;
+        background: var(--surface-1);
+        border: 2px solid var(--text-1);
+        border-radius: var(--radius-xs);
+        box-shadow: 6px 6px 0 var(--text-1);
+    }
+
+    .site-search-results[hidden] {
+        display: none;
+    }
+
+    .site-search-result a {
+        display: grid;
+        gap: 0.15rem;
+        padding: 0.55rem 0.65rem;
+        color: var(--text-1);
+        text-decoration: none;
+        border-radius: var(--radius-2xs);
+    }
+
+    .site-search-result.is-active a,
+    .site-search-result a:hover,
+    .site-search-result a:focus-visible {
+        background: var(--selected-tint);
+    }
+
+    .site-search-result-title {
+        font-size: 0.85rem;
+        font-weight: 900;
+        line-height: 1.2;
+    }
+
+    .site-search-result-detail {
+        color: var(--text-muted);
+        font-size: 0.72rem;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (min-width: 42rem) {
+        .site-nav {
+            gap: 1rem;
+            padding-inline: 1.5rem;
+        }
+
+        .site-nav-wordmark {
+            display: inline;
+        }
+
+        .site-nav-link {
+            font-size: 0.75rem;
+            padding-inline: 0.75rem;
+        }
+    }
+
+    @media (max-width: 42rem) {
+        .site-nav {
+            flex-wrap: wrap;
+        }
+
+        /* Search is hidden until the magnifier opens it. */
+        .site-search {
+            display: none;
+            order: 3;
+            flex-basis: 100%;
+            max-inline-size: none;
+        }
+
+        .site-nav[data-search-open="true"] .site-search {
+            display: block;
+        }
+
+        .site-search-toggle,
+        .site-nav-icon {
+            display: inline-flex;
+        }
+
+        /* When search is open the magnifier becomes a close affordance;
+         * the other nav glyphs collapse out so the input has the row. */
+        .site-nav[data-search-open="true"] .site-search-toggle {
+            color: var(--brand);
+        }
+
+        /* Visually hide the text labels but keep them accessible to AT
+         * (link names still announce as "Articles", "Discord", etc.). */
+        .site-nav-link-label {
+            position: absolute;
+            inline-size: 1px;
+            block-size: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Hide the chevron on the Articles dropdown trigger on mobile —
+         * the folder icon is enough; tap still opens the menu. */
+        .nav-dropdown-chevron {
+            display: none;
+        }
+    }
+}
+
 /* ============================================================================
  * CONFIG · tunable fluid knobs
  * ========================================================================== */
@@ -624,6 +873,52 @@
         font-family: var(--font-display);
     }
 
+    .skip-link {
+        position: relative;
+        z-index: 10000;
+        display: block;
+        inline-size: max-content;
+        max-inline-size: calc(100% - 1.5rem);
+        max-block-size: 0;
+        margin: 0 0 0 0.75rem;
+        padding-block: 0;
+        padding-inline: 0.875rem;
+        overflow: hidden;
+        border: 0 solid var(--text-1);
+        background: var(--surface-1);
+        color: var(--text-1);
+        box-shadow: none;
+        font-family: var(--font-mono);
+        font-size: 0.875rem;
+        font-weight: 900;
+        line-height: 1;
+        text-decoration: none;
+        text-transform: uppercase;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+            max-block-size 140ms ease,
+            margin-block 140ms ease,
+            padding-block 140ms ease,
+            opacity 100ms ease;
+    }
+
+    .skip-link:focus-visible {
+        max-block-size: 4rem;
+        margin-block: 0.75rem;
+        padding-block: 0.625rem;
+        border-width: 2px;
+        box-shadow: 3px 3px 0 var(--text-1);
+        opacity: 1;
+        pointer-events: auto;
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+    }
+
+    #main:focus {
+        outline: none;
+    }
+
     /* Page Visibility experience parks the marquees when the tab is hidden.
      * Network Information sets a "slow" data-attr that does the same on
      * slow connections. */
@@ -632,12 +927,42 @@
         animation-play-state: paused;
     }
 
+    @media (prefers-reduced-data: reduce) {
+        body {
+            background-image: none;
+            background-attachment: scroll;
+        }
+
+        .marquee-track,
+        .discovery-toast,
+        .api-receipt-panel {
+            animation: none !important;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
             scroll-behavior: auto !important;
+        }
+    }
+
+    @media (prefers-contrast: more) {
+        :where(a, button, summary):focus-visible {
+            outline-width: 3px;
+            outline-offset: 3px;
+        }
+    }
+
+    @media (forced-colors: active) {
+        body {
+            background-image: none;
+        }
+
+        :where(a, button, summary):focus-visible {
+            outline: 2px solid CanvasText;
         }
     }
 }
@@ -809,11 +1134,13 @@
      * color and the name gets struck through. Unsupported = check is
      * empty and the name dims. */
     .api-cell {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: 0.1875rem;
         padding-block: 0.375rem;
         padding-inline: 0.5rem;
+        padding-inline-end: 1.75rem;
         font-family: var(--font-mono);
         font-size: 0.6875rem;
         background: color-mix(in oklab, var(--surface-1) 80%, transparent);
@@ -860,11 +1187,93 @@
         word-break: break-word;
     }
 
+    .api-cell-hint {
+        position: absolute;
+        inset-block-start: 0.25rem;
+        inset-inline-end: 0.25rem;
+        z-index: 2;
+        inline-size: 1rem;
+        block-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid var(--border-muted);
+        border-radius: 50%;
+        background: var(--surface-1);
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 0.625rem;
+        font-weight: 800;
+        line-height: 1;
+        cursor: help;
+    }
+
+    .api-cell-hint:hover,
+    .api-cell-hint:focus-visible {
+        border-color: var(--brand);
+        color: var(--text-1);
+        outline: none;
+    }
+
+    .api-cell-tooltip {
+        position: absolute;
+        inset-block-start: calc(100% + 0.25rem);
+        inset-inline-end: 0;
+        z-index: 30;
+        inline-size: min(14rem, calc(100vw - 2rem));
+        display: grid;
+        gap: 0.1875rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text-1);
+        box-shadow: 0.25rem 0.25rem 0 var(--border-bold);
+        font-size: 0.625rem;
+        font-weight: 500;
+        line-height: 1.35;
+        text-align: start;
+        white-space: normal;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-0.1875rem);
+        transition:
+            opacity var(--motion-hover),
+            transform var(--motion-hover);
+    }
+
+    .api-cell-tooltip-label {
+        color: var(--brand);
+        font-size: 0.5625rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .api-cell-tooltip-label:not(:first-child) {
+        margin-block-start: 0.25rem;
+        padding-block-start: 0.3125rem;
+        border-block-start: 1px solid var(--border-subtle);
+    }
+
+    .api-cell-tooltip-text {
+        display: block;
+    }
+
+    .api-cell-hint:hover .api-cell-tooltip,
+    .api-cell-hint:focus .api-cell-tooltip,
+    .api-cell-hint:focus-visible .api-cell-tooltip {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+
     .api-cell-active  { border-left: 3px solid var(--success); }
     .api-cell-passive { border-left: 3px solid var(--info); }
     .api-cell-error   { border-left: 3px solid var(--danger); }
 
-    .api-cell-unsupported {
+    .api-cell-unsupported .api-cell-row,
+    .api-cell-unsupported .api-cell-meta {
         opacity: 0.55;
     }
 
@@ -923,28 +1332,28 @@
         display: none;
     }
 
+    /* Circular icon button with a shopping-cart-style count badge in
+     * the top-right corner. The badge dims to a neutral surface when
+     * the count is "0" (no APIs discovered yet) via the attribute
+     * selector on `data-hunt-chip-count`. */
     .hunt-chip {
         position: fixed;
         inset-block-end: 1rem;
-        inset-inline-start: 1rem;
+        inset-inline-start: 12.25rem;
         z-index: 40;
         appearance: none;
         cursor: pointer;
+        inline-size: 3rem;
+        block-size: 3rem;
+        padding: 0;
         display: inline-flex;
         align-items: center;
-        gap: 0.4375rem;
-        padding-block: 0.5rem;
-        padding-inline: 0.75rem;
+        justify-content: center;
         background: var(--surface-1);
         color: var(--text-1);
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
         line-height: 1;
         border: 2px solid var(--text-1);
-        border-radius: 0;
+        border-radius: 50%;
         box-shadow: 3px 3px 0 0 var(--text-1);
         transition: transform var(--motion-press), box-shadow var(--motion-press);
     }
@@ -961,9 +1370,35 @@
         box-shadow: 0 0 0 0 var(--text-1);
     }
 
-    .hunt-chip-glyph { color: var(--brand); font-size: 0.9em; line-height: 1; }
-    .hunt-chip-count { color: var(--brand); font-size: 0.875rem; font-weight: 900; }
-    .hunt-chip-suffix { color: var(--text-2); }
+    .hunt-chip-emoji {
+        font-size: 1.5rem;
+        line-height: 1;
+    }
+
+    .hunt-chip-badge {
+        position: absolute;
+        inset-block-start: -0.35rem;
+        inset-inline-end: -0.35rem;
+        min-inline-size: 1.25rem;
+        block-size: 1.25rem;
+        padding-inline: 0.3125rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--brand);
+        color: var(--brand-text);
+        border: 1.5px solid var(--text-1);
+        border-radius: 999rem;
+        font-family: var(--font-mono);
+        font-size: 0.625rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .hunt-chip-badge[data-hunt-chip-count="0"] {
+        background: var(--surface-2);
+        color: var(--text-muted);
+    }
 
     .discovery-toasts {
         position: fixed;
@@ -1016,28 +1451,26 @@
     .discovery-toast-count { opacity: 0.85; font-weight: 500; }
 
     /* ---- Theme cycler chip ---- */
+    /* Circular icon button. The current theme's emoji is swapped in
+     * by js/theme-toggle.js on each click. */
     .theme-picker {
         position: fixed;
         inset-block-end: 1rem;
-        inset-inline-start: 10.5rem;
+        inset-inline-start: 8.5rem;
         z-index: 40;
         appearance: none;
         cursor: pointer;
+        inline-size: 3rem;
+        block-size: 3rem;
+        padding: 0;
         display: inline-flex;
         align-items: center;
-        gap: 0.4375rem;
-        padding-block: 0.5rem;
-        padding-inline: 0.75rem;
+        justify-content: center;
         background: var(--surface-1);
         color: var(--text-1);
-        font-family: var(--font-mono);
-        font-size: 0.6875rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
         line-height: 1;
         border: 2px solid var(--text-1);
-        border-radius: 0;
+        border-radius: 50%;
         box-shadow: 3px 3px 0 0 var(--text-1);
         transition: transform var(--motion-press), box-shadow var(--motion-press);
     }
@@ -1054,8 +1487,10 @@
         box-shadow: 0 0 0 0 var(--text-1);
     }
 
-    .theme-picker-glyph { color: var(--brand); font-size: 0.95em; line-height: 1; }
-    .theme-picker-label { color: var(--text-1); }
+    .theme-picker-emoji {
+        font-size: 1.5rem;
+        line-height: 1;
+    }
 
     @media (max-width: 48rem) {
         .quick-actions {

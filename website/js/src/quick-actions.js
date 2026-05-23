@@ -24,7 +24,15 @@
         );
     };
 
-    toggle.addEventListener("click", () => setOpen(!isOpen()));
+    let suppressNextClick = false;
+
+    toggle.addEventListener("click", () => {
+        if (suppressNextClick) {
+            suppressNextClick = false;
+            return;
+        }
+        setOpen(!isOpen());
+    });
 
     let drag = null;
 
@@ -36,7 +44,7 @@
         drag = null;
     };
 
-    root.addEventListener("pointerdown", (event) => {
+    peek.addEventListener("pointerdown", (event) => {
         if (event.button !== undefined && event.button !== 0) return;
         drag = {
             pointerId: event.pointerId,
@@ -44,17 +52,17 @@
             base: isOpen() ? 0 : closedShift(),
             current: isOpen() ? 0 : closedShift(),
         };
-        root.setPointerCapture?.(event.pointerId);
+        peek.setPointerCapture?.(event.pointerId);
         root.dataset.dragging = "true";
-    });
+    }, { passive: true });
 
-    root.addEventListener("pointermove", (event) => {
+    peek.addEventListener("pointermove", (event) => {
         if (!drag || event.pointerId !== drag.pointerId) return;
         const max = closedShift();
         const next = Math.max(0, Math.min(max, drag.base + event.clientX - drag.startX));
         drag.current = next;
         root.style.transform = `translateX(${next}px)`;
-    });
+    }, { passive: true });
 
     const finishDrag = (event) => {
         if (!drag || event.pointerId !== drag.pointerId) return;
@@ -62,12 +70,13 @@
         const max = closedShift();
         const shouldOpen =
             Math.abs(delta) > 24 ? delta < 0 : drag.current < max / 2;
+        suppressNextClick = Math.abs(delta) > 4;
         setOpen(shouldOpen);
         clearDrag();
     };
 
-    root.addEventListener("pointerup", finishDrag);
-    root.addEventListener("pointercancel", clearDrag);
+    peek.addEventListener("pointerup", finishDrag, { passive: true });
+    peek.addEventListener("pointercancel", clearDrag, { passive: true });
 
     setOpen(false);
 })();

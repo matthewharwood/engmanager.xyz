@@ -6,7 +6,8 @@
 // `data-mode` swaps which one is visible:
 //
 //   arrow   default
-//   open    hovering a draggable marquee chip or visited article check
+//   open    hovering a draggable marquee chip, visited article check,
+//           or catching the background DVD logo
 //   grab    a chip/article is being dragged (CSS `grabbing` analogue)
 //
 // Pointer Events throughout — `pointermove` instead of `mousemove`,
@@ -83,6 +84,7 @@
 
     function detectMode(target) {
         if (document.body.dataset.dragging === "true") return "grab";
+        if (isOverDvdBouncer()) return "open";
         const chip = target?.closest?.(".marquee .chip");
         if (chip && chip.dataset.trashed !== "true") {
             return "open";
@@ -94,6 +96,18 @@
             return "open";
         }
         return "arrow";
+    }
+
+    function isOverDvdBouncer() {
+        const logo = document.querySelector("[data-dvd-bouncer]");
+        if (!logo || logo.dataset.trashed === "true" || logo.hidden) return false;
+        const rect = logo.getBoundingClientRect();
+        return (
+            mouseX >= rect.left &&
+            mouseX <= rect.right &&
+            mouseY >= rect.top &&
+            mouseY <= rect.bottom
+        );
     }
 
     // Asymmetric debounce on de-engagement. Engaging a chip
