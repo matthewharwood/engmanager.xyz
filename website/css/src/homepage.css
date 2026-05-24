@@ -338,6 +338,7 @@ body[data-dragging="true"] {
 /* Lift every fixed-bottom piece of chrome above the floating bar so
  * nothing overlaps. All read the same variable triad — retune the bar
  * and everything else follows. */
+.homepage .theme-picker,
 .homepage .hunt-chip,
 .homepage .discovery-toasts,
 .homepage .trash,
