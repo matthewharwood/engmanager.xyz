@@ -201,6 +201,20 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
     }
 }
 
+async fn favicon_handler() -> Response {
+    match lookup_asset("favicon.svg") {
+        Some(file) => (
+            [
+                (header::CONTENT_TYPE, "image/svg+xml".to_string()),
+                (header::CACHE_CONTROL, "public, max-age=3600".to_string()),
+            ],
+            file.data.into_owned(),
+        )
+            .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
 // First-party real-user monitoring sink. The browser sends small Core Web
 // Vitals / navigation diagnostics with sendBeacon or keepalive fetch. We do
 // not persist yet; accepting the payload gives the client a stable endpoint
@@ -345,7 +359,7 @@ async fn main() {
         .route("/sitemaps.xml", get(sitemap::sitemap_handler))
         .route("/robots.txt", get(sitemap::robots_handler))
         .route("/health", get(|| async { "OK" }))
-        .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
+        .route("/favicon.ico", get(favicon_handler))
         .route("/__rum", post(rum_handler))
         .route("/offline.html", get(offline_handler))
         .route("/sw.js", get(sw_handler))
