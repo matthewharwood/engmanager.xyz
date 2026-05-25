@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use axum::extract::Path;
-use axum::http::StatusCode;
-use axum::response::Html;
+use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::{html, view};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
@@ -974,7 +973,7 @@ fn render_article_topic_chips(article: &Article) -> HtmlFragment {
 const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
 const FOOTTRAFFIC_MAP_SENTINEL: &str = "<!--foottraffic-map-->";
 
-pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode> {
+pub async fn detail(Path(slug): Path<String>) -> Response {
     let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
         Some(article_index) => {
@@ -1037,11 +1036,9 @@ pub async fn detail(Path(slug): Path<String>) -> Result<Html<String>, StatusCode
                 </section>
                 { toc }
             };
-            Ok(Html(
-                layout(page_title, body, a.indexed, page_assets).into_string(),
-            ))
+            Html(layout(page_title, body, a.indexed, page_assets).into_string()).into_response()
         }
-        None => Err(StatusCode::NOT_FOUND),
+        None => super::not_found::response(),
     }
 }
 

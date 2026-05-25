@@ -364,6 +364,7 @@ async fn main() {
         .route("/offline.html", get(offline_handler))
         .route("/sw.js", get(sw_handler))
         .route("/assets/{*path}", get(asset_handler))
+        .fallback(pages::not_found::handler)
         .with_state(state)
         .layer(axum::middleware::from_fn(security_headers_layer))
         .layer(axum::middleware::from_fn(html_cache_layer))
