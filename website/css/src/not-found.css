@@ -1,0 +1,156 @@
+.not-found-page {
+    min-block-size: 100svh;
+    margin: 0;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 38%, rgb(49 50 68 / 0.9), transparent 36rem),
+        repeating-linear-gradient(
+            90deg,
+            rgb(255 255 255 / 0.026) 0,
+            rgb(255 255 255 / 0.026) 1px,
+            transparent 1px,
+            transparent 7px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgb(255 255 255 / 0.022) 0,
+            rgb(255 255 255 / 0.022) 1px,
+            transparent 1px,
+            transparent 7px
+        ),
+        #11111b;
+    color: #eff1f5;
+}
+
+.not-found-shell {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.not-found-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    display: block;
+}
+
+.not-found-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 48%, transparent 0 42%, rgb(17 17 27 / 0.28) 62%, rgb(17 17 27 / 0.82) 100%),
+        linear-gradient(180deg, rgb(17 17 27 / 0.52), transparent 30%, rgb(17 17 27 / 0.62));
+}
+
+.not-found-copy {
+    position: absolute;
+    inset-block-start: max(1rem, env(safe-area-inset-top, 0px));
+    inset-inline-start: max(1rem, env(safe-area-inset-left, 0px));
+    z-index: 3;
+    display: grid;
+    gap: 0.35rem;
+    justify-items: start;
+    pointer-events: auto;
+}
+
+.not-found-kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: clamp(0.64rem, 2vw, 0.78rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: #fe640b;
+}
+
+.not-found-copy h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(3.75rem, 19vw, 10rem);
+    font-weight: 900;
+    line-height: 0.78;
+    color: #eff1f5;
+    text-shadow:
+        0.04em 0.04em 0 #1e66f5,
+        -0.025em -0.025em 0 #ea76cb;
+}
+
+.not-found-home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2.4rem;
+    padding-block: 0.55rem;
+    padding-inline: 0.8rem;
+    border: 2px solid #eff1f5;
+    background: #11111b;
+    color: #eff1f5;
+    box-shadow: 4px 4px 0 0 #eff1f5;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.not-found-home:hover,
+.not-found-home:focus-visible {
+    background: #fe640b;
+    color: #11111b;
+    outline: none;
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0 0 #eff1f5;
+}
+
+.not-found-home:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 0 #eff1f5;
+}
+
+.not-found-bouncer {
+    --bouncer-bg: #fe640b;
+    --bouncer-fg: #11111b;
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 4;
+    max-inline-size: min(23rem, calc(100vw - 1rem));
+    padding-block: clamp(0.42rem, 2vw, 0.72rem);
+    padding-inline: clamp(0.55rem, 2.6vw, 1rem);
+    border: 2px solid #eff1f5;
+    background: var(--bouncer-bg);
+    color: var(--bouncer-fg);
+    box-shadow: 0.24rem 0.24rem 0 0 #eff1f5;
+    font-family: var(--font-display);
+    font-size: clamp(0.88rem, 4vw, 1.45rem);
+    font-weight: 900;
+    line-height: 0.98;
+    text-align: center;
+    text-transform: uppercase;
+    user-select: none;
+    pointer-events: none;
+    transform: translate3d(var(--bouncer-x, 1rem), var(--bouncer-y, 55vh), 0);
+    will-change: transform;
+}
+
+@media (max-width: 34rem) {
+    .not-found-copy {
+        inset-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
+        inset-inline-start: max(0.75rem, env(safe-area-inset-left, 0px));
+    }
+
+    .not-found-home {
+        min-block-size: 2.15rem;
+        padding-block: 0.48rem;
+        padding-inline: 0.7rem;
+    }
+}

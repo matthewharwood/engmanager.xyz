@@ -1,6 +1,7 @@
 pub mod articles;
 pub mod comments;
 pub mod homepage;
+pub mod not_found;
 pub mod search;
 
 use eng_domain::HtmlFragment;
