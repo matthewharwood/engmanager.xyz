@@ -1,25 +1,45 @@
 .not-found-page {
+    --not-found-grid-strong: oklch(from var(--color-base-content) l c h / 0.04);
+    --not-found-grid-soft: oklch(from var(--color-base-content) l c h / 0.028);
+    --not-found-orb: oklch(from var(--brand) l c h / 0.24);
+    --not-found-vignette-mid: color-mix(in oklab, var(--surface-1) 32%, transparent);
+    --not-found-vignette-edge: color-mix(in oklab, var(--surface-1) 84%, transparent);
+    --not-found-pyramid-0: var(--brand);
+    --not-found-pyramid-1: var(--color-secondary);
+    --not-found-pyramid-2: var(--color-accent);
+    --not-found-pyramid-3: var(--info);
+    --not-found-pyramid-4: var(--warning);
+    --not-found-bouncer-bg-0: var(--brand);
+    --not-found-bouncer-fg-0: var(--brand-text);
+    --not-found-bouncer-bg-1: var(--color-secondary);
+    --not-found-bouncer-fg-1: var(--color-secondary-content);
+    --not-found-bouncer-bg-2: var(--color-accent);
+    --not-found-bouncer-fg-2: var(--color-accent-content);
+    --not-found-bouncer-bg-3: var(--info);
+    --not-found-bouncer-fg-3: var(--color-info-content);
+    --not-found-bouncer-bg-4: var(--warning);
+    --not-found-bouncer-fg-4: var(--color-warning-content);
     min-block-size: 100svh;
     margin: 0;
     overflow: hidden;
     background:
-        radial-gradient(circle at 50% 38%, rgb(49 50 68 / 0.9), transparent 36rem),
+        radial-gradient(circle at 50% 38%, var(--not-found-orb), transparent 36rem),
         repeating-linear-gradient(
             90deg,
-            rgb(255 255 255 / 0.026) 0,
-            rgb(255 255 255 / 0.026) 1px,
+            var(--not-found-grid-strong) 0,
+            var(--not-found-grid-strong) 1px,
             transparent 1px,
             transparent 7px
         ),
         repeating-linear-gradient(
             0deg,
-            rgb(255 255 255 / 0.022) 0,
-            rgb(255 255 255 / 0.022) 1px,
+            var(--not-found-grid-soft) 0,
+            var(--not-found-grid-soft) 1px,
             transparent 1px,
             transparent 7px
         ),
-        #11111b;
-    color: #eff1f5;
+        var(--surface-1);
+    color: var(--text-1);
 }
 
 .not-found-shell {
@@ -44,8 +64,8 @@
     z-index: 1;
     pointer-events: none;
     background:
-        radial-gradient(circle at 50% 48%, transparent 0 42%, rgb(17 17 27 / 0.28) 62%, rgb(17 17 27 / 0.82) 100%),
-        linear-gradient(180deg, rgb(17 17 27 / 0.52), transparent 30%, rgb(17 17 27 / 0.62));
+        radial-gradient(circle at 50% 48%, transparent 0 42%, var(--not-found-vignette-mid) 62%, var(--not-found-vignette-edge) 100%),
+        linear-gradient(180deg, var(--not-found-vignette-mid), transparent 30%, var(--not-found-vignette-edge));
 }
 
 .not-found-copy {
@@ -67,7 +87,7 @@
     letter-spacing: 0.08em;
     line-height: 1;
     text-transform: uppercase;
-    color: #fe640b;
+    color: var(--brand);
 }
 
 .not-found-copy h1 {
@@ -76,10 +96,10 @@
     font-size: clamp(3.75rem, 19vw, 10rem);
     font-weight: 900;
     line-height: 0.78;
-    color: #eff1f5;
+    color: var(--text-1);
     text-shadow:
-        0.04em 0.04em 0 #1e66f5,
-        -0.025em -0.025em 0 #ea76cb;
+        0.04em 0.04em 0 var(--brand),
+        -0.025em -0.025em 0 var(--color-secondary);
 }
 
 .not-found-home {
@@ -89,10 +109,10 @@
     min-block-size: 2.4rem;
     padding-block: 0.55rem;
     padding-inline: 0.8rem;
-    border: 2px solid #eff1f5;
-    background: #11111b;
-    color: #eff1f5;
-    box-shadow: 4px 4px 0 0 #eff1f5;
+    border: 2px solid var(--text-1);
+    background: var(--surface-1);
+    color: var(--text-1);
+    box-shadow: 4px 4px 0 0 var(--text-1);
     font-family: var(--font-mono);
     font-size: 0.72rem;
     font-weight: 800;
@@ -104,21 +124,21 @@
 
 .not-found-home:hover,
 .not-found-home:focus-visible {
-    background: #fe640b;
-    color: #11111b;
+    background: var(--brand);
+    color: var(--brand-text);
     outline: none;
     transform: translate(-1px, -1px);
-    box-shadow: 6px 6px 0 0 #eff1f5;
+    box-shadow: 6px 6px 0 0 var(--text-1);
 }
 
 .not-found-home:active {
     transform: translate(3px, 3px);
-    box-shadow: 0 0 0 0 #eff1f5;
+    box-shadow: 0 0 0 0 var(--text-1);
 }
 
 .not-found-bouncer {
-    --bouncer-bg: #fe640b;
-    --bouncer-fg: #11111b;
+    --bouncer-bg: var(--not-found-bouncer-bg-0);
+    --bouncer-fg: var(--not-found-bouncer-fg-0);
     position: fixed;
     inset-block-start: 0;
     inset-inline-start: 0;
@@ -126,10 +146,10 @@
     max-inline-size: min(23rem, calc(100vw - 1rem));
     padding-block: clamp(0.42rem, 2vw, 0.72rem);
     padding-inline: clamp(0.55rem, 2.6vw, 1rem);
-    border: 2px solid #eff1f5;
+    border: 2px solid var(--text-1);
     background: var(--bouncer-bg);
     color: var(--bouncer-fg);
-    box-shadow: 0.24rem 0.24rem 0 0 #eff1f5;
+    box-shadow: 0.24rem 0.24rem 0 0 var(--text-1);
     font-family: var(--font-display);
     font-size: clamp(0.88rem, 4vw, 1.45rem);
     font-weight: 900;
@@ -140,6 +160,14 @@
     pointer-events: none;
     transform: translate3d(var(--bouncer-x, 1rem), var(--bouncer-y, 55vh), 0);
     will-change: transform;
+}
+
+.not-found-page .theme-picker {
+    inset-block-start: max(1rem, env(safe-area-inset-top, 0px));
+    inset-block-end: auto;
+    inset-inline-start: auto;
+    inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+    z-index: 70;
 }
 
 @media (max-width: 34rem) {

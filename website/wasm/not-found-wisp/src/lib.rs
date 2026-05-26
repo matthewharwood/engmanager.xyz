@@ -20,6 +20,28 @@ mod web {
 
     const SCREEN_REV: &str = "284c834c6a3567c893968a17a1176a3c05ef828a";
     const MAX_DPR: f64 = 2.0;
+    const DEFAULT_STOPS: [[f32; 4]; 5] = [
+        [0.996, 0.392, 0.043, 1.0],
+        [0.902, 0.271, 0.325, 1.0],
+        [0.918, 0.463, 0.796, 1.0],
+        [0.533, 0.224, 0.937, 1.0],
+        [0.118, 0.4, 0.961, 1.0],
+    ];
+
+    thread_local! {
+        static THEME_STOPS: RefCell<[[f32; 4]; 5]> = const { RefCell::new(DEFAULT_STOPS) };
+    }
+
+    #[wasm_bindgen]
+    pub fn set_theme_palette(c0: String, c1: String, c2: String, c3: String, c4: String) {
+        let colors = [c0, c1, c2, c3, c4];
+        THEME_STOPS.with(|stops| {
+            let mut stops = stops.borrow_mut();
+            for (index, color) in colors.iter().enumerate() {
+                stops[index] = parse_css_color(color).unwrap_or(DEFAULT_STOPS[index]);
+            }
+        });
+    }
 
     #[wasm_bindgen(start)]
     pub fn start() -> Result<(), JsValue> {
@@ -221,7 +243,7 @@ mod web {
                 Quat::from_rotation_y(spin) * Quat::from_rotation_x(-0.08),
                 Vec3::ZERO,
             );
-            let material = PaletteRampMaterial::engmanager_404().with_time(elapsed);
+            let material = themed_material(elapsed);
 
             self.material_renderer.draw_one(
                 &self.app,
@@ -480,6 +502,95 @@ mod web {
         web_sys::console::error_1(&JsValue::from_str(&format!("not-found-wisp: {message}")));
         if let Ok(event) = web_sys::Event::new("wisp404failed") {
             let _ = canvas.dispatch_event(&event);
+        }
+    }
+
+    fn themed_material(elapsed: f32) -> PaletteRampMaterial {
+        let mut material = PaletteRampMaterial::engmanager_404().with_time(elapsed);
+        THEME_STOPS.with(|stops| {
+            material.stops = *stops.borrow();
+        });
+        material
+    }
+
+    fn parse_css_color(input: &str) -> Option<[f32; 4]> {
+        parse_css_rgb(input).or_else(|| parse_css_oklch(input))
+    }
+
+    fn parse_css_rgb(input: &str) -> Option<[f32; 4]> {
+        let input = input.trim();
+        let body = input
+            .strip_prefix("rgba(")
+            .or_else(|| input.strip_prefix("rgb("))?
+            .trim_end_matches(')');
+        let normalized = body.replace(',', " ").replace('/', " ");
+        let mut components = normalized
+            .split_whitespace()
+            .filter_map(|part| parse_css_component(part));
+        let r = components.next()?;
+        let g = components.next()?;
+        let b = components.next()?;
+        Some([
+            (r / 255.0).clamp(0.0, 1.0),
+            (g / 255.0).clamp(0.0, 1.0),
+            (b / 255.0).clamp(0.0, 1.0),
+            1.0,
+        ])
+    }
+
+    fn parse_css_oklch(input: &str) -> Option<[f32; 4]> {
+        let body = input.trim().strip_prefix("oklch(")?.trim_end_matches(')');
+        let normalized = body.replace(',', " ").replace('/', " ");
+        let mut components = normalized.split_whitespace();
+        let lightness = parse_oklch_lightness(components.next()?)?;
+        let chroma = components.next()?.parse::<f32>().ok()?;
+        let hue = components
+            .next()?
+            .trim_end_matches("deg")
+            .parse::<f32>()
+            .ok()?;
+        Some(oklch_to_srgb(lightness, chroma, hue))
+    }
+
+    fn parse_oklch_lightness(part: &str) -> Option<f32> {
+        if let Some(percent) = part.strip_suffix('%') {
+            percent.parse::<f32>().ok().map(|value| value / 100.0)
+        } else {
+            part.parse::<f32>().ok()
+        }
+    }
+
+    fn oklch_to_srgb(lightness: f32, chroma: f32, hue_degrees: f32) -> [f32; 4] {
+        let hue = hue_degrees.to_radians();
+        let a = chroma * hue.cos();
+        let b = chroma * hue.sin();
+        let l_prime = lightness + 0.396_337_78 * a + 0.215_803_76 * b;
+        let m_prime = lightness - 0.105_561_346 * a - 0.063_854_17 * b;
+        let s_prime = lightness - 0.089_484_18 * a - 1.291_485_5 * b;
+        let l = l_prime * l_prime * l_prime;
+        let m = m_prime * m_prime * m_prime;
+        let s = s_prime * s_prime * s_prime;
+        let r = 4.076_741_7 * l - 3.307_711_6 * m + 0.230_969_94 * s;
+        let g = -1.268_438 * l + 2.609_757_4 * m - 0.341_319_38 * s;
+        let b = -0.004_196_086_3 * l - 0.703_418_6 * m + 1.707_614_7 * s;
+        [encode_srgb(r), encode_srgb(g), encode_srgb(b), 1.0]
+    }
+
+    fn encode_srgb(value: f32) -> f32 {
+        let value = value.clamp(0.0, 1.0);
+        if value <= 0.003_130_8 {
+            value * 12.92
+        } else {
+            1.055 * value.powf(1.0 / 2.4) - 0.055
+        }
+    }
+
+    fn parse_css_component(part: &str) -> Option<f32> {
+        let part = part.trim();
+        if let Some(percent) = part.strip_suffix('%') {
+            percent.parse::<f32>().ok().map(|value| value * 2.55)
+        } else {
+            part.parse::<f32>().ok()
         }
     }
 }

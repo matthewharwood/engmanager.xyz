@@ -4,7 +4,8 @@ use eng_domain::HtmlFragment;
 use eng_markup::html;
 
 use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sitemap_link,
+    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
+    render_sitemap_link, render_theme_picker,
 };
 use crate::asset_url;
 
@@ -32,6 +33,9 @@ fn page() -> String {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/not-found.css") } />
+                <script src={ asset_url("js/theme-toggle.js") }></script>
+                { render_sfx_urls() }
+                <script src={ asset_url("js/audio.js") } defer></script>
                 { render_wisp_404_assets() }
                 <script src={ asset_url("js/not-found.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
@@ -54,6 +58,7 @@ fn page() -> String {
                          aria-live="polite">
                         "404 Page Not Found"
                     </div>
+                    { render_theme_picker() }
                 </main>
             </body>
         </html>
