@@ -1,0 +1,34 @@
+[package]
+name = "not-found-wisp"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+glam = "0.29"
+log = "0.4"
+wgpu = "24"
+wisp = { git = "https://github.com/eng-manager-xyz/Screen", rev = "284c834c6a3567c893968a17a1176a3c05ef828a", package = "screen-wisp" }
+wisp-3d = { git = "https://github.com/eng-manager-xyz/Screen", rev = "284c834c6a3567c893968a17a1176a3c05ef828a", package = "wisp-3d" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+console_log = "1"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Element",
+    "Event",
+    "EventTarget",
+    "HtmlCanvasElement",
+    "HtmlElement",
+    "MediaQueryList",
+    "Window",
+    "console",
+] }
