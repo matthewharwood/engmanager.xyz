@@ -376,6 +376,7 @@ const ARTICLE_LIST: &[Article] = &[
 
 pub const ARTICLES: &[Article] = ARTICLE_LIST;
 const ARTICLE_COUNT: usize = ARTICLE_LIST.len();
+const ARTICLE_REVEAL_VARIANTS: [&str; 5] = ["rise", "drift", "hinge", "focus", "thread"];
 
 pub fn public_articles() -> impl Iterator<Item = &'static Article> {
     ARTICLES.iter().filter(|article| article.indexed)
@@ -702,18 +703,21 @@ fn render_articles_dropdown() -> HtmlFragment {
 #[derive(Clone, Copy)]
 struct ArticlePageAssets {
     article_title_effect: bool,
+    section_reveal: bool,
     region_map: bool,
 }
 
 impl ArticlePageAssets {
     const NONE: Self = Self {
         article_title_effect: false,
+        section_reveal: false,
         region_map: false,
     };
 
     fn for_article_detail(slug: &str) -> Self {
         Self {
             article_title_effect: true,
+            section_reveal: true,
             region_map: slug == "project-foottraffic",
         }
     }
@@ -730,9 +734,14 @@ fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
     };
 
     let region_map_assets = if assets.region_map {
+        let poster_url = asset_url("foottraffic-map-poster.svg");
+        let poster_preload = HtmlFragment::new(format!(
+            r#"<link rel="preload" as="image" href="{poster_url}">"#
+        ));
         view! {
             <link rel="preconnect" href="https://unpkg.com" />
             <link rel="preconnect" href="https://tile.openstreetmap.org" />
+            { poster_preload }
             <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
             <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
@@ -741,11 +750,30 @@ fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
     } else {
         HtmlFragment::empty()
     };
+    let section_reveal_assets = if assets.section_reveal {
+        view! {
+            <script src={ asset_url("js/article-section-reveal.js") } defer></script>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
 
     view! {
         { article_title_assets }
+        { section_reveal_assets }
         { region_map_assets }
     }
+}
+
+fn render_article_reveal_bootstrap(assets: ArticlePageAssets) -> HtmlFragment {
+    if !assets.section_reveal {
+        return HtmlFragment::empty();
+    }
+
+    HtmlFragment::new(
+        r#"<script>try{if(!location.hash&&"IntersectionObserver"in window&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.articleReveal="pending";setTimeout(function(){if(document.documentElement.dataset.articleReveal==="pending"){document.documentElement.dataset.articleReveal="fallback"}},2500)}}catch(_){}</script>"#
+            .to_string(),
+    )
 }
 
 fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
@@ -782,6 +810,7 @@ fn layout(
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>{ title }</title>
                 { robots_meta }
+                { render_article_reveal_bootstrap(page_assets) }
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 { render_sitemap_link() }
                 { render_resource_hints() }
@@ -1246,9 +1275,90 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
         i = j + 1;
     }
 
+    let events = wrap_article_reveal_sections(events);
+
     let mut html_output = String::new();
     pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
     Some((HtmlFragment::new(html_output), headings))
+}
+
+fn wrap_article_reveal_sections(events: Vec<Event>) -> Vec<Event> {
+    if events.is_empty() {
+        return events;
+    }
+
+    let event_count = events.len();
+    let mut sections: Vec<Vec<Event>> = Vec::new();
+    let mut current: Vec<Event> = Vec::new();
+    let mut section_started = false;
+
+    for event in events {
+        if is_reveal_section_heading(&event) && section_started {
+            sections.push(current);
+            current = Vec::new();
+        } else if !section_started && starts_visible_article_content(&event) {
+            section_started = true;
+        }
+
+        if section_started {
+            current.push(event);
+        }
+    }
+
+    if !current.is_empty() {
+        sections.push(current);
+    }
+
+    let mut wrapped = Vec::with_capacity(event_count + 16);
+    for (index, section) in sections.into_iter().enumerate() {
+        let preload = section.iter().any(is_preloaded_embed_event);
+        wrapped.push(reveal_section_start(index, preload));
+        wrapped.extend(section);
+        wrapped.push(reveal_section_end());
+    }
+
+    wrapped
+}
+
+fn is_reveal_section_heading(event: &Event) -> bool {
+    matches!(
+        event,
+        Event::Start(PmTag::Heading {
+            level: HeadingLevel::H2 | HeadingLevel::H3,
+            ..
+        })
+    )
+}
+
+fn starts_visible_article_content(event: &Event) -> bool {
+    !matches!(event, Event::SoftBreak | Event::HardBreak)
+}
+
+fn is_preloaded_embed_event(event: &Event) -> bool {
+    match event {
+        Event::Html(html) => {
+            let html = html.as_ref();
+            html.contains(FOOTTRAFFIC_MAP_SENTINEL)
+                || html.contains("data-region-map")
+                || html.contains("<iframe")
+        }
+        _ => false,
+    }
+}
+
+fn reveal_section_start(index: usize, preload: bool) -> Event<'static> {
+    let variant = ARTICLE_REVEAL_VARIANTS[index % ARTICLE_REVEAL_VARIANTS.len()];
+    let preload_attr = if preload { " data-reveal-preload" } else { "" };
+    Event::Html(CowStr::Boxed(
+        format!(
+            r#"<section class="article-reveal-section" data-article-reveal data-reveal-variant="{variant}" data-reveal-order="{index}"{preload_attr}>"#
+        )
+        .into_boxed_str(),
+    ))
+}
+
+fn reveal_section_end() -> Event<'static> {
+    Event::Html(CowStr::Borrowed("</section>"))
 }
 
 // CommonMark-friendly slugger: lowercase alphanumerics, single hyphens
@@ -1313,5 +1423,40 @@ fn render_toc(headings: &[Heading]) -> HtmlFragment {
             </div>
             <ul class="article-toc-list">{ items }</ul>
         </aside>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn article_body_marks_sections_for_one_time_reveal() {
+        let (body, headings) = article_body("project-foottraffic").expect("article body");
+        let html = body.as_str();
+
+        assert!(
+            html.contains(r#"class="article-reveal-section""#),
+            "article body should render section reveal wrappers",
+        );
+        assert!(
+            html.contains(r#"data-reveal-variant="rise""#)
+                && html.contains(r#"data-reveal-variant="drift""#)
+                && html.contains(r#"data-reveal-variant="hinge""#)
+                && html.contains(r#"data-reveal-variant="focus""#)
+                && html.contains(r#"data-reveal-variant="thread""#),
+            "section reveal variants should cycle through all five animation recipes",
+        );
+        assert!(
+            html.contains("data-reveal-preload"),
+            "sections with heavy embedded UI should be preloaded instead of reveal-animated",
+        );
+
+        let wrapper_count = html.matches("data-article-reveal").count();
+        assert_eq!(
+            wrapper_count,
+            headings.len() + 1,
+            "intro copy plus each h2/h3 section should get exactly one reveal wrapper",
+        );
     }
 }

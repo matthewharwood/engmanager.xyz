@@ -3,6 +3,7 @@ pub mod comments;
 pub mod homepage;
 pub mod not_found;
 pub mod search;
+pub mod shop;
 
 use eng_domain::HtmlFragment;
 use eng_markup::view;

@@ -819,6 +819,91 @@
     margin-block: 1.75rem 0.5rem;
 }
 
+/* Article section reveals are zero-CLS: the root data attribute is set by a
+ * tiny head script before articles.css is parsed, so sections start in their
+ * compositor-only pose before first paint. JS then animates transform/opacity
+ * only and marks each section done exactly once. */
+.article-reveal-section {
+    --article-reveal-transform: translate3d(0, 18px, 0);
+    --article-reveal-child-transform: translate3d(0, 8px, 0);
+    --article-reveal-origin: 50% 0%;
+}
+
+.article-reveal-section[data-reveal-variant="drift"] {
+    --article-reveal-transform: translate3d(-14px, 10px, 0);
+    --article-reveal-child-transform: translate3d(6px, 0, 0);
+    --article-reveal-origin: 0% 30%;
+}
+
+.article-reveal-section[data-reveal-variant="hinge"] {
+    --article-reveal-transform: perspective(900px) translate3d(0, 14px, 0)
+        rotateX(2.5deg);
+    --article-reveal-child-transform: translate3d(0, 7px, 0);
+    --article-reveal-origin: 50% 0%;
+}
+
+.article-reveal-section[data-reveal-variant="focus"] {
+    --article-reveal-transform: translate3d(0, 10px, 0) scale(0.985);
+    --article-reveal-child-transform: translate3d(0, 5px, 0) scale(0.995);
+    --article-reveal-origin: 50% 45%;
+}
+
+.article-reveal-section[data-reveal-variant="thread"] {
+    --article-reveal-transform: translate3d(10px, 12px, 0);
+    --article-reveal-child-transform: translate3d(-7px, 0, 0);
+    --article-reveal-origin: 100% 25%;
+}
+
+html[data-article-reveal="pending"]
+    .article-reveal-section[data-article-reveal]:not(
+        [data-article-reveal-state="done"]
+    ):not(
+        [data-reveal-preload]
+    ),
+html[data-article-reveal="running"]
+    .article-reveal-section[data-article-reveal]:not(
+        [data-article-reveal-state="done"]
+    ):not(
+        [data-reveal-preload]
+    ) {
+    opacity: 0;
+    transform: var(--article-reveal-transform);
+    transform-origin: var(--article-reveal-origin);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+html[data-article-reveal="pending"]
+    .article-reveal-section[data-article-reveal]:not(
+        [data-article-reveal-state="done"]
+    ):not(
+        [data-reveal-preload]
+    )
+    > :nth-child(-n + 8),
+html[data-article-reveal="running"]
+    .article-reveal-section[data-article-reveal]:not(
+        [data-article-reveal-state="done"]
+    ):not(
+        [data-reveal-preload]
+    )
+    > :nth-child(-n + 8) {
+    opacity: 0;
+    transform: var(--article-reveal-child-transform);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-article-reveal] .article-reveal-section[data-article-reveal],
+    html[data-article-reveal]
+        .article-reveal-section[data-article-reveal]
+        > :nth-child(-n + 8) {
+        opacity: 1;
+        transform: none;
+        will-change: auto;
+    }
+}
+
 .article a {
     color: var(--ctp-blue);
     text-decoration: underline;

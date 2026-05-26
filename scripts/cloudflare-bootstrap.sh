@@ -3,10 +3,11 @@
 # Cloudflare bootstrap for engmanager.xyz.
 #
 # Idempotent. Configures:
-#   - DNS records: apex + www CNAME → Render hostname, both proxied
+#   - DNS records: apex + www + shop CNAME → Render hostname, all proxied
 #   - SSL/TLS mode: Full (Strict)
 #   - Always Use HTTPS: on
 #   - Cache Rule: cache HTML at "/" and "/articles*", respecting origin TTL
+#   - Cache Rule: cache everything on shop.engmanager.xyz, respecting origin TTL
 #
 # Required env:
 #   CF_API_TOKEN  Cloudflare API token. Create at
@@ -20,6 +21,7 @@
 # Optional env:
 #   RENDER_HOSTNAME  Render service hostname (default: engmanager-xyz.onrender.com)
 #   ZONE_NAME        Cloudflare zone name (default: engmanager.xyz)
+#   SHOP_HOSTNAME    Shop subdomain (default: shop.$ZONE_NAME)
 #
 # Usage:
 #   CF_API_TOKEN=... ./scripts/cloudflare-bootstrap.sh
@@ -31,7 +33,9 @@ set -euo pipefail
 
 ZONE_NAME="${ZONE_NAME:-engmanager.xyz}"
 RENDER_HOSTNAME="${RENDER_HOSTNAME:-engmanager-xyz.onrender.com}"
+SHOP_HOSTNAME="${SHOP_HOSTNAME:-shop.$ZONE_NAME}"
 RULE_DESCRIPTION="cache HTML for engmanager.xyz"
+SHOP_RULE_DESCRIPTION="cache everything for $SHOP_HOSTNAME"
 API="https://api.cloudflare.com/client/v4"
 
 : "${CF_API_TOKEN:?Set CF_API_TOKEN (Cloudflare API token).}"
@@ -75,6 +79,7 @@ upsert_cname() {
 
 upsert_cname "$ZONE_NAME"        "$RENDER_HOSTNAME" true
 upsert_cname "www.$ZONE_NAME"    "$RENDER_HOSTNAME" true
+upsert_cname "$SHOP_HOSTNAME"    "$RENDER_HOSTNAME" true
 
 echo "→ Setting SSL mode = Full (Strict)..."
 api -X PATCH "$API/zones/$ZONE_ID/settings/ssl" -d '{"value":"strict"}' \
@@ -86,6 +91,7 @@ api -X PATCH "$API/zones/$ZONE_ID/settings/always_use_https" -d '{"value":"on"}'
 
 echo "→ Upserting HTML cache rule..."
 RULE_EXPR='(http.host eq "'"$ZONE_NAME"'" and (http.request.uri.path eq "/" or starts_with(http.request.uri.path, "/articles")))'
+SHOP_RULE_EXPR='(http.host eq "'"$SHOP_HOSTNAME"'")'
 
 # Fetch existing ruleset (404 if none — handled by `// []`).
 existing_rules=$(api_quiet "$API/zones/$ZONE_ID/rulesets/phases/http_request_cache_settings/entrypoint" \
@@ -104,17 +110,38 @@ our_rule=$(jq -nc --arg expr "$RULE_EXPR" --arg desc "$RULE_DESCRIPTION" '{
   enabled: true
 }')
 
-# Replace any existing rule with same description, else append.
-new_rules=$(echo "$existing_rules" | jq -c --arg desc "$RULE_DESCRIPTION" --argjson new "$our_rule" '
-  if any(.[]; .description == $desc)
-  then map(if .description == $desc then $new else . end)
-  else . + [$new]
-  end
+shop_rule=$(jq -nc --arg expr "$SHOP_RULE_EXPR" --arg desc "$SHOP_RULE_DESCRIPTION" '{
+  expression: $expr,
+  action: "set_cache_settings",
+  action_parameters: {
+    cache: true,
+    edge_ttl: { mode: "respect_origin" },
+    browser_ttl: { mode: "respect_origin" }
+  },
+  description: $desc,
+  enabled: true
+}')
+
+# Replace any existing rules with the same descriptions, else append.
+new_rules=$(echo "$existing_rules" | jq -c \
+  --arg root_desc "$RULE_DESCRIPTION" \
+  --arg shop_desc "$SHOP_RULE_DESCRIPTION" \
+  --argjson root "$our_rule" \
+  --argjson shop "$shop_rule" '
+  (if any(.[]; .description == $root_desc)
+   then map(if .description == $root_desc then $root else . end)
+   else . + [$root]
+   end)
+  | (if any(.[]; .description == $shop_desc)
+     then map(if .description == $shop_desc then $shop else . end)
+     else . + [$shop]
+     end)
 ')
 
 api -X PUT "$API/zones/$ZONE_ID/rulesets/phases/http_request_cache_settings/entrypoint" \
     -d "$(jq -nc --argjson rules "$new_rules" '{rules:$rules}')" \
-  | jq -r '.result.rules[] | select(.description == "'"$RULE_DESCRIPTION"'") | "  rule id: \(.id)"'
+  | jq -r --arg root_desc "$RULE_DESCRIPTION" --arg shop_desc "$SHOP_RULE_DESCRIPTION" \
+      '.result.rules[] | select(.description == $root_desc or .description == $shop_desc) | "  rule id: \(.id) - \(.description)"'
 
 cat <<EOF
 
@@ -125,5 +152,6 @@ Stash this for the purge script (Render env var or .env):
 
 Verify (give DNS a minute to propagate, request twice for a HIT):
   curl -sI https://$ZONE_NAME/ | grep -iE 'cf-ray|cf-cache-status|cache-control|age'
+  curl -sI https://$SHOP_HOSTNAME/ | grep -iE 'cf-ray|cf-cache-status|cache-control|age'
   curl -sI https://$ZONE_NAME/assets/styles.css | grep -iE 'cf-cache-status|cache-control|age'
 EOF
