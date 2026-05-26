@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::Path;
-use axum::http::{HeaderName, StatusCode, header};
+use axum::http::{HeaderMap, HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use rust_embed::{EmbeddedFile, RustEmbed};
@@ -28,6 +28,7 @@ const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;
 const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0];
 const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
+const SHOP_HOST: &str = "shop.engmanager.xyz";
 
 // Embed all static assets into the binary at compile time. Render (and most
 // platform-as-a-service runtimes) don't reliably preserve the source tree at
@@ -280,6 +281,25 @@ async fn html_cache_layer(
     response
 }
 
+async fn root_handler(headers: HeaderMap) -> Response {
+    let host = headers
+        .get(header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+
+    if is_shop_host(host) {
+        pages::shop::index().await
+    } else {
+        pages::homepage::index().await.into_response()
+    }
+}
+
+fn is_shop_host(host: &str) -> bool {
+    let host_without_port = host.split(':').next().unwrap_or(host);
+    host_without_port.eq_ignore_ascii_case(SHOP_HOST)
+        || host_without_port.eq_ignore_ascii_case("shop.localhost")
+}
+
 async fn security_headers_layer(
     req: axum::http::Request<axum::body::Body>,
     next: axum::middleware::Next,
@@ -346,7 +366,7 @@ async fn main() {
     let state = AppState { search, comments };
 
     let app = Router::new()
-        .route("/", get(pages::homepage::index))
+        .route("/", get(root_handler))
         .route("/articles/", get(pages::articles::index))
         .route("/articles/{slug}", get(pages::articles::detail))
         .route("/search", get(pages::search::page))
@@ -426,4 +446,19 @@ fn resolve_server_address() -> SocketAddr {
         DEV_HOST
     };
     SocketAddr::from((host, port))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_shop_host;
+
+    #[test]
+    fn shop_host_detection_accepts_production_and_local_hosts() {
+        assert!(is_shop_host("shop.engmanager.xyz"));
+        assert!(is_shop_host("shop.engmanager.xyz:443"));
+        assert!(is_shop_host("SHOP.ENGMANAGER.XYZ"));
+        assert!(is_shop_host("shop.localhost:3000"));
+        assert!(!is_shop_host("engmanager.xyz"));
+        assert!(!is_shop_host("www.engmanager.xyz"));
+    }
 }
