@@ -1,5 +1,3 @@
-const COLORS = ["#fe640b", "#e64553", "#ea76cb", "#8839ef", "#1e66f5"];
-
 const stage = document.querySelector("[data-404-stage]");
 const bouncer = document.querySelector("[data-404-bouncer]");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -31,6 +29,8 @@ async function bootWispPyramid(canvas) {
     canvas.dataset.renderer = "wisp3d";
     const module = await import(config.js);
     await module.default({ module_or_path: config.wasm });
+    syncWispPalette(module);
+    window.addEventListener("engmanager:themechange", () => syncWispPalette(module));
 }
 
 function bootFallbackOnce(canvas) {
@@ -53,8 +53,9 @@ function bootBouncer(node) {
     let colorIndex = 0;
 
     const paint = () => {
-        node.style.setProperty("--bouncer-bg", COLORS[colorIndex % COLORS.length]);
-        node.style.setProperty("--bouncer-fg", colorIndex % COLORS.length === 4 ? "#eff1f5" : "#11111b");
+        const themeIndex = colorIndex % 5;
+        node.style.setProperty("--bouncer-bg", `var(--not-found-bouncer-bg-${themeIndex})`);
+        node.style.setProperty("--bouncer-fg", `var(--not-found-bouncer-fg-${themeIndex})`);
     };
     paint();
 
@@ -130,6 +131,7 @@ function bootFallbackPyramid(sourceCanvas) {
     const render = (time = 0) => {
         const width = window.innerWidth;
         const height = window.innerHeight;
+        const palette = themePalette();
         ctx.clearRect(0, 0, width, height);
 
         const t = reducedMotion ? 0.7 : time * 0.00022;
@@ -145,17 +147,17 @@ function bootFallbackPyramid(sourceCanvas) {
         const seam = [centerX - skew * 0.42, baseY];
 
         drawFace([apex, left, seam], [
-            [0, "#1e66f5"],
-            [0.42, "#ea76cb"],
-            [0.72, "#e64553"],
-            [1, "#11111b"],
-        ], "rgb(245 224 220 / 0.58)");
+            [0, palette[3]],
+            [0.42, palette[2]],
+            [0.72, palette[1]],
+            [1, palette.surface],
+        ], palette.edgeSoft);
         drawFace([apex, seam, right], [
-            [0, "#8839ef"],
-            [0.36, "#e64553"],
-            [0.58, "#fe640b"],
-            [1, "#1e66f5"],
-        ], "rgb(245 224 220 / 0.7)");
+            [0, palette[0]],
+            [0.36, palette[1]],
+            [0.58, palette[4]],
+            [1, palette[3]],
+        ], palette.edgeStrong);
 
         const eyeX = centerX + half * 0.23 - skew * 0.65;
         const eyeY = topY + (baseY - topY) * 0.58;
@@ -163,16 +165,16 @@ function bootFallbackPyramid(sourceCanvas) {
         ctx.translate(eyeX, eyeY);
         ctx.rotate(-0.04);
         ctx.globalAlpha = 0.34;
-        ctx.fillStyle = "#fe640b";
+        ctx.fillStyle = palette[4];
         ctx.beginPath();
         ctx.ellipse(0, 0, width * 0.15, height * 0.04, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 0.9;
-        ctx.fillStyle = "#f9e2af";
+        ctx.fillStyle = palette[2];
         ctx.beginPath();
         ctx.ellipse(0, 0, width * 0.085, height * 0.027, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#11111b";
+        ctx.fillStyle = palette.surface;
         ctx.beginPath();
         ctx.ellipse(width * 0.012, 0, width * 0.018, height * 0.024, -0.18, 0, Math.PI * 2);
         ctx.fill();
@@ -181,4 +183,63 @@ function bootFallbackPyramid(sourceCanvas) {
         requestAnimationFrame(render);
     };
     requestAnimationFrame(render);
+}
+
+function syncWispPalette(module) {
+    if (typeof module.set_theme_palette !== "function") return;
+    const palette = themePalette();
+    module.set_theme_palette(palette[0], palette[1], palette[2], palette[3], palette[4]);
+}
+
+function themePalette() {
+    const colors = [
+        themeColor("--not-found-pyramid-0", "#fe640b"),
+        themeColor("--not-found-pyramid-1", "#e64553"),
+        themeColor("--not-found-pyramid-2", "#ea76cb"),
+        themeColor("--not-found-pyramid-3", "#8839ef"),
+        themeColor("--not-found-pyramid-4", "#1e66f5"),
+    ];
+    colors.surface = themeColor("--surface-1", "#11111b");
+    colors.edgeSoft = colorMix("--text-1", 0.58, "rgb(245 224 220 / 0.58)");
+    colors.edgeStrong = colorMix("--text-1", 0.7, "rgb(245 224 220 / 0.7)");
+    return colors;
+}
+
+function themeColor(name, fallback) {
+    const value = getComputedStyle(document.body).getPropertyValue(name).trim();
+    return resolveColor(value || fallback, fallback);
+}
+
+function colorMix(name, alpha, fallback) {
+    const color = themeColor(name, fallback);
+    const rgb = color.match(/^rgba?\(([^)]+)\)$/);
+    if (rgb) {
+        const channels = rgb[1].split(/[,/ ]+/).filter(Boolean).slice(0, 3).join(" ");
+        return `rgb(${channels} / ${alpha})`;
+    }
+    const oklch = color.match(/^oklch\(([^)]+)\)$/);
+    if (oklch) {
+        const channels = oklch[1].split("/")[0].trim();
+        return `oklch(${channels} / ${alpha})`;
+    }
+    return fallback;
+}
+
+function resolveColor(value, fallback) {
+    const probe = colorProbe();
+    if (!probe) return fallback;
+    probe.style.color = "";
+    probe.style.color = value;
+    return getComputedStyle(probe).color || fallback;
+}
+
+let colorProbeNode;
+function colorProbe() {
+    if (colorProbeNode?.isConnected) return colorProbeNode;
+    if (!document.body) return null;
+    colorProbeNode = document.createElement("span");
+    colorProbeNode.hidden = true;
+    colorProbeNode.setAttribute("aria-hidden", "true");
+    document.body.append(colorProbeNode);
+    return colorProbeNode;
 }
