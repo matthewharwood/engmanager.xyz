@@ -14,6 +14,7 @@ const selectors = {
     productCopyTitle: document.querySelector("[data-product-copy-title]"),
     productPrice: document.querySelector("[data-product-price]"),
     productDescription: document.querySelector("[data-product-description]"),
+    imageStage: document.querySelector("[data-image-advance]"),
     productImage: document.querySelector("[data-product-image]"),
     imageCaption: document.querySelector("[data-image-caption]"),
     imageThumbs: document.querySelector("[data-image-thumbs]"),
@@ -35,6 +36,11 @@ let currentImageIndex = 0;
 let selectedSize = "2";
 let quantity = 1;
 let cart = readCart();
+let activeCarouselAnimation = null;
+let carouselMotion = { x: 0, scale: 1, rotate: 0, opacity: 1 };
+let dragState = null;
+let suppressNextImageAdvance = false;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function readCart() {
     try {
@@ -108,6 +114,7 @@ function openProduct(product, imageId = "front", options = {}) {
 
     renderProduct(product);
     selectImage(currentImageIndex, { updateUrl: false });
+    setCarouselMotion(0, 1, 0, 1);
     syncSizeControls();
     closeSizeSheet();
 
@@ -124,7 +131,6 @@ function openProduct(product, imageId = "front", options = {}) {
             url,
         );
     }
-
 }
 
 function closeProduct(options = {}) {
@@ -189,7 +195,7 @@ function imageIndex(product, imageId) {
 
 function selectImage(index, options = {}) {
     if (!currentProduct || !selectors.productImage) return;
-    const { updateUrl = true } = options;
+    const { updateUrl = true, resetMotion = true } = options;
     const images = currentProduct.images;
     currentImageIndex = (index + images.length) % images.length;
     const image = images[currentImageIndex];
@@ -209,6 +215,253 @@ function selectImage(index, options = {}) {
             { shopProduct: currentProduct.slug, image: image.id },
             "",
             productUrl(currentProduct, image.id),
+        );
+    }
+
+    if (resetMotion) {
+        setCarouselMotion(0, 1, 0, 1);
+    }
+}
+
+function carouselWidth() {
+    return selectors.imageStage?.getBoundingClientRect().width || 320;
+}
+
+function setCarouselMotion(x, scale = 1, rotate = 0, opacity = 1) {
+    carouselMotion = { x, scale, rotate, opacity };
+    if (!selectors.imageStage) return;
+    selectors.imageStage.style.transform = `translate3d(${x}px, 0, 0) scale(${scale}) rotate(${rotate}deg)`;
+    selectors.imageStage.style.opacity = String(opacity);
+}
+
+function stopCarouselAnimation() {
+    activeCarouselAnimation?.pause?.();
+    activeCarouselAnimation?.cancel?.();
+    activeCarouselAnimation = null;
+}
+
+function animateCarouselMotion(to, options = {}) {
+    stopCarouselAnimation();
+    const from = { ...carouselMotion };
+    const duration = options.duration ?? 320;
+    const ease = options.ease ?? "out(3)";
+    const complete = () => {
+        activeCarouselAnimation = null;
+        options.onComplete?.();
+    };
+
+    if (reduceMotion.matches) {
+        setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
+        complete();
+        return null;
+    }
+
+    const animeApi = window.anime;
+    if (animeApi?.animate) {
+        activeCarouselAnimation = animeApi.animate(from, {
+            x: to.x ?? 0,
+            scale: to.scale ?? 1,
+            rotate: to.rotate ?? 0,
+            opacity: to.opacity ?? 1,
+            duration,
+            ease,
+            onUpdate: () => setCarouselMotion(from.x, from.scale, from.rotate, from.opacity),
+            onComplete: complete,
+        });
+        return activeCarouselAnimation;
+    }
+
+    if (typeof animeApi === "function") {
+        activeCarouselAnimation = animeApi({
+            targets: from,
+            x: to.x ?? 0,
+            scale: to.scale ?? 1,
+            rotate: to.rotate ?? 0,
+            opacity: to.opacity ?? 1,
+            duration,
+            easing: "easeOutCubic",
+            update: () => setCarouselMotion(from.x, from.scale, from.rotate, from.opacity),
+            complete,
+        });
+        return activeCarouselAnimation;
+    }
+
+    selectors.imageStage
+        ?.animate(
+            [
+                {
+                    transform: `translate3d(${carouselMotion.x}px,0,0) scale(${carouselMotion.scale}) rotate(${carouselMotion.rotate}deg)`,
+                    opacity: carouselMotion.opacity,
+                },
+                {
+                    transform: `translate3d(${to.x ?? 0}px,0,0) scale(${to.scale ?? 1}) rotate(${to.rotate ?? 0}deg)`,
+                    opacity: to.opacity ?? 1,
+                },
+            ],
+            {
+                duration,
+                easing: "cubic-bezier(.22,.9,.2,1)",
+            },
+        )
+        ?.addEventListener("finish", complete, { once: true });
+    setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
+    return null;
+}
+
+function transitionToImage(index, direction, options = {}) {
+    if (!currentProduct) return;
+    const images = currentProduct.images;
+    const nextIndex = (index + images.length) % images.length;
+    if (nextIndex === currentImageIndex) {
+        animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 220 });
+        return;
+    }
+
+    if (reduceMotion.matches) {
+        selectImage(nextIndex);
+        return;
+    }
+
+    const width = carouselWidth();
+    const travel = options.travel ?? width * 0.34;
+    const exitX = direction > 0 ? -travel : travel;
+    const enterX = direction > 0 ? width * 0.18 : -width * 0.18;
+
+    animateCarouselMotion(
+        {
+            x: exitX,
+            scale: 0.985,
+            rotate: direction > 0 ? -1.4 : 1.4,
+            opacity: 0.84,
+        },
+        {
+            duration: options.exitDuration ?? 150,
+            ease: "out(3)",
+            onComplete: () => {
+                selectImage(nextIndex, { updateUrl: true, resetMotion: false });
+                setCarouselMotion(enterX, 0.988, direction > 0 ? 1.2 : -1.2, 0.86);
+                animateCarouselMotion(
+                    {
+                        x: 0,
+                        scale: 1,
+                        rotate: 0,
+                        opacity: 1,
+                    },
+                    {
+                        duration: options.enterDuration ?? 360,
+                        ease: "out(4)",
+                    },
+                );
+            },
+        },
+    );
+}
+
+function stepImage(delta, options = {}) {
+    const direction = delta > 0 ? 1 : -1;
+    transitionToImage(currentImageIndex + delta, direction, options);
+}
+
+function captureCarouselPointer(pointerId) {
+    try {
+        selectors.imageStage?.setPointerCapture?.(pointerId);
+    } catch {}
+}
+
+function releaseCarouselPointer(pointerId) {
+    try {
+        selectors.imageStage?.releasePointerCapture?.(pointerId);
+    } catch {}
+}
+
+function onCarouselPointerDown(event) {
+    if (!selectors.imageStage || !currentProduct || event.button > 0 || event.pointerType === "mouse") {
+        return;
+    }
+    stopCarouselAnimation();
+    dragState = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastX: event.clientX,
+        lastTime: performance.now(),
+        velocityX: 0,
+        dragging: false,
+    };
+    captureCarouselPointer(event.pointerId);
+}
+
+function onCarouselPointerMove(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const dx = event.clientX - dragState.startX;
+    const dy = event.clientY - dragState.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (!dragState.dragging) {
+        if (absX < 8) return;
+        if (absY > absX * 1.15) {
+            releaseCarouselPointer(event.pointerId);
+            dragState = null;
+            return;
+        }
+        dragState.dragging = true;
+        selectors.imageStage?.classList.add("is-dragging");
+    }
+
+    event.preventDefault();
+    const now = performance.now();
+    const dt = Math.max(16, now - dragState.lastTime);
+    dragState.velocityX = (event.clientX - dragState.lastX) / dt;
+    dragState.lastX = event.clientX;
+    dragState.lastTime = now;
+
+    const width = carouselWidth();
+    const limit = width * 0.42;
+    const eased = limit * Math.tanh(dx / limit);
+    const progress = Math.min(1, Math.abs(eased) / limit);
+    setCarouselMotion(
+        eased,
+        1 - progress * 0.018,
+        (eased / width) * -2.2,
+        1 - progress * 0.12,
+    );
+}
+
+function onCarouselPointerEnd(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+    const state = dragState;
+    dragState = null;
+    selectors.imageStage?.classList.remove("is-dragging");
+    releaseCarouselPointer(event.pointerId);
+
+    if (!state.dragging) return;
+    suppressNextImageAdvance = true;
+    window.setTimeout(() => {
+        suppressNextImageAdvance = false;
+    }, 180);
+
+    const width = carouselWidth();
+    const dx = event.clientX - state.startX;
+    const projected = dx + state.velocityX * 190;
+    const threshold = Math.max(44, width * 0.18);
+
+    if (projected < -threshold) {
+        stepImage(1, { travel: width * 0.48, exitDuration: 120, enterDuration: 380 });
+    } else if (projected > threshold) {
+        stepImage(-1, { travel: width * 0.48, exitDuration: 120, enterDuration: 380 });
+    } else {
+        animateCarouselMotion(
+            {
+                x: 0,
+                scale: 1,
+                rotate: 0,
+                opacity: 1,
+            },
+            {
+                duration: 420,
+                ease: "out(4)",
+            },
         );
     }
 }
@@ -361,18 +614,20 @@ document.addEventListener("click", (event) => {
     }
 
     if (target.closest("[data-image-prev]")) {
-        selectImage(currentImageIndex - 1);
+        stepImage(-1);
         return;
     }
 
     if (target.closest("[data-image-next], [data-image-advance]")) {
-        selectImage(currentImageIndex + 1);
+        if (suppressNextImageAdvance) return;
+        stepImage(1);
         return;
     }
 
     const thumb = target.closest("[data-image-index]");
     if (thumb) {
-        selectImage(Number(thumb.dataset.imageIndex || 0));
+        const nextIndex = Number(thumb.dataset.imageIndex || 0);
+        transitionToImage(nextIndex, nextIndex > currentImageIndex ? 1 : -1);
         return;
     }
 
@@ -460,10 +715,10 @@ document.addEventListener("keydown", (event) => {
 
     if (event.key === "ArrowLeft") {
         event.preventDefault();
-        selectImage(currentImageIndex - 1);
+        stepImage(-1);
     } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        selectImage(currentImageIndex + 1);
+        stepImage(1);
     } else if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         openSizeSheet();
@@ -482,6 +737,11 @@ window.addEventListener("popstate", () => {
 });
 
 renderCart();
+
+selectors.imageStage?.addEventListener("pointerdown", onCarouselPointerDown);
+selectors.imageStage?.addEventListener("pointermove", onCarouselPointerMove);
+selectors.imageStage?.addEventListener("pointerup", onCarouselPointerEnd);
+selectors.imageStage?.addEventListener("pointercancel", onCarouselPointerEnd);
 
 const initial = getProductFromLocation();
 if (initial) {

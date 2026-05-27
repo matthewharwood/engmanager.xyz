@@ -355,18 +355,28 @@
     display: grid;
     gap: 1.4rem;
     justify-items: center;
+    touch-action: pan-y;
 }
 
 .shop-image-advance {
-    inline-size: min(100%, 24rem);
-    aspect-ratio: 1 / 1;
+    inline-size: 100%;
+    max-inline-size: 24rem;
+    aspect-ratio: 9 / 11;
     display: grid;
     place-items: center;
     overflow: visible;
     padding: 0;
-    cursor: pointer;
+    cursor: grab;
     background: transparent;
     border: 0;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: transform;
+}
+
+.shop-image-advance.is-dragging {
+    cursor: grabbing;
 }
 
 .shop-image-advance:focus-visible {
@@ -380,6 +390,9 @@
     display: block;
     object-fit: contain;
     mix-blend-mode: multiply;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    will-change: transform, opacity;
 }
 
 .shop-carousel-stage figcaption {

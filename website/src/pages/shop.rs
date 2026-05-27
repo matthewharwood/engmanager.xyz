@@ -285,6 +285,7 @@ fn page() -> String {
                 { render_sfx_urls() }
                 <script>{ data }</script>
                 <script src={ asset_url("js/audio.js") } defer></script>
+                <script src="https://cdn.jsdelivr.net/npm/animejs@4/dist/bundles/anime.umd.min.js" defer></script>
                 <script src={ asset_url("js/shop.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
                 <meta name="theme-color" content="#e64553" />
@@ -594,6 +595,7 @@ mod tests {
         assert!(html.contains(r#"<meta property="og:type" content="website">"#));
         assert!(html.contains("/assets/css/critical."));
         assert!(html.contains("/assets/css/shop."));
+        assert!(html.contains("animejs@4"));
         assert!(html.contains("/assets/js/shop."));
         assert!(html.contains("window.__shopProducts="));
         assert!(html.contains("data-shop-grid"));
