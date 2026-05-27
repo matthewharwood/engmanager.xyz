@@ -202,6 +202,7 @@
 
 .shop-card-figure img {
     inline-size: min(100%, 14rem);
+    block-size: auto;
     max-block-size: 14rem;
     display: block;
     object-fit: contain;
@@ -344,6 +345,10 @@
     user-select: none;
 }
 
+.shop-product-layout.is-camera-opening {
+    will-change: transform, opacity;
+}
+
 .shop-carousel {
     min-inline-size: 0;
     display: grid;
@@ -411,6 +416,20 @@
     pointer-events: none;
     transform-origin: 0 0;
     will-change: transform, opacity, filter;
+}
+
+.shop-camera-grid {
+    position: fixed;
+    z-index: 140;
+    margin: 0;
+    overflow: visible;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0) scale(1);
+    will-change: transform, opacity, filter;
+}
+
+.shop-camera-grid .shop-card-figure img {
+    transition: none;
 }
 
 .is-shop-transition-hidden {
