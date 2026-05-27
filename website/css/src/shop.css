@@ -205,7 +205,6 @@
     max-block-size: 14rem;
     display: block;
     object-fit: contain;
-    mix-blend-mode: multiply;
     transition:
         opacity var(--motion-hover),
         transform var(--motion-hover);
@@ -389,10 +388,35 @@
     block-size: 100%;
     display: block;
     object-fit: contain;
-    mix-blend-mode: multiply;
     pointer-events: none;
     -webkit-user-drag: none;
     will-change: transform, opacity;
+}
+
+.shop-transition-image {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 140;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    transform-origin: 0 0;
+    will-change: transform, opacity, filter;
+}
+
+.is-shop-transition-hidden {
+    visibility: hidden;
+}
+
+.shop-view-transitioning .shop-card-figure img {
+    transition: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }
 
 .shop-carousel-stage figcaption {

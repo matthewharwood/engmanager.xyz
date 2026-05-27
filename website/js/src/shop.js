@@ -40,6 +40,9 @@ let activeCarouselAnimation = null;
 let carouselMotion = { x: 0, scale: 1, rotate: 0, opacity: 1 };
 let dragState = null;
 let suppressNextImageAdvance = false;
+let activeProductFlight = null;
+let productTransitionActive = false;
+let lastOpenedProductSlug = null;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function readCart() {
@@ -102,6 +105,248 @@ function isProductOpen() {
 
 function isCartOpen() {
     return selectors.cartDrawer && !selectors.cartDrawer.hidden;
+}
+
+function nextFrame() {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+}
+
+function waitForImageReady(image) {
+    if (!image || (image.complete && image.naturalWidth > 0)) return Promise.resolve();
+    return new Promise((resolve) => {
+        const finish = () => resolve();
+        image.addEventListener("load", finish, { once: true });
+        image.addEventListener("error", finish, { once: true });
+        window.setTimeout(finish, 180);
+    });
+}
+
+function slugSelector(slug) {
+    const escaped = window.CSS?.escape ? CSS.escape(slug) : slug.replace(/"/g, '\\"');
+    return `[data-slug="${escaped}"]`;
+}
+
+function cardForSlug(slug) {
+    return slug ? selectors.grid?.querySelector(slugSelector(slug)) : null;
+}
+
+function cardImageForSlug(slug) {
+    return cardForSlug(slug)?.querySelector("img") || null;
+}
+
+function rectForElement(element) {
+    if (!element) return null;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+    };
+}
+
+function hideForProductFlight(element, hidden) {
+    element?.classList.toggle("is-shop-transition-hidden", hidden);
+}
+
+function runShopViewTransition(update, afterReady) {
+    const startViewTransition = document.startViewTransition?.bind(document);
+    if (!startViewTransition) {
+        update();
+        afterReady?.();
+        return;
+    }
+
+    let transition = null;
+    try {
+        transition = startViewTransition(update);
+    } catch {
+        update();
+        afterReady?.();
+        return;
+    }
+    transition.ready.then(() => afterReady?.()).catch(() => afterReady?.());
+    transition.finished.catch(() => {});
+}
+
+function stopProductFlight() {
+    activeProductFlight?.pause?.();
+    activeProductFlight?.cancel?.();
+    activeProductFlight = null;
+}
+
+async function animateProductFlight(options) {
+    const {
+        sourceElement = null,
+        targetElement = null,
+        fromRect,
+        toRect = null,
+        imageSrc,
+        direction = "open",
+    } = options;
+
+    if (reduceMotion.matches || !fromRect) return;
+    await waitForImageReady(targetElement);
+    await nextFrame();
+
+    const targetRect = toRect || rectForElement(targetElement);
+    if (!targetRect) return;
+
+    stopProductFlight();
+    productTransitionActive = true;
+    document.body.classList.add("shop-view-transitioning");
+
+    const clone = document.createElement("img");
+    clone.className = "shop-transition-image";
+    clone.alt = "";
+    clone.decoding = "async";
+    clone.src = imageSrc || sourceElement?.currentSrc || sourceElement?.src || targetElement?.currentSrc || targetElement?.src || "";
+    clone.style.inlineSize = `${fromRect.width}px`;
+    clone.style.blockSize = `${fromRect.height}px`;
+    document.body.append(clone);
+
+    hideForProductFlight(sourceElement, true);
+    hideForProductFlight(targetElement, true);
+
+    const state = {
+        x: fromRect.left,
+        y: fromRect.top,
+        scaleX: 1,
+        scaleY: 1,
+        rotate: direction === "open" ? -0.8 : 0.65,
+        opacity: 0.96,
+    };
+    const end = {
+        x: targetRect.left,
+        y: targetRect.top,
+        scaleX: targetRect.width / fromRect.width,
+        scaleY: targetRect.height / fromRect.height,
+        rotate: 0,
+        opacity: 1,
+    };
+    const render = () => {
+        clone.style.opacity = String(state.opacity);
+        clone.style.transform = [
+            `translate3d(${state.x}px, ${state.y}px, 0)`,
+            `scale(${state.scaleX}, ${state.scaleY})`,
+            `rotate(${state.rotate}deg)`,
+        ].join(" ");
+        clone.style.filter = `drop-shadow(0 ${Math.max(8, 20 * state.scaleY)}px ${Math.max(14, 24 * state.scaleY)}px rgb(25 28 40 / 0.12))`;
+    };
+    const cleanup = () => {
+        hideForProductFlight(sourceElement, false);
+        hideForProductFlight(targetElement, false);
+        clone.remove();
+        activeProductFlight = null;
+        productTransitionActive = false;
+        document.body.classList.remove("shop-view-transitioning");
+    };
+
+    render();
+    const duration = direction === "open" ? 640 : 520;
+    const ease = direction === "open" ? "out(4)" : "inOut(3)";
+    const animeApi = window.anime;
+
+    if (animeApi?.animate) {
+        activeProductFlight = animeApi.animate(state, {
+            x: end.x,
+            y: end.y,
+            scaleX: end.scaleX,
+            scaleY: end.scaleY,
+            rotate: end.rotate,
+            opacity: end.opacity,
+            duration,
+            ease,
+            onUpdate: render,
+            onComplete: cleanup,
+        });
+        return;
+    }
+
+    if (typeof animeApi === "function") {
+        activeProductFlight = animeApi({
+            targets: state,
+            x: end.x,
+            y: end.y,
+            scaleX: end.scaleX,
+            scaleY: end.scaleY,
+            rotate: end.rotate,
+            opacity: end.opacity,
+            duration,
+            easing: direction === "open" ? "easeOutQuart" : "easeInOutCubic",
+            update: render,
+            complete: cleanup,
+        });
+        return;
+    }
+
+    clone.animate(
+        [
+            {
+                transform: `translate3d(${fromRect.left}px, ${fromRect.top}px, 0) scale(1, 1) rotate(${state.rotate}deg)`,
+                opacity: 0.96,
+            },
+            {
+                transform: `translate3d(${end.x}px, ${end.y}px, 0) scale(${end.scaleX}, ${end.scaleY}) rotate(0deg)`,
+                opacity: 1,
+            },
+        ],
+        { duration, easing: "cubic-bezier(.22,.9,.2,1)" },
+    ).addEventListener("finish", cleanup, { once: true });
+}
+
+function openProductFromCard(product, imageId, card, options = {}) {
+    if (productTransitionActive) return;
+    const sourceImage = card?.querySelector("img");
+    const fromRect = rectForElement(sourceImage);
+    const imageSrc = sourceImage?.currentSrc || sourceImage?.src;
+    lastOpenedProductSlug = product.slug;
+
+    runShopViewTransition(
+        () => openProduct(product, imageId, options),
+        () => {
+            animateProductFlight({
+                sourceElement: sourceImage,
+                targetElement: selectors.productImage,
+                fromRect,
+                imageSrc,
+                direction: "open",
+            });
+        },
+    );
+}
+
+function closeProductWithTransition(options = {}) {
+    if (productTransitionActive) return;
+    const product = currentProduct;
+    const slug = product?.slug || lastOpenedProductSlug;
+    const sourceImage = selectors.productImage;
+    const targetImage = cardImageForSlug(slug);
+    const fromRect = rectForElement(sourceImage);
+    const toRect = rectForElement(targetImage);
+    const imageSrc = sourceImage?.currentSrc || sourceImage?.src;
+    const willAnimate = Boolean(fromRect && toRect && !reduceMotion.matches);
+
+    if (willAnimate) {
+        hideForProductFlight(targetImage, true);
+    }
+
+    runShopViewTransition(
+        () => closeProduct(options),
+        () => {
+            animateProductFlight({
+                sourceElement: sourceImage,
+                targetElement: targetImage,
+                fromRect,
+                toRect,
+                imageSrc,
+                direction: "close",
+            });
+        },
+    );
 }
 
 function openProduct(product, imageId = "front", options = {}) {
@@ -588,7 +833,7 @@ function handleGridClick(event) {
     const product = productBySlug.get(card.dataset.slug);
     if (!product) return;
     event.preventDefault();
-    openProduct(product, "front");
+    openProductFromCard(product, "front", card);
 }
 
 function handleGridKeydown(event) {
@@ -598,7 +843,7 @@ function handleGridKeydown(event) {
     const product = productBySlug.get(card.dataset.slug);
     if (!product) return;
     event.preventDefault();
-    openProduct(product, "front");
+    openProductFromCard(product, "front", card);
 }
 
 selectors.grid?.addEventListener("click", handleGridClick);
@@ -609,7 +854,7 @@ document.addEventListener("click", (event) => {
     if (!(target instanceof Element)) return;
 
     if (target.closest("[data-close-product]")) {
-        closeProduct();
+        closeProductWithTransition();
         return;
     }
 
@@ -689,7 +934,7 @@ document.addEventListener("click", (event) => {
 
     if (target === selectors.backdrop) {
         if (isCartOpen()) closeCart();
-        if (isProductOpen()) closeProduct();
+        if (isProductOpen()) closeProductWithTransition();
     }
 });
 
@@ -706,7 +951,7 @@ document.addEventListener("keydown", (event) => {
             return;
         }
         if (isProductOpen()) {
-            closeProduct();
+            closeProductWithTransition();
             return;
         }
     }
@@ -732,7 +977,7 @@ window.addEventListener("popstate", () => {
     if (match) {
         openProduct(match.product, match.imageId, { push: false });
     } else if (isProductOpen()) {
-        closeProduct({ push: false });
+        closeProductWithTransition({ push: false });
     }
 });
 
