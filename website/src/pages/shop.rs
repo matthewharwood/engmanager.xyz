@@ -4,6 +4,9 @@ use eng_markup::html;
 
 use crate::asset_url;
 
+const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
+const SHOP_TITLE: &str = "Shop · ENGMANAGER.XYZ";
+const SHOP_DESCRIPTION: &str = "Default storefront page for shop.engmanager.xyz.";
 const SHOP_CACHE_CONTROL: &str =
     "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 
@@ -18,83 +21,50 @@ fn page() -> String {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>"Hello world - shop.engmanager.xyz"</title>
-                <meta name="description" content="Hello world from shop.engmanager.xyz." />
-                <link rel="canonical" href="https://shop.engmanager.xyz/" />
+                <title>{ SHOP_TITLE }</title>
+                <meta name="description" content=SHOP_DESCRIPTION />
+                <meta name="robots" content="noindex,follow" />
+                <link rel="canonical" href=SHOP_ORIGIN />
+                <meta property="og:site_name" content="ENGMANAGER.XYZ" />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content=SHOP_TITLE />
+                <meta property="og:description" content=SHOP_DESCRIPTION />
+                <meta property="og:url" content=SHOP_ORIGIN />
+                <meta name="twitter:card" content="summary" />
+                <meta name="twitter:title" content=SHOP_TITLE />
+                <meta name="twitter:description" content=SHOP_DESCRIPTION />
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                <style>
-                    "
-                    :root {
-                        color-scheme: light dark;
-                        --ink: #11111b;
-                        --paper: #f7f3ea;
-                        --accent: #e64553;
-                        --shadow: #11111b;
-                    }
-
-                    @media (prefers-color-scheme: dark) {
-                        :root {
-                            --ink: #f7f3ea;
-                            --paper: #11111b;
-                            --accent: #89b4fa;
-                            --shadow: #f7f3ea;
-                        }
-                    }
-
-                    * {
-                        box-sizing: border-box;
-                    }
-
-                    html {
-                        min-height: 100%;
-                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                        background:
-                            linear-gradient(135deg, color-mix(in srgb, var(--accent), transparent 76%), transparent 42%),
-                            var(--paper);
-                        color: var(--ink);
-                    }
-
-                    body {
-                        min-height: 100svh;
-                        margin: 0;
-                        display: grid;
-                        place-items: center;
-                        padding: clamp(1rem, 5vw, 4rem);
-                    }
-
-                    main {
-                        width: min(100%, 42rem);
-                        border: 2px solid currentColor;
-                        background: color-mix(in srgb, var(--paper), white 8%);
-                        box-shadow: clamp(0.5rem, 2vw, 1rem) clamp(0.5rem, 2vw, 1rem) 0 var(--shadow);
-                        padding: clamp(1.25rem, 6vw, 3rem);
-                    }
-
-                    p {
-                        margin: 0 0 0.75rem;
-                        font-size: clamp(0.8rem, 2vw, 0.95rem);
-                        font-weight: 800;
-                        letter-spacing: 0.12em;
-                        text-transform: uppercase;
-                    }
-
-                    h1 {
-                        margin: 0;
-                        font-size: clamp(3rem, 18vw, 9rem);
-                        line-height: 0.9;
-                        letter-spacing: 0;
-                        text-transform: uppercase;
-                    }
-                    "
-                </style>
+                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
+                <link rel="stylesheet" href={ asset_url("css/shop.css") } />
+                <meta name="theme-color" content="#e64553" />
             </head>
-            <body>
-                <main>
-                    <p>"shop.engmanager.xyz"</p>
-                    <h1>"Hello world"</h1>
+            <body class="shop-page">
+                <main class="shop-shell" aria-labelledby="shop-title">
+                    <p class="shop-kicker">"shop.engmanager.xyz"</p>
+                    <h1 id="shop-title">"Shop"</h1>
+                    <p class="shop-copy">"A lightweight storefront placeholder for ENGMANAGER.XYZ."</p>
+                    <a class="shop-home" href="https://engmanager.xyz/">"Back to engmanager.xyz"</a>
                 </main>
             </body>
         </html>
     }
     .into_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shop_page_uses_site_assets_and_preview_metadata() {
+        let html = page();
+
+        assert!(html.contains("<title>Shop · ENGMANAGER.XYZ</title>"));
+        assert!(html.contains(r#"<meta name="robots" content="noindex,follow">"#));
+        assert!(html.contains(r#"<link rel="canonical" href="https://shop.engmanager.xyz">"#));
+        assert!(html.contains(r#"<meta property="og:type" content="website">"#));
+        assert!(html.contains("/assets/css/critical."));
+        assert!(html.contains("/assets/css/shop."));
+        assert!(!html.contains("<style>"));
+    }
 }
