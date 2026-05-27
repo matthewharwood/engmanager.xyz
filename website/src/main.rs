@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::Path;
-use axum::http::{HeaderMap, HeaderName, StatusCode, header};
+use axum::http::{HeaderMap, HeaderName, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use rust_embed::{EmbeddedFile, RustEmbed};
@@ -28,7 +28,12 @@ const PORT_ENV_VAR: &str = "PORT";
 const DEFAULT_PORT: u16 = 3000;
 const PRODUCTION_HOST: [u8; 4] = [0, 0, 0, 0];
 const DEV_HOST: [u8; 4] = [127, 0, 0, 1];
-const SHOP_HOST: &str = "shop.engmanager.xyz";
+const SHOP_HOSTS: &[&str] = &[
+    "shop.engmanager.xyz",
+    "store.engmanager.xyz",
+    "shop.localhost",
+    "store.localhost",
+];
 
 // Embed all static assets into the binary at compile time. Render (and most
 // platform-as-a-service runtimes) don't reliably preserve the source tree at
@@ -296,8 +301,22 @@ async fn root_handler(headers: HeaderMap) -> Response {
 
 fn is_shop_host(host: &str) -> bool {
     let host_without_port = host.split(':').next().unwrap_or(host);
-    host_without_port.eq_ignore_ascii_case(SHOP_HOST)
-        || host_without_port.eq_ignore_ascii_case("shop.localhost")
+    SHOP_HOSTS
+        .iter()
+        .any(|shop_host| host_without_port.eq_ignore_ascii_case(shop_host))
+}
+
+async fn fallback_handler(headers: HeaderMap, uri: Uri) -> Response {
+    let host = headers
+        .get(header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+
+    if is_shop_host(host) && pages::shop::supports_path(uri.path()) {
+        pages::shop::index().await
+    } else {
+        pages::not_found::handler().await
+    }
 }
 
 async fn security_headers_layer(
@@ -384,7 +403,7 @@ async fn main() {
         .route("/offline.html", get(offline_handler))
         .route("/sw.js", get(sw_handler))
         .route("/assets/{*path}", get(asset_handler))
-        .fallback(pages::not_found::handler)
+        .fallback(fallback_handler)
         .with_state(state)
         .layer(axum::middleware::from_fn(security_headers_layer))
         .layer(axum::middleware::from_fn(html_cache_layer))
@@ -457,7 +476,10 @@ mod tests {
         assert!(is_shop_host("shop.engmanager.xyz"));
         assert!(is_shop_host("shop.engmanager.xyz:443"));
         assert!(is_shop_host("SHOP.ENGMANAGER.XYZ"));
+        assert!(is_shop_host("store.engmanager.xyz"));
+        assert!(is_shop_host("STORE.ENGMANAGER.XYZ:443"));
         assert!(is_shop_host("shop.localhost:3000"));
+        assert!(is_shop_host("store.localhost:3000"));
         assert!(!is_shop_host("engmanager.xyz"));
         assert!(!is_shop_host("www.engmanager.xyz"));
     }
