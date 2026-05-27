@@ -334,6 +334,14 @@
     display: grid;
     grid-template-rows: minmax(26rem, 1fr) auto;
     overflow: auto;
+    transform-origin: center center;
+    will-change: transform, opacity;
+}
+
+.shop-product-layout.is-product-swiping {
+    cursor: grabbing;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .shop-carousel {
@@ -354,7 +362,7 @@
     display: grid;
     gap: 1.4rem;
     justify-items: center;
-    touch-action: pan-y;
+    touch-action: none;
 }
 
 .shop-image-advance {
@@ -368,7 +376,7 @@
     cursor: grab;
     background: transparent;
     border: 0;
-    touch-action: pan-y;
+    touch-action: none;
     -webkit-user-select: none;
     user-select: none;
     will-change: transform;

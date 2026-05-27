@@ -11,6 +11,7 @@ const selectors = {
     backdrop: document.querySelector("[data-shop-backdrop]"),
     productTitle: document.querySelector("[data-product-title]"),
     productKicker: document.querySelector("[data-product-kicker]"),
+    productLayout: document.querySelector(".shop-product-layout"),
     productCopyTitle: document.querySelector("[data-product-copy-title]"),
     productPrice: document.querySelector("[data-product-price]"),
     productDescription: document.querySelector("[data-product-description]"),
@@ -41,7 +42,10 @@ let carouselMotion = { x: 0, scale: 1, rotate: 0, opacity: 1 };
 let dragState = null;
 let suppressNextImageAdvance = false;
 let activeProductFlight = null;
+let activeProductSwitchAnimation = null;
 let productTransitionActive = false;
+let productSwitching = false;
+let productSwipeState = null;
 let lastOpenedProductSlug = null;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -148,6 +152,19 @@ function rectForElement(element) {
     };
 }
 
+function containedRect(fromRect, targetRect) {
+    const scale = Math.min(targetRect.width / fromRect.width, targetRect.height / fromRect.height);
+    const width = fromRect.width * scale;
+    const height = fromRect.height * scale;
+    return {
+        left: targetRect.left + (targetRect.width - width) / 2,
+        top: targetRect.top + (targetRect.height - height) / 2,
+        width,
+        height,
+        scale,
+    };
+}
+
 function hideForProductFlight(element, hidden) {
     element?.classList.toggle("is-shop-transition-hidden", hidden);
 }
@@ -214,16 +231,15 @@ async function animateProductFlight(options) {
     const state = {
         x: fromRect.left,
         y: fromRect.top,
-        scaleX: 1,
-        scaleY: 1,
+        scale: 1,
         rotate: direction === "open" ? -0.8 : 0.65,
         opacity: 0.96,
     };
+    const containedTarget = containedRect(fromRect, targetRect);
     const end = {
-        x: targetRect.left,
-        y: targetRect.top,
-        scaleX: targetRect.width / fromRect.width,
-        scaleY: targetRect.height / fromRect.height,
+        x: containedTarget.left,
+        y: containedTarget.top,
+        scale: containedTarget.scale,
         rotate: 0,
         opacity: 1,
     };
@@ -231,10 +247,10 @@ async function animateProductFlight(options) {
         clone.style.opacity = String(state.opacity);
         clone.style.transform = [
             `translate3d(${state.x}px, ${state.y}px, 0)`,
-            `scale(${state.scaleX}, ${state.scaleY})`,
+            `scale(${state.scale})`,
             `rotate(${state.rotate}deg)`,
         ].join(" ");
-        clone.style.filter = `drop-shadow(0 ${Math.max(8, 20 * state.scaleY)}px ${Math.max(14, 24 * state.scaleY)}px rgb(25 28 40 / 0.12))`;
+        clone.style.filter = `drop-shadow(0 ${Math.max(8, 20 * state.scale)}px ${Math.max(14, 24 * state.scale)}px rgb(25 28 40 / 0.12))`;
     };
     const cleanup = () => {
         hideForProductFlight(sourceElement, false);
@@ -254,8 +270,7 @@ async function animateProductFlight(options) {
         activeProductFlight = animeApi.animate(state, {
             x: end.x,
             y: end.y,
-            scaleX: end.scaleX,
-            scaleY: end.scaleY,
+            scale: end.scale,
             rotate: end.rotate,
             opacity: end.opacity,
             duration,
@@ -271,8 +286,7 @@ async function animateProductFlight(options) {
             targets: state,
             x: end.x,
             y: end.y,
-            scaleX: end.scaleX,
-            scaleY: end.scaleY,
+            scale: end.scale,
             rotate: end.rotate,
             opacity: end.opacity,
             duration,
@@ -286,11 +300,11 @@ async function animateProductFlight(options) {
     clone.animate(
         [
             {
-                transform: `translate3d(${fromRect.left}px, ${fromRect.top}px, 0) scale(1, 1) rotate(${state.rotate}deg)`,
+                transform: `translate3d(${fromRect.left}px, ${fromRect.top}px, 0) scale(1) rotate(${state.rotate}deg)`,
                 opacity: 0.96,
             },
             {
-                transform: `translate3d(${end.x}px, ${end.y}px, 0) scale(${end.scaleX}, ${end.scaleY}) rotate(0deg)`,
+                transform: `translate3d(${end.x}px, ${end.y}px, 0) scale(${end.scale}) rotate(0deg)`,
                 opacity: 1,
             },
         ],
@@ -347,6 +361,287 @@ function closeProductWithTransition(options = {}) {
             });
         },
     );
+}
+
+function stopProductSwitchAnimation() {
+    activeProductSwitchAnimation?.pause?.();
+    activeProductSwitchAnimation?.cancel?.();
+    activeProductSwitchAnimation = null;
+}
+
+function setProductSwitchMotion(y = 0, scale = 1, opacity = 1) {
+    if (!selectors.productLayout) return;
+    selectors.productLayout.style.transform = `translate3d(0, ${y}px, 0) scale(${scale})`;
+    selectors.productLayout.style.opacity = String(opacity);
+}
+
+function animateProductSwitchMotion(to, options = {}) {
+    stopProductSwitchAnimation();
+    const from = {
+        y: Number(options.fromY ?? 0),
+        scale: Number(options.fromScale ?? 1),
+        opacity: Number(options.fromOpacity ?? 1),
+    };
+    const complete = () => {
+        activeProductSwitchAnimation = null;
+        options.onComplete?.();
+    };
+
+    if (reduceMotion.matches) {
+        setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1);
+        complete();
+        return null;
+    }
+
+    const animeApi = window.anime;
+    if (animeApi?.animate) {
+        activeProductSwitchAnimation = animeApi.animate(from, {
+            y: to.y ?? 0,
+            scale: to.scale ?? 1,
+            opacity: to.opacity ?? 1,
+            duration: options.duration ?? 320,
+            ease: options.ease ?? "out(4)",
+            onUpdate: () => setProductSwitchMotion(from.y, from.scale, from.opacity),
+            onComplete: complete,
+        });
+        return activeProductSwitchAnimation;
+    }
+
+    if (typeof animeApi === "function") {
+        activeProductSwitchAnimation = animeApi({
+            targets: from,
+            y: to.y ?? 0,
+            scale: to.scale ?? 1,
+            opacity: to.opacity ?? 1,
+            duration: options.duration ?? 320,
+            easing: "easeOutCubic",
+            update: () => setProductSwitchMotion(from.y, from.scale, from.opacity),
+            complete,
+        });
+        return activeProductSwitchAnimation;
+    }
+
+    selectors.productLayout
+        ?.animate(
+            [
+                {
+                    transform: `translate3d(0, ${from.y}px, 0) scale(${from.scale})`,
+                    opacity: from.opacity,
+                },
+                {
+                    transform: `translate3d(0, ${to.y ?? 0}px, 0) scale(${to.scale ?? 1})`,
+                    opacity: to.opacity ?? 1,
+                },
+            ],
+            {
+                duration: options.duration ?? 320,
+                easing: "cubic-bezier(.22,.9,.2,1)",
+            },
+        )
+        ?.addEventListener("finish", complete, { once: true });
+    setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1);
+    return null;
+}
+
+function productIndex(product) {
+    return products.findIndex((candidate) => candidate.slug === product?.slug);
+}
+
+function gridColumnCount() {
+    if (!selectors.grid) return 1;
+    const columns = window
+        .getComputedStyle(selectors.grid)
+        .gridTemplateColumns.split(/\s+/)
+        .filter(Boolean);
+    return Math.max(1, columns.length || 1);
+}
+
+function productByGridRows(rowDelta) {
+    if (!currentProduct || !products.length) return null;
+    const index = productIndex(currentProduct);
+    if (index < 0) return null;
+    const step = gridColumnCount() * rowDelta;
+    return products[(index + step + products.length * 10) % products.length];
+}
+
+function currentImageId() {
+    return currentProduct?.images?.[currentImageIndex]?.id || "front";
+}
+
+function switchProductByGridRows(rowDelta, options = {}) {
+    if (productSwitching || productTransitionActive || !currentProduct) return;
+    const nextProduct = productByGridRows(rowDelta);
+    if (!nextProduct) return;
+
+    const travel = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
+    const exitY = rowDelta > 0 ? travel * 0.22 : -travel * 0.22;
+    const enterY = rowDelta > 0 ? -travel * 0.18 : travel * 0.18;
+    const imageId = currentImageId();
+    const fromY = Number(options.fromY ?? 0);
+    productSwitching = true;
+    selectors.productLayout?.classList.add("is-product-swiping");
+
+    animateProductSwitchMotion(
+        { y: exitY, scale: 0.986, opacity: 0.72 },
+        {
+            fromY,
+            fromScale: options.fromScale ?? 1,
+            fromOpacity: options.fromOpacity ?? 1,
+            duration: 150,
+            ease: "out(3)",
+            onComplete: () => {
+                openProduct(nextProduct, imageId, { push: false });
+                window.history.replaceState(
+                    { shopProduct: nextProduct.slug, image: imageId },
+                    "",
+                    productUrl(nextProduct, imageId),
+                );
+                lastOpenedProductSlug = nextProduct.slug;
+                setProductSwitchMotion(enterY, 0.988, 0.76);
+                animateProductSwitchMotion(
+                    { y: 0, scale: 1, opacity: 1 },
+                    {
+                        fromY: enterY,
+                        fromScale: 0.988,
+                        fromOpacity: 0.76,
+                        duration: 430,
+                        ease: "out(4)",
+                        onComplete: () => {
+                            productSwitching = false;
+                            selectors.productLayout?.classList.remove("is-product-swiping");
+                            setProductSwitchMotion(0, 1, 1);
+                        },
+                    },
+                );
+            },
+        },
+    );
+}
+
+function captureProductPointer(pointerId) {
+    try {
+        selectors.productLayout?.setPointerCapture?.(pointerId);
+    } catch {}
+}
+
+function releaseProductPointer(pointerId) {
+    try {
+        selectors.productLayout?.releasePointerCapture?.(pointerId);
+    } catch {}
+}
+
+function onProductPointerDown(event) {
+    if (
+        !selectors.productLayout ||
+        !isProductOpen() ||
+        productSwitching ||
+        productTransitionActive ||
+        isCartOpen() ||
+        event.button > 0 ||
+        event.pointerType === "mouse"
+    ) {
+        return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const interactive = target.closest("button, a, input, select, textarea");
+    if (interactive && !interactive.matches("[data-image-advance]")) return;
+
+    productSwipeState = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastY: event.clientY,
+        lastTime: performance.now(),
+        velocityY: 0,
+        y: 0,
+        scale: 1,
+        opacity: 1,
+        dragging: false,
+        captured: false,
+    };
+}
+
+function onProductPointerMove(event) {
+    if (!productSwipeState || event.pointerId !== productSwipeState.pointerId) return;
+    const dy = event.clientY - productSwipeState.startY;
+    const dx = event.clientX - productSwipeState.startX;
+    const absY = Math.abs(dy);
+    const absX = Math.abs(dx);
+
+    if (!productSwipeState.dragging) {
+        if (absY < 10) return;
+        if (absX > absY * 1.12) {
+            releaseProductPointer(event.pointerId);
+            productSwipeState = null;
+            return;
+        }
+        productSwipeState.dragging = true;
+        productSwipeState.captured = true;
+        captureProductPointer(event.pointerId);
+        stopProductSwitchAnimation();
+        selectors.productLayout?.classList.add("is-product-swiping");
+    }
+
+    event.preventDefault();
+    const now = performance.now();
+    const dt = Math.max(16, now - productSwipeState.lastTime);
+    productSwipeState.velocityY = (event.clientY - productSwipeState.lastY) / dt;
+    productSwipeState.lastY = event.clientY;
+    productSwipeState.lastTime = now;
+
+    const height = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
+    const limit = Math.max(110, height * 0.2);
+    const eased = limit * Math.tanh(dy / limit);
+    const progress = Math.min(1, Math.abs(eased) / limit);
+    productSwipeState.y = eased;
+    productSwipeState.scale = 1 - progress * 0.018;
+    productSwipeState.opacity = 1 - progress * 0.16;
+    setProductSwitchMotion(productSwipeState.y, productSwipeState.scale, productSwipeState.opacity);
+}
+
+function onProductPointerEnd(event) {
+    if (!productSwipeState || event.pointerId !== productSwipeState.pointerId) return;
+    const state = productSwipeState;
+    productSwipeState = null;
+    if (state.captured) releaseProductPointer(event.pointerId);
+
+    if (!state.dragging) return;
+
+    const height = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
+    const dy = event.clientY - state.startY;
+    const projected = dy + state.velocityY * 220;
+    const threshold = Math.max(58, height * 0.12);
+
+    if (projected > threshold) {
+        switchProductByGridRows(1, {
+            fromY: state.y,
+            fromScale: state.scale,
+            fromOpacity: state.opacity,
+        });
+    } else if (projected < -threshold) {
+        switchProductByGridRows(-1, {
+            fromY: state.y,
+            fromScale: state.scale,
+            fromOpacity: state.opacity,
+        });
+    } else {
+        animateProductSwitchMotion(
+            { y: 0, scale: 1, opacity: 1 },
+            {
+                fromY: state.y,
+                fromScale: state.scale,
+                fromOpacity: state.opacity,
+                duration: 360,
+                ease: "out(4)",
+                onComplete: () => {
+                    selectors.productLayout?.classList.remove("is-product-swiping");
+                    setProductSwitchMotion(0, 1, 1);
+                },
+            },
+        );
+    }
 }
 
 function openProduct(product, imageId = "front", options = {}) {
@@ -987,6 +1282,10 @@ selectors.imageStage?.addEventListener("pointerdown", onCarouselPointerDown);
 selectors.imageStage?.addEventListener("pointermove", onCarouselPointerMove);
 selectors.imageStage?.addEventListener("pointerup", onCarouselPointerEnd);
 selectors.imageStage?.addEventListener("pointercancel", onCarouselPointerEnd);
+selectors.productLayout?.addEventListener("pointerdown", onProductPointerDown);
+selectors.productLayout?.addEventListener("pointermove", onProductPointerMove);
+selectors.productLayout?.addEventListener("pointerup", onProductPointerEnd);
+selectors.productLayout?.addEventListener("pointercancel", onProductPointerEnd);
 
 const initial = getProductFromLocation();
 if (initial) {
