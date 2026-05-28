@@ -8,11 +8,22 @@ ASSET_DIR="$ROOT/website/assets/shop/caps"
 KEY_COLOR="#ff00ff"
 
 generated_slugs=(
+  agentic-slop
+  css-engineer
+  engmanager-xyz
+  imma-p0
   lgtm-plus-two
   okrs
-  real-programmers
+  ownership
+  real-programmer
   scrum-master
+  scrum-of-scrums
+  stakeholder
+  standup
+  step-change
   time-check
+  tokenmaxxing
+  violently-aligned
   velocity
   up-and-to-the-right
 )
@@ -22,20 +33,20 @@ catalog_slugs=(
   scrum-of-scrums
   scrum-master
   velocity
-  real-programmers
-  sprint-review
+  real-programmer
+  css-engineer
   time-check
-  standup-club
+  standup
   lgtm-plus-two
   stakeholder
-  backlog-zero
-  release-train
+  agentic-slop
+  step-change
   up-and-to-the-right
-  merge-friday
-  incident-commander
+  imma-p0
+  ownership
   okrs
-  consensus-builder
-  scope-creep
+  violently-aligned
+  tokenmaxxing
 )
 
 views=(front angle detail worn)

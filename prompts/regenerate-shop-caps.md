@@ -28,6 +28,71 @@ just shop-caps --sources tmp/imagegen/shop-cap-sources --slug okrs
 
 ## Assets
 
+### `engmanager-xyz`
+
+Use the existing `engmanager-xyz-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `ENGMANAGER.XYZ`
+- Stack as three embroidered lines when possible: `ENGMANAGER`, `.XYZ`, then `🌀`.
+- Embroidered icon on the third line: `🌀`, simplified as a stitched blue cyclone swirl if the full emoji is too detailed.
+- Avoid: no extra words, no old single-line-only layout, no bullseye target.
+
+Generate:
+
+- `engmanager-xyz-front.png`
+- `engmanager-xyz-angle.png`
+- `engmanager-xyz-detail.png`
+- `engmanager-xyz-worn.png`
+
+### `agentic-slop`
+
+Use the existing `agentic-slop-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Agentic Slop`
+- Embroidered icon under or next to text: `🔮`, simplified as a stitched purple crystal ball if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `Agentic` and `Slop`.
+- Avoid: no extra words, no old `Backlog Zero` text.
+
+Generate:
+
+- `agentic-slop-front.png`
+- `agentic-slop-angle.png`
+- `agentic-slop-detail.png`
+- `agentic-slop-worn.png`
+
+### `css-engineer`
+
+Use the existing `css-engineer-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `CSS Engineer`
+- Embroidered icon under or next to text: `🐐`, simplified as a stitched goat head or goat silhouette if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `CSS` and `Engineer`.
+- Avoid: no extra words, no old `Sprint Review` text.
+
+Generate:
+
+- `css-engineer-front.png`
+- `css-engineer-angle.png`
+- `css-engineer-detail.png`
+- `css-engineer-worn.png`
+
+### `imma-p0`
+
+Use the existing `imma-p0-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `I'mma P0`
+- Preserve the apostrophe in `I'mma` and use zero in `P0`.
+- Embroidered icon under or next to text: `❄️`, simplified as a stitched white/cyan snowflake if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `I'mma` and `P0`.
+- Avoid: no extra words, no old `Merge Friday` text.
+
+Generate:
+
+- `imma-p0-front.png`
+- `imma-p0-angle.png`
+- `imma-p0-detail.png`
+- `imma-p0-worn.png`
+
 ### `lgtm-plus-two`
 
 Use the existing `retro-board-{view}.webp` as the edit target.
@@ -58,21 +123,36 @@ Generate:
 - `okrs-detail.png`
 - `okrs-worn.png`
 
-### `real-programmers`
+### `ownership`
 
-Use the existing `real-programmers-{view}.webp` as the edit target when refreshing this item.
+Use the existing `ownership-{view}.webp` as the edit target when refreshing this item.
 
-- Text: `Real programmers`
-- Embroidered icon under or next to text: `🧙‍♂️`, simplified as a stitched wizard if the full emoji is too detailed.
-- Split phrase into two embroidered lines when needed: `Real` and `programmers`.
-- Avoid: no extra words.
+- Text: `Ownership`
+- Embroidered icon under or next to text: `💪🏻`, simplified as a stitched light-skin-tone flexed arm if the full emoji is too detailed.
+- Avoid: no extra words, no old `Incident Commander` text.
 
 Generate:
 
-- `real-programmers-front.png`
-- `real-programmers-angle.png`
-- `real-programmers-detail.png`
-- `real-programmers-worn.png`
+- `ownership-front.png`
+- `ownership-angle.png`
+- `ownership-detail.png`
+- `ownership-worn.png`
+
+### `real-programmer`
+
+Use the existing `real-programmer-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Real Programmer`
+- Embroidered icon under or next to text: `🧙‍♂️`, simplified as a stitched wizard if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `Real` and `Programmer`.
+- Avoid: no extra words, no old plural `Real programmers` text.
+
+Generate:
+
+- `real-programmer-front.png`
+- `real-programmer-angle.png`
+- `real-programmer-detail.png`
+- `real-programmer-worn.png`
 
 ### `scrum-master`
 
@@ -89,6 +169,68 @@ Generate:
 - `scrum-master-detail.png`
 - `scrum-master-worn.png`
 
+### `scrum-of-scrums`
+
+Use the existing `scrum-of-scrums-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Scrum of Scrums`
+- Embroidered icons under or next to text: `🗓️🗓️`, simplified as two stitched spiral calendars side by side if the full emoji pair is too detailed.
+- Split phrase into two embroidered lines when needed: `Scrum` and `of Scrums`.
+- Avoid: no extra words, no missing second calendar.
+
+Generate:
+
+- `scrum-of-scrums-front.png`
+- `scrum-of-scrums-angle.png`
+- `scrum-of-scrums-detail.png`
+- `scrum-of-scrums-worn.png`
+
+### `stakeholder`
+
+Use the existing `stakeholder-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Stakeholder`
+- Embroidered icon under or next to text: `🥩`, simplified as a stitched steak if the full emoji is too detailed.
+- Avoid: no extra words.
+
+Generate:
+
+- `stakeholder-front.png`
+- `stakeholder-angle.png`
+- `stakeholder-detail.png`
+- `stakeholder-worn.png`
+
+### `standup`
+
+Use the existing `standup-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Standup`
+- Embroidered icon under or next to text: `🏋🏻‍♂️`, simplified as a stitched weightlifter or barbell lifter if the full emoji is too detailed.
+- Avoid: no extra words, no old `Standup Club` text.
+
+Generate:
+
+- `standup-front.png`
+- `standup-angle.png`
+- `standup-detail.png`
+- `standup-worn.png`
+
+### `step-change`
+
+Use the existing `step-change-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Step Change`
+- Embroidered icon under or next to text: `🪜`, simplified as a stitched ladder if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `Step` and `Change`.
+- Avoid: no extra words, no old `Release Train` text.
+
+Generate:
+
+- `step-change-front.png`
+- `step-change-angle.png`
+- `step-change-detail.png`
+- `step-change-worn.png`
+
 ### `time-check`
 
 Use the existing `ship-it-{view}.webp` as the edit target.
@@ -103,6 +245,37 @@ Generate:
 - `time-check-angle.png`
 - `time-check-detail.png`
 - `time-check-worn.png`
+
+### `tokenmaxxing`
+
+Use the existing `tokenmaxxing-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Tokenmaxxing`
+- Embroidered icon under or next to text: `💸`, simplified as a stitched green bill with small wings if the full emoji is too detailed.
+- Avoid: no extra words, no old `Scope Creep` text.
+
+Generate:
+
+- `tokenmaxxing-front.png`
+- `tokenmaxxing-angle.png`
+- `tokenmaxxing-detail.png`
+- `tokenmaxxing-worn.png`
+
+### `violently-aligned`
+
+Use the existing `violently-aligned-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Violently Aligned`
+- Embroidered icon under or next to text: `⚔️`, simplified as stitched crossed swords if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `Violently` and `Aligned`.
+- Avoid: no extra words, no old `Consensus Builder` text.
+
+Generate:
+
+- `violently-aligned-front.png`
+- `violently-aligned-angle.png`
+- `violently-aligned-detail.png`
+- `violently-aligned-worn.png`
 
 ### `velocity`
 
