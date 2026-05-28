@@ -10,6 +10,12 @@ Then run:
 just shop-caps --sources tmp/imagegen/shop-cap-sources
 ```
 
+To process a single replacement slug:
+
+```bash
+just shop-caps --sources tmp/imagegen/shop-cap-sources --slug okrs
+```
+
 ## Global Constraints
 
 - Use case: ecommerce dad-cap product mockup source for transparent WebP.
@@ -36,6 +42,52 @@ Generate:
 - `lgtm-plus-two-angle.png`
 - `lgtm-plus-two-detail.png`
 - `lgtm-plus-two-worn.png`
+
+### `okrs`
+
+Use the existing `okrs-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `OKRs`
+- Embroidered icon under or next to text: `🎯`, simplified as a stitched target if the full emoji is too detailed.
+- Avoid: no extra words.
+
+Generate:
+
+- `okrs-front.png`
+- `okrs-angle.png`
+- `okrs-detail.png`
+- `okrs-worn.png`
+
+### `real-programmers`
+
+Use the existing `real-programmers-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Real programmers`
+- Embroidered icon under or next to text: `🧙‍♂️`, simplified as a stitched wizard if the full emoji is too detailed.
+- Split phrase into two embroidered lines when needed: `Real` and `programmers`.
+- Avoid: no extra words.
+
+Generate:
+
+- `real-programmers-front.png`
+- `real-programmers-angle.png`
+- `real-programmers-detail.png`
+- `real-programmers-worn.png`
+
+### `scrum-master`
+
+Use the existing `scrum-master-{view}.webp` as the edit target when refreshing this item.
+
+- Text: `Scrum Master`
+- Embroidered icon under or next to text: `🗓️`, simplified as a stitched spiral calendar if the full emoji is too detailed.
+- Avoid: no extra words.
+
+Generate:
+
+- `scrum-master-front.png`
+- `scrum-master-angle.png`
+- `scrum-master-detail.png`
+- `scrum-master-worn.png`
 
 ### `time-check`
 
