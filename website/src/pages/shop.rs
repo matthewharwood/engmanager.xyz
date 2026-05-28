@@ -39,6 +39,11 @@ const CAP_VIEWS: &[CapView] = &[
         label: "Worn",
         caption: "On-head scale for the daily standup.",
     },
+    CapView {
+        id: "model",
+        label: "Model",
+        caption: "Person-worn product reference.",
+    },
 ];
 
 const SHOP_PRODUCTS: &[ShopProduct] = &[
@@ -103,14 +108,14 @@ const SHOP_PRODUCTS: &[ShopProduct] = &[
         description: "Demo-day neutral. Pairs well with working software and short decks.",
     },
     ShopProduct {
-        slug: "ship-it",
-        name: "Ship It",
-        phrase: "Ship It",
+        slug: "time-check",
+        name: "Time Check",
+        phrase: "Time Check",
         cap_color: "#17324d",
         thread_color: "#f9f871",
-        accent_color: "#00bbf9",
+        accent_color: "#ff4fa3",
         price: 80,
-        description: "A brim-forward nudge for release notes, tiny rollbacks, and Friday courage.",
+        description: "A brim-forward nudge for the room to pause, sync, and check the clock.",
     },
     ShopProduct {
         slug: "standup-club",
@@ -123,14 +128,14 @@ const SHOP_PRODUCTS: &[ShopProduct] = &[
         description: "Fifteen minutes, three prompts, one cap that does not ask a follow-up.",
     },
     ShopProduct {
-        slug: "retro-board",
-        name: "Retro Board",
-        phrase: "Retro Board",
+        slug: "lgtm-plus-two",
+        name: "LGTM +2",
+        phrase: "LGTM +2",
         cap_color: "#fbf3b9",
         thread_color: "#3a405a",
         accent_color: "#f45b69",
         price: 80,
-        description: "Start, stop, continue, but in stitch form.",
+        description: "Approval, twice stitched. For reviews that can finally move.",
     },
     ShopProduct {
         slug: "stakeholder",
@@ -163,14 +168,14 @@ const SHOP_PRODUCTS: &[ShopProduct] = &[
         description: "All aboard, but please keep the blast radius small.",
     },
     ShopProduct {
-        slug: "wip-limit",
-        name: "WIP Limit",
-        phrase: "WIP Limit",
+        slug: "up-and-to-the-right",
+        name: "Up & to the Right",
+        phrase: "Up & to the Right",
         cap_color: "#fefae0",
         thread_color: "#283618",
-        accent_color: "#bc6c25",
+        accent_color: "#22c55e",
         price: 80,
-        description: "A wearable reminder that six things at once is still six things.",
+        description: "Optimism with a y-axis. Small chart, big stakeholder energy.",
     },
     ShopProduct {
         slug: "merge-friday",
@@ -285,7 +290,6 @@ fn page() -> String {
                 { render_sfx_urls() }
                 <script>{ data }</script>
                 <script src={ asset_url("js/audio.js") } defer></script>
-                <script src="https://cdn.jsdelivr.net/npm/animejs@4/dist/bundles/anime.umd.min.js" defer></script>
                 <script src={ asset_url("js/shop.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
                 <meta name="theme-color" content="#e64553" />
@@ -294,15 +298,12 @@ fn page() -> String {
             <body class="shop-page">
                 <a class="skip-link" href="#main">"Skip to caps"</a>
                 <header class="shop-topbar" aria-label="Store controls">
+                    <a class="shop-home-link"
+                       href="https://engmanager.xyz/"
+                       aria-label="Back to ENGMANAGER.XYZ">
+                        "‹"
+                    </a>
                     { render_theme_picker() }
-                    <nav class="shop-category-nav" aria-label="Store categories">
-                        <a href="/" aria-current="page">"NEW"</a>
-                        <a href="/">"MENS"</a>
-                        <a href="/">"WOMENS"</a>
-                        <a href="/">"HEADWEAR"</a>
-                        <a href="/">"ACCESSORIES"</a>
-                        <a href="/">"CAPS"</a>
-                    </nav>
                     <div class="shop-top-actions">
                         <button class="shop-cart-button"
                                 type="button"
@@ -368,65 +369,65 @@ fn render_product_card(product: &ShopProduct) -> HtmlFragment {
 
 fn render_product_panel() -> HtmlFragment {
     view! {
-        <aside class="shop-product-panel"
-               data-product-panel
-               role="dialog"
-               aria-modal="true"
-               aria-labelledby="shop-product-title"
-               aria-hidden="true"
-               hidden>
-            <div class="shop-product-frame">
-                <header class="shop-panel-head">
-                    <button class="shop-icon-button"
+    <aside class="shop-product-panel"
+           data-product-panel
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="shop-product-title"
+           aria-hidden="true"
+           tabindex="-1"
+           hidden>
+        <div class="shop-product-frame">
+            <header class="shop-panel-head">
+                <button class="shop-icon-button"
+                        type="button"
+                        data-close-product
+                        aria-label="Back to products">
+                    "‹"
+                </button>
+                { render_theme_picker() }
+                <button class="shop-cart-button"
+                        type="button"
+                        data-cart-toggle
+                        aria-label="Open cart"
+                        aria-expanded="false">
+                    <span class="shop-cart-icon" aria-hidden="true"></span>
+                    <span class="shop-cart-count" data-cart-count>"0"</span>
+                </button>
+                <h2 id="shop-product-title" class="sr-only" data-product-title>"Select a cap"</h2>
+            </header>
+            <div class="shop-product-layout">
+                <section class="shop-carousel" aria-label="Product images">
+                    <button class="shop-carousel-button shop-carousel-prev"
                             type="button"
-                            data-close-product
-                            aria-label="Back to products">
+                            data-image-prev
+                            aria-label="Previous product image">
                         "‹"
                     </button>
-                    <div class="shop-panel-title-block">
-                        <p class="shop-panel-kicker" data-product-kicker>"Dad cap"</p>
-                        <h2 id="shop-product-title" data-product-title>"Select a cap"</h2>
-                    </div>
-                    <button class="shop-cart-button"
-                            type="button"
-                            data-cart-toggle
-                            aria-label="Open cart"
-                            aria-expanded="false">
-                        <span class="shop-cart-icon" aria-hidden="true"></span>
-                        <span class="shop-cart-count" data-cart-count>"0"</span>
-                    </button>
-                </header>
-                <div class="shop-product-layout">
-                    <section class="shop-carousel" aria-label="Product images">
-                        <button class="shop-carousel-button shop-carousel-prev"
+                    <figure class="shop-carousel-stage">
+                        <button class="shop-image-advance"
                                 type="button"
-                                data-image-prev
-                                aria-label="Previous product image">
-                            "‹"
-                        </button>
-                        <figure class="shop-carousel-stage">
-                            <button class="shop-image-advance"
-                                    type="button"
-                                    data-image-advance
-                                    aria-label="Next product image">
-                                <img data-product-image
-                                     src=""
-                                     alt=""
-                                     width="900"
-                                     height="1100"
-                                     decoding="async" />
-                            </button>
-                            <figcaption data-image-caption>"Choose a cap."</figcaption>
-                        </figure>
-                        <button class="shop-carousel-button shop-carousel-next"
-                                type="button"
-                                data-image-next
+                                data-image-advance
                                 aria-label="Next product image">
-                            "›"
+                            <img data-product-image
+                                 src=""
+                                 alt=""
+                                 width="900"
+                                 height="1100"
+                                 decoding="async" />
                         </button>
-                        <div class="shop-thumbs" data-image-thumbs aria-label="Product image views"></div>
-                    </section>
-                    <section class="shop-product-copy" aria-label="Product details">
+                        <figcaption data-image-caption>"Choose a cap."</figcaption>
+                    </figure>
+                    <button class="shop-carousel-button shop-carousel-next"
+                            type="button"
+                            data-image-next
+                            aria-label="Next product image">
+                        "›"
+                    </button>
+                    <div class="shop-thumbs" data-image-thumbs aria-label="Product image views"></div>
+                </section>
+                <section class="shop-product-copy" aria-label="Product details">
+                    <div class="shop-product-summary" data-size-summary>
                         <p class="shop-product-copy-title" data-product-copy-title></p>
                         <p class="shop-product-copy-price" data-product-price></p>
                         <p class="shop-product-copy-description" data-product-description></p>
@@ -435,64 +436,68 @@ fn render_product_panel() -> HtmlFragment {
                                 <dt>"Blank"</dt>
                                 <dd>"Low profile dad cap"</dd>
                             </div>
-                            <div>
-                                <dt>"Decoration"</dt>
-                                <dd>"Front embroidery"</dd>
+                        <div>
+                            <dt>"Decoration"</dt>
+                            <dd>"Front embroidery"</dd>
                             </div>
                             <div>
                                 <dt>"Fit"</dt>
-                                <dd>"1 / 2 / 3"</dd>
+                                <dd>"One size / adjustable"</dd>
                             </div>
                         </dl>
                         <div class="shop-panel-actions">
                             <button class="shop-plus-button"
                                     type="button"
-                                    data-size-toggle
-                                    aria-expanded="false"
-                                    aria-controls="shop-size-sheet">
-                                "+"
-                            </button>
+                                data-size-toggle
+                                aria-expanded="false"
+                                aria-controls="shop-size-sheet">
+                            "+"
+                        </button>
                             <button class="shop-add-button" type="button" data-add-cart>
                                 "Add selected"
                             </button>
                         </div>
+                    </div>
+                        <section id="shop-size-sheet"
+                                 class="shop-size-sheet"
+                                 data-size-sheet
+                                 aria-label="Product options"
+                                 tabindex="-1"
+                                 hidden>
+                            <header class="shop-size-head">
+                                <button class="shop-size-help" type="button" data-info-toggle aria-label="Toggle information">
+                                    "?"
+                                </button>
+                                <h3>"SELECT SIZE"</h3>
+                                <button class="shop-size-close" type="button" data-close-size aria-label="Close product options">
+                                    "x"
+                                </button>
+                            </header>
+                            <p class="shop-size-price" data-size-price>"$80"</p>
+                            <div class="shop-size-options" data-size-options role="group" aria-label="Purchase option">
+                                <button type="button"
+                                        class="shop-size-flip is-selected"
+                                        data-size-option="ONE SIZE"
+                                        data-size-add
+                                        aria-label="Add one size to cart">
+                                    <span class="shop-size-flip-inner" aria-hidden="true">
+                                        <span class="shop-size-flip-face shop-size-flip-front">"ONE SIZE"</span>
+                                        <span class="shop-size-flip-face shop-size-flip-back">"ADD TO CART"</span>
+                                    </span>
+                                </button>
+                            </div>
+                            <section class="shop-size-info is-collapsed" data-size-info>
+                                <h4>"INFORMATION"</h4>
+                                <p data-size-info-copy>
+                                    "Low-profile dad cap, front embroidery, adjustable back strap, one size fits most adults."
+                                </p>
+                            </section>
+                            <button class="shop-size-add" type="button" data-add-cart>
+                                "Add to cart"
+                            </button>
+                        </section>
                     </section>
                 </div>
-                <section id="shop-size-sheet"
-                         class="shop-size-sheet"
-                         data-size-sheet
-                         aria-label="Select size and quantity"
-                         hidden>
-                    <header class="shop-size-head">
-                        <button class="shop-size-help" type="button" data-info-toggle aria-label="Toggle information">
-                            "?"
-                        </button>
-                        <h3>"SELECT SIZE"</h3>
-                        <button class="shop-size-close" type="button" data-close-size aria-label="Close size picker">
-                            "x"
-                        </button>
-                    </header>
-                    <p class="shop-size-price" data-size-price>"$80"</p>
-                    <div class="shop-size-options" data-size-options role="radiogroup" aria-label="Size">
-                        <button type="button" data-size-option="1" role="radio" aria-checked="false">"1"</button>
-                        <button type="button" data-size-option="2" role="radio" aria-checked="true" class="is-selected">"2"</button>
-                        <button type="button" data-size-option="3" role="radio" aria-checked="false">"3"</button>
-                    </div>
-                    <div class="shop-quantity" aria-label="Quantity">
-                        <button type="button" data-quantity-minus aria-label="Decrease quantity">"-"</button>
-                        <span data-quantity-value>"1"</span>
-                        <button type="button" data-quantity-plus aria-label="Increase quantity">"+"</button>
-                    </div>
-                    <section class="shop-size-info" data-size-info>
-                        <h4>"INFORMATION"</h4>
-                        <p data-size-info-copy>
-                            "Size 1 is snug, 2 is everyday, 3 is big-brim energy. These are concept caps for previewing the storefront interaction."
-                        </p>
-                    </section>
-                    <button class="shop-size-add" type="button" data-add-cart>
-                        "Add to cart"
-                    </button>
-                </section>
             </div>
         </aside>
     }
@@ -551,7 +556,7 @@ fn product_data_json() -> String {
     json!({
         "origin": STORE_ORIGIN,
         "products": products,
-        "sizes": ["1", "2", "3"],
+        "sizes": ["ONE SIZE"],
     })
     .to_string()
 }
@@ -595,7 +600,7 @@ mod tests {
         assert!(html.contains(r#"<meta property="og:type" content="website">"#));
         assert!(html.contains("/assets/css/critical."));
         assert!(html.contains("/assets/css/shop."));
-        assert!(html.contains("animejs@4"));
+        assert!(!html.contains("animejs@4"));
         assert!(html.contains("/assets/js/shop."));
         assert!(html.contains("window.__shopProducts="));
         assert!(html.contains("data-shop-grid"));

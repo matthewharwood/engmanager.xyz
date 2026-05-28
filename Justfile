@@ -35,6 +35,10 @@ check:
     cargo fmt --all --check
     cargo build --release
 
+# Regenerate shop cap assets from imagegen PNG sources.
+shop-caps *args:
+    ./scripts/regenerate-shop-caps.sh {{args}}
+
 # Expose the local dev server to the public internet via Tailscale Funnel.
 #
 # Prereqs (one-time, in the Tailscale admin console):

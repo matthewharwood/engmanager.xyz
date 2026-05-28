@@ -4,18 +4,34 @@ const EMPTY_STATE = "Your cap stack is empty.";
 const catalog = window.__shopProducts || { products: [] };
 const products = Array.isArray(catalog.products) ? catalog.products : [];
 const productBySlug = new Map(products.map((product) => [product.slug, product]));
+const CAMERA_OPEN_DURATION = 390;
+const CAMERA_OPEN_BACKGROUND_FADE_DURATION = 340;
+const CAMERA_OPEN_BACKGROUND_FADE_DELAY = CAMERA_OPEN_DURATION * 0.72;
+const CAMERA_OPEN_FOCUS_FADE_DURATION = 220;
+const CAMERA_OPEN_FOCUS_FADE_DELAY = CAMERA_OPEN_DURATION * 0.9;
+const CAMERA_CLOSE_DURATION = 390;
+const CAMERA_OPEN_EASING = "cubic-bezier(.2,.8,.2,1)";
+const CAMERA_CLOSE_HANDOFF_DELAY = 50;
+const GRID_TEXT_REVEAL_DURATION = 300;
+const GRID_TEXT_REVEAL_STAGGER = 40;
+const CAMERA_VIEWPORT_MARGIN = 220;
+const MOTION_EASING = "cubic-bezier(.22,.9,.2,1)";
 
 const selectors = {
+    skipLink: document.querySelector(".skip-link"),
+    topbar: document.querySelector(".shop-topbar"),
     shell: document.querySelector(".shop-shell"),
     grid: document.querySelector("[data-shop-grid]"),
     panel: document.querySelector("[data-product-panel]"),
     backdrop: document.querySelector("[data-shop-backdrop]"),
     productTitle: document.querySelector("[data-product-title]"),
     productKicker: document.querySelector("[data-product-kicker]"),
+    productFrame: document.querySelector(".shop-product-frame"),
     productLayout: document.querySelector(".shop-product-layout"),
     productCopyTitle: document.querySelector("[data-product-copy-title]"),
     productPrice: document.querySelector("[data-product-price]"),
     productDescription: document.querySelector("[data-product-description]"),
+    sizeSummary: document.querySelector("[data-size-summary]"),
     imageStage: document.querySelector("[data-image-advance]"),
     productImage: document.querySelector("[data-product-image]"),
     imageCaption: document.querySelector("[data-image-caption]"),
@@ -35,20 +51,24 @@ const selectors = {
 
 let currentProduct = null;
 let currentImageIndex = 0;
-let selectedSize = "2";
+let selectedSize = "ONE SIZE";
 let quantity = 1;
 let cart = readCart();
 let activeCarouselAnimation = null;
 let carouselMotion = { x: 0, scale: 1, rotate: 0, opacity: 1 };
 let dragState = null;
 let suppressNextImageAdvance = false;
-let activeProductFlight = null;
 let activeCameraAnimation = null;
+let preparedCloseCamera = null;
+let preparedCloseCameraSlug = null;
+let prepareCloseCameraTask = null;
+let gridTextRevealTimer = null;
 let activeProductSwitchAnimation = null;
 let productTransitionActive = false;
 let productSwitching = false;
 let productSwipeState = null;
 let lastOpenedProductSlug = null;
+let productModalBoundaryActive = false;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function readCart() {
@@ -113,10 +133,138 @@ function isCartOpen() {
     return selectors.cartDrawer && !selectors.cartDrawer.hidden;
 }
 
-function nextFrame() {
-    return new Promise((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(resolve));
+function backgroundFocusRoots() {
+    return [selectors.skipLink, selectors.topbar, selectors.shell].filter(Boolean);
+}
+
+function setBackgroundInert(active) {
+    if (productModalBoundaryActive === active) return;
+    productModalBoundaryActive = active;
+    backgroundFocusRoots().forEach((element) => {
+        element.inert = active;
+        if (active) {
+            element.setAttribute("aria-hidden", "true");
+        } else {
+            element.removeAttribute("aria-hidden");
+        }
     });
+}
+
+function focusProductDialog() {
+    selectors.panel?.focus({ preventScroll: true });
+}
+
+function focusGridCard(slug) {
+    const card = cardForSlug(slug);
+    if (!card) return;
+    card.focus({ preventScroll: true });
+}
+
+function isVisibleFocusable(element) {
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.matches("[disabled], [hidden], [aria-hidden='true']")) return false;
+    return element.getClientRects().length > 0;
+}
+
+function focusableElementsIn(container) {
+    if (!container) return [];
+    return Array.from(
+        container.querySelectorAll(
+            "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])",
+        ),
+    ).filter(isVisibleFocusable);
+}
+
+function trapFocusIn(container, event) {
+    if (!container) return;
+    const focusable = focusableElementsIn(container);
+    if (!focusable.length) {
+        event.preventDefault();
+        container.focus?.({ preventScroll: true });
+        return;
+    }
+
+    const active = document.activeElement;
+    if (!container.contains(active)) {
+        event.preventDefault();
+        focusable[event.shiftKey ? focusable.length - 1 : 0].focus({ preventScroll: true });
+        return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+    } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+    }
+}
+
+function activeFocusTrapContainer() {
+    if (isCartOpen()) return selectors.cartDrawer;
+    if (isProductOpen()) return selectors.panel;
+    return null;
+}
+
+function focusPrimaryCartToggle() {
+    const toggle = isProductOpen()
+        ? selectors.panel?.querySelector("[data-cart-toggle]")
+        : selectors.cartToggles[0];
+    toggle?.focus({ preventScroll: true });
+}
+
+function updateOverlayScrollGutter(options = {}) {
+    if (!options.force && document.body.style.getPropertyValue("--shop-scrollbar-gutter")) return;
+    const gutter = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    document.body.style.setProperty("--shop-scrollbar-gutter", `${gutter}px`);
+}
+
+function clearOverlayScrollGutterIfIdle() {
+    if (isProductOpen() || isCartOpen()) return;
+    document.body.style.removeProperty("--shop-scrollbar-gutter");
+}
+
+function hideGridTextForClose() {
+    if (gridTextRevealTimer) {
+        window.clearTimeout(gridTextRevealTimer);
+        gridTextRevealTimer = null;
+    }
+    document.body.classList.remove("shop-grid-text-revealing");
+    document.body.classList.add("shop-grid-text-hidden");
+}
+
+function prepareGridTextReveal() {
+    if (!selectors.grid) return 0;
+    const columns = gridColumnCount();
+    let maxDelay = 0;
+    selectors.grid.querySelectorAll(".shop-card-meta").forEach((meta, index) => {
+        const row = Math.floor(index / columns);
+        const column = index % columns;
+        const delay = (row + column) * GRID_TEXT_REVEAL_STAGGER;
+        maxDelay = Math.max(maxDelay, delay);
+        meta.style.setProperty("--shop-text-reveal-delay", `${delay}ms`);
+    });
+    return maxDelay;
+}
+
+function clearGridTextRevealDelays() {
+    selectors.grid
+        ?.querySelectorAll(".shop-card-meta")
+        .forEach((meta) => meta.style.removeProperty("--shop-text-reveal-delay"));
+}
+
+function revealGridTextAfterClose() {
+    if (gridTextRevealTimer) window.clearTimeout(gridTextRevealTimer);
+    const maxDelay = prepareGridTextReveal();
+    document.body.classList.add("shop-grid-text-revealing");
+    document.body.classList.remove("shop-grid-text-hidden");
+    gridTextRevealTimer = window.setTimeout(() => {
+        document.body.classList.remove("shop-grid-text-revealing");
+        clearGridTextRevealDelays();
+        gridTextRevealTimer = null;
+    }, GRID_TEXT_REVEAL_DURATION + maxDelay);
 }
 
 function waitForImageReady(image) {
@@ -154,339 +302,410 @@ function rectForElement(element) {
     };
 }
 
-function containedRect(fromRect, targetRect) {
-    const scale = Math.min(targetRect.width / fromRect.width, targetRect.height / fromRect.height);
-    const width = fromRect.width * scale;
-    const height = fromRect.height * scale;
-    return {
-        left: targetRect.left + (targetRect.width - width) / 2,
-        top: targetRect.top + (targetRect.height - height) / 2,
-        width,
-        height,
-        scale,
-    };
-}
-
-function hideForProductFlight(element, hidden) {
-    element?.classList.toggle("is-shop-transition-hidden", hidden);
-}
-
-function runShopViewTransition(update, afterReady) {
-    const startViewTransition = document.startViewTransition?.bind(document);
-    if (!startViewTransition) {
-        update();
-        afterReady?.();
-        return;
-    }
-
-    let transition = null;
-    try {
-        transition = startViewTransition(update);
-    } catch {
-        update();
-        afterReady?.();
-        return;
-    }
-    transition.ready.then(() => afterReady?.()).catch(() => afterReady?.());
-    transition.finished.catch(() => {});
-}
-
-function stopProductFlight() {
-    activeProductFlight?.pause?.();
-    activeProductFlight?.cancel?.();
-    activeProductFlight = null;
-}
-
 function stopCameraAnimation() {
-    activeCameraAnimation?.pause?.();
     activeCameraAnimation?.cancel?.();
     activeCameraAnimation = null;
 }
 
-function cloneCameraShell(shellRect, sourceRect) {
-    if (!selectors.shell || !shellRect || !sourceRect) return null;
-    const clone = selectors.shell.cloneNode(true);
-    clone.classList.add("shop-camera-grid");
-    clone.removeAttribute("id");
-    clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
-    clone.querySelectorAll("a, button").forEach((node) => node.setAttribute("tabindex", "-1"));
-    clone.style.insetInlineStart = `${shellRect.left}px`;
-    clone.style.insetBlockStart = `${shellRect.top}px`;
-    clone.style.inlineSize = `${shellRect.width}px`;
-    clone.style.blockSize = `${shellRect.height}px`;
-    clone.style.transformOrigin = `${sourceRect.left + sourceRect.width / 2 - shellRect.left}px ${sourceRect.top + sourceRect.height / 2 - shellRect.top}px`;
-    document.body.append(clone);
-    return clone;
+function cancelPrepareCloseCameraTask() {
+    if (!prepareCloseCameraTask) return;
+    if (prepareCloseCameraTask.type === "idle") {
+        window.cancelIdleCallback?.(prepareCloseCameraTask.id);
+    } else {
+        window.clearTimeout(prepareCloseCameraTask.id);
+    }
+    prepareCloseCameraTask = null;
+}
+
+function disposePreparedCloseCamera(camera = preparedCloseCamera) {
+    cancelPrepareCloseCameraTask();
+    if (!camera) return;
+    if (camera === preparedCloseCamera) {
+        preparedCloseCamera = null;
+        preparedCloseCameraSlug = null;
+    }
+    camera.stage.remove();
+}
+
+function rectCenter(rect) {
+    return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+    };
+}
+
+function intersectsViewport(rect, margin = 0) {
+    return (
+        rect.left < window.innerWidth + margin &&
+        rect.left + rect.width > -margin &&
+        rect.top < window.innerHeight + margin &&
+        rect.top + rect.height > -margin
+    );
+}
+
+function cloneCameraWorld(focusImage = null) {
+    if (!selectors.grid) return null;
+    const stage = document.createElement("div");
+    const world = document.createElement("div");
+    const backgroundLayer = document.createElement("div");
+    const focusLayer = document.createElement("div");
+    const images = selectors.grid.querySelectorAll("[data-product-card] img");
+    const focusImages = [];
+    const backgroundImages = [];
+    stage.className = "shop-camera-stage";
+    stage.setAttribute("aria-hidden", "true");
+    world.className = "shop-camera-world";
+    backgroundLayer.className = "shop-camera-layer is-background";
+    focusLayer.className = "shop-camera-layer is-focus";
+
+    images.forEach((image) => {
+        const rect = rectForElement(image);
+        if (!rect || (image !== focusImage && !intersectsViewport(rect, CAMERA_VIEWPORT_MARGIN))) return;
+
+        const clone = document.createElement("img");
+        clone.className = "shop-camera-image";
+        clone.alt = "";
+        clone.decoding = "async";
+        clone.src = image.currentSrc || image.src;
+        clone.style.inlineSize = `${rect.width}px`;
+        clone.style.blockSize = `${rect.height}px`;
+        clone.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+        if (image === focusImage) {
+            clone.classList.add("is-focus");
+            focusImages.push(clone);
+            focusLayer.append(clone);
+        } else {
+            backgroundImages.push(clone);
+            backgroundLayer.append(clone);
+        }
+    });
+
+    if (!focusLayer.childElementCount && !backgroundLayer.childElementCount) return null;
+    if (backgroundLayer.childElementCount) world.append(backgroundLayer);
+    if (focusLayer.childElementCount) world.append(focusLayer);
+    stage.append(world);
+    document.body.append(stage);
+    return { stage, world, backgroundLayer, focusLayer, focusImages, backgroundImages };
+}
+
+function prepareCloseCamera(slug, camera = null) {
+    cancelPrepareCloseCameraTask();
+    if (!slug || reduceMotion.matches) {
+        if (camera) camera.stage.remove();
+        return;
+    }
+
+    if (preparedCloseCamera && preparedCloseCamera !== camera) {
+        disposePreparedCloseCamera(preparedCloseCamera);
+    }
+
+    const nextCamera = camera || cloneCameraWorld(cardImageForSlug(slug));
+    if (!nextCamera) return;
+
+    nextCamera.stage.classList.add("is-prepared");
+    nextCamera.world.getAnimations().forEach((animation) => animation.cancel());
+    nextCamera.world.style.opacity = "";
+    nextCamera.world.style.transform = "";
+    document.body.append(nextCamera.stage);
+    preparedCloseCamera = nextCamera;
+    preparedCloseCameraSlug = slug;
+}
+
+function schedulePrepareCloseCamera(slug) {
+    cancelPrepareCloseCameraTask();
+    if (!slug || reduceMotion.matches) return;
+
+    const run = () => {
+        prepareCloseCameraTask = null;
+        if (isProductOpen()) prepareCloseCamera(slug);
+    };
+
+    if ("requestIdleCallback" in window) {
+        prepareCloseCameraTask = {
+            type: "idle",
+            id: window.requestIdleCallback(run, { timeout: 450 }),
+        };
+    } else {
+        prepareCloseCameraTask = {
+            type: "timeout",
+            id: window.setTimeout(run, 80),
+        };
+    }
+}
+
+function takePreparedCloseCamera(slug) {
+    cancelPrepareCloseCameraTask();
+    if (!preparedCloseCamera || preparedCloseCameraSlug !== slug) {
+        disposePreparedCloseCamera();
+        return null;
+    }
+
+    const camera = preparedCloseCamera;
+    preparedCloseCamera = null;
+    preparedCloseCameraSlug = null;
+    camera.stage.classList.remove("is-prepared");
+    camera.world.getAnimations().forEach((animation) => animation.cancel());
+    camera.world.style.opacity = "";
+    camera.world.style.transform = "";
+    document.body.append(camera.stage);
+    return camera;
+}
+
+function cameraTransformForFocus(focusRect, visibleRect) {
+    const itemFocus = rectCenter(focusRect);
+    const visibleFocus = rectCenter(visibleRect);
+    const zoom = Math.max(
+        0.001,
+        Math.max(visibleRect.width / focusRect.width, visibleRect.height / focusRect.height),
+    );
+
+    return `translate3d(${visibleFocus.x - itemFocus.x * zoom}px, ${visibleFocus.y - itemFocus.y * zoom}px, 0) scale(${zoom})`;
+}
+
+function crossfadeProductImageToFront() {
+    if (!currentProduct || !selectors.productImage) return null;
+    const frontIndex = imageIndex(currentProduct, "front");
+    if (currentImageIndex === frontIndex) return null;
+
+    const rect = rectForElement(selectors.productImage);
+    const currentSrc = selectors.productImage.currentSrc || selectors.productImage.src;
+    if (!rect || !currentSrc) {
+        selectImage(frontIndex, { updateUrl: false, resetMotion: false });
+        return null;
+    }
+
+    const overlay = document.createElement("img");
+    overlay.className = "shop-product-image-crossfade";
+    overlay.alt = "";
+    overlay.decoding = "async";
+    overlay.src = currentSrc;
+    overlay.style.inlineSize = `${rect.width}px`;
+    overlay.style.blockSize = `${rect.height}px`;
+    overlay.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    document.body.append(overlay);
+
+    selectImage(frontIndex, { updateUrl: false, resetMotion: false });
+
+    const animation = overlay.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: 180,
+        easing: CAMERA_OPEN_EASING,
+        fill: "both",
+    });
+    animation.finished.finally(() => overlay.remove()).catch(() => {});
+    return animation;
 }
 
 async function animateProductCameraOpen(options) {
     const { product, imageId = "front", card, sourceElement, options: openOptions = {} } = options;
-    const shellRect = rectForElement(selectors.shell);
     const sourceRect = rectForElement(sourceElement || card);
 
-    if (reduceMotion.matches || !shellRect || !sourceRect || !selectors.panel) {
+    if (reduceMotion.matches || !sourceRect || !selectors.panel) {
         openProduct(product, imageId, openOptions);
         return;
     }
 
-    stopProductFlight();
     stopCameraAnimation();
     productTransitionActive = true;
-    document.body.classList.add("shop-camera-transitioning");
-
-    const camera = cloneCameraShell(shellRect, sourceRect);
     openProduct(product, imageId, openOptions);
     selectors.panel.style.opacity = "0";
     selectors.productLayout?.classList.add("is-camera-opening");
-    setProductSwitchMotion(14, 0.992, 1);
+    setProductSwitchMotion(0, 1, 1);
 
     await waitForImageReady(selectors.productImage);
-    await nextFrame();
 
     const targetRect = rectForElement(selectors.productImage);
+    const camera = targetRect ? cloneCameraWorld(sourceElement || card?.querySelector("img")) : null;
     if (!camera || !targetRect) {
         selectors.panel.style.opacity = "";
         selectors.productLayout?.classList.remove("is-camera-opening");
         setProductSwitchMotion(0, 1, 1);
-        camera?.remove();
+        camera?.stage.remove();
         activeCameraAnimation = null;
         productTransitionActive = false;
         document.body.classList.remove("shop-camera-transitioning");
         return;
     }
 
-    const sourceCenter = {
-        x: sourceRect.left + sourceRect.width / 2,
-        y: sourceRect.top + sourceRect.height / 2,
-    };
-    const targetCenter = {
-        x: targetRect.left + targetRect.width / 2,
-        y: targetRect.top + targetRect.height / 2,
-    };
-    const state = {
-        x: 0,
-        y: 0,
-        scale: 1,
-        gridOpacity: 1,
-        gridBlur: 0,
-        panelOpacity: 0,
-        panelY: 14,
-        panelScale: 0.992,
-    };
-    const end = {
-        x: targetCenter.x - sourceCenter.x,
-        y: targetCenter.y - sourceCenter.y,
-        scale: Math.min(
-            3.1,
-            Math.max(
-                1.35,
-                Math.max(targetRect.width / sourceRect.width, targetRect.height / sourceRect.height) * 1.04,
-            ),
+    if (selectors.grid) selectors.grid.style.opacity = "0";
+    document.body.classList.add("shop-camera-transitioning");
+
+    const endTransform = cameraTransformForFocus(sourceRect, targetRect);
+    const animations = [
+        camera.world.animate(
+            [
+                { transform: "translate3d(0, 0, 0) scale(1)" },
+                { transform: endTransform },
+            ],
+            {
+                duration: CAMERA_OPEN_DURATION,
+                easing: CAMERA_OPEN_EASING,
+                fill: "both",
+            },
         ),
-        gridOpacity: 0,
-        gridBlur: 2,
-        panelOpacity: 1,
-        panelY: 0,
-        panelScale: 1,
+        selectors.panel.animate([{ opacity: 0 }, { opacity: 1 }], {
+            duration: 300,
+            delay: 170,
+            easing: CAMERA_OPEN_EASING,
+            fill: "both",
+        }),
+    ];
+
+    if (camera.backgroundLayer.childElementCount) {
+        animations.push(
+            camera.backgroundLayer.animate([{ opacity: 1 }, { opacity: 0 }], {
+                duration: CAMERA_OPEN_BACKGROUND_FADE_DURATION,
+                delay: CAMERA_OPEN_BACKGROUND_FADE_DELAY,
+                easing: CAMERA_OPEN_EASING,
+                fill: "both",
+            }),
+        );
+    }
+
+    const focusLayer = camera.focusLayer.childElementCount ? camera.focusLayer : camera.backgroundLayer;
+    if (focusLayer.childElementCount) {
+        animations.push(
+            focusLayer.animate([{ opacity: 1 }, { opacity: 0 }], {
+                duration: CAMERA_OPEN_FOCUS_FADE_DURATION,
+                delay: CAMERA_OPEN_FOCUS_FADE_DELAY,
+                easing: CAMERA_OPEN_EASING,
+                fill: "both",
+            }),
+        );
+    }
+
+    let cleanedUp = false;
+    const cleanup = () => {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        const shouldPrepareClose = currentProduct?.slug === product.slug && isProductOpen();
+        selectors.panel.style.opacity = "1";
+        setProductSwitchMotion(0, 1, 1);
+        camera.stage.remove();
+        animations.forEach((animation) => animation.cancel());
+        selectors.panel.style.opacity = "";
+        selectors.productLayout?.classList.remove("is-camera-opening");
+        activeCameraAnimation = null;
+        productTransitionActive = false;
+        document.body.classList.remove("shop-camera-transitioning");
+        if (shouldPrepareClose) schedulePrepareCloseCamera(product.slug);
     };
-    const render = () => {
-        camera.style.opacity = String(state.gridOpacity);
-        camera.style.filter = `blur(${state.gridBlur}px)`;
-        camera.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
-        selectors.panel.style.opacity = String(state.panelOpacity);
-        if (selectors.productLayout) {
-            selectors.productLayout.style.transform = `translate3d(0, ${state.panelY}px, 0) scale(${state.panelScale})`;
-            selectors.productLayout.style.opacity = "1";
+    activeCameraAnimation = {
+        cancel: cleanup,
+        pause: () => animations.forEach((animation) => animation.pause()),
+    };
+    Promise.allSettled(animations.map((animation) => animation.finished)).then(cleanup);
+}
+
+function animateProductCameraClose(options = {}) {
+    const product = currentProduct;
+    const slug = product?.slug || lastOpenedProductSlug;
+    const sourceImage = selectors.productImage;
+    const targetImage = cardImageForSlug(slug);
+    const sourceRect = rectForElement(sourceImage);
+    const targetRect = rectForElement(targetImage);
+
+    if (reduceMotion.matches) {
+        if (currentProduct) {
+            selectImage(imageIndex(currentProduct, "front"), { updateUrl: false, resetMotion: false });
         }
+        disposePreparedCloseCamera();
+        closeProduct(options);
+        return;
+    }
+
+    if (!selectors.panel || !sourceRect || !targetRect) {
+        crossfadeProductImageToFront();
+        disposePreparedCloseCamera();
+        closeProduct(options);
+        return;
+    }
+
+    stopCameraAnimation();
+    stopCarouselAnimation();
+    stopProductSwitchAnimation();
+    productTransitionActive = true;
+    document.body.classList.add("shop-camera-transitioning");
+    selectors.productLayout?.classList.add("is-camera-opening");
+
+    const camera = takePreparedCloseCamera(slug) || cloneCameraWorld(targetImage);
+    const crossfade = crossfadeProductImageToFront();
+    if (!camera) {
+        crossfade?.cancel();
+        selectors.productLayout?.classList.remove("is-camera-opening");
+        productTransitionActive = false;
+        document.body.classList.remove("shop-camera-transitioning");
+        closeProduct(options);
+        return;
+    }
+
+    hideGridTextForClose();
+    if (selectors.grid) selectors.grid.style.opacity = "0";
+
+    const startTransform = cameraTransformForFocus(targetRect, sourceRect);
+    const cameraTransform = camera.world.animate(
+        [
+            { transform: startTransform },
+            { transform: "translate3d(0, 0, 0) scale(1)" },
+        ],
+        {
+            duration: CAMERA_CLOSE_DURATION,
+            easing: CAMERA_OPEN_EASING,
+            fill: "both",
+        },
+    );
+    const animations = [
+        cameraTransform,
+        selectors.panel.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: 220,
+            delay: 90,
+            easing: CAMERA_OPEN_EASING,
+            fill: "both",
+        }),
+    ];
+
+    let cleanedUp = false;
+    let handoffTimer = null;
+    const restoreGridUnderCamera = () => {
+        if (selectors.grid) selectors.grid.style.opacity = "1";
     };
     const cleanup = () => {
-        camera.remove();
+        if (cleanedUp) return;
+        cleanedUp = true;
+        if (handoffTimer) {
+            window.clearTimeout(handoffTimer);
+            handoffTimer = null;
+        }
+        restoreGridUnderCamera();
+        selectors.panel.style.opacity = "0";
+        camera.stage.remove();
+        crossfade?.cancel();
+        closeProduct(options);
+        animations.forEach((animation) => animation.cancel());
+        if (selectors.grid) selectors.grid.style.opacity = "";
         selectors.panel.style.opacity = "";
         selectors.productLayout?.classList.remove("is-camera-opening");
         setProductSwitchMotion(0, 1, 1);
         activeCameraAnimation = null;
         productTransitionActive = false;
         document.body.classList.remove("shop-camera-transitioning");
+        revealGridTextAfterClose();
     };
-
-    render();
-    const animeApi = window.anime;
-    if (animeApi?.animate) {
-        activeCameraAnimation = animeApi.animate(state, {
-            x: end.x,
-            y: end.y,
-            scale: end.scale,
-            gridOpacity: end.gridOpacity,
-            gridBlur: end.gridBlur,
-            panelOpacity: end.panelOpacity,
-            panelY: end.panelY,
-            panelScale: end.panelScale,
-            duration: 720,
-            ease: "out(4)",
-            onUpdate: render,
-            onComplete: cleanup,
-        });
-        return;
-    }
-
-    if (typeof animeApi === "function") {
-        activeCameraAnimation = animeApi({
-            targets: state,
-            x: end.x,
-            y: end.y,
-            scale: end.scale,
-            gridOpacity: end.gridOpacity,
-            gridBlur: end.gridBlur,
-            panelOpacity: end.panelOpacity,
-            panelY: end.panelY,
-            panelScale: end.panelScale,
-            duration: 720,
-            easing: "easeOutQuart",
-            update: render,
-            complete: cleanup,
-        });
-        return;
-    }
-
-    const start = performance.now();
-    const from = { ...state };
-    const duration = 720;
-    const tick = (now) => {
-        const progress = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1 - progress, 4);
-        for (const key of Object.keys(end)) {
-            state[key] = from[key] + (end[key] - from[key]) * eased;
-        }
-        render();
-        if (progress < 1) {
-            activeCameraAnimation = { cancel: () => cleanup(), pause: () => {} };
-            requestAnimationFrame(tick);
-        } else {
-            cleanup();
-        }
+    cameraTransform.finished
+        .then(() => {
+            if (cleanedUp) return;
+            restoreGridUnderCamera();
+            handoffTimer = window.setTimeout(cleanup, CAMERA_CLOSE_HANDOFF_DELAY);
+        })
+        .catch(() => {});
+    activeCameraAnimation = {
+        cancel: cleanup,
+        pause: () => animations.forEach((animation) => animation.pause()),
     };
-    requestAnimationFrame(tick);
-}
-
-async function animateProductFlight(options) {
-    const {
-        sourceElement = null,
-        targetElement = null,
-        fromRect,
-        toRect = null,
-        imageSrc,
-        direction = "open",
-    } = options;
-
-    if (reduceMotion.matches || !fromRect) return;
-    await waitForImageReady(targetElement);
-    await nextFrame();
-
-    const targetRect = toRect || rectForElement(targetElement);
-    if (!targetRect) return;
-
-    stopProductFlight();
-    productTransitionActive = true;
-    document.body.classList.add("shop-view-transitioning");
-
-    const clone = document.createElement("img");
-    clone.className = "shop-transition-image";
-    clone.alt = "";
-    clone.decoding = "async";
-    clone.src = imageSrc || sourceElement?.currentSrc || sourceElement?.src || targetElement?.currentSrc || targetElement?.src || "";
-    clone.style.inlineSize = `${fromRect.width}px`;
-    clone.style.blockSize = `${fromRect.height}px`;
-    document.body.append(clone);
-
-    hideForProductFlight(sourceElement, true);
-    hideForProductFlight(targetElement, true);
-
-    const state = {
-        x: fromRect.left,
-        y: fromRect.top,
-        scale: 1,
-        rotate: direction === "open" ? -0.8 : 0.65,
-        opacity: 0.96,
-    };
-    const containedTarget = containedRect(fromRect, targetRect);
-    const end = {
-        x: containedTarget.left,
-        y: containedTarget.top,
-        scale: containedTarget.scale,
-        rotate: 0,
-        opacity: 1,
-    };
-    const render = () => {
-        clone.style.opacity = String(state.opacity);
-        clone.style.transform = [
-            `translate3d(${state.x}px, ${state.y}px, 0)`,
-            `scale(${state.scale})`,
-            `rotate(${state.rotate}deg)`,
-        ].join(" ");
-        clone.style.filter = `drop-shadow(0 ${Math.max(8, 20 * state.scale)}px ${Math.max(14, 24 * state.scale)}px rgb(25 28 40 / 0.12))`;
-    };
-    const cleanup = () => {
-        hideForProductFlight(sourceElement, false);
-        hideForProductFlight(targetElement, false);
-        clone.remove();
-        activeProductFlight = null;
-        productTransitionActive = false;
-        document.body.classList.remove("shop-view-transitioning");
-    };
-
-    render();
-    const duration = direction === "open" ? 640 : 520;
-    const ease = direction === "open" ? "out(4)" : "inOut(3)";
-    const animeApi = window.anime;
-
-    if (animeApi?.animate) {
-        activeProductFlight = animeApi.animate(state, {
-            x: end.x,
-            y: end.y,
-            scale: end.scale,
-            rotate: end.rotate,
-            opacity: end.opacity,
-            duration,
-            ease,
-            onUpdate: render,
-            onComplete: cleanup,
-        });
-        return;
-    }
-
-    if (typeof animeApi === "function") {
-        activeProductFlight = animeApi({
-            targets: state,
-            x: end.x,
-            y: end.y,
-            scale: end.scale,
-            rotate: end.rotate,
-            opacity: end.opacity,
-            duration,
-            easing: direction === "open" ? "easeOutQuart" : "easeInOutCubic",
-            update: render,
-            complete: cleanup,
-        });
-        return;
-    }
-
-    clone.animate(
-        [
-            {
-                transform: `translate3d(${fromRect.left}px, ${fromRect.top}px, 0) scale(1) rotate(${state.rotate}deg)`,
-                opacity: 0.96,
-            },
-            {
-                transform: `translate3d(${end.x}px, ${end.y}px, 0) scale(${end.scale}) rotate(0deg)`,
-                opacity: 1,
-            },
-        ],
-        { duration, easing: "cubic-bezier(.22,.9,.2,1)" },
-    ).addEventListener("finish", cleanup, { once: true });
 }
 
 function openProductFromCard(product, imageId, card, options = {}) {
     if (productTransitionActive) return;
+    disposePreparedCloseCamera();
     const sourceImage = card?.querySelector("img");
     lastOpenedProductSlug = product.slug;
 
@@ -501,32 +720,7 @@ function openProductFromCard(product, imageId, card, options = {}) {
 
 function closeProductWithTransition(options = {}) {
     if (productTransitionActive) return;
-    const product = currentProduct;
-    const slug = product?.slug || lastOpenedProductSlug;
-    const sourceImage = selectors.productImage;
-    const targetImage = cardImageForSlug(slug);
-    const fromRect = rectForElement(sourceImage);
-    const toRect = rectForElement(targetImage);
-    const imageSrc = sourceImage?.currentSrc || sourceImage?.src;
-    const willAnimate = Boolean(fromRect && toRect && !reduceMotion.matches);
-
-    if (willAnimate) {
-        hideForProductFlight(targetImage, true);
-    }
-
-    runShopViewTransition(
-        () => closeProduct(options),
-        () => {
-            animateProductFlight({
-                sourceElement: sourceImage,
-                targetElement: targetImage,
-                fromRect,
-                toRect,
-                imageSrc,
-                direction: "close",
-            });
-        },
-    );
+    animateProductCameraClose(options);
 }
 
 function stopProductSwitchAnimation() {
@@ -535,15 +729,21 @@ function stopProductSwitchAnimation() {
     activeProductSwitchAnimation = null;
 }
 
-function setProductSwitchMotion(y = 0, scale = 1, opacity = 1) {
+function setProductSwitching(active) {
+    selectors.productFrame?.classList.toggle("is-product-switching", active);
+    selectors.productLayout?.classList.toggle("is-product-swiping", active);
+}
+
+function setProductSwitchMotion(y = 0, scale = 1, opacity = 1, x = 0) {
     if (!selectors.productLayout) return;
-    selectors.productLayout.style.transform = `translate3d(0, ${y}px, 0) scale(${scale})`;
+    selectors.productLayout.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
     selectors.productLayout.style.opacity = String(opacity);
 }
 
 function animateProductSwitchMotion(to, options = {}) {
     stopProductSwitchAnimation();
     const from = {
+        x: Number(options.fromX ?? 0),
         y: Number(options.fromY ?? 0),
         scale: Number(options.fromScale ?? 1),
         opacity: Number(options.fromOpacity ?? 1),
@@ -554,59 +754,50 @@ function animateProductSwitchMotion(to, options = {}) {
     };
 
     if (reduceMotion.matches) {
-        setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1);
+        setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1, to.x ?? 0);
         complete();
         return null;
     }
 
-    const animeApi = window.anime;
-    if (animeApi?.animate) {
-        activeProductSwitchAnimation = animeApi.animate(from, {
-            y: to.y ?? 0,
-            scale: to.scale ?? 1,
-            opacity: to.opacity ?? 1,
-            duration: options.duration ?? 320,
-            ease: options.ease ?? "out(4)",
-            onUpdate: () => setProductSwitchMotion(from.y, from.scale, from.opacity),
-            onComplete: complete,
-        });
-        return activeProductSwitchAnimation;
-    }
-
-    if (typeof animeApi === "function") {
-        activeProductSwitchAnimation = animeApi({
-            targets: from,
-            y: to.y ?? 0,
-            scale: to.scale ?? 1,
-            opacity: to.opacity ?? 1,
-            duration: options.duration ?? 320,
-            easing: "easeOutCubic",
-            update: () => setProductSwitchMotion(from.y, from.scale, from.opacity),
-            complete,
-        });
-        return activeProductSwitchAnimation;
-    }
-
-    selectors.productLayout
-        ?.animate(
-            [
-                {
-                    transform: `translate3d(0, ${from.y}px, 0) scale(${from.scale})`,
-                    opacity: from.opacity,
-                },
-                {
-                    transform: `translate3d(0, ${to.y ?? 0}px, 0) scale(${to.scale ?? 1})`,
-                    opacity: to.opacity ?? 1,
-                },
-            ],
+    const animation = selectors.productLayout?.animate(
+        [
             {
-                duration: options.duration ?? 320,
-                easing: "cubic-bezier(.22,.9,.2,1)",
+                transform: `translate3d(${from.x}px, ${from.y}px, 0) scale(${from.scale})`,
+                opacity: from.opacity,
             },
-        )
-        ?.addEventListener("finish", complete, { once: true });
-    setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1);
-    return null;
+            {
+                transform: `translate3d(${to.x ?? 0}px, ${to.y ?? 0}px, 0) scale(${to.scale ?? 1})`,
+                opacity: to.opacity ?? 1,
+            },
+        ],
+        {
+            duration: options.duration ?? 320,
+            easing: MOTION_EASING,
+            fill: "both",
+        },
+    );
+
+    if (!animation) {
+        setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1, to.x ?? 0);
+        complete();
+        return null;
+    }
+
+    activeProductSwitchAnimation = {
+        cancel: () => {
+            animation.cancel();
+            activeProductSwitchAnimation = null;
+        },
+        pause: () => animation.pause(),
+    };
+    animation.finished
+        .then(() => {
+            setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1, to.x ?? 0);
+            animation.cancel();
+            complete();
+        })
+        .catch(() => {});
+    return activeProductSwitchAnimation;
 }
 
 function productIndex(product) {
@@ -615,6 +806,18 @@ function productIndex(product) {
 
 function gridColumnCount() {
     if (!selectors.grid) return 1;
+    const cards = Array.from(selectors.grid.querySelectorAll("[data-product-card]"));
+    if (cards.length) {
+        const firstRect = rectForElement(cards[0]);
+        if (firstRect) {
+            const columns = cards.reduce((count, card) => {
+                const rect = rectForElement(card);
+                return rect && Math.abs(rect.top - firstRect.top) < 2 ? count + 1 : count;
+            }, 0);
+            if (columns > 0) return columns;
+        }
+    }
+
     const columns = window
         .getComputedStyle(selectors.grid)
         .gridTemplateColumns.split(/\s+/)
@@ -630,8 +833,53 @@ function productByGridRows(rowDelta) {
     return products[(index + step + products.length * 10) % products.length];
 }
 
-function currentImageId() {
-    return currentProduct?.images?.[currentImageIndex]?.id || "front";
+function productByIndexDelta(delta) {
+    if (!currentProduct || !products.length) return null;
+    const index = productIndex(currentProduct);
+    if (index < 0) return null;
+    return products[(index + delta + products.length * 10) % products.length];
+}
+
+function firstImageId(product) {
+    return product?.images?.[0]?.id || "front";
+}
+
+function imageIdForProduct(product, imageId) {
+    if (!product?.images?.length) return "front";
+    return product.images.some((image) => image.id === imageId) ? imageId : product.images[0].id;
+}
+
+function commitProductSwitch(nextProduct, imageId, enterMotion, enterOptions = {}) {
+    const nextImageId = imageIdForProduct(nextProduct, imageId);
+    openProduct(nextProduct, nextImageId, { push: false, focus: false });
+    window.history.replaceState(
+        { shopProduct: nextProduct.slug, image: nextImageId },
+        "",
+        productUrl(nextProduct, nextImageId),
+    );
+    lastOpenedProductSlug = nextProduct.slug;
+    setProductSwitchMotion(
+        enterMotion.y ?? 0,
+        enterMotion.scale ?? 1,
+        enterMotion.opacity ?? 1,
+        enterMotion.x ?? 0,
+    );
+    animateProductSwitchMotion(
+        { x: 0, y: 0, scale: 1, opacity: 1 },
+        {
+            fromX: enterMotion.x ?? 0,
+            fromY: enterMotion.y ?? 0,
+            fromScale: enterMotion.scale ?? 1,
+            fromOpacity: enterMotion.opacity ?? 1,
+            duration: enterOptions.duration ?? 430,
+            onComplete: () => {
+                productSwitching = false;
+                setProductSwitching(false);
+                setProductSwitchMotion(0, 1, 1);
+                schedulePrepareCloseCamera(nextProduct.slug);
+            },
+        },
+    );
 }
 
 function switchProductByGridRows(rowDelta, options = {}) {
@@ -642,10 +890,10 @@ function switchProductByGridRows(rowDelta, options = {}) {
     const travel = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
     const exitY = rowDelta > 0 ? travel * 0.22 : -travel * 0.22;
     const enterY = rowDelta > 0 ? -travel * 0.18 : travel * 0.18;
-    const imageId = currentImageId();
+    const imageId = firstImageId(nextProduct);
     const fromY = Number(options.fromY ?? 0);
     productSwitching = true;
-    selectors.productLayout?.classList.add("is-product-swiping");
+    setProductSwitching(true);
 
     animateProductSwitchMotion(
         { y: exitY, scale: 0.986, opacity: 0.72 },
@@ -654,31 +902,43 @@ function switchProductByGridRows(rowDelta, options = {}) {
             fromScale: options.fromScale ?? 1,
             fromOpacity: options.fromOpacity ?? 1,
             duration: 150,
-            ease: "out(3)",
             onComplete: () => {
-                openProduct(nextProduct, imageId, { push: false });
-                window.history.replaceState(
-                    { shopProduct: nextProduct.slug, image: imageId },
-                    "",
-                    productUrl(nextProduct, imageId),
-                );
-                lastOpenedProductSlug = nextProduct.slug;
-                setProductSwitchMotion(enterY, 0.988, 0.76);
-                animateProductSwitchMotion(
-                    { y: 0, scale: 1, opacity: 1 },
-                    {
-                        fromY: enterY,
-                        fromScale: 0.988,
-                        fromOpacity: 0.76,
-                        duration: 430,
-                        ease: "out(4)",
-                        onComplete: () => {
-                            productSwitching = false;
-                            selectors.productLayout?.classList.remove("is-product-swiping");
-                            setProductSwitchMotion(0, 1, 1);
-                        },
-                    },
-                );
+                commitProductSwitch(nextProduct, imageId, {
+                    y: enterY,
+                    scale: 0.988,
+                    opacity: 0.76,
+                });
+            },
+        },
+    );
+}
+
+function switchProductByIndexDelta(delta, options = {}) {
+    if (productSwitching || productTransitionActive || !currentProduct) return;
+    const nextProduct = productByIndexDelta(delta);
+    if (!nextProduct) return;
+
+    const travel = selectors.productLayout?.getBoundingClientRect().width || window.innerWidth || 720;
+    const exitX = delta > 0 ? -travel * 0.18 : travel * 0.18;
+    const enterX = delta > 0 ? travel * 0.14 : -travel * 0.14;
+    const imageId = options.imageId ?? firstImageId(nextProduct);
+    const fromX = Number(options.fromX ?? 0);
+    productSwitching = true;
+    setProductSwitching(true);
+
+    animateProductSwitchMotion(
+        { x: exitX, scale: 0.988, opacity: 0.74 },
+        {
+            fromX,
+            fromScale: options.fromScale ?? 1,
+            fromOpacity: options.fromOpacity ?? 1,
+            duration: 140,
+            onComplete: () => {
+                commitProductSwitch(nextProduct, imageId, {
+                    x: enterX,
+                    scale: 0.99,
+                    opacity: 0.76,
+                });
             },
         },
     );
@@ -747,7 +1007,7 @@ function onProductPointerMove(event) {
         productSwipeState.captured = true;
         captureProductPointer(event.pointerId);
         stopProductSwitchAnimation();
-        selectors.productLayout?.classList.add("is-product-swiping");
+        setProductSwitching(true);
     }
 
     event.preventDefault();
@@ -802,7 +1062,7 @@ function onProductPointerEnd(event) {
                 duration: 360,
                 ease: "out(4)",
                 onComplete: () => {
-                    selectors.productLayout?.classList.remove("is-product-swiping");
+                    setProductSwitching(false);
                     setProductSwitchMotion(0, 1, 1);
                 },
             },
@@ -812,11 +1072,11 @@ function onProductPointerEnd(event) {
 
 function openProduct(product, imageId = "front", options = {}) {
     if (!product || !selectors.panel) return;
-    const { replace = false, push = true } = options;
+    const { replace = false, push = true, focus = true } = options;
     currentProduct = product;
     currentImageIndex = imageIndex(product, imageId);
-    selectedSize = selectedSize || "2";
-    quantity = Math.max(1, quantity || 1);
+    selectedSize = selectedSize || "ONE SIZE";
+    quantity = 1;
 
     renderProduct(product);
     selectImage(currentImageIndex, { updateUrl: false });
@@ -824,10 +1084,13 @@ function openProduct(product, imageId = "front", options = {}) {
     syncSizeControls();
     closeSizeSheet();
 
+    updateOverlayScrollGutter();
     selectors.panel.hidden = false;
     selectors.panel.setAttribute("aria-hidden", "false");
+    setBackgroundInert(true);
     document.body.classList.add("shop-panel-open");
     showBackdrop();
+    if (focus) focusProductDialog();
 
     if (push) {
         const url = productUrl(product, product.images[currentImageIndex]?.id);
@@ -840,17 +1103,24 @@ function openProduct(product, imageId = "front", options = {}) {
 }
 
 function closeProduct(options = {}) {
-    const { push = true } = options;
+    const { push = true, restoreFocus = true } = options;
     if (!selectors.panel) return;
+    const returnSlug = lastOpenedProductSlug || currentProduct?.slug;
+    disposePreparedCloseCamera();
     closeSizeSheet();
+    productSwitching = false;
+    setProductSwitching(false);
     selectors.panel.hidden = true;
     selectors.panel.setAttribute("aria-hidden", "true");
+    setBackgroundInert(false);
     document.body.classList.remove("shop-panel-open");
     currentProduct = null;
     maybeHideBackdrop();
+    clearOverlayScrollGutterIfIdle();
     if (push) {
         window.history.pushState({}, "", homeUrl());
     }
+    if (restoreFocus) focusGridCard(returnSlug);
 }
 
 function renderProduct(product) {
@@ -862,7 +1132,7 @@ function renderProduct(product) {
     setText(selectors.sizePrice, product.priceLabel);
     setText(
         selectors.sizeInfoCopy,
-        `Size 1 is snug, 2 is everyday, 3 is big-brim energy. ${product.phrase} ships here as a storefront concept.`,
+        `Low-profile dad cap with front embroidery, adjustable back strap, and one-size fit. ${product.phrase} ships here as a storefront concept.`,
     );
     renderThumbs(product);
 }
@@ -950,7 +1220,6 @@ function animateCarouselMotion(to, options = {}) {
     stopCarouselAnimation();
     const from = { ...carouselMotion };
     const duration = options.duration ?? 320;
-    const ease = options.ease ?? "out(3)";
     const complete = () => {
         activeCarouselAnimation = null;
         options.onComplete?.();
@@ -962,56 +1231,45 @@ function animateCarouselMotion(to, options = {}) {
         return null;
     }
 
-    const animeApi = window.anime;
-    if (animeApi?.animate) {
-        activeCarouselAnimation = animeApi.animate(from, {
-            x: to.x ?? 0,
-            scale: to.scale ?? 1,
-            rotate: to.rotate ?? 0,
-            opacity: to.opacity ?? 1,
-            duration,
-            ease,
-            onUpdate: () => setCarouselMotion(from.x, from.scale, from.rotate, from.opacity),
-            onComplete: complete,
-        });
-        return activeCarouselAnimation;
-    }
-
-    if (typeof animeApi === "function") {
-        activeCarouselAnimation = animeApi({
-            targets: from,
-            x: to.x ?? 0,
-            scale: to.scale ?? 1,
-            rotate: to.rotate ?? 0,
-            opacity: to.opacity ?? 1,
-            duration,
-            easing: "easeOutCubic",
-            update: () => setCarouselMotion(from.x, from.scale, from.rotate, from.opacity),
-            complete,
-        });
-        return activeCarouselAnimation;
-    }
-
-    selectors.imageStage
-        ?.animate(
-            [
-                {
-                    transform: `translate3d(${carouselMotion.x}px,0,0) scale(${carouselMotion.scale}) rotate(${carouselMotion.rotate}deg)`,
-                    opacity: carouselMotion.opacity,
-                },
-                {
-                    transform: `translate3d(${to.x ?? 0}px,0,0) scale(${to.scale ?? 1}) rotate(${to.rotate ?? 0}deg)`,
-                    opacity: to.opacity ?? 1,
-                },
-            ],
+    const animation = selectors.imageStage?.animate(
+        [
             {
-                duration,
-                easing: "cubic-bezier(.22,.9,.2,1)",
+                transform: `translate3d(${from.x}px, 0, 0) scale(${from.scale}) rotate(${from.rotate}deg)`,
+                opacity: from.opacity,
             },
-        )
-        ?.addEventListener("finish", complete, { once: true });
-    setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
-    return null;
+            {
+                transform: `translate3d(${to.x ?? 0}px, 0, 0) scale(${to.scale ?? 1}) rotate(${to.rotate ?? 0}deg)`,
+                opacity: to.opacity ?? 1,
+            },
+        ],
+        {
+            duration,
+            easing: MOTION_EASING,
+            fill: "both",
+        },
+    );
+
+    if (!animation) {
+        setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
+        complete();
+        return null;
+    }
+
+    activeCarouselAnimation = {
+        cancel: () => {
+            animation.cancel();
+            activeCarouselAnimation = null;
+        },
+        pause: () => animation.pause(),
+    };
+    animation.finished
+        .then(() => {
+            setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
+            animation.cancel();
+            complete();
+        })
+        .catch(() => {});
+    return activeCarouselAnimation;
 }
 
 function transitionToImage(index, direction, options = {}) {
@@ -1042,7 +1300,6 @@ function transitionToImage(index, direction, options = {}) {
         },
         {
             duration: options.exitDuration ?? 150,
-            ease: "out(3)",
             onComplete: () => {
                 selectImage(nextIndex, { updateUrl: true, resetMotion: false });
                 setCarouselMotion(enterX, 0.988, direction > 0 ? 1.2 : -1.2, 0.86);
@@ -1055,7 +1312,6 @@ function transitionToImage(index, direction, options = {}) {
                     },
                     {
                         duration: options.enterDuration ?? 360,
-                        ease: "out(4)",
                     },
                 );
             },
@@ -1066,6 +1322,24 @@ function transitionToImage(index, direction, options = {}) {
 function stepImage(delta, options = {}) {
     const direction = delta > 0 ? 1 : -1;
     transitionToImage(currentImageIndex + delta, direction, options);
+}
+
+function stepImageOrProduct(delta) {
+    if (productSwitching || productTransitionActive || !currentProduct) return;
+    const images = currentProduct.images || [];
+    if (!images.length) return;
+
+    if (delta > 0 && currentImageIndex < images.length - 1) {
+        stepImage(1);
+        return;
+    }
+
+    if (delta < 0 && currentImageIndex > 0) {
+        stepImage(-1);
+        return;
+    }
+
+    switchProductByIndexDelta(delta);
 }
 
 function captureCarouselPointer(pointerId) {
@@ -1175,15 +1449,21 @@ function onCarouselPointerEnd(event) {
 function openSizeSheet() {
     if (!selectors.sizeSheet) return;
     selectors.sizeSheet.hidden = false;
+    selectors.sizeSummary?.setAttribute("aria-hidden", "true");
+    if (selectors.sizeSummary) selectors.sizeSummary.inert = true;
+    selectors.sizeInfo?.classList.add("is-collapsed");
     selectors.sizeToggle?.setAttribute("aria-expanded", "true");
     selectors.panel?.classList.add("is-sizing");
     syncSizeControls();
-    selectors.sizeSheet.querySelector("[data-size-option].is-selected")?.focus();
+    selectors.sizeSheet.focus({ preventScroll: true });
 }
 
 function closeSizeSheet() {
     if (!selectors.sizeSheet) return;
     selectors.sizeSheet.hidden = true;
+    selectors.sizeSummary?.removeAttribute("aria-hidden");
+    if (selectors.sizeSummary) selectors.sizeSummary.inert = false;
+    selectors.sizeInfo?.classList.add("is-collapsed");
     selectors.sizeToggle?.setAttribute("aria-expanded", "false");
     selectors.panel?.classList.remove("is-sizing");
 }
@@ -1192,7 +1472,9 @@ function syncSizeControls() {
     selectors.sizeSheet?.querySelectorAll("[data-size-option]").forEach((button) => {
         const isSelected = button.dataset.sizeOption === selectedSize;
         button.classList.toggle("is-selected", isSelected);
-        button.setAttribute("aria-checked", isSelected ? "true" : "false");
+        if (button.getAttribute("role") === "radio") {
+            button.setAttribute("aria-checked", isSelected ? "true" : "false");
+        }
     });
     setText(selectors.quantityValue, String(quantity));
 }
@@ -1204,6 +1486,7 @@ function changeQuantity(delta) {
 
 function addCurrentToCart() {
     if (!currentProduct) return;
+    quantity = 1;
     const existing = cart.find(
         (item) => item.slug === currentProduct.slug && item.size === selectedSize,
     );
@@ -1223,6 +1506,7 @@ function addCurrentToCart() {
 
 function openCart() {
     if (!selectors.cartDrawer) return;
+    updateOverlayScrollGutter();
     renderCart();
     selectors.cartDrawer.hidden = false;
     selectors.cartDrawer.setAttribute("aria-hidden", "false");
@@ -1239,6 +1523,7 @@ function closeCart() {
     selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
     document.body.classList.remove("shop-cart-open");
     maybeHideBackdrop();
+    clearOverlayScrollGutterIfIdle();
 }
 
 function renderCart() {
@@ -1276,7 +1561,8 @@ function renderCart() {
         title.textContent = product.name;
 
         const meta = document.createElement("span");
-        meta.textContent = `Size ${item.size} x ${item.quantity} - $${product.price * item.quantity}`;
+        const sizeLabel = item.size === "ONE SIZE" ? "One size" : `Size ${item.size}`;
+        meta.textContent = `${sizeLabel} x ${item.quantity} - $${product.price * item.quantity}`;
 
         row.append(title, meta);
         list.append(row);
@@ -1289,6 +1575,10 @@ function setText(element, value) {
 }
 
 function handleGridClick(event) {
+    if (isProductOpen() || productTransitionActive) {
+        event.preventDefault();
+        return;
+    }
     const card = event.target.closest("[data-product-card]");
     if (!card) return;
     const product = productBySlug.get(card.dataset.slug);
@@ -1299,6 +1589,10 @@ function handleGridClick(event) {
 
 function handleGridKeydown(event) {
     if (event.key !== " ") return;
+    if (isProductOpen() || productTransitionActive) {
+        event.preventDefault();
+        return;
+    }
     const card = event.target.closest("[data-product-card]");
     if (!card) return;
     const product = productBySlug.get(card.dataset.slug);
@@ -1320,11 +1614,16 @@ document.addEventListener("click", (event) => {
     }
 
     if (target.closest("[data-image-prev]")) {
-        stepImage(-1);
+        stepImageOrProduct(-1);
         return;
     }
 
-    if (target.closest("[data-image-next], [data-image-advance]")) {
+    if (target.closest("[data-image-next]")) {
+        stepImageOrProduct(1);
+        return;
+    }
+
+    if (target.closest("[data-image-advance]")) {
         if (suppressNextImageAdvance) return;
         stepImage(1);
         return;
@@ -1350,8 +1649,11 @@ document.addEventListener("click", (event) => {
 
     const sizeButton = target.closest("[data-size-option]");
     if (sizeButton) {
-        selectedSize = sizeButton.dataset.sizeOption || "2";
+        selectedSize = sizeButton.dataset.sizeOption || "ONE SIZE";
         syncSizeControls();
+        if (sizeButton.matches("[data-size-add]")) {
+            addCurrentToCart();
+        }
         return;
     }
 
@@ -1408,7 +1710,7 @@ document.addEventListener("keydown", (event) => {
         }
         if (isCartOpen()) {
             closeCart();
-            selectors.cartToggles[0]?.focus();
+            focusPrimaryCartToggle();
             return;
         }
         if (isProductOpen()) {
@@ -1417,14 +1719,26 @@ document.addEventListener("keydown", (event) => {
         }
     }
 
+    if (event.key === "Tab") {
+        const trapContainer = activeFocusTrapContainer();
+        if (trapContainer) trapFocusIn(trapContainer, event);
+        return;
+    }
+
     if (!isProductOpen()) return;
 
     if (event.key === "ArrowLeft") {
         event.preventDefault();
-        stepImage(-1);
+        stepImageOrProduct(-1);
     } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        stepImage(1);
+        stepImageOrProduct(1);
+    } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        switchProductByGridRows(-1);
+    } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        switchProductByGridRows(1);
     } else if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         openSizeSheet();
@@ -1437,9 +1751,19 @@ window.addEventListener("popstate", () => {
     const match = getProductFromLocation();
     if (match) {
         openProduct(match.product, match.imageId, { push: false });
+        schedulePrepareCloseCamera(match.product.slug);
     } else if (isProductOpen()) {
         closeProductWithTransition({ push: false });
     }
+});
+
+window.addEventListener("resize", () => {
+    const slug = currentProduct?.slug;
+    if (document.body.classList.contains("shop-panel-open") || document.body.classList.contains("shop-cart-open")) {
+        updateOverlayScrollGutter({ force: true });
+    }
+    disposePreparedCloseCamera();
+    if (slug && isProductOpen()) schedulePrepareCloseCamera(slug);
 });
 
 renderCart();
@@ -1455,5 +1779,6 @@ selectors.productLayout?.addEventListener("pointercancel", onProductPointerEnd);
 
 const initial = getProductFromLocation();
 if (initial) {
-    openProduct(initial.product, initial.imageId, { replace: true });
+    openProduct(initial.product, initial.imageId, { replace: true, focus: false });
+    schedulePrepareCloseCamera(initial.product.slug);
 }

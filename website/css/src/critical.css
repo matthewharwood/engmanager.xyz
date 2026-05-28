@@ -1492,6 +1492,10 @@
         line-height: 1;
     }
 
+    .theme-picker-shapes {
+        display: none;
+    }
+
     @media (max-width: 48rem) {
         .quick-actions {
             position: fixed;
