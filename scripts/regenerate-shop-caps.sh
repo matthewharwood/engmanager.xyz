@@ -9,6 +9,9 @@ KEY_COLOR="#ff00ff"
 
 generated_slugs=(
   lgtm-plus-two
+  okrs
+  real-programmers
+  scrum-master
   time-check
   velocity
   up-and-to-the-right
@@ -19,7 +22,7 @@ catalog_slugs=(
   scrum-of-scrums
   scrum-master
   velocity
-  blocker-patrol
+  real-programmers
   sprint-review
   time-check
   standup-club
@@ -30,23 +33,27 @@ catalog_slugs=(
   up-and-to-the-right
   merge-friday
   incident-commander
-  roadmap-ghost
+  okrs
   consensus-builder
   scope-creep
 )
 
 views=(front angle detail worn)
+selected_slugs=()
 
 usage() {
   cat <<'USAGE'
 Usage:
   scripts/regenerate-shop-caps.sh --prompt
-  scripts/regenerate-shop-caps.sh [--sources DIR]
+  scripts/regenerate-shop-caps.sh [--sources DIR] [--slug SLUG]
 
 Workflow:
   1. Run --prompt and generate each listed PNG with imagegen.
   2. Save generated PNGs as {slug}-{view}.png in the source dir.
   3. Run this script to chroma-key, normalize to 900x1100 WebP, and refresh model views.
+
+Examples:
+  scripts/regenerate-shop-caps.sh --sources tmp/imagegen/shop-cap-sources --slug okrs
 USAGE
 }
 
@@ -190,7 +197,21 @@ main() {
         exit 0
         ;;
       --sources)
+        if [[ $# -lt 2 ]]; then
+          echo "Missing value for --sources" >&2
+          usage >&2
+          exit 1
+        fi
         SOURCE_DIR="$(cd "$2" && pwd)"
+        shift 2
+        ;;
+      --slug)
+        if [[ $# -lt 2 ]]; then
+          echo "Missing value for --slug" >&2
+          usage >&2
+          exit 1
+        fi
+        selected_slugs+=("$2")
         shift 2
         ;;
       -h|--help)
@@ -208,7 +229,12 @@ main() {
   require_magick
 
   local slug view
-  for slug in "${generated_slugs[@]}"; do
+  local slugs_to_process=("${generated_slugs[@]}")
+  if [[ ${#selected_slugs[@]} -gt 0 ]]; then
+    slugs_to_process=("${selected_slugs[@]}")
+  fi
+
+  for slug in "${slugs_to_process[@]}"; do
     for view in "${views[@]}"; do
       process_source "$slug" "$view"
     done

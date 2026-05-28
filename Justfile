@@ -35,6 +35,7 @@ check:
     cargo fmt --all --check
     cargo build --release
 
+# Use `just shop-caps --help` for prompt and slug examples.
 # Regenerate shop cap assets from imagegen PNG sources.
 shop-caps *args:
     ./scripts/regenerate-shop-caps.sh {{args}}
