@@ -74,6 +74,7 @@ function syncLabel(theme) {
         .forEach((el) => (el.textContent = emoji));
     document.querySelectorAll("[data-theme-cycle]").forEach((btn) => {
         btn.setAttribute("aria-label", `Cycle theme · current: ${label}`);
+        btn.dataset.themeShape = theme;
     });
 }
 

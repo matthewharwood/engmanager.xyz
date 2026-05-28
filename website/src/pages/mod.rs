@@ -171,6 +171,21 @@ pub fn render_theme_picker() -> HtmlFragment {
                 type="button"
                 data-theme-cycle
                 aria-label="Cycle theme · current: Auto">
+            <svg class="theme-picker-shapes"
+                 aria-hidden="true"
+                 viewBox="0 0 32 32"
+                 focusable="false">
+                <circle class="theme-picker-shape theme-picker-shape-auto" cx="16" cy="16" r="10" />
+                <path class="theme-picker-shape theme-picker-shape-light" d="M16 5 L27 25 H5 Z" />
+                <rect class="theme-picker-shape theme-picker-shape-dark" x="7" y="7" width="18" height="18" />
+                <path class="theme-picker-shape theme-picker-shape-catppuccin" d="M16 5 L25.5 10.5 V21.5 L16 27 L6.5 21.5 V10.5 Z" />
+                <path class="theme-picker-shape theme-picker-shape-synthwave" d="M16 5 L19.3 12.2 L27 13 L21.2 18.1 L22.9 25.7 L16 21.8 L9.1 25.7 L10.8 18.1 L5 13 L12.7 12.2 Z" />
+                <path class="theme-picker-shape theme-picker-shape-cyberpunk" d="M25 16 A9 9 0 0 1 16 25" />
+                <path class="theme-picker-shape theme-picker-shape-forest" d="M16 5 L27 16 L16 27 L5 16 Z" />
+                <path class="theme-picker-shape theme-picker-shape-lofi" d="M16 5 L26.5 12.6 L22.5 25 H9.5 L5.5 12.6 Z" />
+                <path class="theme-picker-shape theme-picker-shape-dracula" d="M16 4 L19.5 12.5 L28 16 L19.5 19.5 L16 28 L12.5 19.5 L4 16 L12.5 12.5 Z" />
+                <path class="theme-picker-shape theme-picker-shape-luxury" d="M10 6 H22 L28 16 L22 26 H10 L4 16 Z" />
+            </svg>
             <span class="theme-picker-emoji" aria-hidden="true" data-theme-emoji>"🪄"</span>
             <span class="sr-only" data-theme-current-label>"Auto"</span>
         </button>

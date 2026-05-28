@@ -28,12 +28,16 @@ dev:
             --watch website/articles \
             --watch Cargo.toml \
             --watch website/Cargo.toml \
-            -- cargo run --features dev
+            -- cargo run -p website --features dev
 
 # Standard build / check / format.
 check:
     cargo fmt --all --check
     cargo build --release
+
+# Regenerate shop cap assets from imagegen PNG sources.
+shop-caps *args:
+    ./scripts/regenerate-shop-caps.sh {{args}}
 
 # Expose the local dev server to the public internet via Tailscale Funnel.
 #
