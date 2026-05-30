@@ -31,7 +31,6 @@ const selectors = {
     productCopyTitle: document.querySelector("[data-product-copy-title]"),
     productPrice: document.querySelector("[data-product-price]"),
     productDescription: document.querySelector("[data-product-description]"),
-    sizeSummary: document.querySelector("[data-size-summary]"),
     imageStage: document.querySelector("[data-image-advance]"),
     carouselTrack: document.querySelector("[data-carousel-track]"),
     productImage: document.querySelector('[data-cell="main"]'),
@@ -39,18 +38,16 @@ const selectors = {
     cellNext: document.querySelector('[data-cell="next"]'),
     imageCaption: document.querySelector("[data-image-caption]"),
     imageThumbs: document.querySelector("[data-image-thumbs]"),
-    edgeArrowPrev: document.querySelector('[data-edge-arrow="prev"]'),
-    edgeArrowNext: document.querySelector('[data-edge-arrow="next"]'),
+    imagePrev: document.querySelector("[data-image-prev]"),
+    imageNext: document.querySelector("[data-image-next]"),
     edgeArrowUp: document.querySelector('[data-edge-arrow="up"]'),
     edgeArrowDown: document.querySelector('[data-edge-arrow="down"]'),
-    sizeSheet: document.querySelector("[data-size-sheet]"),
-    sizeToggle: document.querySelector("[data-size-toggle]"),
-    sizePrice: document.querySelector("[data-size-price]"),
-    quantityValue: document.querySelector("[data-quantity-value]"),
     cartToggles: document.querySelectorAll("[data-cart-toggle]"),
     cartCounts: document.querySelectorAll("[data-cart-count]"),
     cartItems: document.querySelector("[data-cart-items]"),
     cartTotal: document.querySelector("[data-cart-total]"),
+    cartClear: document.querySelector("[data-cart-clear]"),
+    cartFoot: document.querySelector("[data-cart-foot]"),
     bag: document.querySelector("[data-bag]"),
     bagSheet: document.querySelector(".shop-bag-sheet"),
     bagCart: document.querySelector("[data-bag-cart]"),
@@ -91,6 +88,9 @@ let productSwipeState = null;
 let lastOpenedProductSlug = null;
 let productModalBoundaryActive = false;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+// At/below this width the bag opens full-screen (see shop.css), so adding to
+// cart there flies a cap into the cart icon instead of taking over the screen.
+const compactViewport = window.matchMedia("(max-width: 53rem)");
 
 function readCart() {
     try {
@@ -956,19 +956,23 @@ function switchProductByGridRows(rowDelta, options = {}) {
     productSwitching = true;
     setProductSwitching(true);
 
+    // Dissolve, not cut: fade the outgoing content all the way out over the
+    // panel's stable surface, swap while it's invisible (no pop), then fade the
+    // incoming content in. Eager preload + reserved aspect mean no CLS mid-swap.
     animateProductSwitchMotion(
-        { y: exitY, scale: 0.986, opacity: 0.72 },
+        { y: exitY, scale: 0.992, opacity: 0 },
         {
             fromY,
             fromScale: options.fromScale ?? 1,
             fromOpacity: options.fromOpacity ?? 1,
-            duration: 150,
+            duration: 170,
             onComplete: () => {
-                commitProductSwitch(nextProduct, imageId, {
-                    y: enterY,
-                    scale: 0.988,
-                    opacity: 0.76,
-                });
+                commitProductSwitch(
+                    nextProduct,
+                    imageId,
+                    { y: enterY, scale: 0.992, opacity: 0 },
+                    { duration: 360 },
+                );
             },
         },
     );
@@ -989,18 +993,19 @@ function switchProductByIndexDelta(delta, options = {}) {
     setProductSwitching(true);
 
     animateProductSwitchMotion(
-        { x: exitX, scale: 0.988, opacity: 0.74 },
+        { x: exitX, scale: 0.992, opacity: 0 },
         {
             fromX,
             fromScale: options.fromScale ?? 1,
             fromOpacity: options.fromOpacity ?? 1,
-            duration: 140,
+            duration: 160,
             onComplete: () => {
-                commitProductSwitch(nextProduct, imageId, {
-                    x: enterX,
-                    scale: 0.99,
-                    opacity: 0.76,
-                });
+                commitProductSwitch(
+                    nextProduct,
+                    imageId,
+                    { x: enterX, scale: 0.992, opacity: 0 },
+                    { duration: 340 },
+                );
             },
         },
     );
@@ -1025,9 +1030,9 @@ function onProductPointerDown(event) {
         productSwitching ||
         productTransitionActive ||
         isCartOpen() ||
-        event.button > 0 ||
-        event.pointerType === "mouse"
+        event.button > 0
     ) {
+        // Works for touch, pen, AND mouse (desktop vertical drag to paginate).
         return;
     }
 
@@ -1137,6 +1142,47 @@ function onProductPointerEnd(event) {
     }
 }
 
+// Force-resolve any in-flight drag without committing a switch. Fires when the
+// pointer is lost in a way that never delivers pointerup — released outside the
+// browser window, capture yanked away, or the tab backgrounded mid-swipe. This
+// is the desktop "drag past the edge and let go off-screen" safety net.
+function cancelActiveDrags() {
+    if (dragState) {
+        const id = dragState.pointerId;
+        const wasDragging = dragState.dragging;
+        dragState = null;
+        selectors.imageStage?.classList.remove("is-dragging");
+        selectors.imageThumbs?.removeAttribute("data-thumb-drag");
+        releaseCarouselPointer(id);
+        clearEdgeArrows();
+        if (wasDragging) {
+            paintThumbs(currentImageIndex);
+            animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 320 });
+        }
+    }
+    if (productSwipeState) {
+        const state = productSwipeState;
+        productSwipeState = null;
+        if (state.captured) releaseProductPointer(state.pointerId);
+        clearVerticalArrows();
+        if (state.dragging) {
+            animateProductSwitchMotion(
+                { y: 0, scale: 1, opacity: 1 },
+                {
+                    fromY: state.y,
+                    fromScale: state.scale,
+                    fromOpacity: state.opacity,
+                    duration: 320,
+                    onComplete: () => {
+                        setProductSwitching(false);
+                        setProductSwitchMotion(0, 1, 1);
+                    },
+                },
+            );
+        }
+    }
+}
+
 // --- eager image loading ----------------------------------------------------
 // Warm the browser cache so navigating images / paginating products snaps in
 // without a flash. Cheap — just detached Image() objects warming HTTP cache.
@@ -1180,8 +1226,6 @@ function openProduct(product, imageId = "front", options = {}) {
     renderProduct(product);
     selectImage(currentImageIndex, { updateUrl: false });
     setCarouselMotion(0, 1, 0, 1);
-    syncSizeControls();
-    closeSizeSheet();
 
     updateOverlayScrollGutter();
     selectors.panel.hidden = false;
@@ -1206,7 +1250,6 @@ function closeProduct(options = {}) {
     if (!selectors.panel) return;
     const returnSlug = lastOpenedProductSlug || currentProduct?.slug;
     disposePreparedCloseCamera();
-    closeSizeSheet();
     clearEdgeArrows();
     clearVerticalArrows();
     productSwitching = false;
@@ -1230,13 +1273,14 @@ function renderProduct(product) {
     setText(selectors.productCopyTitle, product.name);
     setText(selectors.productPrice, product.priceLabel);
     setText(selectors.productDescription, product.description);
-    setText(selectors.sizePrice, product.priceLabel);
     renderThumbs(product);
 }
 
 function renderThumbs(product) {
     if (!selectors.imageThumbs) return;
     selectors.imageThumbs.textContent = "";
+    // Fresh product → fresh dots; never inherit a stale drag flag.
+    selectors.imageThumbs.removeAttribute("data-thumb-drag");
     product.images.forEach((image, index) => {
         const button = document.createElement("button");
         button.type = "button";
@@ -1259,6 +1303,18 @@ function renderThumbs(product) {
         button.append(thumb, label);
         selectors.imageThumbs.append(button);
     });
+}
+
+// Spread "active" weight (0..1) across the dots for a fractional position, so
+// the highlight glides continuously between dots while dragging instead of
+// snapping only when the image commits. activeFloat = whole index at rest.
+function paintThumbs(activeFloat) {
+    const thumbs = selectors.imageThumbs?.children;
+    if (!thumbs) return;
+    for (let i = 0; i < thumbs.length; i++) {
+        const weight = Math.max(0, 1 - Math.abs(i - activeFloat));
+        thumbs[i].style.setProperty("--active", weight.toFixed(3));
+    }
 }
 
 function imageIndex(product, imageId) {
@@ -1306,6 +1362,7 @@ function selectImage(index, options = {}) {
             button.dataset.imageIndex === String(currentImageIndex) ? "true" : "false",
         );
     });
+    paintThumbs(currentImageIndex);
 
     if (updateUrl) {
         window.history.replaceState(
@@ -1453,8 +1510,9 @@ function setArrow(arrow, reveal) {
 }
 
 function clearEdgeArrows() {
-    setArrow(selectors.edgeArrowPrev, 0);
-    setArrow(selectors.edgeArrowNext, 0);
+    // Reuses the existing carousel nav buttons (no separate floating arrow).
+    setArrow(selectors.imagePrev, 0);
+    setArrow(selectors.imageNext, 0);
 }
 
 function clearVerticalArrows() {
@@ -1463,8 +1521,10 @@ function clearVerticalArrows() {
 }
 
 function revealEdgeArrow(dir, reveal) {
-    setArrow(selectors.edgeArrowPrev, dir === "prev" ? reveal : 0);
-    setArrow(selectors.edgeArrowNext, dir === "next" ? reveal : 0);
+    // Light up whichever existing carousel arrow matches the pagination
+    // direction — the glow/scale comes from CSS reading --reveal.
+    setArrow(selectors.imagePrev, dir === "prev" ? reveal : 0);
+    setArrow(selectors.imageNext, dir === "next" ? reveal : 0);
 }
 
 function revealVerticalArrow(dir, reveal) {
@@ -1485,7 +1545,8 @@ function releaseCarouselPointer(pointerId) {
 }
 
 function onCarouselPointerDown(event) {
-    if (!selectors.imageStage || !currentProduct || event.button > 0 || event.pointerType === "mouse") {
+    // Works for touch, pen, AND mouse (desktop click-drag).
+    if (!selectors.imageStage || !currentProduct || event.button > 0) {
         return;
     }
     stopCarouselAnimation();
@@ -1520,6 +1581,9 @@ function onCarouselPointerMove(event) {
         }
         dragState.dragging = true;
         selectors.imageStage?.classList.add("is-dragging");
+        // Drop the dot's transition so it tracks the finger 1:1 (re-enabled on
+        // release for the settle/commit ease).
+        selectors.imageThumbs?.setAttribute("data-thumb-drag", "true");
     }
 
     event.preventDefault();
@@ -1554,6 +1618,8 @@ function onCarouselPointerMove(event) {
         const limit = width * 1.15;
         const eased = limit * Math.tanh(dx / limit);
         setCarouselMotion(eased, 1, 0, 1);
+        // Glide the pagination dot with the image (no commit delay).
+        paintThumbs(Math.max(0, Math.min(len - 1, currentImageIndex - eased / width)));
     }
 }
 
@@ -1562,6 +1628,8 @@ function onCarouselPointerEnd(event) {
     const state = dragState;
     dragState = null;
     selectors.imageStage?.classList.remove("is-dragging");
+    // Re-enable the dot transition so it eases to its resting/committed spot.
+    selectors.imageThumbs?.removeAttribute("data-thumb-drag");
     releaseCarouselPointer(event.pointerId);
     clearEdgeArrows();
 
@@ -1583,6 +1651,7 @@ function onCarouselPointerEnd(event) {
             switchProductByIndexDelta(state.boundary === "next" ? 1 : -1);
             setCarouselMotion(0, 1, 0, 1);
         } else {
+            paintThumbs(currentImageIndex);
             animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 420 });
         }
         return;
@@ -1590,48 +1659,17 @@ function onCarouselPointerEnd(event) {
 
     const threshold = Math.max(44, width * 0.18);
     if (projected < -threshold && currentImageIndex < len - 1) {
+        // Glide the dot to the incoming image while it slides in (stepImage
+        // re-confirms via selectImage on completion).
+        paintThumbs(currentImageIndex + 1);
         stepImage(1, { duration: 300 });
     } else if (projected > threshold && currentImageIndex > 0) {
+        paintThumbs(currentImageIndex - 1);
         stepImage(-1, { duration: 300 });
     } else {
+        paintThumbs(currentImageIndex);
         animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 420 });
     }
-}
-
-function openSizeSheet() {
-    if (!selectors.sizeSheet) return;
-    selectors.sizeSheet.hidden = false;
-    selectors.sizeSummary?.setAttribute("aria-hidden", "true");
-    if (selectors.sizeSummary) selectors.sizeSummary.inert = true;
-    selectors.sizeToggle?.setAttribute("aria-expanded", "true");
-    selectors.panel?.classList.add("is-sizing");
-    syncSizeControls();
-    selectors.sizeSheet.focus({ preventScroll: true });
-}
-
-function closeSizeSheet() {
-    if (!selectors.sizeSheet) return;
-    selectors.sizeSheet.hidden = true;
-    selectors.sizeSummary?.removeAttribute("aria-hidden");
-    if (selectors.sizeSummary) selectors.sizeSummary.inert = false;
-    selectors.sizeToggle?.setAttribute("aria-expanded", "false");
-    selectors.panel?.classList.remove("is-sizing");
-}
-
-function syncSizeControls() {
-    selectors.sizeSheet?.querySelectorAll("[data-size-option]").forEach((button) => {
-        const isSelected = button.dataset.sizeOption === selectedSize;
-        button.classList.toggle("is-selected", isSelected);
-        if (button.getAttribute("role") === "radio") {
-            button.setAttribute("aria-checked", isSelected ? "true" : "false");
-        }
-    });
-    setText(selectors.quantityValue, String(quantity));
-}
-
-function changeQuantity(delta) {
-    quantity = Math.min(9, Math.max(1, quantity + delta));
-    syncSizeControls();
 }
 
 function addCurrentToCart() {
@@ -1649,9 +1687,158 @@ function addCurrentToCart() {
             quantity,
         });
     }
+
+    // On a narrow screen the bag opens full-width and would bury the product,
+    // so adding stays put with a fly-to-cart flourish (shoppers can stack
+    // several caps). Desktop keeps the docked side bag — there's room for it.
+    // Snapshot BEFORE the DOM mutates: the + button position (fly origin) and
+    // the cart badge's current label (so the count ticks up when the cap lands).
+    const compact = compactViewport.matches && isProductOpen();
+    const cartToggle = compact
+        ? selectors.panel?.querySelector("[data-cart-toggle]") || selectors.cartToggles[0]
+        : null;
+    const sourceRect = compact ? plusButtonRect() : null;
+    const badge = cartToggle?.querySelector("[data-cart-count]");
+    const prevLabel = badge ? badge.textContent : null;
+    const colors = currentProduct?.colors;
+
     writeCart();
     renderCart();
-    openCart();
+
+    if (compact && cartToggle) {
+        celebrateAddToCart({ sourceRect, cartToggle, badge, prevLabel, colors });
+    } else if (!compact) {
+        openCart();
+    }
+}
+
+function plusButtonRect() {
+    const btn = selectors.panel?.querySelector("[data-size-toggle]");
+    return btn ? btn.getBoundingClientRect() : null;
+}
+
+// Mobile add-to-cart feedback: a mini-cap arcs from the + button into the cart
+// icon, the cart badge ticks up, and an "Added to cart" popover flashes — all
+// compositor-only (transform/opacity, WAAPI) so it stays smooth on weak phones.
+function celebrateAddToCart({ sourceRect, cartToggle, badge, prevLabel, colors }) {
+    const newLabel = badge ? badge.textContent : null;
+    const animate = !reduceMotion.matches && !!sourceRect;
+    // Hold the displayed count (unless it was 0 → first item, where the badge
+    // simply appearing is the cue) so the flying cap delivers the increment.
+    if (animate && badge && prevLabel != null && prevLabel !== "0") {
+        badge.textContent = prevLabel;
+    }
+    const land = () => {
+        if (badge && newLabel != null) badge.textContent = newLabel;
+        bumpCartTarget(cartToggle);
+        flashAddedPopover(cartToggle);
+    };
+    if (!animate) {
+        land();
+        return;
+    }
+    flyCapToCart(sourceRect, cartToggle, colors, land);
+}
+
+function flyCapToCart(sourceRect, targetEl, colors, onArrive) {
+    const targetRect = targetEl.getBoundingClientRect();
+    const startX = sourceRect.left + sourceRect.width / 2;
+    const startY = sourceRect.top + sourceRect.height / 2;
+    const dx = targetRect.left + targetRect.width / 2 - startX;
+    const dy = targetRect.top + targetRect.height / 2 - startY;
+
+    const flyer = miniCap(colors);
+    flyer.classList.add("shop-fly-cap");
+    flyer.style.left = `${startX}px`;
+    flyer.style.top = `${startY}px`;
+    document.body.append(flyer);
+
+    // Bow the path upward so the cap lobs into the cart instead of sliding flat.
+    const lift = Math.min(150, Math.max(54, Math.hypot(dx, dy) * 0.3));
+    const animation = flyer.animate(
+        [
+            { transform: "translate(-50%, -50%) translate(0px, 0px) scale(0.65)", opacity: 0, offset: 0 },
+            { transform: `translate(-50%, -50%) translate(${dx * 0.16}px, ${dy * 0.16 - lift * 0.66}px) scale(1.5)`, opacity: 1, offset: 0.16 },
+            { transform: `translate(-50%, -50%) translate(${dx * 0.6}px, ${dy * 0.6 - lift}px) scale(1.32)`, opacity: 1, offset: 0.6 },
+            { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0.3, offset: 1 },
+        ],
+        { duration: 640, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "forwards" },
+    );
+
+    let settled = false;
+    const settle = () => {
+        if (settled) return;
+        settled = true;
+        flyer.remove();
+        onArrive?.();
+    };
+    animation.addEventListener("finish", settle);
+    animation.addEventListener("cancel", settle);
+    // Safety net so the flyer is always cleaned up + the cart still reacts.
+    window.setTimeout(settle, 760);
+}
+
+function bumpCartTarget(targetEl) {
+    if (reduceMotion.matches) return;
+    targetEl.animate(
+        [
+            { transform: "scale(1)" },
+            { transform: "scale(1.16)", offset: 0.4 },
+            { transform: "scale(1)" },
+        ],
+        { duration: 340, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
+    );
+    const badge = targetEl.querySelector("[data-cart-count]");
+    if (badge) {
+        badge.animate(
+            [
+                { transform: "translateY(0) scale(1)" },
+                { transform: "translateY(-32%) scale(1.55)", offset: 0.4 },
+                { transform: "translateY(0) scale(1)" },
+            ],
+            { duration: 460, easing: "cubic-bezier(0.2, 0.85, 0.25, 1)" },
+        );
+    }
+}
+
+function flashAddedPopover(targetEl) {
+    // One popover at a time, so rapid taps refresh rather than stack.
+    document.querySelectorAll(".shop-added-pop").forEach((node) => node.remove());
+    const rect = targetEl.getBoundingClientRect();
+    const pop = document.createElement("div");
+    pop.className = "shop-added-pop";
+    pop.setAttribute("role", "status");
+    pop.setAttribute("aria-live", "polite");
+    pop.textContent = "Added to cart";
+    document.body.append(pop);
+    // Anchor just under the cart button, clamped inside the right edge.
+    pop.style.top = `${rect.bottom + 10}px`;
+    pop.style.right = `${Math.max(10, window.innerWidth - rect.right)}px`;
+
+    if (reduceMotion.matches) {
+        pop.style.opacity = "1";
+        window.setTimeout(() => pop.remove(), 1400);
+        return;
+    }
+
+    pop.animate(
+        [
+            { opacity: 0, transform: "translateY(-6px) scale(0.92)" },
+            { opacity: 1, transform: "translateY(0) scale(1)" },
+        ],
+        { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" },
+    );
+    window.setTimeout(() => {
+        const out = pop.animate(
+            [
+                { opacity: 1, transform: "translateY(0) scale(1)" },
+                { opacity: 0, transform: "translateY(-6px) scale(0.96)" },
+            ],
+            { duration: 260, easing: "ease", fill: "forwards" },
+        );
+        out.addEventListener("finish", () => pop.remove());
+        out.addEventListener("cancel", () => pop.remove());
+    }, 1250);
 }
 
 // --- bag (cart + inline checkout) navigation --------------------------------
@@ -1705,14 +1892,23 @@ function applyBag(next) {
     const checkout = target === "checkout";
     selectors.bag.dataset.bagState = target;
     document.body.classList.toggle("shop-bag-checkout", checkout);
+    // The pink CTA opens checkout; once you're in the checkout pane it's a no-op,
+    // so render it disabled (still visible in the two-pane desktop layout).
+    if (selectors.bagCheckoutBtn) selectors.bagCheckoutBtn.disabled = checkout;
     if (selectors.bagCheckoutPane) {
-        selectors.bagCheckoutPane.hidden = !checkout;
+        // The pane stays in the DOM (rendered off-screen — see .shop-bag-checkout)
+        // so Stripe can mount + warm up ahead of time. `inert` keeps its fields
+        // out of the tab order + a11y tree while it's staged off-screen.
+        selectors.bagCheckoutPane.inert = !checkout;
         selectors.bagCheckoutPane.setAttribute("aria-hidden", checkout ? "false" : "true");
     }
 
-    // Defer the Stripe mount one frame so the just-revealed pane is laid out
-    // (Elements misrender if mounted into a zero-size / unlaid-out container).
+    // Warm the Stripe Elements off-screen the moment the bag opens, so reaching
+    // checkout is instant + shift-free. Entering checkout directly (deep link /
+    // fast click) mounts now; otherwise we mount during idle so it never janks
+    // the cart-open on weak devices. mountCheckout is idempotent.
     if (checkout) requestAnimationFrame(mountCheckout);
+    else scheduleEagerCheckoutMount();
 
     if (prev === "closed" && !checkout) {
         selectors.bag.querySelector("[data-close-bag]")?.focus({ preventScroll: true });
@@ -1764,13 +1960,41 @@ function miniCap(colors) {
     return cap;
 }
 
-function cartIconButton(label, ariaLabel, onClick) {
+function cartIconButton(content, ariaLabel, onClick) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = label;
+    if (content instanceof Node) btn.append(content);
+    else btn.textContent = content;
     btn.setAttribute("aria-label", ariaLabel);
     btn.addEventListener("click", onClick);
     return btn;
+}
+
+// Crisp, perfectly-centred control glyphs (minus / plus / close) drawn as SVG
+// strokes — same language as the nav chevrons. Text glyphs sit off-centre in
+// their line box across fonts; a viewBox-centred path never does.
+const CONTROL_ICON_PATHS = {
+    minus: "M4 8 H12",
+    plus: "M8 4 V12 M4 8 H12",
+    close: "M5 5 L11 11 M11 5 L5 11",
+};
+
+function controlIcon(name) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.classList.add("shop-control-icon");
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", CONTROL_ICON_PATHS[name]);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.append(path);
+    return svg;
 }
 
 function changeCartQty(slug, delta) {
@@ -1829,19 +2053,83 @@ function cartRow(item, product) {
     controls.className = "shop-cart-qty";
     controls.setAttribute("role", "group");
     controls.setAttribute("aria-label", `Quantity for ${product.name}`);
-    const minus = cartIconButton("–", `Decrease ${product.name}`, () => changeCartQty(item.slug, -1));
+    const minus = cartIconButton(controlIcon("minus"), `Decrease ${product.name}`, () => changeCartQty(item.slug, -1));
     minus.className = "shop-cart-qty-btn";
     const qty = document.createElement("span");
     qty.className = "shop-cart-qty-val";
     qty.textContent = String(item.quantity);
-    const plus = cartIconButton("+", `Increase ${product.name}`, () => changeCartQty(item.slug, 1));
+    const plus = cartIconButton(controlIcon("plus"), `Increase ${product.name}`, () => changeCartQty(item.slug, 1));
     plus.className = "shop-cart-qty-btn";
-    const remove = cartIconButton("×", `Remove ${product.name}`, () => removeCartItem(item.slug));
+    const remove = cartIconButton(controlIcon("close"), `Remove ${product.name}`, () => removeCartItem(item.slug));
     remove.className = "shop-cart-remove";
     controls.append(minus, qty, plus, remove);
 
     row.append(top, controls);
     return row;
+}
+
+// Add an arbitrary product (used by the empty-bag recommendation). No fly
+// flourish — the shopper is already looking at the bag.
+function addProductToCart(slug) {
+    const product = productBySlug.get(slug);
+    if (!product) return;
+    const existing = cart.find((i) => i.slug === slug && i.size === selectedSize);
+    if (existing) existing.quantity = Math.min(99, existing.quantity + 1);
+    else cart.push({ slug, size: selectedSize, quantity: 1 });
+    writeCart();
+    renderCart();
+}
+
+function recommendedProduct() {
+    return products[0] || null;
+}
+
+// Empty-bag nudge: one featured cap instead of a bare message + a pointless
+// Clear button. Adding it re-runs renderCart, the bag is no longer empty, and
+// the card is replaced by the real line item.
+function recommendationCard() {
+    const product = recommendedProduct();
+    if (!product) return null;
+
+    const card = document.createElement("div");
+    card.className = "shop-cart-reco";
+
+    const kicker = document.createElement("p");
+    kicker.className = "shop-cart-reco-kicker";
+    kicker.textContent = "You might like";
+
+    const body = document.createElement("div");
+    body.className = "shop-cart-reco-body";
+
+    const img = document.createElement("img");
+    img.className = "shop-cart-reco-img";
+    img.src = product.images?.[0]?.url || "";
+    img.alt = "";
+    img.width = 900;
+    img.height = 1100;
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    const info = document.createElement("div");
+    info.className = "shop-cart-reco-info";
+    const name = document.createElement("strong");
+    name.textContent = product.name;
+    const price = document.createElement("span");
+    price.className = "shop-cart-reco-price";
+    price.textContent = product.priceLabel;
+    info.append(name, price);
+
+    body.append(img, info);
+
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "shop-cart-reco-add";
+    add.textContent = "Add to bag";
+    add.setAttribute("aria-label", `Add ${product.name} to bag`);
+    add.addEventListener("click", () => addProductToCart(product.slug));
+
+    card.append(kicker, body, add);
+    return card;
 }
 
 // The cart "chrome" — counts, total, CTA visibility, Stripe amount, pay button.
@@ -1857,8 +2145,12 @@ function syncCartChrome() {
         cartCount.dataset.empty = count === 0 ? "true" : "false";
     });
     setText(selectors.cartTotal, `$${total}`);
-    // Reveal the Checkout CTA only once there's something to buy.
-    if (selectors.bagCheckoutBtn) selectors.bagCheckoutBtn.hidden = cart.length === 0;
+    // Empty bag → no footer at all (the total/Clear are meaningless, and the
+    // recommendation card below takes that space instead). Reveal otherwise.
+    const empty = cart.length === 0;
+    if (selectors.cartFoot) selectors.cartFoot.hidden = empty;
+    if (selectors.cartClear) selectors.cartClear.hidden = empty;
+    if (selectors.bagCheckoutBtn) selectors.bagCheckoutBtn.hidden = empty;
 
     // Keep the inline Stripe amount in sync, debounced so a burst of stepper
     // clicks triggers a single Elements update.
@@ -1874,6 +2166,10 @@ function renderCart() {
             empty.className = "shop-cart-empty";
             empty.textContent = EMPTY_STATE;
             selectors.cartItems.append(empty);
+            // Don't nudge inside the checkout pane (it's visible beside the
+            // cart on desktop, and shows the post-payment confirmation).
+            const reco = bagState() === "checkout" ? null : recommendationCard();
+            if (reco) selectors.cartItems.append(reco);
         } else {
             const list = document.createElement("ul");
             list.className = "shop-cart-list";
@@ -1956,33 +2252,9 @@ document.addEventListener("click", (event) => {
     }
 
     if (target.closest("[data-size-toggle]")) {
-        openSizeSheet();
-        return;
-    }
-
-    if (target.closest("[data-close-size]")) {
-        closeSizeSheet();
-        selectors.sizeToggle?.focus();
-        return;
-    }
-
-    const sizeButton = target.closest("[data-size-option]");
-    if (sizeButton) {
-        selectedSize = sizeButton.dataset.sizeOption || "ONE SIZE";
-        syncSizeControls();
-        if (sizeButton.matches("[data-size-add]")) {
-            addCurrentToCart();
-        }
-        return;
-    }
-
-    if (target.closest("[data-quantity-minus]")) {
-        changeQuantity(-1);
-        return;
-    }
-
-    if (target.closest("[data-quantity-plus]")) {
-        changeQuantity(1);
+        // This store has no sizes — the plus button is a direct add-to-cart,
+        // no size sheet, no transition.
+        addCurrentToCart();
         return;
     }
 
@@ -2034,11 +2306,6 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-        if (selectors.sizeSheet && !selectors.sizeSheet.hidden) {
-            closeSizeSheet();
-            selectors.sizeToggle?.focus();
-            return;
-        }
         if (isCartOpen()) {
             // Step back one level: checkout → cart → closed.
             if (bagState() === "checkout") setBag("cart");
@@ -2073,7 +2340,7 @@ document.addEventListener("keydown", (event) => {
         switchProductByGridRows(1);
     } else if (event.key === "+" || event.key === "=") {
         event.preventDefault();
-        openSizeSheet();
+        addCurrentToCart();
     }
 });
 
@@ -2103,14 +2370,29 @@ window.addEventListener("resize", () => {
 
 renderCart();
 
+// Gestures START on their element but are TRACKED and ENDED on the window. With
+// a mouse you can yank the cursor past the image/viewport — or out of the
+// browser entirely — faster than pointer-capture redelivers; binding move/up to
+// the window guarantees we still observe the move and, above all, the release,
+// so a big desktop swipe can never strand a gesture mid-drag. The move handlers
+// call preventDefault() while dragging, so they must be non-passive.
 selectors.imageStage?.addEventListener("pointerdown", onCarouselPointerDown);
-selectors.imageStage?.addEventListener("pointermove", onCarouselPointerMove);
-selectors.imageStage?.addEventListener("pointerup", onCarouselPointerEnd);
-selectors.imageStage?.addEventListener("pointercancel", onCarouselPointerEnd);
 selectors.productLayout?.addEventListener("pointerdown", onProductPointerDown);
-selectors.productLayout?.addEventListener("pointermove", onProductPointerMove);
-selectors.productLayout?.addEventListener("pointerup", onProductPointerEnd);
-selectors.productLayout?.addEventListener("pointercancel", onProductPointerEnd);
+window.addEventListener("pointermove", onCarouselPointerMove, { passive: false });
+window.addEventListener("pointermove", onProductPointerMove, { passive: false });
+window.addEventListener("pointerup", onCarouselPointerEnd);
+window.addEventListener("pointerup", onProductPointerEnd);
+window.addEventListener("pointercancel", onCarouselPointerEnd);
+window.addEventListener("pointercancel", onProductPointerEnd);
+// NOTE: deliberately NOT listening to `lostpointercapture`. Arming a vertical
+// swipe transfers pointer capture from the image stage to the product layout,
+// which fires lostpointercapture mid-gesture — using it as a "drag lost" signal
+// cancelled the swipe the instant it started. pointerup/pointercancel below
+// already terminate every real release; blur/visibilitychange cover the rest.
+window.addEventListener("blur", cancelActiveDrags);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelActiveDrags();
+});
 
 const initial = getProductFromLocation();
 if (initial) {
@@ -2289,6 +2571,18 @@ function buildAppearance() {
             ".Error": { color: danger },
         },
     };
+}
+
+// Eagerly mount the Stripe Elements during idle (off-screen, into the staged
+// checkout pane) so checkout is instant + shift-free. Idle so it never competes
+// with the cart-open animation on weak devices; idempotent via checkoutMounted.
+function scheduleEagerCheckoutMount() {
+    if (checkoutMounted) return;
+    if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(() => mountCheckout(), { timeout: 1200 });
+    } else {
+        window.setTimeout(() => mountCheckout(), 200);
+    }
 }
 
 function mountCheckout() {

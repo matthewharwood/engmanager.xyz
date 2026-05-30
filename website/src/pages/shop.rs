@@ -19,6 +19,31 @@ const SHOP_DESCRIPTION: &str =
 const SHOP_CACHE_CONTROL: &str =
     "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
 
+// One custom chevron for every nav/pagination arrow — points left at rest and is
+// rotated per direction in CSS, so back / prev / next / up / down all share the
+// exact same icon. pathLength="1" normalizes the stroke so a 0..1 dash offset
+// "draws" it in (the native take on anime.js's path animation).
+const CHEVRON_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+
+fn chevron() -> HtmlFragment {
+    HtmlFragment::new(CHEVRON_SVG.to_string())
+}
+
+// Close (X) + plus glyphs in the same stroked language as the chevron — same
+// viewBox, weight, round caps, and pathLength normalization (so they draw-in
+// on hover/focus exactly like the arrows).
+const X_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+
+fn x_icon() -> HtmlFragment {
+    HtmlFragment::new(X_SVG.to_string())
+}
+
+const PLUS_SVG: &str = r##"<svg class="shop-chevron shop-plus-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M8 3.5 V12.5 M3.5 8 H12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+
+fn plus_icon() -> HtmlFragment {
+    HtmlFragment::new(PLUS_SVG.to_string())
+}
+
 const CAP_VIEWS: &[CapView] = &[
     CapView {
         id: "front",
@@ -320,7 +345,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
                     <a class="shop-home-link"
                        href="https://engmanager.xyz/"
                        aria-label="Back to ENGMANAGER.XYZ">
-                        "‹"
+                        { chevron() }
                     </a>
                     { render_theme_picker() }
                     <div class="shop-top-actions">
@@ -401,8 +426,8 @@ fn render_product_panel() -> HtmlFragment {
                 <button class="shop-icon-button"
                         type="button"
                         data-close-product
-                        aria-label="Back to products">
-                    "‹"
+                        aria-label="Close product">
+                    { x_icon() }
                 </button>
                 { render_theme_picker() }
                 <button class="shop-cart-button"
@@ -421,7 +446,7 @@ fn render_product_panel() -> HtmlFragment {
                             type="button"
                             data-image-prev
                             aria-label="Previous product image">
-                        "‹"
+                        { chevron() }
                     </button>
                     <figure class="shop-carousel-stage">
                         <button class="shop-image-advance"
@@ -429,7 +454,7 @@ fn render_product_panel() -> HtmlFragment {
                                 data-image-advance
                                 aria-label="Next product image">
                             <div class="shop-carousel-track" data-carousel-track>
-                                <img class="shop-carousel-cell" data-cell="prev" alt="" decoding="async" />
+                                <img class="shop-carousel-cell" data-cell="prev" alt="" width="900" height="1100" decoding="async" />
                                 <img class="shop-carousel-cell"
                                      data-product-image
                                      data-cell="main"
@@ -438,7 +463,7 @@ fn render_product_panel() -> HtmlFragment {
                                      width="900"
                                      height="1100"
                                      decoding="async" />
-                                <img class="shop-carousel-cell" data-cell="next" alt="" decoding="async" />
+                                <img class="shop-carousel-cell" data-cell="next" alt="" width="900" height="1100" decoding="async" />
                             </div>
                         </button>
                         <figcaption data-image-caption>"Choose a cap."</figcaption>
@@ -447,7 +472,7 @@ fn render_product_panel() -> HtmlFragment {
                             type="button"
                             data-image-next
                             aria-label="Next product image">
-                        "›"
+                        { chevron() }
                     </button>
                     <div class="shop-thumbs" data-image-thumbs aria-label="Product image views"></div>
                 </section>
@@ -474,48 +499,17 @@ fn render_product_panel() -> HtmlFragment {
                             <button class="shop-plus-button"
                                     type="button"
                                     data-size-toggle
-                                    aria-label="Select size and add to cart"
-                                    aria-expanded="false"
-                                    aria-controls="shop-size-sheet">
-                                "+"
+                                    aria-label="Add to cart">
+                                { plus_icon() }
                             </button>
                         </div>
                     </div>
-                        <section id="shop-size-sheet"
-                                 class="shop-size-sheet"
-                                 data-size-sheet
-                                 aria-label="Product options"
-                                 tabindex="-1"
-                                 hidden>
-                            <header class="shop-size-head">
-                                <span class="shop-size-head-spacer" aria-hidden="true"></span>
-                                <h3>"SELECT SIZE"</h3>
-                                <button class="shop-size-close" type="button" data-close-size aria-label="Close product options">
-                                    "x"
-                                </button>
-                            </header>
-                            <p class="shop-size-price" data-size-price>"$80"</p>
-                            <div class="shop-size-options" data-size-options role="group" aria-label="Purchase option">
-                                <button type="button"
-                                        class="shop-size-flip is-selected"
-                                        data-size-option="ONE SIZE"
-                                        data-size-add
-                                        aria-label="Add one size to cart">
-                                    <span class="shop-size-flip-inner" aria-hidden="true">
-                                        <span class="shop-size-flip-face shop-size-flip-front">"ONE SIZE"</span>
-                                        <span class="shop-size-flip-face shop-size-flip-back">"ADD TO CART"</span>
-                                    </span>
-                                </button>
-                            </div>
-                        </section>
                     </section>
                 </div>
             </div>
             <div class="shop-paginate" aria-hidden="true">
-                <span class="shop-paginate-arrow shop-paginate-prev" data-edge-arrow="prev">"‹"</span>
-                <span class="shop-paginate-arrow shop-paginate-next" data-edge-arrow="next">"›"</span>
-                <span class="shop-paginate-arrow shop-paginate-up" data-edge-arrow="up">"⌃"</span>
-                <span class="shop-paginate-arrow shop-paginate-down" data-edge-arrow="down">"⌄"</span>
+                <span class="shop-paginate-arrow shop-paginate-up" data-edge-arrow="up">{ chevron() }</span>
+                <span class="shop-paginate-arrow shop-paginate-down" data-edge-arrow="down">{ chevron() }</span>
             </div>
         </aside>
     }
@@ -544,13 +538,13 @@ fn render_bag() -> HtmlFragment {
                                 type="button"
                                 data-close-bag
                                 aria-label="Close bag">
-                            "x"
+                            { x_icon() }
                         </button>
                     </header>
                     <div class="shop-cart-items" data-cart-items>
                         <p class="shop-cart-empty">"Your cap stack is empty."</p>
                     </div>
-                    <footer class="shop-cart-foot">
+                    <footer class="shop-cart-foot" data-cart-foot>
                         <div class="shop-cart-foot-row">
                             <p data-cart-total>"$0"</p>
                             <button type="button" data-cart-clear>"Clear"</button>
@@ -565,13 +559,13 @@ fn render_bag() -> HtmlFragment {
                 <section class="shop-bag-pane shop-bag-checkout"
                          data-bag-checkout-pane
                          aria-label="Checkout"
-                         hidden>
+                         aria-hidden="true">
                     <header class="shop-cart-head shop-checkout-head">
                         <button class="shop-icon-button"
                                 type="button"
                                 data-bag-back
                                 aria-label="Back to bag">
-                            "‹"
+                            { x_icon() }
                         </button>
                         <h2 id="shop-checkout-title">"Checkout"</h2>
                     </header>

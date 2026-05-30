@@ -1,6 +1,6 @@
 use std::env::var;
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use axum::Router;
 use axum::body::Bytes;
@@ -35,6 +35,18 @@ const SHOP_HOSTS: &[&str] = &[
     "shop.localhost",
     "store.localhost",
 ];
+
+// Dev-only extra shop hosts, for testing on another device (e.g. a phone over
+// Tailscale). Set SHOP_DEV_HOSTS to a comma-separated list of hostnames/IPs
+// (port-insensitive); unset in production, so this is a no-op there.
+static SHOP_DEV_HOSTS: LazyLock<Vec<String>> = LazyLock::new(|| {
+    var("SHOP_DEV_HOSTS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|host| host.trim().to_ascii_lowercase())
+        .filter(|host| !host.is_empty())
+        .collect()
+});
 
 // Embed all static assets into the binary at compile time. Render (and most
 // platform-as-a-service runtimes) don't reliably preserve the source tree at
@@ -306,6 +318,9 @@ pub(crate) fn is_shop_host(host: &str) -> bool {
     SHOP_HOSTS
         .iter()
         .any(|shop_host| host_without_port.eq_ignore_ascii_case(shop_host))
+        || SHOP_DEV_HOSTS
+            .iter()
+            .any(|shop_host| host_without_port.eq_ignore_ascii_case(shop_host))
 }
 
 async fn fallback_handler(State(state): State<AppState>, headers: HeaderMap, uri: Uri) -> Response {

@@ -28,7 +28,7 @@
     min-block-size: 2.75rem;
     display: grid;
     grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
-    align-items: start;
+    align-items: center;
     padding-block: 0.55rem;
     padding-inline: 0.55rem;
     background: color-mix(in oklab, var(--surface-1) 92%, transparent);
@@ -329,8 +329,7 @@ body.shop-grid-text-revealing .shop-card-meta {
     color: var(--text-1);
 }
 
-.shop-product-panel[hidden],
-.shop-size-sheet[hidden] {
+.shop-product-panel[hidden] {
     display: none;
 }
 
@@ -362,7 +361,7 @@ body.shop-grid-text-revealing .shop-card-meta {
     min-block-size: 2.75rem;
     display: grid;
     grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
-    align-items: start;
+    align-items: center;
     gap: 0;
     padding-block: 0.55rem;
     padding-inline: 0.55rem;
@@ -491,6 +490,66 @@ body.shop-grid-text-revealing .shop-card-meta {
     block-size: 100%;
 }
 
+/* One shared chevron icon for every nav/pagination arrow; rotated per
+   direction so back / prev / next / up / down are visually identical. */
+.shop-chevron {
+    inline-size: 1.05rem;
+    block-size: 1.05rem;
+    display: block;
+    overflow: visible;
+}
+
+.shop-chevron-path {
+    /* pathLength="1" → 0..1 dash; fully drawn at rest. */
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+}
+
+/* Subtle "morph": the chevron re-strokes itself on hover/focus — the native
+   stroke-dashoffset draw (the anime.js path-draw effect, no library). */
+@keyframes shop-chevron-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@media (hover: hover) {
+    .shop-icon-button:hover .shop-chevron-path,
+    .shop-home-link:hover .shop-chevron-path,
+    .shop-carousel-button:hover .shop-chevron-path,
+    .shop-plus-button:hover .shop-chevron-path {
+        animation: shop-chevron-draw 0.42s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+}
+
+.shop-icon-button:focus-visible .shop-chevron-path,
+.shop-home-link:focus-visible .shop-chevron-path,
+.shop-carousel-button:focus-visible .shop-chevron-path,
+.shop-plus-button:focus-visible .shop-chevron-path {
+    animation: shop-chevron-draw 0.42s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-chevron-path {
+        animation: none !important;
+    }
+}
+
+.shop-carousel-next .shop-chevron {
+    transform: rotate(180deg);
+}
+
+.shop-paginate-up .shop-chevron {
+    transform: rotate(-90deg);
+}
+
+.shop-paginate-down .shop-chevron {
+    transform: rotate(90deg);
+}
+
 .shop-image-advance.is-dragging {
     cursor: grabbing;
 }
@@ -589,33 +648,24 @@ body.shop-grid-text-revealing .shop-card-meta {
     place-items: center;
     inline-size: 2.75rem;
     block-size: 2.75rem;
-    border-radius: 50%;
-    background: color-mix(in oklab, var(--surface-1) 78%, transparent);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    box-shadow: 0 0.4rem 1rem oklch(from var(--color-base-content) l c h / 0.16);
     color: var(--text-1);
-    font-size: 1.45rem;
-    font-weight: 900;
-    line-height: 1;
-    /* opacity + scale both derive from --reveal (set by JS) so the per-frame
-       update is a single property write. */
+    /* Bare chevron — identical to the product-page carousel arrows. No pill,
+       no backdrop blur (cheaper on weak hardware). opacity + scale + the
+       chevron "draw" all derive from --reveal, so it's one write per frame. */
     opacity: var(--reveal, 0);
+    filter: drop-shadow(0 0.15rem 0.5rem oklch(from var(--color-base-content) l c h / calc(0.45 * var(--reveal, 0))));
     will-change: opacity, transform;
 }
 
-.shop-paginate-prev,
-.shop-paginate-next {
-    inset-block-start: 50%;
-    transform: translateY(-50%) scale(calc(0.65 + 0.35 * var(--reveal, 0)));
+.shop-paginate-arrow .shop-chevron {
+    inline-size: 1.55rem;
+    block-size: 1.55rem;
 }
 
-.shop-paginate-prev {
-    inset-inline-start: clamp(0.4rem, 2vw, 1.5rem);
-}
-
-.shop-paginate-next {
-    inset-inline-end: clamp(0.4rem, 2vw, 1.5rem);
+/* The chevron path strokes itself in as the arrow reveals — native
+   stroke-dashoffset draw, no animation library. */
+.shop-paginate-arrow .shop-chevron-path {
+    stroke-dashoffset: calc(1 - var(--reveal, 0));
 }
 
 .shop-paginate-up,
@@ -641,10 +691,18 @@ body.shop-grid-text-revealing .shop-card-meta {
     cursor: pointer;
     background: transparent;
     border: 0;
+    border-radius: 50%;
     color: var(--text-1);
     font-size: 1.55rem;
     font-weight: 900;
     line-height: 1;
+    /* Elastic pagination glow: JS sets --reveal (0..1) on the relevant nav
+       button as you pull past an image boundary, so the existing arrow lights
+       up + grows (theme-adaptive halo) instead of a separate floating arrow. */
+    transform: scale(calc(1 + var(--reveal, 0) * 0.16));
+    box-shadow:
+        0 0 0 calc(var(--reveal, 0) * 2.5px) var(--text-1),
+        0 0 calc(var(--reveal, 0) * 18px) oklch(from var(--text-1) l c h / 0.55);
 }
 
 .shop-carousel-prev {
@@ -676,13 +734,30 @@ body.shop-grid-text-revealing .shop-card-meta {
     display: block;
     padding: 0;
     cursor: pointer;
-    background: var(--border-muted);
+    background: var(--text-1);
     border: 0;
     border-radius: 50%;
+    /* Fluid active state: opacity + size derive from --active (0..1), which JS
+       glides between dots during a drag. The transition handles the settle on
+       release; it's dropped mid-drag (data-thumb-drag) so the dot tracks 1:1. */
+    opacity: calc(0.3 + 0.7 * var(--active, 0));
+    transform: scale(calc(0.82 + 0.4 * var(--active, 0)));
+    transition: opacity 0.28s ease, transform 0.28s ease;
 }
 
+/* Pre-JS / SSR fallback — once JS paints inline --active, that wins. */
 .shop-thumb[aria-selected="true"] {
-    background: var(--text-1);
+    --active: 1;
+}
+
+.shop-thumbs[data-thumb-drag="true"] .shop-thumb {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-thumb {
+        transition: none;
+    }
 }
 
 .shop-thumb:hover,
@@ -712,31 +787,13 @@ body.shop-grid-text-revealing .shop-card-meta {
     margin: 0;
 }
 
-.shop-product-summary,
-.shop-size-sheet {
+.shop-product-summary {
     position: absolute;
     inset-block-start: var(--shop-copy-top);
     inset-inline: var(--shop-copy-inline-padding);
-}
-
-.shop-product-summary {
     display: grid;
     gap: 1.35rem;
     justify-items: center;
-    opacity: 1;
-    visibility: visible;
-    transition:
-        opacity 150ms cubic-bezier(.2, .8, .2, 1),
-        visibility 0ms linear 0ms;
-}
-
-.shop-product-panel.is-sizing .shop-product-summary {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition:
-        opacity 120ms cubic-bezier(.2, .8, .2, 1),
-        visibility 0ms linear 120ms;
 }
 
 .shop-product-copy-title,
@@ -769,265 +826,18 @@ body.shop-grid-text-revealing .shop-card-meta {
     background: transparent;
     border: 0;
     color: var(--text-1);
-    font-size: 1.6rem;
-    font-weight: 900;
     line-height: 1;
+}
+
+/* Bigger than the nav chevrons; viewBox-centred so the focus ring sits
+   symmetrically around it. */
+.shop-plus-glyph {
+    inline-size: 1.3rem;
+    block-size: 1.3rem;
 }
 
 .shop-plus-button:hover,
 .shop-plus-button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 0.25rem;
-}
-
-.shop-size-sheet {
-    inline-size: auto;
-    display: grid;
-    gap: 1.25rem;
-    justify-items: center;
-    font-family: var(--font-mono);
-}
-
-.shop-size-sheet > * {
-    animation: shop-option-fan 300ms cubic-bezier(.2, .8, .2, 1) both;
-    will-change: opacity, transform;
-}
-
-.shop-size-head {
-    animation-delay: 0ms;
-}
-
-.shop-size-price {
-    animation-delay: 40ms;
-}
-
-.shop-size-options {
-    animation-delay: 80ms;
-}
-
-.shop-size-info {
-    animation-delay: 120ms;
-}
-
-.shop-size-add {
-    animation-delay: 160ms;
-}
-
-@keyframes shop-option-fan {
-    from {
-        opacity: 0;
-        transform: translate3d(0, 0.35rem, 0) scale(0.985);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-}
-
-.shop-size-head {
-    inline-size: min(100%, 26rem);
-    min-block-size: 2rem;
-    display: grid;
-    grid-template-columns: minmax(3.75rem, 1fr) auto minmax(3.75rem, 1fr);
-    column-gap: 1rem;
-    align-items: center;
-}
-
-.shop-size-head h3 {
-    margin: 0;
-    justify-self: center;
-    min-inline-size: max-content;
-    font-size: 0.88rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.shop-size-help,
-.shop-size-close {
-    inline-size: 2.35rem;
-    block-size: 2.35rem;
-    display: inline-grid;
-    place-items: center;
-    padding: 0;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
-    color: var(--text-1);
-    font-size: 1.45rem;
-    font-weight: 900;
-    line-height: 1;
-}
-
-.shop-size-help {
-    justify-self: start;
-}
-
-.shop-size-close {
-    justify-self: end;
-}
-
-.shop-size-help:hover,
-.shop-size-help:focus-visible,
-.shop-size-close:hover,
-.shop-size-close:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 0.12rem;
-}
-
-.shop-size-price {
-    margin: 0;
-    justify-self: center;
-    color: var(--text-1);
-    font-size: 0.9rem;
-    font-weight: 900;
-    line-height: 1;
-}
-
-.shop-size-options {
-    inline-size: min(100%, 18rem);
-    justify-self: center;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.shop-size-options button {
-    min-block-size: 3.35rem;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
-    color: var(--text-1);
-    font-size: 0.78rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: uppercase;
-}
-
-.shop-size-flip {
-    perspective: 32rem;
-}
-
-.shop-size-flip-inner {
-    position: relative;
-    inline-size: 100%;
-    block-size: 1em;
-    display: block;
-    transform-style: preserve-3d;
-    transition: transform 260ms cubic-bezier(.2, .8, .2, 1);
-    will-change: transform;
-}
-
-.shop-size-flip-face {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    backface-visibility: hidden;
-}
-
-.shop-size-flip-back {
-    transform: rotateX(180deg);
-}
-
-.shop-size-flip:hover .shop-size-flip-inner,
-.shop-size-flip:focus-visible .shop-size-flip-inner {
-    transform: rotateX(180deg);
-}
-
-.shop-size-options button:hover,
-.shop-size-options button:focus-visible,
-.shop-size-options button.is-selected {
-    outline: 2px solid var(--text-1);
-    outline-offset: 0.4rem;
-}
-
-.shop-quantity {
-    display: none;
-    justify-self: center;
-    grid-template-columns: 2.5rem minmax(2.5rem, auto) 2.5rem;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.shop-quantity button,
-.shop-quantity span {
-    min-block-size: 2.5rem;
-    display: inline-grid;
-    place-items: center;
-    padding-inline: 0.5rem;
-    background: transparent;
-    border: 0;
-    color: var(--text-1);
-    font-size: 1rem;
-    font-weight: 900;
-}
-
-.shop-quantity button {
-    cursor: pointer;
-    font-size: 1.35rem;
-}
-
-.shop-quantity button:hover,
-.shop-quantity button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 0.2rem;
-}
-
-.shop-size-info {
-    inline-size: min(100%, 22rem);
-    justify-self: center;
-    display: grid;
-    gap: 0.65rem;
-    text-align: center;
-}
-
-.shop-size-info h4,
-.shop-size-info p {
-    margin: 0;
-}
-
-.shop-size-info h4 {
-    font-size: 0.88rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: uppercase;
-}
-
-.shop-size-info p {
-    color: var(--text-2);
-    font-family: var(--font-mono);
-    font-size: 0.74rem;
-    font-weight: 900;
-    line-height: 1.35;
-    text-transform: uppercase;
-}
-
-.shop-size-info.is-collapsed p {
-    display: none;
-}
-
-.shop-size-add {
-    justify-self: center;
-    min-block-size: 2.25rem;
-    padding-inline: 0.8rem;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
-    color: var(--text-1);
-    font-size: 0.78rem;
-    font-weight: 900;
-    line-height: 1;
-    text-transform: uppercase;
-}
-
-.shop-size-add:hover,
-.shop-size-add:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 0.25rem;
 }
@@ -1041,6 +851,10 @@ body.shop-grid-text-revealing .shop-card-meta {
     display: flex;
     justify-content: flex-end;
     color: var(--text-1);
+    /* Clip the off-screen staged checkout pane (see .shop-bag-checkout) so it
+       can't add scroll width. The right-docked sheet's shadow is inside the
+       viewport, so it isn't affected. */
+    overflow: hidden;
 }
 
 .shop-bag[hidden] {
@@ -1050,9 +864,11 @@ body.shop-grid-text-revealing .shop-card-meta {
 .shop-bag-scrim {
     position: absolute;
     inset: 0;
-    background: color-mix(in oklab, var(--color-base-content) 24%, transparent);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
+    /* Solid dim, no backdrop-filter: a live blur is recomputed every frame the
+       backdrop changes, so while the Stripe Payment Element animates a
+       method switch it pegged the main thread on weak machines. A slightly
+       deeper solid tint reads the same without the per-frame cost. */
+    background: color-mix(in oklab, var(--color-base-content) 34%, transparent);
     animation: shop-bag-fade 0.25s ease;
 }
 
@@ -1098,9 +914,17 @@ body.shop-grid-text-revealing .shop-card-meta {
     inline-size: min(100vw, 26rem);
     border-inline-start: 1px solid var(--border-subtle);
     background: var(--surface-1);
+    /* Staged: rendered off-screen at full width (so the Stripe Elements mount +
+       warm up before checkout), out of the flex flow so the cart pane is
+       unaffected. Promoted into the flow + revealed when checkout is active. */
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: -9999px;
 }
 
 .shop-bag[data-bag-state="checkout"] .shop-bag-checkout {
+    position: relative;
+    inset-inline-start: auto;
     animation: shop-bag-slide-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -1113,6 +937,9 @@ body.shop-grid-text-revealing .shop-card-meta {
 
 .shop-cart-head h2 {
     margin: 0;
+    /* Title lives in the centre column so it's truly centred between the two
+       2.75rem icon gutters (not squeezed into the auto-placed first column). */
+    grid-column: 2;
     justify-self: center;
     font-size: 0.82rem;
     font-weight: 900;
@@ -1120,10 +947,15 @@ body.shop-grid-text-revealing .shop-card-meta {
     text-transform: uppercase;
 }
 
+/* Close (cart pane) and back (checkout pane) both live in the LEFT gutter, so
+   "dismiss / step back" is in a consistent spot across the bag's panes.
+   grid-row: 1 is essential in the cart head, where the button follows the <h2>
+   in the DOM but sits in column 1 — without it, sparse auto-flow wraps the
+   button to a second row (the X dropped below "YOUR BAG"). */
 .shop-cart-head .shop-icon-button {
-    grid-column: 3;
-    justify-self: end;
-    font-size: 1.2rem;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
 }
 
 .shop-cart-items {
@@ -1138,6 +970,86 @@ body.shop-grid-text-revealing .shop-card-meta {
     font-family: var(--font-sans);
     font-weight: 800;
     line-height: 1.35;
+}
+
+/* Empty-bag recommendation — fills the space a Clear button + total would have
+   wasted, and nudges with one featured cap. */
+.shop-cart-reco {
+    margin-block-start: 1rem;
+    padding: 1rem;
+    display: grid;
+    gap: 0.85rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-field, 0.5rem);
+    background: var(--surface-2);
+}
+
+.shop-cart-reco-kicker {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.shop-cart-reco-body {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.shop-cart-reco-img {
+    inline-size: 4.5rem;
+    block-size: auto;
+    aspect-ratio: 9 / 11;
+    object-fit: contain;
+    flex: none;
+    border-radius: 0.4rem;
+    background: var(--surface-1);
+}
+
+.shop-cart-reco-info {
+    display: grid;
+    gap: 0.35rem;
+    min-inline-size: 0;
+}
+
+.shop-cart-reco-info strong {
+    font-size: 0.82rem;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+
+.shop-cart-reco-price {
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: var(--text-2);
+}
+
+.shop-cart-reco-add {
+    inline-size: 100%;
+    min-block-size: 2.5rem;
+    padding: 0.7rem;
+    cursor: pointer;
+    border: none;
+    border-radius: var(--radius-field, 0.5rem);
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-size: 0.76rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.shop-cart-reco-add:hover {
+    filter: brightness(1.06);
+}
+
+.shop-cart-reco-add:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 0.2rem;
 }
 
 .shop-cart-list {
@@ -1206,6 +1118,14 @@ body.shop-grid-text-revealing .shop-card-meta {
     font-size: 0.9rem;
     line-height: 1;
     cursor: pointer;
+}
+
+/* SVG control glyphs (minus / plus / close) — viewBox-centred so they sit dead
+   centre in the button regardless of font metrics. */
+.shop-control-icon {
+    display: block;
+    inline-size: 0.9rem;
+    block-size: 0.9rem;
 }
 
 .shop-cart-qty-btn:hover,
@@ -1285,6 +1205,14 @@ body.shop-grid-text-revealing .shop-card-meta {
 
 .shop-cart-checkout:hover {
     filter: brightness(1.06);
+}
+
+/* Already in the checkout pane — the CTA is a no-op, so show it inert. */
+.shop-cart-checkout:disabled {
+    background: color-mix(in oklab, var(--color-primary) 38%, var(--surface-1));
+    color: color-mix(in oklab, var(--color-primary-content) 55%, transparent);
+    cursor: default;
+    filter: none;
 }
 
 body.shop-panel-open,
@@ -1687,7 +1615,10 @@ body.shop-cart-open {
 .mini-cap-brim {
     position: absolute;
     inset-block-end: 1px;
-    inset-inline-start: 1px;
+    /* Centre the brim under the crown (both now centred on the cap's midline)
+       so the chip reads straight-on instead of leaning. */
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
     inline-size: 19px;
     block-size: 6px;
     background: var(--cap);
@@ -1705,6 +1636,51 @@ body.shop-cart-open {
     border-radius: 50%;
     background: var(--accent);
     box-shadow: 0 0 0 0.5px var(--thread);
+}
+
+/* Mobile add-to-cart flourish: a mini-cap lobbed into the cart icon + an
+   "Added to cart" popover. Both are appended to <body> and animated entirely
+   on the compositor (transform/opacity via WAAPI in shop.js). */
+.shop-fly-cap {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    z-index: 120;
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+
+.shop-added-pop {
+    position: fixed;
+    z-index: 130;
+    padding: 0.5rem 0.72rem;
+    border-radius: var(--radius-field, 0.5rem);
+    background: var(--surface-1);
+    color: var(--text-1);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 0.5rem 1.5rem oklch(from var(--color-base-content) l c h / 0.24);
+    font-family: var(--font-sans, inherit);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    will-change: transform, opacity;
+}
+
+.shop-added-pop::before {
+    content: "";
+    position: absolute;
+    inset-block-start: -5px;
+    inset-inline-end: 14px;
+    inline-size: 10px;
+    block-size: 10px;
+    background: var(--surface-1);
+    border-inline-start: 1px solid var(--border-subtle);
+    border-block-start: 1px solid var(--border-subtle);
+    transform: rotate(45deg);
 }
 
 /* paged bag — checkout replaces the cart rail (back returns to it). Kicks in
