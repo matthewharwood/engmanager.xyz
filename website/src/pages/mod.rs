@@ -1,4 +1,5 @@
 pub mod articles;
+pub mod checkout;
 pub mod comments;
 pub mod homepage;
 pub mod not_found;

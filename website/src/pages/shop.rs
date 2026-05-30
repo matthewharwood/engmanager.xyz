@@ -1,3 +1,4 @@
+use axum::extract::State;
 use axum::http::header;
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
@@ -8,7 +9,7 @@ use super::{
     GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
     render_sitemap_link, render_theme_picker,
 };
-use crate::asset_url;
+use crate::{AppState, asset_url};
 
 const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
 const STORE_ORIGIN: &str = "https://store.engmanager.xyz";
@@ -46,7 +47,7 @@ const CAP_VIEWS: &[CapView] = &[
     },
 ];
 
-const SHOP_PRODUCTS: &[ShopProduct] = &[
+pub(crate) const SHOP_PRODUCTS: &[ShopProduct] = &[
     ShopProduct {
         slug: "engmanager-xyz",
         name: "ENGMANAGER.XYZ 🌀",
@@ -237,28 +238,43 @@ struct CapView {
 }
 
 #[derive(Clone, Copy)]
-struct ShopProduct {
-    slug: &'static str,
-    name: &'static str,
-    phrase: &'static str,
-    cap_color: &'static str,
-    thread_color: &'static str,
-    accent_color: &'static str,
-    price: u16,
-    description: &'static str,
+pub(crate) struct ShopProduct {
+    pub(crate) slug: &'static str,
+    pub(crate) name: &'static str,
+    pub(crate) phrase: &'static str,
+    pub(crate) cap_color: &'static str,
+    pub(crate) thread_color: &'static str,
+    pub(crate) accent_color: &'static str,
+    pub(crate) price: u16,
+    pub(crate) description: &'static str,
 }
 
-pub async fn index() -> Response {
-    ([(header::CACHE_CONTROL, SHOP_CACHE_CONTROL)], Html(page())).into_response()
+pub async fn index(State(state): State<AppState>) -> Response {
+    (
+        [(header::CACHE_CONTROL, SHOP_CACHE_CONTROL)],
+        Html(page(&state.stripe)),
+    )
+        .into_response()
 }
 
 pub fn supports_path(path: &str) -> bool {
     path == "/" || path.starts_with("/products/")
 }
 
-fn page() -> String {
+fn page(checkout: &crate::stripe::Checkout) -> String {
     let products = render_product_grid();
-    let data = HtmlFragment::new(format!("window.__shopProducts={};", product_data_json()));
+    // One island for the catalog + the Stripe publishable key, so the inline
+    // checkout (in the bag drawer) can mount Elements without a page load.
+    let data = HtmlFragment::new(format!(
+        "window.__shopProducts={};window.__checkout={};",
+        product_data_json(),
+        json!({
+            "publishableKey": checkout.publishable_key(),
+            "enabled": checkout.is_enabled(),
+            "currency": "usd",
+            "returnPath": "/",
+        }),
+    ));
 
     html! {
         <!DOCTYPE html>
@@ -289,6 +305,9 @@ fn page() -> String {
                 <script src={ asset_url("js/theme-toggle.js") }></script>
                 { render_sfx_urls() }
                 <script>{ data }</script>
+                <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+                <link rel="preconnect" href="https://api.stripe.com" crossorigin />
+                <script src="https://js.stripe.com/v3" defer></script>
                 <script src={ asset_url("js/audio.js") } defer></script>
                 <script src={ asset_url("js/shop.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
@@ -322,7 +341,7 @@ fn page() -> String {
                     </section>
                 </main>
                 { render_product_panel() }
-                { render_cart_drawer() }
+                { render_bag() }
                 <div class="shop-backdrop" data-shop-backdrop hidden></div>
             </body>
         </html>
@@ -409,12 +428,18 @@ fn render_product_panel() -> HtmlFragment {
                                 type="button"
                                 data-image-advance
                                 aria-label="Next product image">
-                            <img data-product-image
-                                 src=""
-                                 alt=""
-                                 width="900"
-                                 height="1100"
-                                 decoding="async" />
+                            <div class="shop-carousel-track" data-carousel-track>
+                                <img class="shop-carousel-cell" data-cell="prev" alt="" decoding="async" />
+                                <img class="shop-carousel-cell"
+                                     data-product-image
+                                     data-cell="main"
+                                     src=""
+                                     alt=""
+                                     width="900"
+                                     height="1100"
+                                     decoding="async" />
+                                <img class="shop-carousel-cell" data-cell="next" alt="" decoding="async" />
+                            </div>
                         </button>
                         <figcaption data-image-caption>"Choose a cap."</figcaption>
                     </figure>
@@ -448,13 +473,11 @@ fn render_product_panel() -> HtmlFragment {
                         <div class="shop-panel-actions">
                             <button class="shop-plus-button"
                                     type="button"
-                                data-size-toggle
-                                aria-expanded="false"
-                                aria-controls="shop-size-sheet">
-                            "+"
-                        </button>
-                            <button class="shop-add-button" type="button" data-add-cart>
-                                "Add selected"
+                                    data-size-toggle
+                                    aria-label="Select size and add to cart"
+                                    aria-expanded="false"
+                                    aria-controls="shop-size-sheet">
+                                "+"
                             </button>
                         </div>
                     </div>
@@ -465,9 +488,7 @@ fn render_product_panel() -> HtmlFragment {
                                  tabindex="-1"
                                  hidden>
                             <header class="shop-size-head">
-                                <button class="shop-size-help" type="button" data-info-toggle aria-label="Toggle information">
-                                    "?"
-                                </button>
+                                <span class="shop-size-head-spacer" aria-hidden="true"></span>
                                 <h3>"SELECT SIZE"</h3>
                                 <button class="shop-size-close" type="button" data-close-size aria-label="Close product options">
                                     "x"
@@ -486,53 +507,136 @@ fn render_product_panel() -> HtmlFragment {
                                     </span>
                                 </button>
                             </div>
-                            <section class="shop-size-info is-collapsed" data-size-info>
-                                <h4>"INFORMATION"</h4>
-                                <p data-size-info-copy>
-                                    "Low-profile dad cap, front embroidery, adjustable back strap, one size fits most adults."
-                                </p>
-                            </section>
-                            <button class="shop-size-add" type="button" data-add-cart>
-                                "Add to cart"
-                            </button>
                         </section>
                     </section>
                 </div>
             </div>
+            <div class="shop-paginate" aria-hidden="true">
+                <span class="shop-paginate-arrow shop-paginate-prev" data-edge-arrow="prev">"‹"</span>
+                <span class="shop-paginate-arrow shop-paginate-next" data-edge-arrow="next">"›"</span>
+                <span class="shop-paginate-arrow shop-paginate-up" data-edge-arrow="up">"⌃"</span>
+                <span class="shop-paginate-arrow shop-paginate-down" data-edge-arrow="down">"⌄"</span>
+            </div>
         </aside>
     }
 }
 
-fn render_cart_drawer() -> HtmlFragment {
+// The bag: a right-docked sheet with two side-by-side panes. `data-bag-state`
+// (closed | cart | checkout) is driven by `?bag=` in the URL; in checkout the
+// sheet widens and the right pane is revealed additively. shop.js owns the cart
+// rail (left) + the inline Stripe Elements flow (right).
+fn render_bag() -> HtmlFragment {
     view! {
-        <aside class="shop-cart-drawer"
-               data-cart-drawer
+        <aside class="shop-bag"
+               data-bag
+               data-bag-state="closed"
                role="dialog"
                aria-modal="true"
-               aria-labelledby="shop-cart-title"
+               aria-label="Your bag and checkout"
                aria-hidden="true"
                hidden>
-            <header class="shop-cart-head">
-                <h2 id="shop-cart-title">"Cart"</h2>
-                <button class="shop-icon-button"
-                        type="button"
-                        data-close-cart
-                        aria-label="Close cart">
-                    "x"
-                </button>
-            </header>
-            <div class="shop-cart-items" data-cart-items>
-                <p class="shop-cart-empty">"Your cap stack is empty."</p>
+            <div class="shop-bag-scrim" data-bag-scrim></div>
+            <div class="shop-bag-sheet">
+                <section class="shop-bag-pane shop-bag-cart" data-bag-cart aria-label="Your bag">
+                    <header class="shop-cart-head">
+                        <h2 id="shop-cart-title">"Your bag"</h2>
+                        <button class="shop-icon-button"
+                                type="button"
+                                data-close-bag
+                                aria-label="Close bag">
+                            "x"
+                        </button>
+                    </header>
+                    <div class="shop-cart-items" data-cart-items>
+                        <p class="shop-cart-empty">"Your cap stack is empty."</p>
+                    </div>
+                    <footer class="shop-cart-foot">
+                        <div class="shop-cart-foot-row">
+                            <p data-cart-total>"$0"</p>
+                            <button type="button" data-cart-clear>"Clear"</button>
+                        </div>
+                        <button class="shop-cart-checkout" type="button" data-bag-checkout hidden>
+                            "Checkout"
+                        </button>
+                    </footer>
+                    <div class="shop-bag-stamp" data-bag-stamp aria-hidden="true">"PAID"</div>
+                </section>
+
+                <section class="shop-bag-pane shop-bag-checkout"
+                         data-bag-checkout-pane
+                         aria-label="Checkout"
+                         hidden>
+                    <header class="shop-cart-head shop-checkout-head">
+                        <button class="shop-icon-button"
+                                type="button"
+                                data-bag-back
+                                aria-label="Back to bag">
+                            "‹"
+                        </button>
+                        <h2 id="shop-checkout-title">"Checkout"</h2>
+                    </header>
+                    <div class="shop-checkout-scroll">
+                        <div class="shop-checkout-notice" data-checkout-disabled hidden>
+                            <p>"Payments aren’t switched on in this environment yet. The caps are still very real."</p>
+                        </div>
+                        <form class="shop-checkout-form"
+                              data-checkout-form
+                              aria-labelledby="shop-checkout-title"
+                              novalidate>
+                            <div class="shop-checkout-field">
+                                <label for="shop-checkout-email">"Email"</label>
+                                <input id="shop-checkout-email"
+                                       name="email"
+                                       type="email"
+                                       inputmode="email"
+                                       autocomplete="email"
+                                       spellcheck="false"
+                                       placeholder="you@company.com"
+                                       aria-describedby="shop-checkout-email-hint"
+                                       data-checkout-email
+                                       required />
+                                <p id="shop-checkout-email-hint" class="shop-checkout-hint">"Your confirmation and tracking land here."</p>
+                            </div>
+                            <div class="shop-checkout-block">
+                                <h3 class="shop-checkout-legend">"Ship to"</h3>
+                                <div class="shop-checkout-element" data-address-element>
+                                    <div class="shop-checkout-skeleton" aria-hidden="true"></div>
+                                </div>
+                            </div>
+                            <div class="shop-checkout-block">
+                                <h3 class="shop-checkout-legend">"Payment"</h3>
+                                <div class="shop-checkout-element" data-payment-element>
+                                    <div class="shop-checkout-skeleton" aria-hidden="true"></div>
+                                </div>
+                            </div>
+                            <p class="shop-checkout-error" data-checkout-error role="alert" aria-live="assertive" hidden></p>
+                            <button class="shop-checkout-pay"
+                                    type="submit"
+                                    data-checkout-pay
+                                    aria-describedby="shop-checkout-secure"
+                                    disabled>
+                                <span class="shop-checkout-pay-spinner" aria-hidden="true" data-pay-spinner hidden></span>
+                                <span data-pay-label>"Pay"</span>
+                            </button>
+                            <p id="shop-checkout-secure" class="shop-checkout-secure">
+                                "🔒 Encrypted by Stripe · test card 4242 4242 4242 4242"
+                            </p>
+                        </form>
+                        <div class="shop-checkout-done" data-checkout-done role="status" aria-live="polite" hidden>
+                            <div class="shop-checkout-check" aria-hidden="true"></div>
+                            <p class="shop-checkout-done-kicker">"ORDER CONFIRMED"</p>
+                            <h3 class="shop-checkout-done-title">"Shipped to the embroidery queue"</h3>
+                            <p class="shop-checkout-done-sub" data-checkout-done-sub></p>
+                            <button class="shop-cart-checkout" type="button" data-bag-done-close>"Keep shopping"</button>
+                        </div>
+                    </div>
+                </section>
             </div>
-            <footer class="shop-cart-foot">
-                <p data-cart-total>"$0"</p>
-                <button type="button" data-cart-clear>"Clear"</button>
-            </footer>
         </aside>
     }
 }
 
-fn product_data_json() -> String {
+pub(crate) fn product_data_json() -> String {
     let products = SHOP_PRODUCTS
         .iter()
         .map(|product| {
@@ -591,7 +695,7 @@ mod tests {
 
     #[test]
     fn shop_page_uses_site_assets_and_preview_metadata() {
-        let html = page();
+        let html = page(&crate::stripe::Checkout::from_env());
 
         assert!(html.contains("<title>Store · ENGMANAGER.XYZ</title>"));
         assert!(html.contains(r#"<meta name="robots" content="noindex,follow">"#));

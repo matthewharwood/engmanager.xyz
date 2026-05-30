@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::http::{HeaderMap, HeaderName, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -18,6 +18,7 @@ pub mod experiences;
 mod pages;
 pub mod search;
 mod sitemap;
+mod stripe;
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
 // only server the site embeds; the refresh task resolves the guild ID
@@ -60,6 +61,7 @@ pub struct JsDist;
 pub struct AppState {
     pub search: Arc<search::SearchEngine>,
     pub comments: Arc<comments::CommentStore>,
+    pub stripe: Arc<stripe::Checkout>,
 }
 
 // Three-tier lookup: `css/` paths come from the lightningcss-built
@@ -286,34 +288,34 @@ async fn html_cache_layer(
     response
 }
 
-async fn root_handler(headers: HeaderMap) -> Response {
+async fn root_handler(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
     if is_shop_host(host) {
-        pages::shop::index().await
+        pages::shop::index(State(state)).await
     } else {
         pages::homepage::index().await.into_response()
     }
 }
 
-fn is_shop_host(host: &str) -> bool {
+pub(crate) fn is_shop_host(host: &str) -> bool {
     let host_without_port = host.split(':').next().unwrap_or(host);
     SHOP_HOSTS
         .iter()
         .any(|shop_host| host_without_port.eq_ignore_ascii_case(shop_host))
 }
 
-async fn fallback_handler(headers: HeaderMap, uri: Uri) -> Response {
+async fn fallback_handler(State(state): State<AppState>, headers: HeaderMap, uri: Uri) -> Response {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
     if is_shop_host(host) && pages::shop::supports_path(uri.path()) {
-        pages::shop::index().await
+        pages::shop::index(State(state)).await
     } else {
         pages::not_found::handler().await
     }
@@ -344,13 +346,13 @@ async fn security_headers_layer(
     headers.insert(
         HeaderName::from_static("permissions-policy"),
         axum::http::HeaderValue::from_static(
-            "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=()",
+            "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(self \"https://js.stripe.com\"), usb=(), xr-spatial-tracking=()",
         ),
     );
     headers.insert(
         HeaderName::from_static("content-security-policy-report-only"),
         axum::http::HeaderValue::from_static(
-            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; media-src 'self'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests",
+            "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://js.stripe.com https://hooks.stripe.com; media-src 'self'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests",
         ),
     );
     response
@@ -358,6 +360,26 @@ async fn security_headers_layer(
 
 #[tokio::main]
 async fn main() {
+    // Load local dev env from `.env.local` (preferred) then `.env`, before any
+    // `env::var` read below (the comment store reads COMMENTS_DB_*; Stripe code
+    // reads STRIPE_*). In production (Render) these files don't exist, so this
+    // is a no-op and real dashboard env vars are used. dotenvy never overrides
+    // variables already present in the environment, so exported vars always win.
+    let _ = dotenvy::from_filename(".env.local");
+    let _ = dotenvy::dotenv();
+
+    // Subcommand: `website stripe-sync …` upserts the shop catalog into Stripe
+    // and exits, instead of starting the server. Kept in-process so it reads
+    // the same SHOP_PRODUCTS source of truth.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("stripe-sync") {
+        if let Err(err) = stripe::run(stripe::SyncOptions::from_args(&args)).await {
+            eprintln!("stripe-sync failed: {err:#}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     // Debug-only: panic at startup if any article slice carries duplicate
     // tags. Release builds skip this since `unique_tags` dedups at render
     // time anyway; this is just a faster signal for the author.
@@ -382,7 +404,14 @@ async fn main() {
         search::SearchEngine::build_in_memory(pages::articles::ARTICLES, &existing_comments)
             .expect("search index must build at startup"),
     );
-    let state = AppState { search, comments };
+    // Stripe runtime context for the on-site checkout (reused client + keys).
+    // Built from env; absent keys just leave checkout reporting "unavailable".
+    let stripe = Arc::new(stripe::Checkout::from_env());
+    let state = AppState {
+        search,
+        comments,
+        stripe,
+    };
 
     let app = Router::new()
         .route("/", get(root_handler))
@@ -394,6 +423,10 @@ async fn main() {
             "/api/articles/{slug}/comments",
             get(pages::comments::list).post(pages::comments::create),
         )
+        .route("/checkout", get(pages::checkout::page))
+        .route("/checkout/success", get(pages::checkout::success))
+        .route("/api/checkout/intent", post(pages::checkout::create_intent))
+        .route("/api/stripe/webhook", post(pages::checkout::webhook))
         .route("/sitemap.xml", get(sitemap::sitemap_handler))
         .route("/sitemaps.xml", get(sitemap::sitemap_handler))
         .route("/robots.txt", get(sitemap::robots_handler))

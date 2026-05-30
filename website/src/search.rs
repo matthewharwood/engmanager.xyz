@@ -17,6 +17,11 @@ use crate::comments::CommentRecord;
 use crate::pages::articles::{
     Article, ArticleDate, Category, Tag, article_markdown, public_articles,
 };
+use crate::pages::shop::{SHOP_PRODUCTS, ShopProduct};
+
+// Shop products live on the dedicated shop host; search results link there with
+// `?image=front`, and shop.js's deep-link init opens that product's view.
+const SHOP_PRODUCT_ORIGIN: &str = "https://shop.engmanager.xyz";
 
 const ARTICLE_SEARCH_LIMIT: usize = 1_000;
 const COMMENT_SEARCH_LIMIT: usize = 1_000;
@@ -96,8 +101,10 @@ pub struct TypeaheadHit {
 pub struct SearchResults {
     pub article_hits: Vec<ArticleSearchHit>,
     pub comment_hits: Vec<CommentSearchHit>,
+    pub product_hits: Vec<ProductSearchHit>,
     pub total_articles: usize,
     pub total_comments: usize,
+    pub total_products: usize,
     pub facets: FacetCounts,
     pub page: usize,
     pub page_size: usize,
@@ -122,6 +129,17 @@ pub struct CommentSearchHit {
     pub snippet: String,
     pub quote_exact: String,
     pub created_at_ms: i64,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProductSearchHit {
+    pub name: String,
+    pub description: String,
+    pub price: u16,
+    pub url: String,
+    pub cap_color: String,
+    pub thread_color: String,
+    pub accent_color: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -277,6 +295,18 @@ impl SearchEngine {
                 }),
         );
 
+        hits.extend(matching_products(&needle).into_iter().map(|(rank, product)| {
+            (
+                rank,
+                TypeaheadHit {
+                    kind: "product",
+                    title: product.name.to_string(),
+                    detail: product.description.to_string(),
+                    url: product_url(product.slug),
+                },
+            )
+        }));
+
         hits.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.title.cmp(&b.1.title)));
         hits.into_iter().take(limit).map(|(_, hit)| hit).collect()
     }
@@ -316,11 +346,38 @@ impl SearchEngine {
             })
             .collect();
 
+        // Products are a small fixed set — match by substring (no index needed).
+        // Only surfaced for an actual text query, not when browsing/ filtering.
+        let (product_hits, total_products) = if query.q.trim().is_empty() {
+            (Vec::new(), 0)
+        } else {
+            let needle = query.q.trim().to_lowercase();
+            let mut matches = matching_products(&needle);
+            matches.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.name.cmp(b.1.name)));
+            let total = matches.len();
+            let hits = matches
+                .into_iter()
+                .take(PAGE_SIZE)
+                .map(|(_, product)| ProductSearchHit {
+                    name: product.name.to_string(),
+                    description: product.description.to_string(),
+                    price: product.price,
+                    url: product_url(product.slug),
+                    cap_color: product.cap_color.to_string(),
+                    thread_color: product.thread_color.to_string(),
+                    accent_color: product.accent_color.to_string(),
+                })
+                .collect();
+            (hits, total)
+        };
+
         Ok(SearchResults {
             total_articles: article_matches.len(),
             total_comments: comment_matches.len(),
+            total_products,
             article_hits,
             comment_hits,
+            product_hits,
             facets,
             page,
             page_size: PAGE_SIZE,
@@ -570,6 +627,43 @@ pub fn markdown_to_plaintext(markdown: &str) -> String {
         }
     }
     output.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Match shop products by substring across name/phrase/description/slug plus a
+/// few synthetic keywords ("dad cap", "hat", …). Returns (rank, product) with a
+/// lower rank = stronger match. Shared by the typeahead and the full search page.
+fn matching_products(needle: &str) -> Vec<(u8, &'static ShopProduct)> {
+    if needle.is_empty() {
+        return Vec::new();
+    }
+    SHOP_PRODUCTS
+        .iter()
+        .filter_map(|product| {
+            let name = product.name.to_lowercase();
+            let phrase = product.phrase.to_lowercase();
+            let slug_words = product.slug.replace('-', " ");
+            let rank = if name.starts_with(needle) || slug_words.starts_with(needle) {
+                0
+            } else if name.contains(needle) || phrase.contains(needle) {
+                1
+            } else {
+                let haystack = format!(
+                    "{name} {phrase} {} {slug_words} dad cap caps hat hats embroidered merch store",
+                    product.description.to_lowercase()
+                );
+                if haystack.contains(needle) {
+                    2
+                } else {
+                    return None;
+                }
+            };
+            Some((rank, product))
+        })
+        .collect()
+}
+
+fn product_url(slug: &str) -> String {
+    format!("{SHOP_PRODUCT_ORIGIN}/products/{slug}?image=front")
 }
 
 fn snippet_for(primary: &str, fallback: &str, q: &str) -> String {

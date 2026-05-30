@@ -33,20 +33,30 @@ const selectors = {
     productDescription: document.querySelector("[data-product-description]"),
     sizeSummary: document.querySelector("[data-size-summary]"),
     imageStage: document.querySelector("[data-image-advance]"),
-    productImage: document.querySelector("[data-product-image]"),
+    carouselTrack: document.querySelector("[data-carousel-track]"),
+    productImage: document.querySelector('[data-cell="main"]'),
+    cellPrev: document.querySelector('[data-cell="prev"]'),
+    cellNext: document.querySelector('[data-cell="next"]'),
     imageCaption: document.querySelector("[data-image-caption]"),
     imageThumbs: document.querySelector("[data-image-thumbs]"),
+    edgeArrowPrev: document.querySelector('[data-edge-arrow="prev"]'),
+    edgeArrowNext: document.querySelector('[data-edge-arrow="next"]'),
+    edgeArrowUp: document.querySelector('[data-edge-arrow="up"]'),
+    edgeArrowDown: document.querySelector('[data-edge-arrow="down"]'),
     sizeSheet: document.querySelector("[data-size-sheet]"),
     sizeToggle: document.querySelector("[data-size-toggle]"),
     sizePrice: document.querySelector("[data-size-price]"),
-    sizeInfo: document.querySelector("[data-size-info]"),
-    sizeInfoCopy: document.querySelector("[data-size-info-copy]"),
     quantityValue: document.querySelector("[data-quantity-value]"),
     cartToggles: document.querySelectorAll("[data-cart-toggle]"),
-    cartDrawer: document.querySelector("[data-cart-drawer]"),
     cartCounts: document.querySelectorAll("[data-cart-count]"),
     cartItems: document.querySelector("[data-cart-items]"),
     cartTotal: document.querySelector("[data-cart-total]"),
+    bag: document.querySelector("[data-bag]"),
+    bagSheet: document.querySelector(".shop-bag-sheet"),
+    bagCart: document.querySelector("[data-bag-cart]"),
+    bagCheckoutPane: document.querySelector("[data-bag-checkout-pane]"),
+    bagScrim: document.querySelector("[data-bag-scrim]"),
+    bagCheckoutBtn: document.querySelector("[data-bag-checkout]"),
 };
 
 let currentProduct = null;
@@ -54,6 +64,17 @@ let currentImageIndex = 0;
 let selectedSize = "ONE SIZE";
 let quantity = 1;
 let cart = readCart();
+// Inline checkout (Stripe Elements in the bag's right pane) — lazily mounted.
+const CHECKOUT = window.__checkout || {};
+let stripe = null;
+let elements = null;
+let paymentElement = null;
+let addressElement = null;
+let checkoutMounted = false;
+let checkoutReady = false;
+let checkoutBusy = false;
+let checkoutAmount = 0;
+let amountUpdateTimer = null;
 let activeCarouselAnimation = null;
 let carouselMotion = { x: 0, scale: 1, rotate: 0, opacity: 1 };
 let dragState = null;
@@ -97,19 +118,41 @@ function getProductFromLocation() {
     };
 }
 
+// The bag (cart/checkout) and the product (path) are orthogonal URL dimensions.
+// Each URL builder preserves the other dimension so back/forward stays coherent.
+function currentBagFromUrl() {
+    const bag = new URLSearchParams(window.location.search).get("bag");
+    return bag === "cart" || bag === "checkout" ? bag : null;
+}
+
 function productUrl(product, imageId) {
     const url = new URL(window.location.href);
+    const bag = currentBagFromUrl();
     url.pathname = `/products/${encodeURIComponent(product.slug)}`;
     url.search = "";
     url.searchParams.set("image", imageId || "front");
+    if (bag) url.searchParams.set("bag", bag);
     url.hash = "";
     return url;
 }
 
 function homeUrl() {
     const url = new URL(window.location.href);
+    const bag = currentBagFromUrl();
     url.pathname = "/";
     url.search = "";
+    if (bag) url.searchParams.set("bag", bag);
+    url.hash = "";
+    return url;
+}
+
+// Toggle only the bag dimension, preserving the product path/image.
+function bagUrl(next) {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    if (next) params.set("bag", next);
+    else params.delete("bag");
+    url.search = params.toString();
     url.hash = "";
     return url;
 }
@@ -130,7 +173,12 @@ function isProductOpen() {
 }
 
 function isCartOpen() {
-    return selectors.cartDrawer && !selectors.cartDrawer.hidden;
+    // "Cart open" now means the bag sheet (cart or checkout pane) is open.
+    return selectors.bag && !selectors.bag.hidden;
+}
+
+function bagState() {
+    return selectors.bag?.dataset.bagState || "closed";
 }
 
 function backgroundFocusRoots() {
@@ -203,7 +251,9 @@ function trapFocusIn(container, event) {
 }
 
 function activeFocusTrapContainer() {
-    if (isCartOpen()) return selectors.cartDrawer;
+    // Trapping over the whole bag covers both panes; hidden-pane controls are
+    // filtered out by isVisibleFocusable, so cart-only state traps just the cart.
+    if (isCartOpen()) return selectors.bag;
     if (isProductOpen()) return selectors.panel;
     return null;
 }
@@ -467,6 +517,10 @@ function crossfadeProductImageToFront() {
     const frontIndex = imageIndex(currentProduct, "front");
     if (currentImageIndex === frontIndex) return null;
 
+    // Center the track before measuring — productImage (the main cell) may be
+    // mid-drag/peek, which would misposition the crossfade overlay.
+    stopCarouselAnimation();
+    setCarouselMotion(0, 1, 0, 1);
     const rect = rectForElement(selectors.productImage);
     const currentSrc = selectors.productImage.currentSrc || selectors.productImage.src;
     if (!rect || !currentSrc) {
@@ -513,6 +567,8 @@ async function animateProductCameraOpen(options) {
 
     await waitForImageReady(selectors.productImage);
 
+    // Ensure the track is centered before measuring the zoom target.
+    setCarouselMotion(0, 1, 0, 1);
     const targetRect = rectForElement(selectors.productImage);
     const camera = targetRect ? cloneCameraWorld(sourceElement || card?.querySelector("img")) : null;
     if (!camera || !targetRect) {
@@ -599,6 +655,10 @@ async function animateProductCameraOpen(options) {
 function animateProductCameraClose(options = {}) {
     const product = currentProduct;
     const slug = product?.slug || lastOpenedProductSlug;
+    // Center the carousel before measuring the zoom source rect (the main cell
+    // may be offset mid-drag/peek, which would zoom from the wrong place).
+    stopCarouselAnimation();
+    setCarouselMotion(0, 1, 0, 1);
     const sourceImage = selectors.productImage;
     const targetImage = cardImageForSlug(slug);
     const sourceRect = rectForElement(sourceImage);
@@ -886,6 +946,7 @@ function switchProductByGridRows(rowDelta, options = {}) {
     if (productSwitching || productTransitionActive || !currentProduct) return;
     const nextProduct = productByGridRows(rowDelta);
     if (!nextProduct) return;
+    preloadProductImages(nextProduct);
 
     const travel = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
     const exitY = rowDelta > 0 ? travel * 0.22 : -travel * 0.22;
@@ -917,6 +978,7 @@ function switchProductByIndexDelta(delta, options = {}) {
     if (productSwitching || productTransitionActive || !currentProduct) return;
     const nextProduct = productByIndexDelta(delta);
     if (!nextProduct) return;
+    preloadProductImages(nextProduct);
 
     const travel = selectors.productLayout?.getBoundingClientRect().width || window.innerWidth || 720;
     const exitX = delta > 0 ? -travel * 0.18 : travel * 0.18;
@@ -986,6 +1048,8 @@ function onProductPointerDown(event) {
         opacity: 1,
         dragging: false,
         captured: false,
+        // Cache the layout height once per gesture (no per-move reflow).
+        height: selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720,
     };
 }
 
@@ -1017,7 +1081,7 @@ function onProductPointerMove(event) {
     productSwipeState.lastY = event.clientY;
     productSwipeState.lastTime = now;
 
-    const height = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
+    const height = productSwipeState.height || window.innerHeight || 720;
     const limit = Math.max(110, height * 0.2);
     const eased = limit * Math.tanh(dy / limit);
     const progress = Math.min(1, Math.abs(eased) / limit);
@@ -1025,6 +1089,8 @@ function onProductPointerMove(event) {
     productSwipeState.scale = 1 - progress * 0.018;
     productSwipeState.opacity = 1 - progress * 0.16;
     setProductSwitchMotion(productSwipeState.y, productSwipeState.scale, productSwipeState.opacity);
+    // Column pagination feedback: reveal the up/down arrow as you pull.
+    revealVerticalArrow(dy > 0 ? "down" : "up", progress);
 }
 
 function onProductPointerEnd(event) {
@@ -1032,10 +1098,11 @@ function onProductPointerEnd(event) {
     const state = productSwipeState;
     productSwipeState = null;
     if (state.captured) releaseProductPointer(event.pointerId);
+    clearVerticalArrows();
 
     if (!state.dragging) return;
 
-    const height = selectors.productLayout?.getBoundingClientRect().height || window.innerHeight || 720;
+    const height = state.height || window.innerHeight || 720;
     const dy = event.clientY - state.startY;
     const projected = dy + state.velocityY * 220;
     const threshold = Math.max(58, height * 0.12);
@@ -1070,6 +1137,34 @@ function onProductPointerEnd(event) {
     }
 }
 
+// --- eager image loading ----------------------------------------------------
+// Warm the browser cache so navigating images / paginating products snaps in
+// without a flash. Cheap — just detached Image() objects warming HTTP cache.
+const preloadedImages = new Set();
+
+function preloadImage(url) {
+    if (!url || preloadedImages.has(url)) return;
+    preloadedImages.add(url);
+    const img = new Image();
+    img.decoding = "async";
+    img.src = url;
+}
+
+function preloadProductImages(product) {
+    product?.images?.forEach((image) => preloadImage(image.url));
+}
+
+function preloadNeighborProducts() {
+    // Front image of every product a swipe could jump to, so the first
+    // pagination snaps clean even before the in-swipe preload kicks in.
+    [
+        productByIndexDelta(1),
+        productByIndexDelta(-1),
+        productByGridRows(1),
+        productByGridRows(-1),
+    ].forEach((product) => preloadImage(product?.images?.[0]?.url));
+}
+
 function openProduct(product, imageId = "front", options = {}) {
     if (!product || !selectors.panel) return;
     const { replace = false, push = true, focus = true } = options;
@@ -1077,6 +1172,10 @@ function openProduct(product, imageId = "front", options = {}) {
     currentImageIndex = imageIndex(product, imageId);
     selectedSize = selectedSize || "ONE SIZE";
     quantity = 1;
+
+    // Eagerly warm this product's full image set + neighbors' front images.
+    preloadProductImages(product);
+    preloadNeighborProducts();
 
     renderProduct(product);
     selectImage(currentImageIndex, { updateUrl: false });
@@ -1108,6 +1207,8 @@ function closeProduct(options = {}) {
     const returnSlug = lastOpenedProductSlug || currentProduct?.slug;
     disposePreparedCloseCamera();
     closeSizeSheet();
+    clearEdgeArrows();
+    clearVerticalArrows();
     productSwitching = false;
     setProductSwitching(false);
     selectors.panel.hidden = true;
@@ -1130,10 +1231,6 @@ function renderProduct(product) {
     setText(selectors.productPrice, product.priceLabel);
     setText(selectors.productDescription, product.description);
     setText(selectors.sizePrice, product.priceLabel);
-    setText(
-        selectors.sizeInfoCopy,
-        `Low-profile dad cap with front embroidery, adjustable back strap, and one-size fit. ${product.phrase} ships here as a storefront concept.`,
-    );
     renderThumbs(product);
 }
 
@@ -1169,14 +1266,38 @@ function imageIndex(product, imageId) {
     return index >= 0 ? index : 0;
 }
 
+// Peek cells flank the centered main cell so dragging reveals the adjacent
+// image. Empty (boundary) cells stay in layout via visibility:hidden so the
+// main cell never shifts off-center.
+function setCell(cell, image) {
+    if (!cell) return;
+    if (image) {
+        if (cell.getAttribute("src") !== image.url) cell.src = image.url;
+        cell.style.visibility = "visible";
+    } else {
+        cell.removeAttribute("src");
+        cell.style.visibility = "hidden";
+    }
+}
+
+function setCells() {
+    const images = currentProduct?.images || [];
+    setCell(selectors.cellPrev, images[currentImageIndex - 1]);
+    setCell(selectors.cellNext, images[currentImageIndex + 1]);
+}
+
 function selectImage(index, options = {}) {
     if (!currentProduct || !selectors.productImage) return;
     const { updateUrl = true, resetMotion = true } = options;
     const images = currentProduct.images;
-    currentImageIndex = (index + images.length) % images.length;
+    // Within a product the index never wraps — overshooting a boundary
+    // paginates to an adjacent product instead (handled by the gesture logic).
+    currentImageIndex = Math.max(0, Math.min(index, images.length - 1));
     const image = images[currentImageIndex];
     selectors.productImage.src = image.url;
     selectors.productImage.alt = `${currentProduct.name} embroidered dad cap ${image.label.toLowerCase()} view`;
+    selectors.productImage.style.visibility = "visible";
+    setCells();
     setText(selectors.imageCaption, image.caption);
 
     selectors.imageThumbs?.querySelectorAll("[data-image-index]").forEach((button) => {
@@ -1205,9 +1326,10 @@ function carouselWidth() {
 
 function setCarouselMotion(x, scale = 1, rotate = 0, opacity = 1) {
     carouselMotion = { x, scale, rotate, opacity };
-    if (!selectors.imageStage) return;
-    selectors.imageStage.style.transform = `translate3d(${x}px, 0, 0) scale(${scale}) rotate(${rotate}deg)`;
-    selectors.imageStage.style.opacity = String(opacity);
+    if (!selectors.carouselTrack) return;
+    // Base offset of -100% centers the main cell; x is the live drag delta (px).
+    selectors.carouselTrack.style.transform = `translate3d(calc(-100% + ${x}px), 0, 0) scale(${scale}) rotate(${rotate}deg)`;
+    selectors.carouselTrack.style.opacity = String(opacity);
 }
 
 function stopCarouselAnimation() {
@@ -1231,14 +1353,14 @@ function animateCarouselMotion(to, options = {}) {
         return null;
     }
 
-    const animation = selectors.imageStage?.animate(
+    const animation = selectors.carouselTrack?.animate(
         [
             {
-                transform: `translate3d(${from.x}px, 0, 0) scale(${from.scale}) rotate(${from.rotate}deg)`,
+                transform: `translate3d(calc(-100% + ${from.x}px), 0, 0) scale(${from.scale}) rotate(${from.rotate}deg)`,
                 opacity: from.opacity,
             },
             {
-                transform: `translate3d(${to.x ?? 0}px, 0, 0) scale(${to.scale ?? 1}) rotate(${to.rotate ?? 0}deg)`,
+                transform: `translate3d(calc(-100% + ${to.x ?? 0}px), 0, 0) scale(${to.scale ?? 1}) rotate(${to.rotate ?? 0}deg)`,
                 opacity: to.opacity ?? 1,
             },
         ],
@@ -1272,49 +1394,27 @@ function animateCarouselMotion(to, options = {}) {
     return activeCarouselAnimation;
 }
 
-function transitionToImage(index, direction, options = {}) {
+function transitionToImage(index, _direction, options = {}) {
     if (!currentProduct) return;
-    const images = currentProduct.images;
-    const nextIndex = (index + images.length) % images.length;
-    if (nextIndex === currentImageIndex) {
-        animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 220 });
+    const images = currentProduct.images || [];
+    const target = Math.max(0, Math.min(index, images.length - 1));
+    if (target === currentImageIndex) {
+        animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 240 });
         return;
     }
-
     if (reduceMotion.matches) {
-        selectImage(nextIndex);
+        selectImage(target);
         return;
     }
-
+    // Slide the track one cell toward the target, then rebase. The target cell
+    // is already centered + preloaded, so re-centering main is seamless.
     const width = carouselWidth();
-    const travel = options.travel ?? width * 0.34;
-    const exitX = direction > 0 ? -travel : travel;
-    const enterX = direction > 0 ? width * 0.18 : -width * 0.18;
-
+    const slideX = target > currentImageIndex ? -width : width;
     animateCarouselMotion(
+        { x: slideX, scale: 1, rotate: 0, opacity: 1 },
         {
-            x: exitX,
-            scale: 0.985,
-            rotate: direction > 0 ? -1.4 : 1.4,
-            opacity: 0.84,
-        },
-        {
-            duration: options.exitDuration ?? 150,
-            onComplete: () => {
-                selectImage(nextIndex, { updateUrl: true, resetMotion: false });
-                setCarouselMotion(enterX, 0.988, direction > 0 ? 1.2 : -1.2, 0.86);
-                animateCarouselMotion(
-                    {
-                        x: 0,
-                        scale: 1,
-                        rotate: 0,
-                        opacity: 1,
-                    },
-                    {
-                        duration: options.enterDuration ?? 360,
-                    },
-                );
-            },
+            duration: options.duration ?? 300,
+            onComplete: () => selectImage(target, { updateUrl: true }),
         },
     );
 }
@@ -1342,6 +1442,36 @@ function stepImageOrProduct(delta) {
     switchProductByIndexDelta(delta);
 }
 
+// --- pagination arrows (boundary feedback) ----------------------------------
+// JS sets opacity + a --reveal (0..1) custom prop; CSS uses --reveal for the
+// elastic scale-in so the base centering transform is preserved.
+function setArrow(arrow, reveal) {
+    if (!arrow) return;
+    // One property write per frame — CSS derives both opacity and the elastic
+    // scale from --reveal, keeping this a single compositor-friendly mutation.
+    arrow.style.setProperty("--reveal", String(Math.max(0, Math.min(1, reveal))));
+}
+
+function clearEdgeArrows() {
+    setArrow(selectors.edgeArrowPrev, 0);
+    setArrow(selectors.edgeArrowNext, 0);
+}
+
+function clearVerticalArrows() {
+    setArrow(selectors.edgeArrowUp, 0);
+    setArrow(selectors.edgeArrowDown, 0);
+}
+
+function revealEdgeArrow(dir, reveal) {
+    setArrow(selectors.edgeArrowPrev, dir === "prev" ? reveal : 0);
+    setArrow(selectors.edgeArrowNext, dir === "next" ? reveal : 0);
+}
+
+function revealVerticalArrow(dir, reveal) {
+    setArrow(selectors.edgeArrowUp, dir === "up" ? reveal : 0);
+    setArrow(selectors.edgeArrowDown, dir === "down" ? reveal : 0);
+}
+
 function captureCarouselPointer(pointerId) {
     try {
         selectors.imageStage?.setPointerCapture?.(pointerId);
@@ -1367,6 +1497,9 @@ function onCarouselPointerDown(event) {
         lastTime: performance.now(),
         velocityX: 0,
         dragging: false,
+        // Cache the viewport width once per gesture — the size can't change
+        // mid-drag, so the move handler stays read-free (no layout thrash).
+        width: carouselWidth(),
     };
     captureCarouselPointer(event.pointerId);
 }
@@ -1396,16 +1529,32 @@ function onCarouselPointerMove(event) {
     dragState.lastX = event.clientX;
     dragState.lastTime = now;
 
-    const width = carouselWidth();
-    const limit = width * 0.42;
-    const eased = limit * Math.tanh(dx / limit);
-    const progress = Math.min(1, Math.abs(eased) / limit);
-    setCarouselMotion(
-        eased,
-        1 - progress * 0.018,
-        (eased / width) * -2.2,
-        1 - progress * 0.12,
-    );
+    const width = dragState.width || carouselWidth();
+    const len = currentProduct?.images?.length || 1;
+    const atStart = currentImageIndex === 0;
+    const atEnd = currentImageIndex === len - 1;
+    // Beyond the first image (pulling right) or the last (pulling left) there's
+    // no neighbor image — that gesture paginates to an adjacent product.
+    const boundary = dx > 0 && atStart ? "prev" : dx < 0 && atEnd ? "next" : null;
+
+    if (boundary) {
+        // Stiff elastic resistance + a growing pagination arrow (the "tissue"
+        // stretch); release past threshold switches product.
+        const limit = width * 0.55;
+        const eased = limit * Math.tanh(dx / (limit * 1.7));
+        const progress = Math.min(1, Math.abs(dx) / (width * 0.42));
+        dragState.boundary = boundary;
+        setCarouselMotion(eased, 1 - progress * 0.02, 0, 1);
+        revealEdgeArrow(boundary, progress);
+    } else {
+        // Free-form peek within the product — near 1:1 so the neighbor image
+        // tracks the finger, with gentle damping only at large offsets.
+        dragState.boundary = null;
+        clearEdgeArrows();
+        const limit = width * 1.15;
+        const eased = limit * Math.tanh(dx / limit);
+        setCarouselMotion(eased, 1, 0, 1);
+    }
 }
 
 function onCarouselPointerEnd(event) {
@@ -1414,6 +1563,7 @@ function onCarouselPointerEnd(event) {
     dragState = null;
     selectors.imageStage?.classList.remove("is-dragging");
     releaseCarouselPointer(event.pointerId);
+    clearEdgeArrows();
 
     if (!state.dragging) return;
     suppressNextImageAdvance = true;
@@ -1421,28 +1571,30 @@ function onCarouselPointerEnd(event) {
         suppressNextImageAdvance = false;
     }, 180);
 
-    const width = carouselWidth();
+    const width = state.width || carouselWidth();
+    const len = currentProduct?.images?.length || 1;
     const dx = event.clientX - state.startX;
     const projected = dx + state.velocityX * 190;
-    const threshold = Math.max(44, width * 0.18);
 
-    if (projected < -threshold) {
-        stepImage(1, { travel: width * 0.48, exitDuration: 120, enterDuration: 380 });
-    } else if (projected > threshold) {
-        stepImage(-1, { travel: width * 0.48, exitDuration: 120, enterDuration: 380 });
+    // At an image boundary, a far-enough pull paginates to the adjacent product
+    // (preloaded → snaps); otherwise it elastically snaps back.
+    if (state.boundary) {
+        if (Math.abs(projected) > width * 0.32) {
+            switchProductByIndexDelta(state.boundary === "next" ? 1 : -1);
+            setCarouselMotion(0, 1, 0, 1);
+        } else {
+            animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 420 });
+        }
+        return;
+    }
+
+    const threshold = Math.max(44, width * 0.18);
+    if (projected < -threshold && currentImageIndex < len - 1) {
+        stepImage(1, { duration: 300 });
+    } else if (projected > threshold && currentImageIndex > 0) {
+        stepImage(-1, { duration: 300 });
     } else {
-        animateCarouselMotion(
-            {
-                x: 0,
-                scale: 1,
-                rotate: 0,
-                opacity: 1,
-            },
-            {
-                duration: 420,
-                ease: "out(4)",
-            },
-        );
+        animateCarouselMotion({ x: 0, scale: 1, rotate: 0, opacity: 1 }, { duration: 420 });
     }
 }
 
@@ -1451,7 +1603,6 @@ function openSizeSheet() {
     selectors.sizeSheet.hidden = false;
     selectors.sizeSummary?.setAttribute("aria-hidden", "true");
     if (selectors.sizeSummary) selectors.sizeSummary.inert = true;
-    selectors.sizeInfo?.classList.add("is-collapsed");
     selectors.sizeToggle?.setAttribute("aria-expanded", "true");
     selectors.panel?.classList.add("is-sizing");
     syncSizeControls();
@@ -1463,7 +1614,6 @@ function closeSizeSheet() {
     selectors.sizeSheet.hidden = true;
     selectors.sizeSummary?.removeAttribute("aria-hidden");
     if (selectors.sizeSummary) selectors.sizeSummary.inert = false;
-    selectors.sizeInfo?.classList.add("is-collapsed");
     selectors.sizeToggle?.setAttribute("aria-expanded", "false");
     selectors.panel?.classList.remove("is-sizing");
 }
@@ -1504,70 +1654,239 @@ function addCurrentToCart() {
     openCart();
 }
 
-function openCart() {
-    if (!selectors.cartDrawer) return;
+// --- bag (cart + inline checkout) navigation --------------------------------
+// Every transition pushes a history entry, so the URL + back/forward walk
+// closed → cart → checkout. popstate reconciles the DOM back to the URL.
+
+function setBag(next, options = {}) {
+    const { replace = false } = options;
+    const target = next === "cart" || next === "checkout" ? next : null;
+    window.history[replace ? "replaceState" : "pushState"](
+        { ...(window.history.state || {}), bag: target },
+        "",
+        bagUrl(target),
+    );
+    applyBag(target);
+}
+
+// Idempotent: reconcile the bag DOM to a desired state. Safe to call from both
+// user actions (via setBag) and popstate (which has already changed the URL).
+function applyBag(next) {
+    if (!selectors.bag) return;
+    const prev = bagState();
+    const target = next === "cart" || next === "checkout" ? next : null;
+
+    if (!target) {
+        if (prev === "closed") return;
+        selectors.bag.dataset.bagState = "closed";
+        selectors.bag.hidden = true;
+        selectors.bag.setAttribute("aria-hidden", "true");
+        selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
+        document.body.classList.remove("shop-cart-open", "shop-bag-checkout");
+        // Hand interaction back to the product panel if the bag opened over it.
+        if (selectors.panel) selectors.panel.inert = false;
+        maybeHideBackdrop();
+        clearOverlayScrollGutterIfIdle();
+        focusPrimaryCartToggle();
+        return;
+    }
+
     updateOverlayScrollGutter();
     renderCart();
-    selectors.cartDrawer.hidden = false;
-    selectors.cartDrawer.setAttribute("aria-hidden", "false");
+    selectors.bag.hidden = false;
+    selectors.bag.setAttribute("aria-hidden", "false");
     selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "true"));
     document.body.classList.add("shop-cart-open");
     showBackdrop();
-    selectors.cartDrawer.querySelector("[data-close-cart]")?.focus({ preventScroll: true });
+    // The bag is a modal above the product panel — inert the panel so focus
+    // can't escape into it while the bag is open.
+    if (isProductOpen()) selectors.panel.inert = true;
+
+    const checkout = target === "checkout";
+    selectors.bag.dataset.bagState = target;
+    document.body.classList.toggle("shop-bag-checkout", checkout);
+    if (selectors.bagCheckoutPane) {
+        selectors.bagCheckoutPane.hidden = !checkout;
+        selectors.bagCheckoutPane.setAttribute("aria-hidden", checkout ? "false" : "true");
+    }
+
+    // Defer the Stripe mount one frame so the just-revealed pane is laid out
+    // (Elements misrender if mounted into a zero-size / unlaid-out container).
+    if (checkout) requestAnimationFrame(mountCheckout);
+
+    if (prev === "closed" && !checkout) {
+        selectors.bag.querySelector("[data-close-bag]")?.focus({ preventScroll: true });
+    } else if (checkout && prev !== "checkout") {
+        selectors.bagCheckoutPane
+            ?.querySelector("[data-bag-back]")
+            ?.focus({ preventScroll: true });
+    } else if (!checkout && prev === "checkout") {
+        selectors.bagCheckoutBtn?.focus({ preventScroll: true });
+    }
+}
+
+function openCart() {
+    setBag("cart");
 }
 
 function closeCart() {
-    if (!selectors.cartDrawer) return;
-    selectors.cartDrawer.hidden = true;
-    selectors.cartDrawer.setAttribute("aria-hidden", "true");
-    selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
-    document.body.classList.remove("shop-cart-open");
-    maybeHideBackdrop();
-    clearOverlayScrollGutterIfIdle();
+    setBag(null);
 }
 
-function renderCart() {
-    const count = cart.reduce((total, item) => total + Number(item.quantity || 0), 0);
-    const total = cart.reduce((sum, item) => {
+function cartLineCount() {
+    return cart.reduce((total, item) => total + Number(item.quantity || 0), 0);
+}
+
+function cartTotalDollars() {
+    return cart.reduce((sum, item) => {
         const product = productBySlug.get(item.slug);
         return sum + (product ? product.price * Number(item.quantity || 0) : 0);
     }, 0);
+}
+
+// A tiny embroidered-cap chip drawn from the product's own three colors.
+function miniCap(colors) {
+    const cap = document.createElement("span");
+    cap.className = "mini-cap";
+    cap.setAttribute("aria-hidden", "true");
+    if (colors) {
+        cap.style.setProperty("--cap", colors.cap);
+        cap.style.setProperty("--thread", colors.thread);
+        cap.style.setProperty("--accent", colors.accent);
+    }
+    const crown = document.createElement("span");
+    crown.className = "mini-cap-crown";
+    const brim = document.createElement("span");
+    brim.className = "mini-cap-brim";
+    const dot = document.createElement("span");
+    dot.className = "mini-cap-dot";
+    cap.append(crown, brim, dot);
+    return cap;
+}
+
+function cartIconButton(label, ariaLabel, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.setAttribute("aria-label", ariaLabel);
+    btn.addEventListener("click", onClick);
+    return btn;
+}
+
+function changeCartQty(slug, delta) {
+    const item = cart.find((i) => i.slug === slug);
+    if (!item) return;
+    item.quantity = Math.max(1, Math.min(99, Number(item.quantity || 1) + delta));
+    writeCart();
+    // Targeted update: refresh only this row's qty + price instead of rebuilding
+    // the whole list, so rapid +/- clicks stay cheap (keeps INP low).
+    const product = productBySlug.get(slug);
+    const row = selectors.cartItems?.querySelector(".shop-cart-item" + slugSelector(slug));
+    const qtyEl = row?.querySelector(".shop-cart-qty-val");
+    const priceEl = row?.querySelector(".shop-cart-item-price");
+    if (product && qtyEl && priceEl) {
+        qtyEl.textContent = String(item.quantity);
+        priceEl.textContent = `$${product.price * item.quantity}`;
+        syncCartChrome();
+    } else {
+        renderCart();
+    }
+}
+
+function removeCartItem(slug) {
+    cart = cart.filter((i) => i.slug !== slug);
+    writeCart();
+    const row = selectors.cartItems?.querySelector(".shop-cart-item" + slugSelector(slug));
+    if (cart.length && row) {
+        row.remove();
+        syncCartChrome();
+    } else {
+        renderCart();
+    }
+    // Editing the bag down to empty while paying drops back to the cart pane.
+    if (!cart.length && bagState() === "checkout") setBag("cart");
+}
+
+function cartRow(item, product) {
+    const row = document.createElement("li");
+    row.className = "shop-cart-item";
+    row.dataset.slug = item.slug;
+
+    const top = document.createElement("div");
+    top.className = "shop-cart-item-top";
+    const head = document.createElement("div");
+    head.className = "shop-cart-item-head";
+    head.append(miniCap(product.colors));
+    const title = document.createElement("strong");
+    title.textContent = product.name;
+    head.append(title);
+    const price = document.createElement("span");
+    price.className = "shop-cart-item-price";
+    price.textContent = `$${product.price * Number(item.quantity || 1)}`;
+    top.append(head, price);
+
+    const controls = document.createElement("div");
+    controls.className = "shop-cart-qty";
+    controls.setAttribute("role", "group");
+    controls.setAttribute("aria-label", `Quantity for ${product.name}`);
+    const minus = cartIconButton("–", `Decrease ${product.name}`, () => changeCartQty(item.slug, -1));
+    minus.className = "shop-cart-qty-btn";
+    const qty = document.createElement("span");
+    qty.className = "shop-cart-qty-val";
+    qty.textContent = String(item.quantity);
+    const plus = cartIconButton("+", `Increase ${product.name}`, () => changeCartQty(item.slug, 1));
+    plus.className = "shop-cart-qty-btn";
+    const remove = cartIconButton("×", `Remove ${product.name}`, () => removeCartItem(item.slug));
+    remove.className = "shop-cart-remove";
+    controls.append(minus, qty, plus, remove);
+
+    row.append(top, controls);
+    return row;
+}
+
+// The cart "chrome" — counts, total, CTA visibility, Stripe amount, pay button.
+// Split out from the list build so targeted row edits can refresh it without a
+// full <ul> rebuild.
+function syncCartChrome() {
+    const count = cartLineCount();
+    const total = cartTotalDollars();
+    checkoutAmount = total * 100;
 
     selectors.cartCounts.forEach((cartCount) => {
         cartCount.textContent = String(count);
         cartCount.dataset.empty = count === 0 ? "true" : "false";
     });
     setText(selectors.cartTotal, `$${total}`);
+    // Reveal the Checkout CTA only once there's something to buy.
+    if (selectors.bagCheckoutBtn) selectors.bagCheckoutBtn.hidden = cart.length === 0;
 
-    if (!selectors.cartItems) return;
-    selectors.cartItems.textContent = "";
-    if (!cart.length) {
-        const empty = document.createElement("p");
-        empty.className = "shop-cart-empty";
-        empty.textContent = EMPTY_STATE;
-        selectors.cartItems.append(empty);
-        return;
+    // Keep the inline Stripe amount in sync, debounced so a burst of stepper
+    // clicks triggers a single Elements update.
+    if (checkoutReady) scheduleCheckoutAmountUpdate();
+    refreshPayButton();
+}
+
+function renderCart() {
+    if (selectors.cartItems) {
+        selectors.cartItems.textContent = "";
+        if (!cart.length) {
+            const empty = document.createElement("p");
+            empty.className = "shop-cart-empty";
+            empty.textContent = EMPTY_STATE;
+            selectors.cartItems.append(empty);
+        } else {
+            const list = document.createElement("ul");
+            list.className = "shop-cart-list";
+            const frag = document.createDocumentFragment();
+            cart.forEach((item) => {
+                const product = productBySlug.get(item.slug);
+                if (product) frag.append(cartRow(item, product));
+            });
+            list.append(frag);
+            selectors.cartItems.append(list);
+        }
     }
-
-    const list = document.createElement("ul");
-    list.className = "shop-cart-list";
-    cart.forEach((item) => {
-        const product = productBySlug.get(item.slug);
-        if (!product) return;
-        const row = document.createElement("li");
-        row.className = "shop-cart-item";
-
-        const title = document.createElement("strong");
-        title.textContent = product.name;
-
-        const meta = document.createElement("span");
-        const sizeLabel = item.size === "ONE SIZE" ? "One size" : `Size ${item.size}`;
-        meta.textContent = `${sizeLabel} x ${item.quantity} - $${product.price * item.quantity}`;
-
-        row.append(title, meta);
-        list.append(row);
-    });
-    selectors.cartItems.append(list);
+    syncCartChrome();
 }
 
 function setText(element, value) {
@@ -1667,24 +1986,35 @@ document.addEventListener("click", (event) => {
         return;
     }
 
-    if (target.closest("[data-info-toggle], [data-shop-panel-help]")) {
-        selectors.sizeInfo?.classList.toggle("is-collapsed");
-        return;
-    }
-
-    if (target.closest("[data-add-cart]")) {
-        addCurrentToCart();
-        return;
-    }
 
     if (target.closest("[data-cart-toggle]")) {
-        if (isCartOpen()) closeCart();
-        else openCart();
+        if (isCartOpen()) setBag(null);
+        else setBag("cart");
         return;
     }
 
-    if (target.closest("[data-close-cart]")) {
-        closeCart();
+    if (target.closest("[data-close-bag]")) {
+        setBag(null);
+        return;
+    }
+
+    if (target.closest("[data-bag-scrim]")) {
+        setBag(null);
+        return;
+    }
+
+    if (target.closest("[data-bag-checkout]")) {
+        setBag("checkout");
+        return;
+    }
+
+    if (target.closest("[data-bag-back]")) {
+        setBag("cart");
+        return;
+    }
+
+    if (target.closest("[data-bag-done-close]")) {
+        setBag(null);
         return;
     }
 
@@ -1692,11 +2022,12 @@ document.addEventListener("click", (event) => {
         cart = [];
         writeCart();
         renderCart();
+        if (bagState() === "checkout") setBag("cart");
         return;
     }
 
     if (target === selectors.backdrop) {
-        if (isCartOpen()) closeCart();
+        if (isCartOpen()) setBag(null);
         if (isProductOpen()) closeProductWithTransition();
     }
 });
@@ -1709,8 +2040,9 @@ document.addEventListener("keydown", (event) => {
             return;
         }
         if (isCartOpen()) {
-            closeCart();
-            focusPrimaryCartToggle();
+            // Step back one level: checkout → cart → closed.
+            if (bagState() === "checkout") setBag("cart");
+            else setBag(null);
             return;
         }
         if (isProductOpen()) {
@@ -1742,19 +2074,22 @@ document.addEventListener("keydown", (event) => {
     } else if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         openSizeSheet();
-    } else if (event.key.toLowerCase() === "i") {
-        selectors.sizeInfo?.classList.toggle("is-collapsed");
     }
 });
 
 window.addEventListener("popstate", () => {
     const match = getProductFromLocation();
     if (match) {
-        openProduct(match.product, match.imageId, { push: false });
-        schedulePrepareCloseCamera(match.product.slug);
+        // Only (re)open if the product actually changed — a bag-only URL change
+        // (cart↔checkout while a product is open) must not re-run the camera.
+        if (!isProductOpen() || currentProduct?.slug !== match.product.slug) {
+            openProduct(match.product, match.imageId, { push: false });
+            schedulePrepareCloseCamera(match.product.slug);
+        }
     } else if (isProductOpen()) {
         closeProductWithTransition({ push: false });
     }
+    applyBag(currentBagFromUrl());
 });
 
 window.addEventListener("resize", () => {
@@ -1782,3 +2117,370 @@ if (initial) {
     openProduct(initial.product, initial.imageId, { replace: true, focus: false });
     schedulePrepareCloseCamera(initial.product.slug);
 }
+
+// ---------------------------------------------------------------------------
+// Inline checkout (Stripe Elements in the bag's right pane)
+//
+// Deferred PaymentIntent: mount Payment + Address Elements with a target amount,
+// then at pay time elements.submit() → POST /api/checkout/intent (server prices
+// the cart) → stripe.confirmPayment(redirect:"if_required"). Card payments
+// confirm on-page (the bag stamps PAID); a 3DS redirect returns to ?bag=checkout
+// and we finalize inline. Elements are themed off the live oklch tokens.
+// ---------------------------------------------------------------------------
+
+function coEl(sel) {
+    return selectors.bagCheckoutPane ? selectors.bagCheckoutPane.querySelector(sel) : null;
+}
+
+function money(cents) {
+    const dollars = Math.round(cents) / 100;
+    return (
+        "$" +
+        (Number.isInteger(dollars)
+            ? dollars.toLocaleString("en-US")
+            : dollars.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+              }))
+    );
+}
+
+function payLabel() {
+    return checkoutAmount > 0 ? `Pay ${money(checkoutAmount)}` : "Pay";
+}
+
+function refreshPayButton() {
+    const btn = coEl("[data-checkout-pay]");
+    if (!btn) return;
+    const label = coEl("[data-pay-label]");
+    if (label && !checkoutBusy) label.textContent = payLabel();
+    btn.disabled = checkoutBusy || !checkoutReady || cart.length === 0 || checkoutAmount < 50;
+}
+
+function setPayBusy(value) {
+    checkoutBusy = value;
+    const label = coEl("[data-pay-label]");
+    const spinner = coEl("[data-pay-spinner]");
+    if (label) label.textContent = value ? "Processing…" : payLabel();
+    if (spinner) spinner.hidden = !value;
+    refreshPayButton();
+}
+
+function showCheckoutError(message) {
+    const el = coEl("[data-checkout-error]");
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = false;
+}
+
+function clearCheckoutError() {
+    const el = coEl("[data-checkout-error]");
+    if (el) {
+        el.textContent = "";
+        el.hidden = true;
+    }
+}
+
+function clearCheckoutSkeleton(sel) {
+    const host = coEl(sel);
+    const skeleton = host && host.querySelector(".shop-checkout-skeleton");
+    if (skeleton) skeleton.remove();
+}
+
+// --- theme → Stripe Appearance bridge (resolve oklch tokens via canvas) ---
+
+let _coProbe;
+let _coCtx;
+
+function coProbe() {
+    if (_coProbe && _coProbe.isConnected) return _coProbe;
+    _coProbe = document.createElement("span");
+    _coProbe.setAttribute("aria-hidden", "true");
+    _coProbe.style.cssText =
+        "position:absolute;left:-9999px;top:-9999px;width:0;height:0;opacity:0;pointer-events:none;";
+    document.body.appendChild(_coProbe);
+    return _coProbe;
+}
+
+function coToHex(color) {
+    try {
+        if (!_coCtx) _coCtx = document.createElement("canvas").getContext("2d");
+        _coCtx.fillStyle = "#000";
+        _coCtx.fillStyle = color;
+        const normalized = _coCtx.fillStyle;
+        if (typeof normalized === "string" && normalized.startsWith("#")) return normalized;
+        _coCtx.fillRect(0, 0, 1, 1);
+        const [r, g, b] = _coCtx.getImageData(0, 0, 1, 1).data;
+        return "#" + [r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("");
+    } catch {
+        return null;
+    }
+}
+
+function coColor(varName, fallback) {
+    const p = coProbe();
+    p.style.color = `var(${varName})`;
+    const resolved = getComputedStyle(p).color;
+    if (!resolved || resolved === "currentcolor") return fallback;
+    return coToHex(resolved) || fallback;
+}
+
+function coRadius(varName, fallback) {
+    const p = coProbe();
+    p.style.borderTopLeftRadius = `var(${varName})`;
+    const r = getComputedStyle(p).borderTopLeftRadius;
+    return /px|rem|em/.test(r) ? r : fallback;
+}
+
+function coAlpha(hex, alpha) {
+    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+    if (!m) return hex;
+    const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16));
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function buildAppearance() {
+    const surface1 = coColor("--surface-1", "#ffffff");
+    const surface2 = coColor("--surface-2", "#f4f4f5");
+    const text1 = coColor("--text-1", "#111111");
+    const text2 = coColor("--text-2", "#555555");
+    const muted = coColor("--text-muted", "#8a8a8a");
+    const primary = coColor("--color-primary", "#4c4fdd");
+    const danger = coColor("--color-error", "#e5484d");
+    const border = coColor("--border-muted", "#dcdcdc");
+    const radius = coRadius("--radius-field", "10px");
+
+    return {
+        theme: "stripe",
+        variables: {
+            colorPrimary: primary,
+            colorBackground: surface1,
+            colorText: text1,
+            colorTextSecondary: text2,
+            colorTextPlaceholder: muted,
+            colorDanger: danger,
+            colorIconTabSelected: primary,
+            fontFamily: '"Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            fontSizeBase: "16px",
+            borderRadius: radius,
+            spacingUnit: "4px",
+        },
+        rules: {
+            ".Input": {
+                backgroundColor: surface2,
+                border: `1px solid ${border}`,
+                boxShadow: "none",
+                color: text1,
+            },
+            ".Input:focus": {
+                border: `1px solid ${primary}`,
+                boxShadow: `0 0 0 3px ${coAlpha(primary, 0.25)}`,
+            },
+            ".Input--invalid": { border: `1px solid ${danger}`, color: text1 },
+            ".Label": {
+                color: text2,
+                fontWeight: "700",
+                fontSize: "0.78rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+            },
+            ".Tab": { backgroundColor: surface2, border: `1px solid ${border}`, color: text1 },
+            ".Tab--selected": { borderColor: primary, color: primary },
+            ".Error": { color: danger },
+        },
+    };
+}
+
+function mountCheckout() {
+    if (checkoutMounted) return;
+    checkoutMounted = true;
+
+    if (!CHECKOUT.enabled || !CHECKOUT.publishableKey || typeof window.Stripe !== "function") {
+        const notice = coEl("[data-checkout-disabled]");
+        if (notice) notice.hidden = false;
+        const form = coEl("[data-checkout-form]");
+        if (form) form.hidden = true;
+        return;
+    }
+
+    stripe = window.Stripe(CHECKOUT.publishableKey);
+    checkoutAmount = cartTotalDollars() * 100;
+    elements = stripe.elements({
+        mode: "payment",
+        amount: Math.max(50, checkoutAmount),
+        currency: CHECKOUT.currency || "usd",
+        appearance: buildAppearance(),
+    });
+
+    addressElement = elements.create("address", { mode: "shipping" });
+    const addressHost = coEl("[data-address-element]");
+    if (addressHost) addressElement.mount(addressHost);
+    addressElement.on("ready", () => clearCheckoutSkeleton("[data-address-element]"));
+
+    paymentElement = elements.create("payment", { layout: { type: "tabs" } });
+    const paymentHost = coEl("[data-payment-element]");
+    if (paymentHost) paymentElement.mount(paymentHost);
+    paymentElement.on("ready", () => {
+        clearCheckoutSkeleton("[data-payment-element]");
+        checkoutReady = true;
+        refreshPayButton();
+    });
+
+    const form = coEl("[data-checkout-form]");
+    if (form) form.addEventListener("submit", payCheckout);
+}
+
+function scheduleCheckoutAmountUpdate() {
+    // Coalesce a burst of stepper clicks into a single Stripe Elements update
+    // (each update is a cross-iframe message — not free).
+    if (amountUpdateTimer) clearTimeout(amountUpdateTimer);
+    amountUpdateTimer = setTimeout(() => {
+        amountUpdateTimer = null;
+        updateCheckoutAmount();
+    }, 120);
+}
+
+function updateCheckoutAmount() {
+    // Keep Elements in sync with the cart on every edit. Stripe needs a >=50¢
+    // floor; the pay button stays gated below the real minimum elsewhere.
+    if (!elements || checkoutAmount <= 0) return;
+    try {
+        elements.update({ amount: Math.max(50, checkoutAmount) });
+    } catch {}
+}
+
+async function payCheckout(event) {
+    event.preventDefault();
+    if (checkoutBusy || !checkoutReady) return;
+    clearCheckoutError();
+
+    const emailInput = coEl("[data-checkout-email]");
+    const email = (emailInput && emailInput.value.trim()) || "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showCheckoutError("Enter a valid email so we can send your confirmation.");
+        emailInput?.focus();
+        return;
+    }
+    if (!cart.length) {
+        setBag("cart");
+        return;
+    }
+
+    setPayBusy(true);
+
+    const submitResult = await elements.submit();
+    if (submitResult.error) {
+        showCheckoutError(submitResult.error.message || "Double-check your details and try again.");
+        setPayBusy(false);
+        return;
+    }
+
+    let shipping = null;
+    try {
+        const addr = await addressElement.getValue();
+        if (addr && addr.value && addr.value.address) {
+            const v = addr.value;
+            shipping = {
+                name: v.name || null,
+                line1: v.address.line1 || null,
+                line2: v.address.line2 || null,
+                city: v.address.city || null,
+                state: v.address.state || null,
+                postal_code: v.address.postal_code || null,
+                country: v.address.country || null,
+            };
+        }
+    } catch {}
+
+    let data;
+    try {
+        const resp = await fetch("/api/checkout/intent", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+                items: cart.map((i) => ({ slug: i.slug, quantity: i.quantity })),
+                email,
+                shipping,
+            }),
+        });
+        data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.clientSecret) {
+            showCheckoutError(data.error || "We couldn’t start the payment. Please try again.");
+            setPayBusy(false);
+            return;
+        }
+    } catch {
+        showCheckoutError("Network hiccup. Check your connection and try again.");
+        setPayBusy(false);
+        return;
+    }
+
+    const returnUrl = new URL(CHECKOUT.returnPath || "/", window.location.origin);
+    returnUrl.searchParams.set("bag", "checkout");
+    const result = await stripe.confirmPayment({
+        elements,
+        clientSecret: data.clientSecret,
+        confirmParams: { return_url: returnUrl.toString(), receipt_email: email },
+        redirect: "if_required",
+    });
+
+    if (result.error) {
+        showCheckoutError(result.error.message || "Your payment couldn’t be completed.");
+        setPayBusy(false);
+        return;
+    }
+    onCheckoutPaid(result.paymentIntent, email);
+}
+
+function onCheckoutPaid(paymentIntent, email) {
+    cart = [];
+    writeCart();
+    renderCart();
+
+    const stamp = selectors.bag?.querySelector("[data-bag-stamp]");
+    if (stamp) stamp.dataset.show = "true";
+    const form = coEl("[data-checkout-form]");
+    if (form) form.hidden = true;
+    const done = coEl("[data-checkout-done]");
+    if (done) done.hidden = false;
+    const sub = coEl("[data-checkout-done-sub]");
+    const receiptEmail = email || (paymentIntent && paymentIntent.receipt_email) || "";
+    if (sub) {
+        sub.textContent = receiptEmail
+            ? `A receipt is on its way to ${receiptEmail}.`
+            : "Your order is confirmed.";
+    }
+    setPayBusy(false);
+}
+
+async function finalizeCheckoutReturn(clientSecret) {
+    if (!clientSecret) return;
+    if (typeof window.Stripe !== "function" || !CHECKOUT.publishableKey) return;
+    if (!stripe) stripe = window.Stripe(CHECKOUT.publishableKey);
+    try {
+        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+        if (
+            paymentIntent &&
+            (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")
+        ) {
+            onCheckoutPaid(paymentIntent, paymentIntent.receipt_email || "");
+        }
+    } catch {}
+}
+
+window.addEventListener("engmanager:themechange", () => {
+    if (elements) {
+        try {
+            elements.update({ appearance: buildAppearance() });
+        } catch {}
+    }
+});
+
+// Bag deep-link + Stripe redirect return, applied after the product initial state.
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    const clientSecret = params.get("payment_intent_client_secret");
+    const bag = currentBagFromUrl();
+    if (bag) applyBag(bag);
+    if (clientSecret) finalizeCheckoutReturn(clientSecret);
+})();

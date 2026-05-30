@@ -1,0 +1,186 @@
+{
+  "currency": "usd",
+  "mode": "test",
+  "products": {
+    "agentic-slop": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/agentic-slop-front.webp",
+      "livemode": false,
+      "name": "Agentic Slop 🔮",
+      "price_id": "price_1Tcf4e8qHK8N93vucW8QQs6m",
+      "product_id": "prod_UbsqaYnsZuc5gN",
+      "slug": "agentic-slop",
+      "unit_amount": 8000
+    },
+    "css-engineer": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/css-engineer-front.webp",
+      "livemode": false,
+      "name": "CSS Engineer 🐐",
+      "price_id": "price_1Tcf4b8qHK8N93vuzplBSrRK",
+      "product_id": "prod_UbsqQ0fD6vhkAx",
+      "slug": "css-engineer",
+      "unit_amount": 8000
+    },
+    "engmanager-xyz": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/engmanager-xyz-front.webp",
+      "livemode": false,
+      "name": "ENGMANAGER.XYZ 🌀",
+      "price_id": "price_1Tcf4Y8qHK8N93vuGb9q7Jpy",
+      "product_id": "prod_UbsqrT3wLRNgLP",
+      "slug": "engmanager-xyz",
+      "unit_amount": 8000
+    },
+    "imma-p0": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/imma-p0-front.webp",
+      "livemode": false,
+      "name": "I'mma P0 ❄️",
+      "price_id": "price_1Tcf4g8qHK8N93vugCLfrOf6",
+      "product_id": "prod_Ubsq7bPJqUW68c",
+      "slug": "imma-p0",
+      "unit_amount": 8000
+    },
+    "lgtm-plus-two": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/lgtm-plus-two-front.webp",
+      "livemode": false,
+      "name": "LGTM +2",
+      "price_id": "price_1Tcf4d8qHK8N93vuJM6dqy2Y",
+      "product_id": "prod_UbsqqviNWqoKR7",
+      "slug": "lgtm-plus-two",
+      "unit_amount": 8000
+    },
+    "okrs": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/okrs-front.webp",
+      "livemode": false,
+      "name": "OKRs 🎯",
+      "price_id": "price_1Tcf3j8qHK8N93vugTVUCIn3",
+      "product_id": "prod_UbspvSrzZQeGAW",
+      "slug": "okrs",
+      "unit_amount": 8000
+    },
+    "ownership": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/ownership-front.webp",
+      "livemode": false,
+      "name": "Ownership 💪🏻",
+      "price_id": "price_1Tcf4g8qHK8N93vu3bzA144T",
+      "product_id": "prod_UbsqNx4uIDKRQQ",
+      "slug": "ownership",
+      "unit_amount": 8000
+    },
+    "real-programmer": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/real-programmer-front.webp",
+      "livemode": false,
+      "name": "Real Programmer 🧙‍♂️",
+      "price_id": "price_1Tcf4a8qHK8N93vu3vZB3fa5",
+      "product_id": "prod_Ubsqe8kV9hFkRt",
+      "slug": "real-programmer",
+      "unit_amount": 8000
+    },
+    "scrum-master": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/scrum-master-front.webp",
+      "livemode": false,
+      "name": "Scrum Master 🗓️",
+      "price_id": "price_1Tcf4Z8qHK8N93vu5IPqaSNh",
+      "product_id": "prod_UbsqVnt6htmIsI",
+      "slug": "scrum-master",
+      "unit_amount": 8000
+    },
+    "scrum-of-scrums": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/scrum-of-scrums-front.webp",
+      "livemode": false,
+      "name": "Scrum of Scrums 🗓️🗓️",
+      "price_id": "price_1Tcf4Z8qHK8N93vuDXm7j4SH",
+      "product_id": "prod_UbsqpYgmMwp2R6",
+      "slug": "scrum-of-scrums",
+      "unit_amount": 8000
+    },
+    "stakeholder": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/stakeholder-front.webp",
+      "livemode": false,
+      "name": "Stakeholder 🥩",
+      "price_id": "price_1Tcf4d8qHK8N93vuo1uFKoem",
+      "product_id": "prod_UbsqnnLvlTqhpJ",
+      "slug": "stakeholder",
+      "unit_amount": 8000
+    },
+    "standup": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/standup-front.webp",
+      "livemode": false,
+      "name": "Standup 🏋🏻‍♂️",
+      "price_id": "price_1Tcf4c8qHK8N93vu53UNS6io",
+      "product_id": "prod_UbsqOQLtaIyNJf",
+      "slug": "standup",
+      "unit_amount": 8000
+    },
+    "step-change": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/step-change-front.webp",
+      "livemode": false,
+      "name": "Step Change 🪜",
+      "price_id": "price_1Tcf4e8qHK8N93vuV0j4ib48",
+      "product_id": "prod_UbsqHnqvpGEXho",
+      "slug": "step-change",
+      "unit_amount": 8000
+    },
+    "time-check": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/time-check-front.webp",
+      "livemode": false,
+      "name": "Time Check",
+      "price_id": "price_1Tcf4c8qHK8N93vuu4ZRPKdr",
+      "product_id": "prod_UbsqGCJZIRCuwI",
+      "slug": "time-check",
+      "unit_amount": 8000
+    },
+    "tokenmaxxing": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/tokenmaxxing-front.webp",
+      "livemode": false,
+      "name": "Tokenmaxxing 💸",
+      "price_id": "price_1Tcf4h8qHK8N93vuCk52es5F",
+      "product_id": "prod_UbsqwfXj1Kweg0",
+      "slug": "tokenmaxxing",
+      "unit_amount": 8000
+    },
+    "up-and-to-the-right": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/up-and-to-the-right-front.webp",
+      "livemode": false,
+      "name": "Up & to the Right",
+      "price_id": "price_1Tcf4f8qHK8N93vutfQMbscc",
+      "product_id": "prod_UbsqkmCZiodDOu",
+      "slug": "up-and-to-the-right",
+      "unit_amount": 8000
+    },
+    "velocity": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/velocity-front.webp",
+      "livemode": false,
+      "name": "Velocity",
+      "price_id": "price_1Tcf4a8qHK8N93vumMHG7cBb",
+      "product_id": "prod_Ubsq98B2T6hfbt",
+      "slug": "velocity",
+      "unit_amount": 8000
+    },
+    "violently-aligned": {
+      "currency": "usd",
+      "image": "https://shop.engmanager.xyz/assets/shop/caps/violently-aligned-front.webp",
+      "livemode": false,
+      "name": "Violently Aligned ⚔️",
+      "price_id": "price_1Tcf4h8qHK8N93vumzuJADVO",
+      "product_id": "prod_UbsqH4KoWUIrmQ",
+      "slug": "violently-aligned",
+      "unit_amount": 8000
+    }
+  }
+}

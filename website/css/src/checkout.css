@@ -1,0 +1,815 @@
+/* On-site Stripe checkout + confirmation. Themed entirely off the shared oklch
+   tokens in critical.css, so it tracks all 10 site themes for free. Unlayered to
+   match shop.css. */
+
+.checkout-page,
+.checkout-page * {
+    box-sizing: border-box;
+}
+
+.checkout-page {
+    --checkout-bg: var(--surface-1);
+    --checkout-max: 72rem;
+    min-block-size: 100svh;
+    margin: 0;
+    padding: 0;
+    background: var(--checkout-bg);
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+.checkout-page button {
+    appearance: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+/* The [hidden] attribute must win over the display values set on state
+   containers (.checkout-state / .checkout-grid / .checkout-done / spinners),
+   or those panels render through despite being toggled off. Higher specificity
+   than the single-class display rules, so no !important needed. */
+.checkout-page [hidden] {
+    display: none;
+}
+
+/* --- topbar --- */
+
+.checkout-topbar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem clamp(0.8rem, 3vw, 1.6rem);
+    background: color-mix(in oklab, var(--surface-1) 90%, transparent);
+    border-block-end: 1px solid var(--border-subtle);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+
+.checkout-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    justify-self: start;
+    padding: 0.35rem 0.7rem 0.35rem 0.5rem;
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-pill, 999em);
+    color: var(--text-1);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.checkout-back:hover {
+    border-color: var(--text-1);
+}
+
+.checkout-back-arrow {
+    font-size: 1.1em;
+    line-height: 1;
+}
+
+.checkout-wordmark {
+    margin: 0;
+    justify-self: center;
+    font-family: var(--font-display);
+    font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.checkout-topbar .theme-picker {
+    justify-self: end;
+}
+
+/* --- shell + states --- */
+
+.checkout-shell {
+    inline-size: min(100%, var(--checkout-max));
+    margin-inline: auto;
+    padding: clamp(1rem, 4vw, 2.5rem) clamp(0.9rem, 3vw, 1.6rem) 4rem;
+}
+
+.checkout-state {
+    display: grid;
+    place-items: center;
+    gap: 0.85rem;
+    text-align: center;
+    min-block-size: 50svh;
+    padding: 2rem 1rem;
+}
+
+.checkout-state h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 6vw, 2.6rem);
+    line-height: 0.95;
+}
+
+.checkout-state p {
+    margin: 0;
+    max-inline-size: 32rem;
+    color: var(--text-2);
+}
+
+.checkout-button-link {
+    display: inline-block;
+    margin-block-start: 0.4rem;
+    padding: 0.75rem 1.4rem;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    border-radius: var(--radius-pill, 999em);
+    font-weight: 800;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.85rem;
+}
+
+.checkout-button-link:hover {
+    filter: brightness(1.06);
+}
+
+.checkout-empty-cap {
+    inline-size: 84px;
+    block-size: 64px;
+    position: relative;
+    opacity: 0.5;
+}
+
+.checkout-empty-cap::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 6px;
+    inset-inline: 12px;
+    block-size: 40px;
+    background: var(--surface-3);
+    border: 2px solid var(--text-2);
+    border-radius: 38px 38px 8px 8px / 44px 44px 8px 8px;
+}
+
+.checkout-empty-cap::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 6px;
+    inset-inline-start: 4px;
+    inline-size: 60px;
+    block-size: 16px;
+    background: var(--surface-3);
+    border: 2px solid var(--text-2);
+    border-radius: 0 0 24px 24px;
+}
+
+/* --- spinners --- */
+
+.checkout-spinner-lg {
+    inline-size: 36px;
+    block-size: 36px;
+    border: 3px solid var(--border-muted);
+    border-block-start-color: var(--color-primary);
+    border-radius: 50%;
+    animation: checkout-spin 0.8s linear infinite;
+}
+
+@keyframes checkout-spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+/* --- grid --- */
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+    gap: clamp(1.2rem, 4vw, 2.6rem);
+    align-items: start;
+}
+
+@media (max-width: 52rem) {
+    .checkout-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .checkout-receipt {
+        order: -1;
+        position: static;
+    }
+}
+
+.checkout-h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 7vw, 3rem);
+    line-height: 0.9;
+    text-transform: uppercase;
+}
+
+.checkout-lede {
+    margin: 0.4rem 0 1.6rem;
+    color: var(--text-2);
+    font-size: 0.95rem;
+}
+
+/* --- steps --- */
+
+.checkout-step {
+    margin-block-end: 1.1rem;
+    padding: clamp(1rem, 3vw, 1.4rem);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+}
+
+.checkout-step-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-block-end: 1rem;
+}
+
+.checkout-step-head h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.checkout-step-num {
+    display: grid;
+    place-items: center;
+    inline-size: 1.7rem;
+    block-size: 1.7rem;
+    flex: none;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    border-radius: 50%;
+    font-weight: 900;
+    font-size: 0.85rem;
+}
+
+.checkout-field label {
+    display: block;
+    margin-block-end: 0.35rem;
+    color: var(--text-2);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.checkout-field input {
+    inline-size: 100%;
+    padding: 0.72rem 0.8rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-field, 0.5rem);
+    color: var(--text-1);
+    font: inherit;
+    font-size: 1rem;
+}
+
+.checkout-field input::placeholder {
+    color: var(--text-muted);
+}
+
+.checkout-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 25%, transparent);
+}
+
+.checkout-field-hint {
+    margin: 0.45rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+/* --- Stripe element hosts --- */
+
+.checkout-element {
+    min-block-size: 2.5rem;
+}
+
+.checkout-element-skeleton {
+    block-size: 7.5rem;
+    border-radius: var(--radius-field, 0.5rem);
+    background: linear-gradient(
+        100deg,
+        var(--surface-2) 30%,
+        var(--surface-3) 50%,
+        var(--surface-2) 70%
+    );
+    background-size: 200% 100%;
+    animation: checkout-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes checkout-shimmer {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+/* --- error + pay --- */
+
+.checkout-error {
+    margin: 0.9rem 0 0;
+    padding: 0.7rem 0.85rem;
+    background: color-mix(in oklab, var(--color-error) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--color-error) 45%, transparent);
+    border-radius: var(--radius-field, 0.5rem);
+    color: var(--color-error);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.checkout-pay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    inline-size: 100%;
+    margin-block-start: 1.1rem;
+    padding: 0.95rem 1.2rem;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    border: none;
+    border-radius: var(--radius-field, 0.6rem);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    transition:
+        transform 0.12s ease,
+        filter 0.12s ease;
+}
+
+.checkout-pay:hover:not(:disabled) {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+}
+
+.checkout-pay:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.checkout-pay:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.checkout-pay-spinner {
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+    border: 2px solid color-mix(in oklab, var(--color-primary-content) 45%, transparent);
+    border-block-start-color: var(--color-primary-content);
+    border-radius: 50%;
+    animation: checkout-spin 0.7s linear infinite;
+}
+
+.checkout-secure {
+    margin: 0.85rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* --- receipt --- */
+
+.checkout-receipt {
+    position: sticky;
+    inset-block-start: 4.5rem;
+}
+
+.receipt {
+    --receipt-bg: color-mix(in oklab, var(--surface-1) 80%, var(--surface-3));
+    position: relative;
+    font-family: var(--font-mono);
+    filter: drop-shadow(0 12px 24px color-mix(in oklab, var(--text-1) 14%, transparent));
+}
+
+/* Perforated ticket edges: page-colored half-circles biting into the paper. */
+.receipt::before,
+.receipt::after {
+    content: "";
+    position: absolute;
+    inset-inline: -1px;
+    block-size: 10px;
+    background: radial-gradient(
+            circle 5px at 7px 50%,
+            var(--checkout-bg) 0 4.5px,
+            transparent 5px
+        )
+        0 0 / 14px 10px repeat-x;
+}
+
+.receipt::before {
+    inset-block-start: -4px;
+}
+
+.receipt::after {
+    inset-block-end: -4px;
+    transform: scaleY(-1);
+}
+
+.receipt-paper {
+    position: relative;
+    overflow: hidden;
+    padding: 1.3rem 1.25rem 1.1rem;
+    background: var(--receipt-bg);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-1);
+}
+
+.receipt-head {
+    text-align: center;
+}
+
+.receipt-logo {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+}
+
+.receipt-sub {
+    margin: 0.2rem 0 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: var(--text-2);
+}
+
+.receipt-meta {
+    margin: 0.55rem 0 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+}
+
+.receipt-rule {
+    block-size: 0;
+    border-block-start: 1px dashed var(--border-strong);
+    margin-block: 0.85rem;
+}
+
+.receipt-rule-bold {
+    border-block-start-style: solid;
+    border-block-start-width: 2px;
+}
+
+.receipt-lines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.7rem;
+}
+
+.receipt-line {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+}
+
+.receipt-line-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.receipt-line-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-inline-size: 0;
+}
+
+.receipt-line-name {
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.receipt-line-price {
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.receipt-qty {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding-inline-start: 2.1rem;
+}
+
+.receipt-qty-btn,
+.receipt-remove {
+    display: grid;
+    place-items: center;
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.35rem;
+    background: var(--surface-2);
+    color: var(--text-1);
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.receipt-qty-btn:hover,
+.receipt-remove:hover {
+    border-color: var(--text-1);
+}
+
+.receipt-qty-val {
+    min-inline-size: 1.4rem;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.82rem;
+}
+
+.receipt-remove {
+    margin-inline-start: 0.25rem;
+    color: var(--text-muted);
+}
+
+.receipt-remove:hover {
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
+.receipt-totals,
+.receipt-grand {
+    margin: 0;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.receipt-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.receipt-row dt {
+    color: var(--text-2);
+    font-size: 0.8rem;
+}
+
+.receipt-row dd {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.receipt-grand .receipt-row dt {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--text-1);
+    text-transform: uppercase;
+}
+
+.receipt-grand .receipt-row dd {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+}
+
+.receipt-barcode {
+    block-size: 2.2rem;
+    margin: 1rem 0 0.5rem;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--text-1) 0 2px,
+        transparent 2px 4px,
+        var(--text-1) 4px 5px,
+        transparent 5px 9px,
+        var(--text-1) 9px 12px,
+        transparent 12px 14px
+    );
+}
+
+.receipt-thanks {
+    margin: 0;
+    text-align: center;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+}
+
+/* PAID rubber stamp */
+.receipt-stamp {
+    position: absolute;
+    inset-block-start: 42%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%) rotate(-13deg);
+    padding: 0.05em 0.25em;
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    letter-spacing: 0.08em;
+    color: var(--color-error);
+    border: 4px solid var(--color-error);
+    border-radius: 0.4rem;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.receipt-stamp[data-show="true"] {
+    animation: receipt-stamp-thunk 0.55s cubic-bezier(0.2, 1.5, 0.35, 1) forwards;
+}
+
+@keyframes receipt-stamp-thunk {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-13deg) scale(2.4);
+    }
+    55% {
+        opacity: 0.95;
+    }
+    100% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(-13deg) scale(1);
+    }
+}
+
+/* --- mini embroidered cap chip --- */
+
+.mini-cap {
+    position: relative;
+    inline-size: 30px;
+    block-size: 24px;
+    flex: none;
+}
+
+.mini-cap-crown {
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline: 3px;
+    block-size: 15px;
+    background: var(--cap);
+    border: 1.5px solid var(--thread);
+    border-radius: 14px 14px 4px 4px / 15px 15px 4px 4px;
+}
+
+.mini-cap-brim {
+    position: absolute;
+    inset-block-end: 1px;
+    inset-inline-start: 1px;
+    inline-size: 22px;
+    block-size: 7px;
+    background: var(--cap);
+    border: 1.5px solid var(--thread);
+    border-radius: 0 0 10px 10px;
+}
+
+.mini-cap-dot {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    inline-size: 5px;
+    block-size: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    /* Thread-colored hairline keeps the button visible when --accent is light. */
+    box-shadow: 0 0 0 0.5px var(--thread);
+}
+
+/* --- inline success overlay (checkout mode) --- */
+
+.checkout-done {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background: color-mix(in oklab, var(--surface-1) 82%, transparent);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: checkout-fade 0.3s ease both;
+}
+
+.checkout-done-inner {
+    display: grid;
+    place-items: center;
+    gap: 0.6rem;
+    text-align: center;
+}
+
+.checkout-done-kicker {
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    font-size: 0.78rem;
+    color: var(--color-success);
+}
+
+.checkout-done-text {
+    margin: 0;
+    color: var(--text-2);
+}
+
+@keyframes checkout-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+/* --- success page --- */
+
+.checkout-confirm {
+    display: grid;
+    justify-items: center;
+    gap: 1.4rem;
+    max-inline-size: 30rem;
+    margin-inline: auto;
+    text-align: center;
+}
+
+.checkout-confirm-head {
+    display: grid;
+    justify-items: center;
+    gap: 0.45rem;
+}
+
+.checkout-confirm-kicker {
+    margin: 0.4rem 0 0;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    font-size: 0.78rem;
+    color: var(--color-success);
+}
+
+.checkout-confirm-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 6vw, 2.6rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+}
+
+.checkout-confirm-lede {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 0.95rem;
+}
+
+.checkout-confirm .checkout-receipt {
+    position: static;
+    inline-size: min(100%, 22rem);
+}
+
+.checkout-confirm-actions {
+    margin-block-start: 0.4rem;
+}
+
+/* Animated check */
+.checkout-check {
+    inline-size: 3.4rem;
+    block-size: 3.4rem;
+    border-radius: 50%;
+    background: var(--color-success);
+    position: relative;
+    animation: checkout-pop 0.4s cubic-bezier(0.2, 1.5, 0.35, 1) both;
+}
+
+.checkout-check::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 38%;
+    inset-inline-start: 32%;
+    inline-size: 1rem;
+    block-size: 0.55rem;
+    border-inline-start: 3px solid var(--color-success-content);
+    border-block-end: 3px solid var(--color-success-content);
+    transform: rotate(-45deg);
+}
+
+@keyframes checkout-pop {
+    from {
+        transform: scale(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .checkout-spinner-lg,
+    .checkout-pay-spinner,
+    .checkout-element-skeleton,
+    .receipt-stamp[data-show="true"],
+    .checkout-check,
+    .checkout-done {
+        animation: none;
+    }
+    .receipt-stamp[data-show="true"] {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(-13deg) scale(1);
+    }
+}
