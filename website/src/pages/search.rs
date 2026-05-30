@@ -15,8 +15,8 @@ use crate::AppState;
 use crate::asset_url;
 use crate::pages::articles::{Category, Tag};
 use crate::search::{
-    ArticleSearchHit, CommentSearchHit, SearchQuery, SearchResults, all_indexed_article_tags,
-    parse_article_date,
+    ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
+    all_indexed_article_tags, parse_article_date,
 };
 
 #[derive(Debug, Deserialize)]
@@ -114,8 +114,24 @@ fn render_page(
     };
     let article_results = render_article_results(&results.article_hits);
     let comment_results = render_comment_results(&results.comment_hits);
+    // Only render the Caps group when there are product matches, so article
+    // searches aren't cluttered with an empty store section.
+    let product_section = if results.product_hits.is_empty() {
+        HtmlFragment::empty()
+    } else {
+        let product_results = render_product_results(&results.product_hits);
+        view! {
+            <section class="search-result-group search-result-group-caps">
+                <h2>"Caps"</h2>
+                { product_results }
+            </section>
+        }
+    };
     let filters = render_filters(params, search_query, results);
-    let empty = if results.total_articles == 0 && results.total_comments == 0 {
+    let empty = if results.total_articles == 0
+        && results.total_comments == 0
+        && results.total_products == 0
+    {
         view! {
             <section class="search-empty">
                 <h2>"No matches"</h2>
@@ -125,12 +141,22 @@ fn render_page(
     } else {
         HtmlFragment::empty()
     };
+    let cap_summary = if results.total_products > 0 {
+        format!(
+            " · {} cap{}",
+            results.total_products,
+            plural(results.total_products)
+        )
+    } else {
+        String::new()
+    };
     let summary = format!(
-        "{} article{} · {} comment{}",
+        "{} article{} · {} comment{}{}",
         results.total_articles,
         plural(results.total_articles),
         results.total_comments,
-        plural(results.total_comments)
+        plural(results.total_comments),
+        cap_summary
     );
 
     Html(html! {
@@ -218,6 +244,7 @@ fn render_page(
                         { filters }
                     </form>
                     <div class="search-results-grid">
+                        { product_section }
                         <section class="search-result-group">
                             <h2>"Articles"</h2>
                             { article_results }
@@ -374,6 +401,38 @@ fn render_comment_results(hits: &[CommentSearchHit]) -> HtmlFragment {
                     <a class="search-result-title" href={ href }>{ byline }</a>
                     <blockquote>{ hit.quote_exact.clone() }</blockquote>
                     <p>{ hit.snippet.clone() }</p>
+                </article>
+            }
+        })
+        .collect()
+}
+
+fn render_product_results(hits: &[ProductSearchHit]) -> HtmlFragment {
+    if hits.is_empty() {
+        return HtmlFragment::empty();
+    }
+    hits.iter()
+        .map(|hit| {
+            let price = format!("${}", hit.price);
+            let chip_style = format!(
+                "--cap: {}; --thread: {}; --accent: {}",
+                hit.cap_color, hit.thread_color, hit.accent_color
+            );
+            view! {
+                <article class="search-result search-result-product">
+                    <a class="search-result-title" href={ hit.url.clone() }>
+                        <span class="search-cap-chip" style={ chip_style } aria-hidden="true">
+                            <span class="search-cap-crown"></span>
+                            <span class="search-cap-brim"></span>
+                            <span class="search-cap-dot"></span>
+                        </span>
+                        { hit.name.clone() }
+                    </a>
+                    <div class="search-result-meta">
+                        <span>"Dad cap"</span>
+                        <span>{ price }</span>
+                    </div>
+                    <p>{ hit.description.clone() }</p>
                 </article>
             }
         })

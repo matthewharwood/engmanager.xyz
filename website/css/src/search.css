@@ -271,3 +271,50 @@
         grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
     }
 }
+
+/* Store results — a tiny embroidered-cap chip drawn from the product's colors. */
+.search-result-product .search-result-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.search-cap-chip {
+    position: relative;
+    inline-size: 26px;
+    block-size: 21px;
+    flex: none;
+}
+
+.search-cap-crown {
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline: 3px;
+    block-size: 13px;
+    background: var(--cap);
+    border: 1.5px solid var(--thread);
+    border-radius: 12px 12px 4px 4px / 13px 13px 4px 4px;
+}
+
+.search-cap-brim {
+    position: absolute;
+    inset-block-end: 1px;
+    inset-inline-start: 1px;
+    inline-size: 19px;
+    block-size: 6px;
+    background: var(--cap);
+    border: 1.5px solid var(--thread);
+    border-radius: 0 0 9px 9px;
+}
+
+.search-cap-dot {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    inline-size: 4px;
+    block-size: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0.5px var(--thread);
+}
