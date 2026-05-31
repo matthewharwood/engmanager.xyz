@@ -281,6 +281,23 @@ pub struct Article {
 
 const ARTICLE_LIST: &[Article] = &[
     Article {
+        slug: "vibe-coding-a-shop",
+        title: "I Vibe-Coded a Merch Store To See If I Could Sell a Dad Cap",
+        title_alias: None,
+        date: ArticleDate::new(2026, 5, 30),
+        summary: "An extension of Project FootTraffic: standing up a real store — inline Stripe checkout, a layered camera-zoom UI, the whole thing a Rust templating macro — to test whether one person plus AI can ship commerce people actually buy.",
+        indexed: true,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::ClaudeCode,
+            Tag::Rust,
+            Tag::Macros,
+            Tag::Solopreneur,
+            Tag::Workflow,
+        ],
+    },
+    Article {
         slug: "project-foottraffic",
         title: "Project FootTraffic: A Real Estate Boom for Small Business",
         title_alias: None,

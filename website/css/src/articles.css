@@ -1349,6 +1349,178 @@ html[data-article-reveal="running"]
     margin: 0;
 }
 
+/* ===========================================================================
+ * Shop CTAs — three escalating calls to the store.
+ *  1. .shop-cta-inline  — a light "skip ahead" link near the top.
+ *  2. .shop-breakout    — a full-bleed "well" in the middle (see below).
+ *  3. .shop-cta-card    — a self-contained card near the end.
+ * =========================================================================== */
+
+/* 1 — top inline link */
+.shop-cta-inline {
+    margin-block: 1.75rem;
+    padding: 0.7rem 1rem;
+    border-inline-start: 3px solid var(--accent);
+    background: color-mix(in oklab, var(--accent) 6%, transparent);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.shop-cta-inline-link {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.shop-cta-inline-link:hover,
+.shop-cta-inline-link:focus-visible {
+    text-decoration: underline;
+}
+
+/* 3 — bottom card */
+.shop-cta-card {
+    margin-block: 2rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+    border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--ctp-surface0));
+    border-radius: 0.75rem;
+    background: color-mix(in oklab, var(--accent) 5%, var(--ctp-base));
+}
+
+.shop-cta-card-kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ctp-subtext1);
+}
+
+.shop-cta-card-button,
+.shop-breakout-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--accent);
+    color: var(--ctp-base);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    border: 2px solid var(--accent);
+    border-radius: 0.5rem;
+    transition: filter 150ms ease, transform 150ms ease;
+}
+
+.shop-cta-card-button:hover,
+.shop-cta-card-button:focus-visible,
+.shop-breakout-button:hover,
+.shop-breakout-button:focus-visible {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+/* 2 — middle breakout "well". Breaks out of the 38rem column toward the viewport
+ * edges, but inset ~1.5rem each side so it NEVER overflows past the scrollbar
+ * (robust for any scrollbar <= 24px — no overflow hack, no horizontal scroll).
+ * The well BACKGROUND extends wide (behind the fixed desktop TOC); the CONTENT
+ * is centred + capped at 34rem so it never reaches the TOC at calc(50% + 21rem).
+ * Below 42rem it collapses to a normal contained block (no breakout on mobile). */
+.shop-breakout {
+    margin-block: clamp(2.5rem, 6vw, 3.75rem);
+    margin-inline: calc(50% - 50vw + 1.5rem);
+    padding-block: clamp(2.25rem, 6vw, 3.5rem);
+    padding-inline: 1.25rem;
+    background-color: color-mix(in oklab, var(--accent) 8%, var(--ctp-base));
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            color-mix(in oklab, var(--accent) 9%, transparent) 0,
+            color-mix(in oklab, var(--accent) 9%, transparent) 2px,
+            transparent 2px,
+            transparent 15px
+        ),
+        repeating-linear-gradient(
+            -45deg,
+            color-mix(in oklab, var(--accent) 5%, transparent) 0,
+            color-mix(in oklab, var(--accent) 5%, transparent) 1px,
+            transparent 1px,
+            transparent 15px
+        );
+    border-block: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.shop-breakout-inner {
+    max-inline-size: 34rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(0.85rem, 3vw, 1.4rem);
+}
+
+.shop-breakout-kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ctp-subtext1);
+}
+
+.shop-breakout-headline {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-weight: 900;
+    font-size: clamp(2.25rem, 8vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: var(--ctp-text);
+}
+
+.shop-breakout-button {
+    margin-block-start: 0.35rem;
+    padding: 0.9rem 1.6rem;
+    font-size: 1rem;
+}
+
+/* Mobile: no breakout (it doesn't make sense without the width) — the well
+ * becomes a normal contained card with a full border + radius. */
+@media (max-width: 42rem) {
+    .shop-breakout {
+        margin-inline: 0;
+        border: 1px solid color-mix(in oklab, var(--accent) 22%, transparent);
+        border-radius: 0.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shop-cta-card-button,
+    .shop-breakout-button {
+        transition: none;
+    }
+    .shop-cta-card-button:hover,
+    .shop-cta-card-button:focus-visible,
+    .shop-breakout-button:hover,
+    .shop-breakout-button:focus-visible {
+        transform: none;
+    }
+}
+
 .article figure {
     margin: 2rem 0;
     padding: 1.25rem;
@@ -1687,6 +1859,21 @@ html[data-article-reveal="running"]
     }
 }
 
+/* Desktop: the action tools are relocated under the "On this page" module
+   (toc-waypoints.js), so hide the now-empty header disclosure and present the
+   tools as a divided section beneath the TOC list. */
+@media (min-width: 72rem) {
+    .article-meta-disclosure-tools {
+        display: none;
+    }
+
+    .article-toc .article-meta-tools {
+        margin-block-start: 1rem;
+        padding-block-start: 1rem;
+        border-block-start: 1px solid var(--ctp-surface0);
+    }
+}
+
 .article-toc-heading {
     display: inline-flex;
     align-items: center;
@@ -1740,7 +1927,10 @@ html[data-article-reveal="running"]
 .article-toc-link.is-current {
     color: var(--accent);
     background: color-mix(in oklab, var(--accent) 9%, transparent);
-    font-weight: 600;
+    /* No font-weight change: a heavier active state widened the text enough to
+       wrap a line that the inactive state didn't, so highlighting an item made
+       it "carriage return." Colour + the highlight box already read as active,
+       and keeping the weight constant guarantees the line count never shifts. */
 }
 
 .article-toc-link.is-h3 {
