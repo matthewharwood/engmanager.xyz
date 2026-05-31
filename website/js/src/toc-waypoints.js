@@ -14,6 +14,24 @@
     const toc = document.querySelector(".article-toc");
     if (!toc) return;
 
+    // Relocate the article action tools (share / read aloud / fullscreen /
+    // recolor) under the "On this page" module on desktop; keep them in the
+    // header's Actions disclosure on mobile. Moving them OUT of that <details>
+    // on desktop also fixes a Chromium quirk where the disclosure's
+    // force-shown content didn't appear until a resize-triggered style recalc —
+    // so the tools now show on first load instead of only after a resize.
+    const tools = document.querySelector(".article-meta-tools");
+    const toolsHome = document.querySelector(".article-meta-disclosure-tools");
+    if (tools && toolsHome) {
+        const wide = window.matchMedia("(min-width: 72rem)");
+        const placeTools = () => {
+            if (wide.matches) toc.append(tools);
+            else toolsHome.append(tools);
+        };
+        placeTools();
+        wide.addEventListener("change", placeTools);
+    }
+
     const headings = Array.from(
         document.querySelectorAll(".article :is(h2, h3)[id]"),
     );
