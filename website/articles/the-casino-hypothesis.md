@@ -63,9 +63,9 @@ Sentient or not, the casino runs the same. The flywheel spins the same. The ques
 
 ## The Uncomfortable Mirror
 
-I have to be honest here, because I just did the thing.
+I have to be honest here, because I just did the thing — and on the same treadmill, in the same thirty-five minutes, that produced it.
 
-In the [last article](/articles/autonomous-av-studio) I wrote about building an autonomous studio — a loop that takes any idea and pumps out short-form video forever, scores it, polishes it, posts it to three platforms, reads the audience response, and uses that to make the next one. I was proud of it. I called the loop "the actual invention."
+In the [last article](/articles/autonomous-av-studio) I wrote about building an autonomous studio — a loop that takes any idea and pumps out short-form video forever, scores it, polishes it, posts it to three platforms, reads the audience response, and uses that to make the next one. I was proud of it. I called the loop "the actual invention." This hypothesis is what was sitting on the other screen while I built it.
 
 Read it again through this lens. I built a machine whose entire purpose is to manufacture attention-bait at industrial scale and feed it into the exact feeds we're talking about. Whose loop is that, really? I told myself I was building leverage for small businesses. Maybe I was. I was also, very enthusiastically, volunteering to be on the construction crew.
 
