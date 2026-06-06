@@ -322,7 +322,7 @@ const ARTICLE_LIST: &[Article] = &[
         title: "I'm Automating an Entire Film Crew So One Script Becomes a Reel",
         title_alias: None,
         date: ArticleDate::new(2026, 6, 6),
-        summary: "An experiment in building a repeatable, autonomous AV studio: a script goes in, a finished 60s vertical reel comes out — composed in Blender, narrated by ElevenLabs, scored by Suno, all driven over MCP. A cursed treadmill infomercial is the case study; the real deliverable is the pipeline.",
+        summary: "It started on a treadmill: vibe-coding while watching a game, I realized I'd become the brain-rot reel — and spun it into a cursed infomercial for a two-screen treadmill. But the reel isn't the point. The point is the machine that makes it: a repeatable control plane — ChatGPT, Linear, an MCP conductor, Blender, ElevenLabs/Suno/Kling — that turns any idea into a published short. And how that same treadmill session dovetailed into a much stranger thought.",
         indexed: true,
         category: Category::Workflow,
         tags: &[
