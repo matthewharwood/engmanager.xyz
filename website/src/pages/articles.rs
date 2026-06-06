@@ -120,6 +120,8 @@ pub enum Tag {
     ThreeDPrinting,
     Makerspace,
     Parenting,
+    Automation,
+    Video,
 }
 
 impl Tag {
@@ -145,6 +147,8 @@ impl Tag {
         Self::ThreeDPrinting,
         Self::Makerspace,
         Self::Parenting,
+        Self::Automation,
+        Self::Video,
     ];
 
     pub fn label(self) -> &'static str {
@@ -170,6 +174,8 @@ impl Tag {
             Self::ThreeDPrinting => "3d-printing",
             Self::Makerspace => "makerspace",
             Self::Parenting => "parenting",
+            Self::Automation => "automation",
+            Self::Video => "video",
         }
     }
 
@@ -204,6 +210,8 @@ impl Tag {
             Self::ThreeDPrinting => "🖨",
             Self::Makerspace => "🧰",
             Self::Parenting => "🧒",
+            Self::Automation => "🔁",
+            Self::Video => "🎬",
         }
     }
 }
@@ -280,6 +288,25 @@ pub struct Article {
 }
 
 const ARTICLE_LIST: &[Article] = &[
+    Article {
+        slug: "autonomous-av-studio",
+        title: "I'm Automating an Entire Film Crew So One Script Becomes a Reel",
+        title_alias: None,
+        date: ArticleDate::new(2026, 6, 6),
+        summary: "An experiment in building a repeatable, autonomous AV studio: a script goes in, a finished 60s vertical reel comes out — composed in Blender, narrated by ElevenLabs, scored by Suno, all driven over MCP. A cursed treadmill infomercial is the case study; the real deliverable is the pipeline.",
+        indexed: true,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::ClaudeCode,
+            Tag::Mcp,
+            Tag::Blender,
+            Tag::Automation,
+            Tag::Video,
+            Tag::Workflow,
+            Tag::Solopreneur,
+        ],
+    },
     Article {
         slug: "vibe-coding-a-shop",
         title: "I Vibe-Coded a Merch Store To See If I Could Sell a Dad Cap",
