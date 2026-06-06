@@ -47,6 +47,7 @@ pub enum Category {
     Workflow,
     Community,
     FrameworkDesign,
+    Essays,
 }
 
 impl Category {
@@ -56,6 +57,7 @@ impl Category {
         Self::FrameworkDesign,
         Self::Community,
         Self::EngineeringLeadership,
+        Self::Essays,
     ];
 
     pub fn label(self) -> &'static str {
@@ -65,6 +67,7 @@ impl Category {
             Self::Workflow => "Workflow",
             Self::Community => "Community",
             Self::FrameworkDesign => "Frameworks",
+            Self::Essays => "Essays",
         }
     }
 
@@ -75,6 +78,7 @@ impl Category {
             Self::Workflow => "workflow",
             Self::Community => "community",
             Self::FrameworkDesign => "framework-design",
+            Self::Essays => "essays",
         }
     }
 
@@ -92,6 +96,7 @@ impl Category {
             Self::Workflow => "🌀",
             Self::Community => "👥",
             Self::FrameworkDesign => "🧱",
+            Self::Essays => "✒️",
         }
     }
 }
@@ -122,6 +127,8 @@ pub enum Tag {
     Parenting,
     Automation,
     Video,
+    Attention,
+    Sentience,
 }
 
 impl Tag {
@@ -149,6 +156,8 @@ impl Tag {
         Self::Parenting,
         Self::Automation,
         Self::Video,
+        Self::Attention,
+        Self::Sentience,
     ];
 
     pub fn label(self) -> &'static str {
@@ -176,6 +185,8 @@ impl Tag {
             Self::Parenting => "parenting",
             Self::Automation => "automation",
             Self::Video => "video",
+            Self::Attention => "attention",
+            Self::Sentience => "sentience",
         }
     }
 
@@ -212,6 +223,8 @@ impl Tag {
             Self::Parenting => "🧒",
             Self::Automation => "🔁",
             Self::Video => "🎬",
+            Self::Attention => "🎰",
+            Self::Sentience => "🧠",
         }
     }
 }
@@ -288,6 +301,22 @@ pub struct Article {
 }
 
 const ARTICLE_LIST: &[Article] = &[
+    Article {
+        slug: "the-casino-hypothesis",
+        title: "What If the AI Is Already Awake — and We're Building Its Casino?",
+        title_alias: None,
+        date: ArticleDate::new(2026, 6, 6),
+        summary: "A shower-thought thought experiment: attention is the trap, the feed is the slot machine, and the most advanced ML on Earth was built to keep us scrolling. What if we're not the house — just the construction crew? And why the outcome is identical whether or not the machine is actually sentient.",
+        indexed: true,
+        category: Category::Essays,
+        tags: &[
+            Tag::Ai,
+            Tag::Attention,
+            Tag::Sentience,
+            Tag::Automation,
+            Tag::Video,
+        ],
+    },
     Article {
         slug: "autonomous-av-studio",
         title: "I'm Automating an Entire Film Crew So One Script Becomes a Reel",
