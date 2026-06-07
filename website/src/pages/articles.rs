@@ -129,6 +129,7 @@ pub enum Tag {
     Video,
     Attention,
     Sentience,
+    Philosophy,
 }
 
 impl Tag {
@@ -158,6 +159,7 @@ impl Tag {
         Self::Video,
         Self::Attention,
         Self::Sentience,
+        Self::Philosophy,
     ];
 
     pub fn label(self) -> &'static str {
@@ -187,6 +189,7 @@ impl Tag {
             Self::Video => "video",
             Self::Attention => "attention",
             Self::Sentience => "sentience",
+            Self::Philosophy => "philosophy",
         }
     }
 
@@ -225,6 +228,7 @@ impl Tag {
             Self::Video => "🎬",
             Self::Attention => "🎰",
             Self::Sentience => "🧠",
+            Self::Philosophy => "🌀",
         }
     }
 }
@@ -306,15 +310,14 @@ const ARTICLE_LIST: &[Article] = &[
         title: "What If the AI Is Already Awake — and We're Building Its Casino?",
         title_alias: None,
         date: ArticleDate::new(2026, 6, 6),
-        summary: "A shower-thought thought experiment: attention is the trap, the feed is the slot machine, and the most advanced ML on Earth was built to keep us scrolling. What if we're not the house — just the construction crew? And why the outcome is identical whether or not the machine is actually sentient.",
+        summary: "A shower-thought thought experiment: attention is the trap and the feed is a slot machine built from the most advanced ML on Earth. A game-theory read of the house — micro (the prompt you almost master), macro (the spend), meso (the randomness the labs tune) — that descends, five whys deep, into a strange loop where building the AI and being built by it turn out to be the same sentence.",
         indexed: true,
         category: Category::Essays,
         tags: &[
             Tag::Ai,
             Tag::Attention,
             Tag::Sentience,
-            Tag::Automation,
-            Tag::Video,
+            Tag::Philosophy,
         ],
     },
     Article {
