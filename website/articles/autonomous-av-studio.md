@@ -1,5 +1,13 @@
 Thirty-five minutes into a treadmill session, phone propped up, Claude Code open in one hand, a game running on the screen above me. I wasn't training for anything. I was just walking and letting my mind go loose the way it does on a treadmill — that stationary, going-nowhere flow state where thoughts wander somewhere a little more profound than they should.
 
+<figure class="article-figure">
+  <video controls preload="metadata" playsinline style="display:block;width:100%;max-width:320px;aspect-ratio:9/16;border-radius:0.5rem;background:#000">
+    <source src="/assets/scrollmill-duo.mp4" type="video/mp4" />
+    Your browser can't play this video. <a href="/assets/scrollmill-duo.mp4">Download the reel</a>.
+  </video>
+  <figcaption>The thing that fell out of that treadmill session: the ScrollMill Duo™ reel — a 60-second vertical infomercial. Sound on. The rest of this post is how (and why) I want a machine to make these.</figcaption>
+</figure>
+
 And somewhere in there I caught myself and laughed. I was *vibe-coding on a treadmill while watching a game.* Productivity on one screen, brain-rot on the other. I had become a living TikTok reel — the kind that "teaches" you something in the captions while a Subway Surfers clip runs underneath so your eyes never leave. I wasn't watching that genre of content. I had turned into it.
 
 So I did what you do in that zone. I asked: *what if this were a real product?*
@@ -108,4 +116,4 @@ That's the tension I can't shake, and it's the same split-screen as the gag. On 
 
 So that's the dovetail. This piece is the *how* — the workflow, the control plane, the loop I'm genuinely trying to build. The other one, [**The Casino Hypothesis**](/articles/the-casino-hypothesis), is the *uh-oh* that arrived on the very same treadmill: what if attention is the trap, and we're just the crew building the house?
 
-Honest status: this is early. The Linear graph is being worked; the real treadmill, the keyed host, the voice, the score, the Kling pass, the uploaded reel — none of it exists yet. When it does, I'll swap in the real frames and write up what broke. For now the shape is what I'm sure of: build the loop once, run it forever. Even if the first thing it makes is an ad for a treadmill that ruins your life — which, having spent thirty-five minutes inside the idea, I now genuinely believe someone will ship.
+Honest status: this is early. The reel up top is a first cut — proof the thing can exist — but the Linear graph that's supposed to *generate* it end to end, hands-off, is still being wired. The win condition isn't "a reel got made." It's "the pipeline can rebuild it from source with no human in the loop." When that's true, I'll say so plainly and write up what broke. For now the shape is what I'm sure of: build the loop once, run it forever. Even if the first thing it makes is an ad for a treadmill that ruins your life — which, having spent thirty-five minutes inside the idea, I now genuinely believe someone will ship.
