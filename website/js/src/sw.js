@@ -6,7 +6,13 @@
 // Served at /sw.js by the Axum handler (see website/src/main.rs) with
 // `Service-Worker-Allowed: /` so it can scope the whole origin.
 
-const CACHE = "engmanager-v3";
+const CACHE = "engmanager-v4";
+
+// Media that streams via HTTP Range requests. We never route these through the
+// cache: a cached full 200 served back to a ranged <video>/<audio> request
+// makes the element stall and loop (play/pause forever). Let them hit the
+// network so the server can answer 206 Partial Content.
+const STREAMED_MEDIA = /\.(mp4|webm|mov|m4v|ogv)$/i;
 const PRECACHE_URLS = ["/offline.html"];
 
 self.addEventListener("install", (event) => {
@@ -35,12 +41,20 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
     const request = event.request;
     if (request.method !== "GET") return;
+    // Range requests (media seeking/streaming) must reach the server untouched
+    // so it can answer 206 Partial Content. The Cache API ignores Range on
+    // match and would hand back a full 200, which breaks <video> playback.
+    if (request.headers.has("range")) return;
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
     if (request.mode === "navigate") {
         event.respondWith(networkFirstNavigation(event));
     } else if (url.pathname.startsWith("/assets/")) {
+        // Don't cache-route large streamed media (see STREAMED_MEDIA). Even the
+        // initial non-ranged probe should go straight to the network so the
+        // cache never holds a full 200 that later breaks range requests.
+        if (STREAMED_MEDIA.test(url.pathname)) return;
         event.respondWith(cacheFirst(request));
     }
 });

@@ -1350,6 +1350,121 @@ html[data-article-reveal="running"]
 }
 
 /* ===========================================================================
+ * Threads post embed — quotes a real, public Threads post as an in-article
+ * card (attribution + link to the original). Styled with the Catppuccin
+ * tokens so it sits in the page rather than looking pasted-in.
+ * =========================================================================== */
+.threads-embed {
+    margin-block: 2rem;
+}
+
+/* Scoped under .article to beat `.article a` (blue + underline) so the card
+ * body reads like post text, not a link. */
+.article .threads-embed-link {
+    display: block;
+    text-decoration: none;
+    color: var(--ctp-text);
+    padding: 1.125rem 1.25rem;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.85rem;
+    transition:
+        border-color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.article .threads-embed-link:hover,
+.article .threads-embed-link:focus-visible {
+    text-decoration: none;
+    border-color: color-mix(in oklab, var(--ctp-text) 32%, var(--ctp-surface0));
+    transform: translateY(-1px);
+}
+
+.threads-embed-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.threads-embed-avatar {
+    flex: none;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ctp-base);
+    background: linear-gradient(135deg, var(--ctp-blue), var(--ctp-mauve));
+}
+
+.threads-embed-id {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+    min-inline-size: 0;
+}
+
+.threads-embed-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ctp-text);
+}
+
+.threads-embed-check {
+    inline-size: 0.95rem;
+    block-size: 0.95rem;
+    color: var(--ctp-blue);
+    flex: none;
+}
+
+.threads-embed-handle {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ctp-subtext0);
+}
+
+.threads-embed-logo {
+    margin-inline-start: auto;
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    color: var(--ctp-text);
+    flex: none;
+}
+
+.threads-embed-body {
+    display: block;
+    margin: 0.85rem 0 0;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ctp-text);
+}
+
+.threads-embed-foot {
+    margin-block-start: 0.9rem;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--ctp-surface0);
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ctp-subtext0);
+}
+
+.threads-embed-view {
+    margin-inline-start: auto;
+    color: var(--ctp-blue);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* ===========================================================================
  * Shop CTAs — three escalating calls to the store.
  *  1. .shop-cta-inline  — a light "skip ahead" link near the top.
  *  2. .shop-breakout    — a full-bleed "well" in the middle (see below).

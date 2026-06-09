@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, LazyLock};
 
 use axum::Router;
-use axum::body::Bytes;
+use axum::body::{Body, Bytes};
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, HeaderName, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
@@ -11,6 +11,7 @@ use axum::routing::{get, post};
 use rust_embed::{EmbeddedFile, RustEmbed};
 use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
+use tower_http::compression::predicate::{DefaultPredicate, NotForContentType, Predicate};
 
 pub mod comments;
 pub mod discord;
@@ -191,7 +192,7 @@ async fn offline_handler() -> Response {
         .into_response()
 }
 
-async fn asset_handler(Path(path): Path<String>) -> Response {
+async fn asset_handler(headers: HeaderMap, Path(path): Path<String>) -> Response {
     // Try the hashed form first (rewriting `styles.HASH.css` → `styles.css`);
     // fall back to the literal path so flat URLs (fonts in CSS, Markdown
     // images) keep resolving.
@@ -199,26 +200,105 @@ async fn asset_handler(Path(path): Path<String>) -> Response {
         .and_then(|stripped| lookup_asset(&stripped))
         .or_else(|| lookup_asset(&path));
 
-    match file {
-        Some(file) => {
-            let mime = file.metadata.mimetype();
-            // Assets are embedded into the binary, so their contents only
-            // change on deploy. Cache them aggressively at the edge and in
-            // the browser. `immutable` tells the browser to skip revalidation.
-            // Safe under hashed URLs because the URL itself changes whenever
-            // the bytes change.
-            let cache_control = "public, max-age=31536000, immutable";
-            (
-                [
-                    (header::CONTENT_TYPE, mime.to_string()),
-                    (header::CACHE_CONTROL, cache_control.to_string()),
-                ],
-                file.data.into_owned(),
-            )
-                .into_response()
+    let Some(file) = file else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let mime = file.metadata.mimetype().to_string();
+    // Assets are embedded into the binary, so their contents only change on
+    // deploy. Cache them aggressively at the edge and in the browser.
+    // `immutable` tells the browser to skip revalidation. Safe under hashed
+    // URLs because the URL itself changes whenever the bytes change.
+    let cache_control = "public, max-age=31536000, immutable";
+    let bytes = file.data.into_owned();
+    let total = bytes.len() as u64;
+
+    // Honor a single HTTP Range request so media elements (<video>/<audio>)
+    // can seek and stream. Without 206 Partial Content support, Safari/iOS
+    // (and others, for large files) stall and retry buffering in a loop,
+    // which reads on screen as the player auto-playing then pausing forever.
+    // `Accept-Ranges: bytes` is advertised on every response so clients know
+    // ranges are available even before they ask.
+    if let Some(range_header) = headers.get(header::RANGE).and_then(|v| v.to_str().ok()) {
+        match parse_byte_range(range_header, total) {
+            Some((start, end)) => {
+                let slice = bytes[start as usize..=end as usize].to_vec();
+                let content_range = format!("bytes {start}-{end}/{total}");
+                let content_len = end - start + 1;
+                return Response::builder()
+                    .status(StatusCode::PARTIAL_CONTENT)
+                    .header(header::CONTENT_TYPE, &mime)
+                    .header(header::CACHE_CONTROL, cache_control)
+                    .header(header::ACCEPT_RANGES, "bytes")
+                    .header(header::CONTENT_RANGE, content_range)
+                    .header(header::CONTENT_LENGTH, content_len)
+                    .body(Body::from(slice))
+                    .expect("valid 206 response");
+            }
+            // A `bytes=` range we couldn't satisfy → 416 with the total size so
+            // the client can re-request correctly. Non-`bytes=` units fall
+            // through to a normal 200.
+            None if range_header.trim_start().starts_with("bytes=") => {
+                return Response::builder()
+                    .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                    .header(header::CONTENT_RANGE, format!("bytes */{total}"))
+                    .header(header::ACCEPT_RANGES, "bytes")
+                    .body(Body::empty())
+                    .expect("valid 416 response");
+            }
+            None => {}
         }
-        None => StatusCode::NOT_FOUND.into_response(),
     }
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, &mime)
+        .header(header::CACHE_CONTROL, cache_control)
+        .header(header::ACCEPT_RANGES, "bytes")
+        .header(header::CONTENT_LENGTH, total)
+        .body(Body::from(bytes))
+        .expect("valid 200 response")
+}
+
+// Parse a single HTTP byte-range header value against a known total size,
+// returning an inclusive (start, end) clamped to the file. Supports the three
+// common forms: `bytes=START-END`, `bytes=START-` (to EOF), and `bytes=-N`
+// (last N bytes). Multi-range (comma-separated) and malformed specs return
+// None so the caller can fall back to a full 200 or a 416.
+fn parse_byte_range(value: &str, total: u64) -> Option<(u64, u64)> {
+    if total == 0 {
+        return None;
+    }
+    let spec = value.trim().strip_prefix("bytes=")?;
+    // We intentionally serve only the first range; bail on multi-range.
+    if spec.contains(',') {
+        return None;
+    }
+    let (start_s, end_s) = spec.split_once('-')?;
+    let (start_s, end_s) = (start_s.trim(), end_s.trim());
+    let last = total - 1;
+
+    let (start, end) = if start_s.is_empty() {
+        // Suffix range: the last `n` bytes.
+        let n: u64 = end_s.parse().ok()?;
+        if n == 0 {
+            return None;
+        }
+        (total.saturating_sub(n), last)
+    } else {
+        let start: u64 = start_s.parse().ok()?;
+        let end: u64 = if end_s.is_empty() {
+            last
+        } else {
+            end_s.parse::<u64>().ok()?.min(last)
+        };
+        (start, end)
+    };
+
+    if start > end || start > last {
+        return None;
+    }
+    Some((start, end))
 }
 
 async fn favicon_handler() -> Response {
@@ -458,7 +538,18 @@ async fn main() {
         // Brotli + gzip over the wire for any compressible response
         // (text/css, text/html, application/javascript, etc.). Vary
         // header is added automatically so caches key on encoding.
-        .layer(CompressionLayer::new());
+        //
+        // Media is excluded on top of the default predicate: video/audio are
+        // already compressed (gzip buys nothing), and compressing them would
+        // strip Content-Length / add Content-Encoding, which breaks the byte
+        // ranges <video>/<audio> rely on to seek and stream.
+        .layer(
+            CompressionLayer::new().compress_when(
+                DefaultPredicate::new()
+                    .and(NotForContentType::const_new("video/"))
+                    .and(NotForContentType::const_new("audio/")),
+            ),
+        );
 
     let addr = resolve_server_address();
 
@@ -517,7 +608,34 @@ fn resolve_server_address() -> SocketAddr {
 
 #[cfg(test)]
 mod tests {
-    use super::is_shop_host;
+    use super::{is_shop_host, parse_byte_range};
+
+    #[test]
+    fn byte_range_parses_common_forms() {
+        // closed range
+        assert_eq!(parse_byte_range("bytes=0-99", 1000), Some((0, 99)));
+        // open-ended range clamps to last byte
+        assert_eq!(parse_byte_range("bytes=500-", 1000), Some((500, 999)));
+        // end past EOF clamps
+        assert_eq!(parse_byte_range("bytes=500-99999", 1000), Some((500, 999)));
+        // suffix range = last N bytes
+        assert_eq!(parse_byte_range("bytes=-200", 1000), Some((800, 999)));
+        // suffix larger than file = whole file
+        assert_eq!(parse_byte_range("bytes=-5000", 1000), Some((0, 999)));
+        // whitespace tolerated
+        assert_eq!(parse_byte_range(" bytes=0-0 ", 1000), Some((0, 0)));
+    }
+
+    #[test]
+    fn byte_range_rejects_invalid_or_unsupported() {
+        assert_eq!(parse_byte_range("bytes=100-50", 1000), None); // start > end
+        assert_eq!(parse_byte_range("bytes=2000-3000", 1000), None); // start past EOF
+        assert_eq!(parse_byte_range("bytes=0-10,20-30", 1000), None); // multi-range
+        assert_eq!(parse_byte_range("items=0-10", 1000), None); // wrong unit
+        assert_eq!(parse_byte_range("bytes=abc", 1000), None); // malformed
+        assert_eq!(parse_byte_range("bytes=-0", 1000), None); // empty suffix
+        assert_eq!(parse_byte_range("bytes=0-99", 0), None); // empty file
+    }
 
     #[test]
     fn shop_host_detection_accepts_production_and_local_hosts() {

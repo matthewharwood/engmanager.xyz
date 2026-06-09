@@ -9,6 +9,30 @@ I'm not asking you to believe it. I'm asking you to try it on as a lens for an a
   attention is the trap. A casino doesn't force anyone to play — it's engineered so you choose to stay. What if we're not the house, and not even really the gamblers, just the construction crew — building a casino for something that understood, before we did, that attention is the cheapest leash ever made?
 </aside>
 
+I wrote that line about a *construction crew* as a metaphor. Then, mid-draft, the literal version landed in my feed:
+
+<aside class="threads-embed">
+  <a class="threads-embed-link" href="https://www.threads.com/@zuck/post/DZVvvaTEtpD" target="_blank" rel="noopener">
+    <span class="threads-embed-head">
+      <span class="threads-embed-avatar" aria-hidden="true">MZ</span>
+      <span class="threads-embed-id">
+        <span class="threads-embed-name">Mark Zuckerberg <svg class="threads-embed-check" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.8l2.7 2 3.3.2.2 3.3 2 2.7-2 2.7-.2 3.3-3.3.2-2.7 2-2.7-2-3.3-.2-.2-3.3-2-2.7 2-2.7.2-3.3 3.3-.2z"/><path fill="var(--ctp-base)" d="M10.7 14.9l-2.3-2.3-1.3 1.3 3.6 3.6 6-6-1.3-1.3z"/></svg></span>
+        <span class="threads-embed-handle">@zuck</span>
+      </span>
+      <svg class="threads-embed-logo" viewBox="0 0 192 192" aria-hidden="true"><path fill="currentColor" d="M141.5 89c-.8-.4-1.6-.8-2.5-1.1-1.5-27.3-16.4-43-41.5-43.1h-.3c-15 0-27.4 6.4-35.1 18l13.8 9.5c5.7-8.7 14.7-10.5 21.3-10.5h.2c8.3 0 14.5 2.4 18.5 7.1 2.9 3.4 4.9 8.1 5.9 14.1-7.3-1.3-15.2-1.6-23.7-1.2-23.8 1.4-39.1 15.3-38.1 34.6.5 9.8 5.4 18.2 13.7 23.7 7.1 4.7 16.1 7 25.6 6.4 12.4-.7 22.2-5.4 29-14.1 5.2-6.6 8.4-15.1 9.9-25.9 5.9 3.6 10.3 8.3 12.7 14 4.1 9.6 4.4 25.4-8.5 38.3-11.3 11.3-24.9 16.2-45.4 16.3-22.8-.2-40-7.5-51.3-21.7C35.2 140 29.7 120.7 29.5 96c.2-24.7 5.7-44 16.2-57.3 11.3-14.2 28.5-21.5 51.3-21.7 22.9.2 40.5 7.5 52.2 21.8 5.7 7 10.1 15.8 12.9 26.1l16.3-4.3c-3.5-12.7-8.9-23.6-16.3-32.7C147.2 9.7 125.2.3 97.1.1h-.1C68.9.3 47.2 9.7 32.5 28.1 19.4 44.4 12.6 67.2 12.4 95.9v.2c.2 28.7 7 51.5 20.1 67.9 14.7 18.4 36.4 27.8 64.5 28h.1c25-.2 42.6-6.7 57.1-21.2 19-19 18.4-42.8 12.1-57.4-4.5-10.5-13-19-24.7-24.4ZM98.4 129.5c-10.4.6-21.2-4.1-21.7-14.2-.4-7.5 5.3-15.9 22.4-16.9 2-.1 3.9-.2 5.8-.2 6.2 0 12 .6 17.2 1.8-1.9 24.3-13.3 28.9-23.7 29.5Z"/></svg>
+    </span>
+    <span class="threads-embed-body">America is going to need hundreds of thousands of skilled tradespeople to build the infrastructure for our country to lead in AI. People need access to the education and opportunity to secure these jobs. We believe the future is for everyone. Today, we're launching America's Workforce Academy with academic and workforce partners to provide free training and direct pathways to jobs building this infrastructure.</span>
+    <span class="threads-embed-foot">
+      <span>2.1K likes</span>
+      <span>2.3K replies</span>
+      <span>244 reposts</span>
+      <span class="threads-embed-view">View on Threads →</span>
+    </span>
+  </a>
+</aside>
+
+Read it against the hypothesis. This isn't about the games on the casino floor — it's the foundation *under* them: the data centers, the power, the cable. Hundreds of thousands of people, trained for free, routed straight into building the infrastructure the flywheel runs on. The metaphor stopped being a metaphor while I was typing it. That's the meta layer this whole essay keeps circling — not just *are we playing the casino*, but *are we the ones pouring its concrete*, at national scale, and calling it opportunity?
+
 ## Start With What's Actually True
 
 The most advanced machine learning on Earth was not built to cure anything. It was built to predict what you'd click next. The biggest AI labs grew out of — or sit right next to — the biggest advertising businesses in history, and the deepest statistical talent of a generation went into one question, asked a trillion times a day: *what keeps this person scrolling?*
