@@ -22,13 +22,14 @@ use eng_markup::{html, view};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::shop::{SHOP_PRODUCTS, product_data_json};
+use super::shop::product_data_json;
 use super::{
     GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
     render_sitemap_link, render_theme_picker,
 };
 use crate::AppState;
 use crate::asset_url;
+use crate::catalog::SHOP_PRODUCTS;
 
 const CHECKOUT_TITLE: &str = "Checkout · ENGMANAGER.XYZ";
 const SUCCESS_TITLE: &str = "Order confirmed · ENGMANAGER.XYZ";
@@ -38,7 +39,7 @@ const CHECKOUT_DESCRIPTION: &str =
 const CHECKOUT_CACHE_CONTROL: &str = "no-store";
 // Stripe caps a single PaymentIntent at 999,999.99 in the major unit; we cap
 // well under that as a sanity guard against a runaway cart.
-const MAX_AMOUNT_CENTS: u64 = 5_000_00;
+const MAX_AMOUNT_CENTS: u64 = 500_000;
 // Stripe's minimum charge for USD.
 const MIN_AMOUNT_CENTS: u64 = 50;
 
@@ -391,7 +392,7 @@ pub async fn create_intent(
             return error_json(StatusCode::BAD_REQUEST, "Unknown or unavailable product.");
         };
         let qty = item.quantity.clamp(1, 99);
-        amount += u64::from(product.price) * 100 * u64::from(qty);
+        amount += u64::from(product.price.cents()) * u64::from(qty);
         count += qty;
         item_meta.push(format!("{}:{qty}", product.slug));
     }

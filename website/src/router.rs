@@ -135,7 +135,7 @@ mod tests {
     use super::build_router;
     use crate::http::HTML_CACHE_CONTROL;
     use crate::state::AppState;
-    use crate::{asset_url, comments, pages, search, stripe};
+    use crate::{asset_url, comments, content, search, stripe};
 
     const SITE_HOST: &str = "engmanager.xyz";
     const SHOP_HOST: &str = "shop.localhost";
@@ -147,7 +147,7 @@ mod tests {
                 .expect("in-memory comment store must connect"),
         );
         let search = Arc::new(
-            search::SearchEngine::build_in_memory(pages::articles::ARTICLES, &[])
+            search::SearchEngine::build_in_memory(content::ARTICLES, &[])
                 .expect("search index must build from the real articles"),
         );
         // No STRIPE_* env in tests → checkout reports "disabled", which is a
@@ -190,7 +190,7 @@ mod tests {
     #[tokio::test]
     async fn core_routes_respond_ok_and_unknown_paths_404() {
         let router = test_router().await;
-        let first_slug = pages::articles::ARTICLES[0].slug;
+        let first_slug = content::ARTICLES[0].slug;
         let article_path = format!("/articles/{first_slug}");
         let ok_paths = [
             "/",

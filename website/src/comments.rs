@@ -56,15 +56,13 @@ impl CommentStore {
         if let Some(path) = endpoint
             .strip_prefix("surrealkv://")
             .filter(|path| !path.is_empty())
-        {
-            if let Some(parent) = Path::new(path)
+            && let Some(parent) = Path::new(path)
                 .parent()
                 .filter(|parent| !parent.as_os_str().is_empty())
-            {
-                std::fs::create_dir_all(parent).with_context(|| {
-                    format!("create comment database directory {}", parent.display())
-                })?;
-            }
+        {
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!("create comment database directory {}", parent.display())
+            })?;
         }
 
         let db = any::connect(endpoint.clone())

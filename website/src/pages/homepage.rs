@@ -5,7 +5,6 @@ use eng_markup::{html, view};
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
-use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
     render_liquid_title_filter, render_quick_actions, render_resource_hints, render_sfx_urls,
@@ -13,6 +12,7 @@ use super::{
 };
 use crate::asset_url;
 use crate::components::discovery_toasts;
+use crate::content::{Category, Tag, public_articles};
 
 const HOME_LIQUID_HEADLINE_ENABLED: bool = true;
 

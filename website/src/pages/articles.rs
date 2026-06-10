@@ -1,11 +1,11 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use axum::extract::Path;
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::{html, view};
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
-use rust_embed::RustEmbed;
 
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
@@ -14,563 +14,12 @@ use super::{
 };
 use crate::asset_url;
 use crate::components::{discovery_toasts, nav, to_top};
+use crate::content::{
+    ARTICLE_RELATIONS, ARTICLES, Article, Category, Tag, article_markdown, public_articles,
+    relevance_score, unique_tags,
+};
 
-// Article bodies live in `website/articles/{slug}.md`. They're embedded into
-// the binary at compile time alongside the rest of the static content (so the
-// .md source isn't HTTP-exposed under /assets/ — only the rendered HTML ships).
-#[derive(RustEmbed)]
-#[folder = "articles/"]
-struct ArticleSources;
-
-// =============================================================================
-// Taxonomy — single source of truth for categories and tags.
-//
-// Both are enums so the article table is type-checked: a typo in a category
-// or tag fails to compile, and a renamed variant fans out across every
-// article that references it. Each variant carries a human label (for
-// rendering) and a URL slug (for any future /category/{slug} or
-// /tag/{slug} routes).
-//
-// Each article has ONE Category (single primary section) and a `&'static
-// [Tag]` slice. The slice is normalized into a unique, order-preserving
-// set at render time (see `unique_tags`) so authors can list tags in
-// whatever order makes sense without worrying about accidental duplicates.
-// A debug-only assertion at server startup also flags duplicate tags
-// during development.
-// =============================================================================
-
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Category {
-    EngineeringLeadership,
-    DeveloperTooling,
-    Workflow,
-    Community,
-    FrameworkDesign,
-}
-
-impl Category {
-    pub const ALL: &'static [Category] = &[
-        Self::Workflow,
-        Self::DeveloperTooling,
-        Self::FrameworkDesign,
-        Self::Community,
-        Self::EngineeringLeadership,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "Eng Leadership",
-            Self::DeveloperTooling => "Dev Tooling",
-            Self::Workflow => "Workflow",
-            Self::Community => "Community",
-            Self::FrameworkDesign => "Frameworks",
-        }
-    }
-
-    pub fn slug(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "engineering-leadership",
-            Self::DeveloperTooling => "developer-tooling",
-            Self::Workflow => "workflow",
-            Self::Community => "community",
-            Self::FrameworkDesign => "framework-design",
-        }
-    }
-
-    pub fn from_slug(slug: &str) -> Option<Self> {
-        Self::ALL
-            .iter()
-            .copied()
-            .find(|category| category.slug() == slug)
-    }
-
-    pub fn emoji(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "👔",
-            Self::DeveloperTooling => "🛠",
-            Self::Workflow => "🌀",
-            Self::Community => "👥",
-            Self::FrameworkDesign => "🧱",
-        }
-    }
-}
-
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Tag {
-    Ai,
-    ClaudeCode,
-    Rust,
-    Voice,
-    Mcp,
-    Discord,
-    Community,
-    Mentorship,
-    Lsp,
-    TypeScript,
-    DeveloperTooling,
-    Macros,
-    Framework,
-    JsxLike,
-    Workflow,
-    Solopreneur,
-    LocalFirst,
-    Blender,
-    ThreeDPrinting,
-    Makerspace,
-    Parenting,
-}
-
-impl Tag {
-    pub const ALL: &'static [Tag] = &[
-        Self::Ai,
-        Self::ClaudeCode,
-        Self::Rust,
-        Self::Voice,
-        Self::Mcp,
-        Self::Discord,
-        Self::Community,
-        Self::Mentorship,
-        Self::Lsp,
-        Self::TypeScript,
-        Self::DeveloperTooling,
-        Self::Macros,
-        Self::Framework,
-        Self::JsxLike,
-        Self::Workflow,
-        Self::Solopreneur,
-        Self::LocalFirst,
-        Self::Blender,
-        Self::ThreeDPrinting,
-        Self::Makerspace,
-        Self::Parenting,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Ai => "ai",
-            Self::ClaudeCode => "claude-code",
-            Self::Rust => "rust",
-            Self::Voice => "voice",
-            Self::Mcp => "mcp",
-            Self::Discord => "discord",
-            Self::Community => "community",
-            Self::Mentorship => "mentorship",
-            Self::Lsp => "lsp",
-            Self::TypeScript => "typescript",
-            Self::DeveloperTooling => "developer-tooling",
-            Self::Macros => "macros",
-            Self::Framework => "framework",
-            Self::JsxLike => "jsx-like",
-            Self::Workflow => "workflow",
-            Self::Solopreneur => "solopreneur",
-            Self::LocalFirst => "local-first",
-            Self::Blender => "blender",
-            Self::ThreeDPrinting => "3d-printing",
-            Self::Makerspace => "makerspace",
-            Self::Parenting => "parenting",
-        }
-    }
-
-    pub fn slug(self) -> &'static str {
-        self.label()
-    }
-
-    pub fn from_slug(slug: &str) -> Option<Self> {
-        Self::ALL.iter().copied().find(|tag| tag.slug() == slug)
-    }
-
-    pub fn emoji(self) -> &'static str {
-        match self {
-            Self::Ai => "🤖",
-            Self::ClaudeCode => "⚡",
-            Self::Rust => "🦀",
-            Self::Voice => "🎙",
-            Self::Mcp => "🔌",
-            Self::Discord => "💬",
-            Self::Community => "🧑‍🤝‍🧑",
-            Self::Mentorship => "🎓",
-            Self::Lsp => "🔎",
-            Self::TypeScript => "🟦",
-            Self::DeveloperTooling => "🛠",
-            Self::Macros => "🪄",
-            Self::Framework => "🏗",
-            Self::JsxLike => "⚛",
-            Self::Workflow => "🌀",
-            Self::Solopreneur => "🧑‍💻",
-            Self::LocalFirst => "📦",
-            Self::Blender => "🧊",
-            Self::ThreeDPrinting => "🖨",
-            Self::Makerspace => "🧰",
-            Self::Parenting => "🧒",
-        }
-    }
-}
-
-// Order-preserving dedup. Backing data is a `&[Tag]` so authors can list
-// tags in significance order; we drop later duplicates and return a Vec
-// that the meta renderer iterates. Compile-time enum guarantees that
-// each variant is itself unique; this step protects against
-// human-authored repetition in the slice.
-fn unique_tags(tags: &[Tag]) -> Vec<Tag> {
-    let mut seen = std::collections::HashSet::with_capacity(tags.len());
-    tags.iter().copied().filter(|t| seen.insert(*t)).collect()
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ArticleDate {
-    pub year: i32,
-    pub month: u8,
-    pub day: u8,
-}
-
-impl ArticleDate {
-    pub const fn new(year: i32, month: u8, day: u8) -> Self {
-        Self { year, month, day }
-    }
-
-    pub fn label(self) -> String {
-        format!("{} {}, {}", self.month_name(), self.day, self.year)
-    }
-
-    pub fn iso(self) -> String {
-        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
-    }
-
-    fn month_name(self) -> &'static str {
-        match self.month {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => "Undated",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Article {
-    pub slug: &'static str,
-    /// Title shown on the homepage's fluid-SVG stack. Can be anything —
-    /// a sentence, a URL, etc.
-    pub title: &'static str,
-    /// Optional override for the article-page <h1> (and browser <title>).
-    /// `None` falls back to `title`. Use this when the homepage display
-    /// should differ from the article page's heading — e.g. a Discord URL
-    /// on the stack but a real headline on the article itself.
-    pub title_alias: Option<&'static str>,
-    pub date: ArticleDate,
-    pub summary: &'static str,
-    /// Hidden articles are directly routable but excluded from public article
-    /// surfaces and rendered with a robots noindex meta tag.
-    pub indexed: bool,
-    /// Primary section. Exactly one per article.
-    pub category: Category,
-    /// Free-form tags. Deduped to a set at render time via `unique_tags`.
-    pub tags: &'static [Tag],
-}
-
-const ARTICLE_LIST: &[Article] = &[
-    Article {
-        slug: "vibe-coding-a-shop",
-        title: "I Vibe-Coded a Merch Store To See If I Could Sell a Dad Cap",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 30),
-        summary: "An extension of Project FootTraffic: standing up a real store — inline Stripe checkout, a layered camera-zoom UI, the whole thing a Rust templating macro — to test whether one person plus AI can ship commerce people actually buy.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Rust,
-            Tag::Macros,
-            Tag::Solopreneur,
-            Tag::Workflow,
-        ],
-    },
-    Article {
-        slug: "project-foottraffic",
-        title: "Project FootTraffic: A Real Estate Boom for Small Business",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 23),
-        summary: "A startup sketch for turning local plazas into destinations: AI-assisted service design, regional operators, and a compounding platform funded one small business at a time.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::Workflow,
-            Tag::Solopreneur,
-            Tag::LocalFirst,
-            Tag::DeveloperTooling,
-            Tag::Community,
-        ],
-    },
-    Article {
-        slug: "talking-not-typing",
-        title: "I Ship Sites By Talking, Not Typing",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 17),
-        summary: "I built three Rust projects this week without typing a single line of code. Voice → Claude Code → pull requests. The floor is rising for everyone.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Voice,
-            Tag::Mcp,
-            Tag::Rust,
-            Tag::Workflow,
-            Tag::Solopreneur,
-            Tag::LocalFirst,
-        ],
-    },
-    Article {
-        slug: "auteurs",
-        title: "https://discord.gg/sTzQBrbnBM",
-        title_alias: Some(
-            "Auteur's a discord for managing early career engineers, product and designers",
-        ),
-        date: ArticleDate::new(2026, 3, 14),
-        summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
-        indexed: true,
-        category: Category::Community,
-        tags: &[Tag::Community, Tag::Discord, Tag::Mentorship],
-    },
-    Article {
-        slug: "claude-code-lsp",
-        title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
-        title_alias: None,
-        date: ArticleDate::new(2025, 12, 29),
-        summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
-        indexed: true,
-        category: Category::DeveloperTooling,
-        tags: &[
-            Tag::ClaudeCode,
-            Tag::Lsp,
-            Tag::DeveloperTooling,
-            Tag::Rust,
-            Tag::TypeScript,
-        ],
-    },
-    Article {
-        slug: "jsx-like-rust-macro",
-        title: "Making an JSX like Rust Macro",
-        title_alias: None,
-        date: ArticleDate::new(2025, 5, 31),
-        summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
-        indexed: true,
-        category: Category::FrameworkDesign,
-        tags: &[Tag::Rust, Tag::Macros, Tag::Framework, Tag::JsxLike],
-    },
-    Article {
-        slug: "mcp-blender-library-3d-print",
-        title: "Making a tiny war-hammer hero with MCP, Blender, and a library 3D printer",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 21),
-        summary: "A parent-and-kid tutorial for using Codex or Claude Code, MCP, and Blender to design an original tiny hammer hero, validate it for FDM printing, and bring an STL to a public-library makerspace.",
-        indexed: false,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Mcp,
-            Tag::Blender,
-            Tag::ThreeDPrinting,
-            Tag::Makerspace,
-            Tag::Parenting,
-        ],
-    },
-];
-
-pub const ARTICLES: &[Article] = ARTICLE_LIST;
-const ARTICLE_COUNT: usize = ARTICLE_LIST.len();
 const ARTICLE_REVEAL_VARIANTS: [&str; 5] = ["rise", "drift", "hinge", "focus", "thread"];
-
-pub fn public_articles() -> impl Iterator<Item = &'static Article> {
-    ARTICLES.iter().filter(|article| article.indexed)
-}
-
-pub fn article_by_slug(slug: &str) -> Option<&'static Article> {
-    ARTICLES.iter().find(|article| article.slug == slug)
-}
-
-pub fn article_markdown(slug: &str) -> Option<String> {
-    let path = format!("{slug}.md");
-    let file = ArticleSources::get(&path)?;
-    std::str::from_utf8(&file.data).ok().map(str::to_owned)
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ArticleRelations {
-    pub next: Option<usize>,
-    pub topic_next: Option<usize>,
-}
-
-impl ArticleRelations {
-    const EMPTY: Self = Self {
-        next: None,
-        topic_next: None,
-    };
-}
-
-pub const ARTICLE_RELATIONS: [ArticleRelations; ARTICLE_COUNT] = build_article_relations();
-
-pub fn relevance_score(current: &Article, candidate: &Article) -> u16 {
-    relevance_score_articles(*current, *candidate)
-}
-
-const fn build_article_relations() -> [ArticleRelations; ARTICLE_COUNT] {
-    let mut relations = [ArticleRelations::EMPTY; ARTICLE_COUNT];
-    let mut index = 0;
-    while index < ARTICLE_COUNT {
-        let next = find_next_index(index);
-        relations[index] = ArticleRelations {
-            next,
-            topic_next: find_topic_next_index(index, next),
-        };
-        index += 1;
-    }
-    relations
-}
-
-const fn find_next_index(current_index: usize) -> Option<usize> {
-    if !ARTICLE_LIST[current_index].indexed {
-        return None;
-    }
-
-    let mut index = current_index + 1;
-    while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed {
-            return Some(index);
-        }
-        index += 1;
-    }
-
-    index = 0;
-    while index < current_index {
-        if ARTICLE_LIST[index].indexed {
-            return Some(index);
-        }
-        index += 1;
-    }
-
-    None
-}
-
-const fn find_topic_next_index(current_index: usize, avoid_index: Option<usize>) -> Option<usize> {
-    let current = ARTICLE_LIST[current_index];
-    if !current.indexed {
-        return None;
-    }
-    let mut best: Option<usize> = None;
-    let mut best_score = 0;
-    let mut index = 0;
-    while index < ARTICLE_COUNT {
-        let is_avoided = match avoid_index {
-            Some(avoid) => index == avoid,
-            None => false,
-        };
-        if ARTICLE_LIST[index].indexed && index != current_index && !is_avoided {
-            let candidate = ARTICLE_LIST[index];
-            let score = relevance_score_articles(current, candidate);
-            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
-                best = Some(index);
-                best_score = score;
-            }
-        }
-        index += 1;
-    }
-
-    match best {
-        Some(_) => return best,
-        None => {}
-    }
-
-    match avoid_index {
-        Some(_) => {}
-        None => return None,
-    }
-
-    index = 0;
-    while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed && index != current_index {
-            let candidate = ARTICLE_LIST[index];
-            let score = relevance_score_articles(current, candidate);
-            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
-                best = Some(index);
-                best_score = score;
-            }
-        }
-        index += 1;
-    }
-
-    best
-}
-
-const fn topic_tie_breaker(candidate: Article, best: Option<usize>) -> bool {
-    match best {
-        Some(best_index) => date_is_after(candidate.date, ARTICLE_LIST[best_index].date),
-        None => true,
-    }
-}
-
-const fn relevance_score_articles(current: Article, candidate: Article) -> u16 {
-    let mut score = 0;
-    if current.category as u8 == candidate.category as u8 {
-        score += 10;
-    }
-
-    let mut index = 0;
-    while index < current.tags.len() {
-        if contains_tag(candidate.tags, current.tags[index]) {
-            score += 3;
-        }
-        index += 1;
-    }
-    score
-}
-
-const fn contains_tag(tags: &[Tag], needle: Tag) -> bool {
-    let mut index = 0;
-    while index < tags.len() {
-        if tags[index] as u8 == needle as u8 {
-            return true;
-        }
-        index += 1;
-    }
-    false
-}
-
-const fn date_is_after(a: ArticleDate, b: ArticleDate) -> bool {
-    a.year > b.year
-        || (a.year == b.year && (a.month > b.month || (a.month == b.month && a.day > b.day)))
-}
-
-// Debug-only: catch accidental tag duplicates during dev. Production
-// builds skip this since enums + `unique_tags` already guarantee a
-// clean rendered set; the check is just a faster signal for the
-// author than spotting "rust rust" in the rendered chip row.
-#[cfg(debug_assertions)]
-pub(crate) fn debug_check_tag_uniqueness() {
-    for article in ARTICLES {
-        let original = article.tags.len();
-        let unique = unique_tags(article.tags).len();
-        debug_assert_eq!(
-            original, unique,
-            "article `{}` has duplicate tags in its slice",
-            article.slug
-        );
-    }
-}
 
 // Category pill + ghost-style tag chips for the article-meta row.
 // Lays out as a full-width second row beneath the avatar/byline:
@@ -962,6 +411,41 @@ fn render_article_topic_chips(article: &Article) -> HtmlFragment {
 const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
 const FOOTTRAFFIC_MAP_SENTINEL: &str = "<!--foottraffic-map-->";
 
+// Startup-memoized article render cache: slug → (body HTML, headings), built
+// once from ARTICLES through the same `article_body` pipeline requests use.
+// Release builds serve from this map (the per-request Discord/foottraffic
+// splices still run on a clone, so live-widget behavior is unchanged); debug
+// builds bypass it entirely so rust-embed's disk reads keep the .md live-edit
+// loop. Building the map panics on a missing/corrupt .md — forced at startup
+// in main(), that turns a registry↔files mismatch into a boot failure instead
+// of an empty page.
+static RENDERED_ARTICLES: LazyLock<HashMap<&'static str, (String, Vec<Heading>)>> = LazyLock::new(
+    || {
+        ARTICLES
+            .iter()
+            .map(|article| {
+                let (body, headings) = article_body(article.slug).unwrap_or_else(|| {
+                    panic!(
+                        "article `{slug}` is registered in ARTICLES but articles/{slug}.md is missing or failed to render",
+                        slug = article.slug
+                    )
+                });
+                (article.slug, (body.into_string(), headings))
+            })
+            .collect()
+    },
+);
+
+/// Force the article render cache at startup (release builds only — debug
+/// builds render per request for the live-edit loop). Called from `main()` so
+/// a missing or corrupt embedded `.md` fails fast at boot; this doubles as the
+/// `ARTICLES` ↔ `articles/*.md` parity check.
+pub fn warm_article_render_cache() {
+    if !cfg!(debug_assertions) {
+        LazyLock::force(&RENDERED_ARTICLES);
+    }
+}
+
 pub async fn detail(Path(slug): Path<String>) -> Response {
     let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
@@ -969,8 +453,20 @@ pub async fn detail(Path(slug): Path<String>) -> Response {
             let a = &ARTICLES[article_index];
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
-            let (inner, headings) =
-                article_body(&slug).unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
+            // Release: clone the startup-rendered body and headings from the
+            // cache. Debug: render from disk per request (live-edit loop). A
+            // registered slug whose Markdown won't render is a 404 — never an
+            // empty 200.
+            let rendered = if cfg!(debug_assertions) {
+                article_body(&slug)
+            } else {
+                RENDERED_ARTICLES
+                    .get(slug.as_str())
+                    .map(|(body, headings)| (HtmlFragment::new(body.clone()), headings.clone()))
+            };
+            let Some((inner, headings)) = rendered else {
+                return super::not_found::response();
+            };
             let inner = splice_discord_widget(&slug, inner).await;
             let inner = splice_foottraffic_map(&slug, inner);
             let toc = render_toc(&headings);
@@ -1142,6 +638,7 @@ fn render_foottraffic_map() -> HtmlFragment {
 }
 
 // A heading destined for the on-this-page sidebar.
+#[derive(Clone)]
 pub struct Heading {
     pub level: u32, // 2 or 3
     pub slug: String,
@@ -1154,9 +651,7 @@ pub struct Heading {
 // h1 from the article title is rendered by the outer layout, not the
 // Markdown, so headings here start at h2.
 fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
-    let path = format!("{slug}.md");
-    let file = ArticleSources::get(&path)?;
-    let markdown = std::str::from_utf8(&file.data).ok()?;
+    let markdown = article_markdown(slug)?;
 
     let mut options = pulldown_cmark::Options::empty();
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
@@ -1164,19 +659,34 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
     options.insert(pulldown_cmark::Options::ENABLE_TASKLISTS);
     options.insert(pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES);
 
-    let parser = pulldown_cmark::Parser::new_ext(markdown, options);
+    let parser = pulldown_cmark::Parser::new_ext(&markdown, options);
     let mut events: Vec<Event> = parser.collect();
+    let headings = extract_headings(&mut events);
+
+    let events = wrap_article_reveal_sections(events);
+
+    let mut html_output = String::new();
+    pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
+    Some((HtmlFragment::new(html_output), headings))
+}
+
+// Walks the event stream, anchoring every h2/h3 and collecting the sidebar
+// heading list. Auto headings (id: None) get a slugified, dedup-counted id
+// written back into the event; explicit `{#custom-id}` headings keep their id
+// verbatim (pulldown-cmark already renders it) and never touch the dedup
+// counters, so neighboring auto-ids are numbered exactly as before.
+fn extract_headings(events: &mut [Event<'_>]) -> Vec<Heading> {
     let mut headings: Vec<Heading> = Vec::new();
     let mut slug_counts: HashMap<String, u32> = HashMap::new();
 
     let mut i = 0;
     while i < events.len() {
-        let level = match &events[i] {
+        let (level, explicit_id) = match &events[i] {
             Event::Start(PmTag::Heading {
                 level: l @ (HeadingLevel::H2 | HeadingLevel::H3),
-                id: None,
+                id,
                 ..
-            }) => *l,
+            }) => (*l, id.clone()),
             _ => {
                 i += 1;
                 continue;
@@ -1195,33 +705,41 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
             j += 1;
         }
 
-        let base_slug = slugify(&text);
-        if base_slug.is_empty() {
-            i = j + 1;
-            continue;
-        }
-        let count = slug_counts.entry(base_slug.clone()).or_insert(0);
-        let slug = if *count == 0 {
-            base_slug.clone()
-        } else {
-            format!("{base_slug}-{count}")
-        };
-        *count += 1;
+        let slug = match explicit_id {
+            // Explicit id: pulldown-cmark already renders it on the heading
+            // element, so the event is left untouched.
+            Some(id) => id.to_string(),
+            None => {
+                let base_slug = slugify(&text);
+                if base_slug.is_empty() {
+                    i = j + 1;
+                    continue;
+                }
+                let count = slug_counts.entry(base_slug.clone()).or_insert(0);
+                let slug = if *count == 0 {
+                    base_slug.clone()
+                } else {
+                    format!("{base_slug}-{count}")
+                };
+                *count += 1;
 
-        if let Event::Start(PmTag::Heading {
-            level: l,
-            id: _,
-            classes,
-            attrs,
-        }) = events[i].clone()
-        {
-            events[i] = Event::Start(PmTag::Heading {
-                level: l,
-                id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
-                classes,
-                attrs,
-            });
-        }
+                if let Event::Start(PmTag::Heading {
+                    level: l,
+                    id: _,
+                    classes,
+                    attrs,
+                }) = events[i].clone()
+                {
+                    events[i] = Event::Start(PmTag::Heading {
+                        level: l,
+                        id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
+                        classes,
+                        attrs,
+                    });
+                }
+                slug
+            }
+        };
 
         headings.push(Heading {
             level: match level {
@@ -1235,11 +753,7 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
         i = j + 1;
     }
 
-    let events = wrap_article_reveal_sections(events);
-
-    let mut html_output = String::new();
-    pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
-    Some((HtmlFragment::new(html_output), headings))
+    headings
 }
 
 fn wrap_article_reveal_sections(events: Vec<Event>) -> Vec<Event> {
@@ -1418,5 +932,26 @@ mod tests {
             headings.len() + 1,
             "intro copy plus each h2/h3 section should get exactly one reveal wrapper",
         );
+    }
+
+    #[test]
+    fn explicit_heading_ids_join_the_toc_verbatim() {
+        // `{#custom-id}` headings must keep their id verbatim AND appear in
+        // the heading list, without disturbing the dedup counters used by
+        // neighboring auto-slugged headings.
+        let markdown = "intro\n\n## Alpha\n\n## Custom {#custom-id}\n\n## Alpha\n";
+        let mut options = pulldown_cmark::Options::empty();
+        options.insert(pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES);
+        let mut events: Vec<Event> = pulldown_cmark::Parser::new_ext(markdown, options).collect();
+
+        let headings = extract_headings(&mut events);
+        let mut rendered = String::new();
+        pulldown_cmark::html::push_html(&mut rendered, events.into_iter());
+
+        let slugs: Vec<&str> = headings.iter().map(|h| h.slug.as_str()).collect();
+        assert_eq!(slugs, ["alpha", "custom-id", "alpha-1"]);
+        assert!(rendered.contains(r#"<h2 id="custom-id">"#));
+        assert!(rendered.contains(r#"<h2 id="alpha">"#));
+        assert!(rendered.contains(r#"<h2 id="alpha-1">"#));
     }
 }

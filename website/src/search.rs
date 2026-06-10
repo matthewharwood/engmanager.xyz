@@ -1,3 +1,4 @@
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::sync::{Mutex, RwLock};
 
@@ -13,11 +14,9 @@ use tantivy::schema::{
 use tantivy::tokenizer::{LowerCaser, NgramTokenizer, TextAnalyzer};
 use tantivy::{Index, IndexReader, IndexWriter, TantivyDocument};
 
+use crate::catalog::{PriceCents, SHOP_PRODUCTS, ShopProduct};
 use crate::comments::CommentRecord;
-use crate::pages::articles::{
-    Article, ArticleDate, Category, Tag, article_markdown, public_articles,
-};
-use crate::pages::shop::{SHOP_PRODUCTS, ShopProduct};
+use crate::content::{Article, ArticleDate, Category, Tag, article_markdown, public_articles};
 
 // Shop products live on the dedicated shop host; search results link there with
 // `?image=front`, and shop.js's deep-link init opens that product's view.
@@ -135,7 +134,7 @@ pub struct CommentSearchHit {
 pub struct ProductSearchHit {
     pub name: String,
     pub description: String,
-    pub price: u16,
+    pub price: PriceCents,
     pub url: String,
     pub cap_color: String,
     pub thread_color: String,
@@ -421,7 +420,7 @@ impl SearchEngine {
 
         docs.retain(|article| article_matches_filters(article, query));
         if query.q.trim().is_empty() {
-            docs.sort_by(|a, b| article_date_key(b.date).cmp(&article_date_key(a.date)));
+            docs.sort_by_key(|doc| Reverse(article_date_key(doc.date)));
         }
         Ok(docs)
     }
@@ -465,7 +464,7 @@ impl SearchEngine {
                 .unwrap_or(false)
         });
         if query.q.trim().is_empty() {
-            docs.sort_by(|a, b| b.created_at_ms.cmp(&a.created_at_ms));
+            docs.sort_by_key(|doc| Reverse(doc.created_at_ms));
         }
         Ok(docs)
     }

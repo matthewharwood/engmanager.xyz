@@ -6,7 +6,7 @@ use serde_json::json;
 
 use crate::AppState;
 use crate::comments::NewCommentRequest;
-use crate::pages::articles::article_by_slug;
+use crate::content::article_by_slug;
 
 pub async fn list(State(state): State<AppState>, Path(slug): Path<String>) -> Response {
     if article_by_slug(&slug).is_none() {

@@ -13,7 +13,7 @@ use super::{
 use crate::AppState;
 use crate::asset_url;
 use crate::components::nav;
-use crate::pages::articles::{Category, Tag};
+use crate::content::{Category, Tag};
 use crate::search::{
     ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
     all_indexed_article_tags, parse_article_date,
@@ -397,7 +397,7 @@ fn render_product_results(hits: &[ProductSearchHit]) -> HtmlFragment {
     }
     hits.iter()
         .map(|hit| {
-            let price = format!("${}", hit.price);
+            let price = hit.price.label();
             let chip_style = format!(
                 "--cap: {}; --thread: {}; --accent: {}",
                 hit.cap_color, hit.thread_color, hit.accent_color

@@ -11,9 +11,11 @@ use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 
 pub mod assets;
+pub mod catalog;
 pub mod comments;
 pub mod components;
 pub mod config;
+pub mod content;
 pub mod discord;
 pub mod experiences;
 pub mod http;
@@ -61,7 +63,13 @@ async fn main() {
     // tags. Release builds skip this since `unique_tags` dedups at render
     // time anyway; this is just a faster signal for the author.
     #[cfg(debug_assertions)]
-    pages::articles::debug_check_tag_uniqueness();
+    content::debug_check_tag_uniqueness();
+
+    // Release builds render every article's Markdown once, here, so a
+    // missing/corrupt embedded .md aborts boot instead of serving an empty
+    // page — this is also the ARTICLES ↔ articles/*.md parity check. Debug
+    // builds skip the cache and render per request (live-edit loop).
+    pages::articles::warm_article_render_cache();
 
     // Polls the Discord widget + invite endpoints for the Auteurs server
     // every 60s into an in-memory snapshot. Handlers read the snapshot
@@ -78,7 +86,7 @@ async fn main() {
         .await
         .unwrap_or_else(|err| fail_startup("visible comments must load at startup", err));
     let search = Arc::new(
-        search::SearchEngine::build_in_memory(pages::articles::ARTICLES, &existing_comments)
+        search::SearchEngine::build_in_memory(content::ARTICLES, &existing_comments)
             .unwrap_or_else(|err| fail_startup("search index must build at startup", err)),
     );
     // Stripe runtime context for the on-site checkout (reused client + keys).

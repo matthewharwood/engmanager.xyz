@@ -1,5 +1,5 @@
 //! Stripe catalog sync (Option B): upsert the shop caps as Stripe Products +
-//! Prices via the REST API, using `SHOP_PRODUCTS` (in `pages::shop`) as the
+//! Prices via the REST API, using `SHOP_PRODUCTS` (in `crate::catalog`) as the
 //! single source of truth. Invoked as a subcommand of the website binary so it
 //! shares that catalog without a separate crate:
 //!
@@ -23,7 +23,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use sha2::Sha256;
 
-use crate::pages::shop::{SHOP_PRODUCTS, ShopProduct};
+use crate::catalog::{SHOP_PRODUCTS, ShopProduct};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -49,12 +49,11 @@ impl SyncOptions {
             .iter()
             .position(|a| a == "--only")
             .and_then(|i| args.get(i + 1).cloned());
-        if only.is_none() {
-            if let Some(pos) = args.get(2) {
-                if !pos.starts_with("--") {
-                    only = Some(pos.clone());
-                }
-            }
+        if only.is_none()
+            && let Some(pos) = args.get(2)
+            && !pos.starts_with("--")
+        {
+            only = Some(pos.clone());
         }
 
         SyncOptions {
@@ -140,7 +139,7 @@ pub async fn run(opts: SyncOptions) -> Result<()> {
 }
 
 fn unit_amount(p: &ShopProduct) -> u32 {
-    u32::from(p.price) * 100
+    p.price.cents()
 }
 
 fn fmt_amount(cents: u32) -> String {
@@ -148,7 +147,7 @@ fn fmt_amount(cents: u32) -> String {
 }
 
 fn front_image_url(p: &ShopProduct) -> String {
-    // Mirrors `pages::shop::product_image_path` for the "front" view, served
+    // Mirrors `catalog::product_image_path` for the "front" view, served
     // publicly from the embedded assets at shop.engmanager.xyz.
     format!("{IMAGE_ORIGIN}/assets/shop/caps/{}-front.webp", p.slug)
 }
@@ -174,7 +173,7 @@ async fn upsert_product(client: &Client, key: &str, p: &ShopProduct) -> Result<C
                 ("metadata[cap_color]", p.cap_color.to_string()),
                 ("metadata[thread_color]", p.thread_color.to_string()),
                 ("metadata[accent_color]", p.accent_color.to_string()),
-                ("metadata[source]", "website/src/pages/shop.rs".to_string()),
+                ("metadata[source]", "website/src/catalog.rs".to_string()),
             ];
             let idem = format!("product-{}-{SYNC_VERSION}", p.slug);
             let prod = post(client, key, "/products", &form, Some(&idem)).await?;
