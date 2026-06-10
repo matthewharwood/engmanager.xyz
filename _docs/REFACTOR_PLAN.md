@@ -200,3 +200,12 @@ Full catalog lives in the workflow results; the absolutes:
     change hashed URLs; load-time behavior WITHOUT the router byte-or-
     behavior-identical — conversions are refactor-to-init-fn + immediate
     call + onSwap registration only.
+
+## Ledger additions (P7)
+
+19. P7: js/src/sw.js CACHE const "engmanager-v3" -> "engmanager-v4" — deploy
+    coordination: old SW caches hold pre-refactor HTML referencing renamed/
+    re-hashed assets; the bump purges them on activate. sw.js hash changes.
+20. P7: CSP report-only header drops upgrade-insecure-requests (ignored in
+    report-only mode per spec — dead directive; Chromium console-warns).
+    Security headers otherwise byte-identical.
