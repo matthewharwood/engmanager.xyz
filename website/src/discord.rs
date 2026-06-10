@@ -1,6 +1,7 @@
 // Discord server widget + invite metadata, polled in the background and
-// served from an in-memory snapshot. The Axum handler does zero I/O —
-// it `.await`s a tokio RwLock read and renders the cached fragment.
+// published through a tokio watch channel owned by AppState (rust-async-runtime
+// "watch" — single producer, cheap many-reader snapshots). The Axum handlers
+// do zero I/O — they `borrow()` the receiver's last good value.
 //
 // Why two endpoints:
 //   - Widget (`/guilds/{id}/widget.json`) gives presence count, a sample
@@ -13,14 +14,12 @@
 // If the widget endpoint 403s (widget disabled), we log once and fall back
 // to invite-only snapshots — the card still shows online + member counts.
 
-use std::sync::Arc;
-use std::sync::LazyLock;
 use std::time::Duration;
 
 use reqwest::Client;
 use reqwest::StatusCode;
 use serde::Deserialize;
-use tokio::sync::RwLock;
+use tokio::sync::watch;
 
 const WIDGET_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
 const STARTUP_RETRY_INTERVAL: Duration = Duration::from_secs(30);
@@ -48,37 +47,36 @@ pub struct VoiceChannel {
     pub name: String,
 }
 
-static SNAPSHOT: LazyLock<Arc<RwLock<Option<DiscordSnapshot>>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(None)));
-
-// reqwest::Client is internally Arc'd over its connection pool, so a
-// single shared client is the right shape for the refresh loop.
-static HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
-    Client::builder()
+// Spawned at startup with the Sender half of the AppState watch channel.
+// Discovers the guild ID from the invite once, then polls the invite plus the
+// optional widget every WIDGET_REFRESH_INTERVAL, publishing each good
+// snapshot. Failed fetches publish nothing — receivers keep the last good
+// snapshot (identical to the old RwLock semantics).
+pub async fn refresh_loop(
+    invite_code: &'static str,
+    snapshot_tx: watch::Sender<Option<DiscordSnapshot>>,
+) {
+    // reqwest::Client is internally Arc'd over its connection pool, so one
+    // client built here serves every fetch the loop makes.
+    let client = Client::builder()
         .timeout(HTTP_TIMEOUT)
         .user_agent("engmanager.xyz/1.0 (+https://engmanager.xyz)")
         .build()
-        .expect("build reqwest client")
-});
+        .expect("build reqwest client");
 
-pub async fn snapshot() -> Option<DiscordSnapshot> {
-    SNAPSHOT.read().await.clone()
-}
-
-// Spawned at startup. Discovers the guild ID from the invite once, then
-// polls the invite plus the optional widget every WIDGET_REFRESH_INTERVAL.
-pub async fn refresh_loop(invite_code: &'static str) {
     let fallback_invite_url = format!("https://discord.gg/{invite_code}");
 
     // Resolve the guild ID. Retry until it works — the rest of the loop
     // depends on it.
     let guild_id = loop {
-        match fetch_invite(invite_code).await {
+        match fetch_invite(&client, invite_code).await {
             Ok(invite) => match invite.guild {
                 Some(g) => break g.id,
-                None => eprintln!("discord: invite {invite_code} returned no guild"),
+                None => {
+                    tracing::warn!(invite_code = %invite_code, "discord: invite returned no guild");
+                }
             },
-            Err(e) => eprintln!("discord: invite lookup failed: {e}"),
+            Err(e) => tracing::warn!(err = %e, "discord: invite lookup failed"),
         }
         tokio::time::sleep(STARTUP_RETRY_INTERVAL).await;
     };
@@ -86,16 +84,24 @@ pub async fn refresh_loop(invite_code: &'static str) {
     let mut widget_enabled = true;
 
     loop {
-        let fetch =
-            fetch_snapshot(&guild_id, invite_code, &fallback_invite_url, widget_enabled).await;
+        let fetch = fetch_snapshot(
+            &client,
+            &guild_id,
+            invite_code,
+            &fallback_invite_url,
+            widget_enabled,
+        )
+        .await;
         if fetch.widget_disabled && widget_enabled {
-            eprintln!(
-                "discord: server widget is disabled for guild {guild_id}; using invite counts only"
+            tracing::warn!(
+                guild_id = %guild_id,
+                "discord: server widget is disabled; using invite counts only"
             );
             widget_enabled = false;
         }
         if let Some(snap) = fetch.snapshot {
-            *SNAPSHOT.write().await = Some(snap);
+            // send_replace never fails; receivers see the newest good value.
+            snapshot_tx.send_replace(Some(snap));
         }
         tokio::time::sleep(WIDGET_REFRESH_INTERVAL).await;
     }
@@ -107,6 +113,7 @@ struct SnapshotFetch {
 }
 
 async fn fetch_snapshot(
+    client: &Client,
     guild_id: &str,
     invite_code: &str,
     fallback_invite_url: &str,
@@ -114,24 +121,24 @@ async fn fetch_snapshot(
 ) -> SnapshotFetch {
     let widget_fetch = async {
         if widget_enabled {
-            fetch_widget(guild_id).await
+            fetch_widget(client, guild_id).await
         } else {
             WidgetFetch::Disabled
         }
     };
-    let (widget, invite) = tokio::join!(widget_fetch, fetch_invite(invite_code));
+    let (widget, invite) = tokio::join!(widget_fetch, fetch_invite(client, invite_code));
 
     let widget_disabled = matches!(widget, WidgetFetch::Disabled);
     let widget = match widget {
         WidgetFetch::Available(widget) => Some(widget),
         WidgetFetch::Disabled => None,
         WidgetFetch::Failed(e) => {
-            eprintln!("discord: widget fetch failed: {e}");
+            tracing::warn!(err = %e, "discord: widget fetch failed");
             None
         }
     };
     let invite = invite
-        .map_err(|e| eprintln!("discord: invite fetch failed: {e}"))
+        .map_err(|e| tracing::warn!(err = %e, "discord: invite fetch failed"))
         .ok();
 
     if widget.is_none() && invite.is_none() {
@@ -208,9 +215,9 @@ enum WidgetFetch {
     Failed(reqwest::Error),
 }
 
-async fn fetch_widget(guild_id: &str) -> WidgetFetch {
+async fn fetch_widget(client: &Client, guild_id: &str) -> WidgetFetch {
     let url = format!("{DISCORD_API}/guilds/{guild_id}/widget.json");
-    let response = match HTTP_CLIENT.get(url).send().await {
+    let response = match client.get(url).send().await {
         Ok(response) => response,
         Err(e) => return WidgetFetch::Failed(e),
     };
@@ -230,9 +237,12 @@ async fn fetch_widget(guild_id: &str) -> WidgetFetch {
     }
 }
 
-async fn fetch_invite(invite_code: &str) -> Result<InviteResponse, reqwest::Error> {
+async fn fetch_invite(
+    client: &Client,
+    invite_code: &str,
+) -> Result<InviteResponse, reqwest::Error> {
     let url = format!("{DISCORD_API}/invites/{invite_code}?with_counts=true");
-    HTTP_CLIENT
+    client
         .get(url)
         .send()
         .await?
@@ -278,4 +288,4 @@ struct InviteGuild {
 
 // The card render moved to the co-located component
 // `components/discord_widget/` — this module keeps only the service
-// (snapshot cache + refresh loop).
+// (refresh loop + snapshot publishing).

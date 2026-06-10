@@ -3,10 +3,26 @@
 //! `axum::middleware::from_fn`; GRAYSON rule 10 — consistent protocol
 //! mappings.)
 
+use axum::Json;
 use axum::body::{Body, Bytes};
 use axum::http::{HeaderName, HeaderValue, Request, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
+use serde_json::json;
+
+/// Stamp `Cache-Control: no-store` on a response. The shared shape for every
+/// API/search/checkout surface that must never be cached at the browser or
+/// edge — replaces the per-page copy-pasted header tuples (byte-identical
+/// output).
+pub fn no_store(response: impl IntoResponse) -> Response {
+    ([(header::CACHE_CONTROL, "no-store")], response).into_response()
+}
+
+/// JSON error with the sitewide `{"error": message}` body shape, never cached.
+/// (GRAYSON rule 10 — consistent protocol mappings.)
+pub fn json_error(status: StatusCode, message: &str) -> Response {
+    no_store((status, Json(json!({ "error": message }))))
+}
 
 // Cache-Control for HTML responses.
 //   max-age=60       → browser caches 1 min (so reload is snappy but fresh-ish)

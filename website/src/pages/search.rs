@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::{Query, RawQuery, State};
-use axum::http::{StatusCode, header};
-use axum::response::{Html, IntoResponse, Response};
+use axum::http::StatusCode;
+use axum::response::{Html, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 use serde::Deserialize;
@@ -12,6 +12,7 @@ use crate::AppState;
 use crate::asset_url;
 use crate::components::{Head, global_search, nav};
 use crate::content::{Category, Tag};
+use crate::http::no_store;
 use crate::search::{
     ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
     all_indexed_article_tags, parse_article_date,
@@ -40,34 +41,30 @@ pub async fn typeahead(
     State(state): State<AppState>,
     Query(params): Query<TypeaheadParams>,
 ) -> Response {
-    no_store(Json(state.search.typeahead(&params.q, 8))).into_response()
+    no_store(Json(state.search.typeahead(&params.q, 8)))
 }
 
 pub async fn page(State(state): State<AppState>, RawQuery(raw_query): RawQuery) -> Response {
     let params = SearchParams::from_raw_query(raw_query.as_deref().unwrap_or_default());
     let search_query = params.to_search_query();
     match state.search.search(&search_query) {
-        Ok(results) => no_store(render_page(&params, &search_query, &results)).into_response(),
+        Ok(results) => no_store(render_page(&params, &search_query, &results)),
         Err(error) => {
-            eprintln!("search page failed: {error:?}");
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                [(header::CACHE_CONTROL, "no-store")],
-                "Search is unavailable",
-            )
-                .into_response()
+            tracing::error!(q = %params.q, err = ?error, "search page failed");
+            no_store((StatusCode::INTERNAL_SERVER_ERROR, "Search is unavailable"))
         }
     }
 }
 
 impl SearchParams {
+    // form_urlencoded preserves the legacy hand-rolled semantics this page
+    // relies on: repeated keys accumulate, '+' decodes as space, empty pairs
+    // are skipped, and malformed %-escapes pass through literally.
     fn from_raw_query(raw_query: &str) -> SearchParams {
         let mut params = SearchParams::default();
-        for pair in raw_query.split('&').filter(|pair| !pair.is_empty()) {
-            let (key, value) = pair.split_once('=').unwrap_or((pair, ""));
-            let key = query_decode(key);
-            let value = query_decode(value);
-            match key.as_str() {
+        for (key, value) in form_urlencoded::parse(raw_query.as_bytes()) {
+            let value = value.into_owned();
+            match key.as_ref() {
                 "q" => params.q = value,
                 "category" if !value.is_empty() => params.category.push(value),
                 "tag" if !value.is_empty() => params.tag.push(value),
@@ -411,67 +408,60 @@ fn render_product_results(hits: &[ProductSearchHit]) -> HtmlFragment {
         .collect()
 }
 
-fn no_store<T: IntoResponse>(response: T) -> impl IntoResponse {
-    ([(header::CACHE_CONTROL, "no-store")], response)
-}
-
 fn plural(count: usize) -> &'static str {
     if count == 1 { "" } else { "s" }
 }
 
-fn query_decode(value: &str) -> String {
-    let mut bytes = Vec::with_capacity(value.len());
-    let mut input = value.as_bytes().iter().copied();
-    while let Some(byte) = input.next() {
-        match byte {
-            b'+' => bytes.push(b' '),
-            b'%' => {
-                let Some(high) = input.next() else {
-                    bytes.push(byte);
-                    break;
-                };
-                let Some(low) = input.next() else {
-                    bytes.push(byte);
-                    bytes.push(high);
-                    break;
-                };
-                match (hex_value(high), hex_value(low)) {
-                    (Some(high), Some(low)) => bytes.push((high << 4) | low),
-                    _ => {
-                        bytes.push(byte);
-                        bytes.push(high);
-                        bytes.push(low);
-                    }
-                }
-            }
-            _ => bytes.push(byte),
-        }
-    }
-    String::from_utf8_lossy(&bytes).into_owned()
-}
-
+// Clear-link re-encoding: '+' for spaces, uppercase %XX for reserved bytes —
+// the same application/x-www-form-urlencoded format the search <form> submits
+// with, now produced by form_urlencoded instead of a hand-rolled encoder.
 fn query_encode(value: &str) -> String {
-    let mut encoded = String::with_capacity(value.len());
-    for byte in value.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
-                encoded.push(byte as char);
-            }
-            b' ' => encoded.push('+'),
-            _ => {
-                use std::fmt::Write;
-                let _ = write!(encoded, "%{byte:02X}");
-            }
-        }
-    }
-    encoded
+    form_urlencoded::byte_serialize(value.as_bytes()).collect()
 }
 
-fn hex_value(byte: u8) -> Option<u8> {
-    match byte {
-        b'0'..=b'9' => Some(byte - b'0'),
-        b'a'..=b'f' => Some(byte - b'a' + 10),
-        b'A'..=b'F' => Some(byte - b'A' + 10),
-        _ => None,
+#[cfg(test)]
+mod tests {
+    use super::{SearchParams, query_encode};
+
+    // Pins the legacy raw-query semantics across the form_urlencoded swap:
+    // repeated keys, '+'-as-space, %XX decoding, empty values dropped for
+    // filters but kept for q, malformed escapes passing through.
+    #[test]
+    fn raw_query_parsing_keeps_legacy_semantics() {
+        let params = SearchParams::from_raw_query(
+            "q=rust+async&category=engineering&category=design&tag=&from=2024-01-01&page=3",
+        );
+        assert_eq!(params.q, "rust async");
+        assert_eq!(params.category, vec!["engineering", "design"]);
+        assert!(params.tag.is_empty());
+        assert_eq!(params.from.as_deref(), Some("2024-01-01"));
+        assert_eq!(params.to, None);
+        assert_eq!(params.page, Some(3));
+
+        let params = SearchParams::from_raw_query("q=a%26b%20c&&to=2024-12-31");
+        assert_eq!(params.q, "a&b c");
+        assert_eq!(params.to.as_deref(), Some("2024-12-31"));
+
+        // Malformed %-escape passes through literally (legacy behavior).
+        let params = SearchParams::from_raw_query("q=100%zz");
+        assert_eq!(params.q, "100%zz");
+
+        // Non-numeric page parses to None (treated as page 1 downstream).
+        let params = SearchParams::from_raw_query("page=two");
+        assert_eq!(params.page, None);
+    }
+
+    // Pins the Clear-link encoding format and proves it round-trips through
+    // the parser (what we emit decodes back to the original query).
+    #[test]
+    fn clear_link_encoding_is_stable_and_round_trips() {
+        assert_eq!(query_encode("rust"), "rust");
+        assert_eq!(query_encode("rust async"), "rust+async");
+        assert_eq!(query_encode("a&b=c?"), "a%26b%3Dc%3F");
+
+        let original = "café & crème +50%";
+        let encoded = query_encode(original);
+        let params = SearchParams::from_raw_query(&format!("q={encoded}"));
+        assert_eq!(params.q, original);
     }
 }

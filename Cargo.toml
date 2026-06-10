@@ -16,6 +16,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tantivy = "0.26.1"
 anyhow = "1"
+thiserror = "2"
+# Spec-conformant application/x-www-form-urlencoded parse/serialize (the url
+# crate's extracted codec) — replaces the hand-rolled search query codec.
+form_urlencoded = "1"
 dotenvy = "0.15"
 uuid = { version = "1", features = ["v4", "serde"] }
 # Stripe webhook signature verification (HMAC-SHA256 over the raw body).

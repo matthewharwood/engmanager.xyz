@@ -2,11 +2,12 @@ use std::env;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
 use surrealdb::engine::any::{self, Any};
 use surrealdb::types::SurrealValue;
+use thiserror::Error;
 use uuid::Uuid;
 
 const DEFAULT_LOCAL_DB_PATH: &str = "data/comments.surrealkv";
@@ -16,6 +17,38 @@ const MAX_AUTHOR_LEN: usize = 80;
 const MAX_BODY_LEN: usize = 2_000;
 const MAX_QUOTE_LEN: usize = 2_000;
 const MAX_CONTEXT_LEN: usize = 240;
+
+/// Typed comment-store failure (ledger #11), so the API layer maps errors by
+/// variant instead of string-matching anyhow text. (Pattern: rust-error-handling
+/// "error classification" — client-fixable vs internal.)
+#[derive(Debug, Error)]
+pub enum CommentError {
+    /// Client-fixable input problem; the message is safe to echo to browsers.
+    #[error("{0}")]
+    Validation(&'static str),
+    /// SurrealDB/serde failure; the full chain is logged server-side only and
+    /// clients get a generic 500 body.
+    #[error(transparent)]
+    Storage(#[from] anyhow::Error),
+}
+
+/// Moderation status for a comment. The serialized form (in SurrealDB and in
+/// API JSON) stays the lowercase string — `"visible"` / `"hidden"` — exactly
+/// as the old stringly literals wrote it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CommentStatus {
+    Visible,
+    Hidden,
+}
+
+impl CommentStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CommentStatus::Visible => "visible",
+            CommentStatus::Hidden => "hidden",
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct CommentStore {
@@ -106,9 +139,10 @@ impl CommentStore {
             .query(
                 "SELECT comment_id, article_slug, author_name, body, quote_exact, quote_prefix, quote_suffix, start_char, end_char, status, created_at_ms, updated_at_ms
                  FROM comment
-                 WHERE status = 'visible'
+                 WHERE status = $status
                  ORDER BY created_at_ms ASC",
             )
+            .bind(("status", CommentStatus::Visible.as_str().to_string()))
             .await
             .context("query visible comments")?
             .take(0)
@@ -122,9 +156,10 @@ impl CommentStore {
             .query(
                 "SELECT comment_id, article_slug, author_name, body, quote_exact, quote_prefix, quote_suffix, start_char, end_char, status, created_at_ms, updated_at_ms
                  FROM comment
-                 WHERE status = 'visible' AND article_slug = $article_slug
+                 WHERE status = $status AND article_slug = $article_slug
                  ORDER BY created_at_ms ASC",
             )
+            .bind(("status", CommentStatus::Visible.as_str().to_string()))
             .bind(("article_slug", article_slug.to_string()))
             .await
             .context("query article comments")?
@@ -137,17 +172,21 @@ impl CommentStore {
         &self,
         article_slug: &str,
         input: NewCommentRequest,
-    ) -> Result<CommentRecord> {
+    ) -> Result<CommentRecord, CommentError> {
         let author_name = normalize_author(&input.author_name);
-        let body = normalize_required(&input.body, MAX_BODY_LEN, "comment")?;
-        let quote_exact = normalize_required(&input.quote_exact, MAX_QUOTE_LEN, "selected text")?;
+        let body = normalize_required(&input.body, MAX_BODY_LEN, "comment is required")?;
+        let quote_exact = normalize_required(
+            &input.quote_exact,
+            MAX_QUOTE_LEN,
+            "selected text is required",
+        )?;
         let quote_prefix = normalize_optional(&input.quote_prefix, MAX_CONTEXT_LEN);
         let quote_suffix = normalize_optional(&input.quote_suffix, MAX_CONTEXT_LEN);
         if input.start_char >= input.end_char {
-            bail!("selection offsets are invalid");
+            return Err(CommentError::Validation("selection offsets are invalid"));
         }
         if !input.human_check {
-            bail!("slide verification is required");
+            return Err(CommentError::Validation("slide verification is required"));
         }
 
         let now = now_ms();
@@ -161,11 +200,13 @@ impl CommentStore {
             quote_suffix,
             start_char: input.start_char,
             end_char: input.end_char,
-            status: "visible".to_string(),
+            status: CommentStatus::Visible.as_str().to_string(),
             created_at_ms: now,
             updated_at_ms: now,
         };
 
+        // Database/serde failures flow through `#[from] anyhow::Error` into
+        // CommentError::Storage via the `?` below.
         let created: Option<CommentRecord> = self
             .db
             .create(("comment", record.comment_id.as_str()))
@@ -195,10 +236,14 @@ fn normalize_author(value: &str) -> String {
     }
 }
 
-fn normalize_required(value: &str, max_chars: usize, field: &str) -> Result<String> {
+fn normalize_required(
+    value: &str,
+    max_chars: usize,
+    missing: &'static str,
+) -> Result<String, CommentError> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
-        bail!("{field} is required");
+        return Err(CommentError::Validation(missing));
     }
     Ok(truncate_chars(trimmed, max_chars))
 }
@@ -216,4 +261,83 @@ fn now_ms() -> i64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis().min(i64::MAX as u128) as i64)
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The status enum's serialized form is a DB + API contract: existing
+    // SurrealDB rows and the comments JSON both carry these exact strings.
+    #[test]
+    fn comment_status_serialized_form_is_stable() {
+        assert_eq!(CommentStatus::Visible.as_str(), "visible");
+        assert_eq!(CommentStatus::Hidden.as_str(), "hidden");
+    }
+
+    fn valid_request() -> NewCommentRequest {
+        NewCommentRequest {
+            author_name: "Ada".to_string(),
+            body: "Solid point about retries.".to_string(),
+            quote_exact: "the quote".to_string(),
+            quote_prefix: String::new(),
+            quote_suffix: String::new(),
+            start_char: 0,
+            end_char: 9,
+            human_check: true,
+        }
+    }
+
+    // Every client-input failure must classify as Validation (→ 400 with the
+    // message); only DB/serde failures may classify as Storage (→ generic 500).
+    #[tokio::test]
+    async fn create_classifies_input_failures_as_validation() {
+        let store = CommentStore::connect_in_memory()
+            .await
+            .expect("in-memory store connects");
+
+        let missing_body = NewCommentRequest {
+            body: "   ".to_string(),
+            ..valid_request()
+        };
+        assert!(matches!(
+            store.create("slug", missing_body).await,
+            Err(CommentError::Validation("comment is required"))
+        ));
+
+        let missing_quote = NewCommentRequest {
+            quote_exact: String::new(),
+            ..valid_request()
+        };
+        assert!(matches!(
+            store.create("slug", missing_quote).await,
+            Err(CommentError::Validation("selected text is required"))
+        ));
+
+        let bad_offsets = NewCommentRequest {
+            start_char: 5,
+            end_char: 5,
+            ..valid_request()
+        };
+        assert!(matches!(
+            store.create("slug", bad_offsets).await,
+            Err(CommentError::Validation("selection offsets are invalid"))
+        ));
+
+        let no_human = NewCommentRequest {
+            human_check: false,
+            ..valid_request()
+        };
+        assert!(matches!(
+            store.create("slug", no_human).await,
+            Err(CommentError::Validation("slide verification is required"))
+        ));
+
+        // Happy path still stores a visible comment.
+        let created = store
+            .create("slug", valid_request())
+            .await
+            .expect("valid comment is stored");
+        assert_eq!(created.status, CommentStatus::Visible.as_str());
+    }
 }

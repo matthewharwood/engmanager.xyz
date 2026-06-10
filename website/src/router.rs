@@ -130,22 +130,23 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode, header};
     use http_body_util::BodyExt;
+    use tokio::sync::watch;
     use tower::ServiceExt;
 
     use super::build_router;
     use crate::http::HTML_CACHE_CONTROL;
-    use crate::state::AppState;
+    use crate::state::{AppState, CommentsHandle};
     use crate::{asset_url, comments, content, search, stripe};
 
     const SITE_HOST: &str = "engmanager.xyz";
     const SHOP_HOST: &str = "shop.localhost";
 
     async fn test_router() -> Router {
-        let comments = Arc::new(
+        let comments = CommentsHandle::connected(Arc::new(
             comments::CommentStore::connect_in_memory()
                 .await
                 .expect("in-memory comment store must connect"),
-        );
+        ));
         let search = Arc::new(
             search::SearchEngine::build_in_memory(content::ARTICLES, &[])
                 .expect("search index must build from the real articles"),
@@ -157,6 +158,9 @@ mod tests {
             search,
             comments,
             stripe,
+            // Cold snapshot (None) — exactly how production boots before the
+            // first Discord poll completes.
+            discord: watch::channel(None).1,
         })
     }
 

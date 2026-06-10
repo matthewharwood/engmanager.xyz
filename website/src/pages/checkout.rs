@@ -28,18 +28,20 @@ use crate::AppState;
 use crate::catalog::SHOP_PRODUCTS;
 use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
+use crate::http::{json_error, no_store};
 
 const CHECKOUT_TITLE: &str = "Checkout · ENGMANAGER.XYZ";
 const SUCCESS_TITLE: &str = "Order confirmed · ENGMANAGER.XYZ";
 const CHECKOUT_DESCRIPTION: &str =
     "Secure on-site checkout for ENGMANAGER.XYZ embroidered dad caps.";
-// Checkout pages carry order context — never cache them at the browser or edge.
-const CHECKOUT_CACHE_CONTROL: &str = "no-store";
 // Stripe caps a single PaymentIntent at 999,999.99 in the major unit; we cap
 // well under that as a sanity guard against a runaway cart.
 const MAX_AMOUNT_CENTS: u64 = 500_000;
 // Stripe's minimum charge for USD.
 const MIN_AMOUNT_CENTS: u64 = 50;
+// Stripe rejects metadata values longer than 500 characters; a runaway cart's
+// items list must be truncated (on a char boundary) rather than 400 the intent.
+const STRIPE_METADATA_VALUE_MAX_CHARS: usize = 500;
 
 // ---------------------------------------------------------------------------
 // Pages
@@ -71,26 +73,19 @@ fn is_shop_request(headers: &HeaderMap) -> bool {
         .unwrap_or(false)
 }
 
+// Checkout pages carry order context — never cache them at the browser or edge.
 pub async fn page(State(state): State<AppState>, headers: HeaderMap) -> Response {
     if !is_shop_request(&headers) {
         return super::not_found::handler().await;
     }
-    (
-        [(header::CACHE_CONTROL, CHECKOUT_CACHE_CONTROL)],
-        Html(render_page(Mode::Checkout, &state)),
-    )
-        .into_response()
+    no_store(Html(render_page(Mode::Checkout, &state)))
 }
 
 pub async fn success(State(state): State<AppState>, headers: HeaderMap) -> Response {
     if !is_shop_request(&headers) {
         return super::not_found::handler().await;
     }
-    (
-        [(header::CACHE_CONTROL, CHECKOUT_CACHE_CONTROL)],
-        Html(render_page(Mode::Success, &state)),
-    )
-        .into_response()
+    no_store(Html(render_page(Mode::Success, &state)))
 }
 
 fn render_page(mode: Mode, state: &AppState) -> String {
@@ -366,13 +361,13 @@ pub async fn create_intent(
     Json(req): Json<CreateIntentReq>,
 ) -> Response {
     if !state.stripe.is_enabled() {
-        return error_json(
+        return json_error(
             StatusCode::SERVICE_UNAVAILABLE,
             "Checkout isn’t configured in this environment.",
         );
     }
     if req.items.is_empty() {
-        return error_json(StatusCode::BAD_REQUEST, "Your cart is empty.");
+        return json_error(StatusCode::BAD_REQUEST, "Your cart is empty.");
     }
 
     // Price every line from SHOP_PRODUCTS. The client never sends an amount, so
@@ -383,7 +378,7 @@ pub async fn create_intent(
     for item in &req.items {
         let Some(product) = SHOP_PRODUCTS.iter().find(|p| p.slug == item.slug) else {
             // Don't echo the client-supplied slug back in the error.
-            return error_json(StatusCode::BAD_REQUEST, "Unknown or unavailable product.");
+            return json_error(StatusCode::BAD_REQUEST, "Unknown or unavailable product.");
         };
         let qty = item.quantity.clamp(1, 99);
         amount += u64::from(product.price.cents()) * u64::from(qty);
@@ -391,18 +386,18 @@ pub async fn create_intent(
         item_meta.push(format!("{}:{qty}", product.slug));
     }
     if amount == 0 {
-        return error_json(StatusCode::BAD_REQUEST, "Your cart is empty.");
+        return json_error(StatusCode::BAD_REQUEST, "Your cart is empty.");
     }
     // Stripe's USD minimum is 50¢. Unreachable with $80 caps, but keeps the
     // server authoritative if a sub-dollar product is ever added.
     if amount < MIN_AMOUNT_CENTS {
-        return error_json(
+        return json_error(
             StatusCode::BAD_REQUEST,
             "Order total is below the minimum charge.",
         );
     }
     if amount > MAX_AMOUNT_CENTS {
-        return error_json(
+        return json_error(
             StatusCode::BAD_REQUEST,
             "That order total is larger than this store supports.",
         );
@@ -418,10 +413,22 @@ pub async fn create_intent(
         "ENGMANAGER.XYZ caps ({count} item{})",
         if count == 1 { "" } else { "s" }
     );
-    // Deterministic key: an identical (cart, total, email) replays the same
-    // PaymentIntent rather than minting a duplicate on a retried POST; editing
-    // the cart changes the hash and yields a fresh intent.
-    let idem = idempotency_key(&items_meta, amount, email.unwrap_or(""));
+    // Normalized shipping form fields — the exact strings posted as
+    // shipping[*]. Stripe rejects a partial shipping hash, so only attach it
+    // once the Address Element has produced at least a name + line1.
+    let shipping = req
+        .shipping
+        .as_ref()
+        .filter(|s| non_empty(&s.name) && non_empty(&s.line1))
+        .map(shipping_fields)
+        .unwrap_or_default();
+    // Deterministic key: an identical (cart, total, email, shipping) replays
+    // the same PaymentIntent rather than minting a duplicate on a retried
+    // POST; editing the cart OR the shipping address changes the hash and
+    // yields a fresh intent (ledger #13 — Stripe 400s a replayed key whose
+    // params changed, which previously surfaced as a 502 after a declined
+    // card + edited address).
+    let idem = idempotency_key(&items_meta, amount, email.unwrap_or(""), &shipping);
 
     let mut form: Vec<(&'static str, String)> = vec![
         ("amount", amount.to_string()),
@@ -429,21 +436,13 @@ pub async fn create_intent(
         ("automatic_payment_methods[enabled]", "true".to_string()),
         ("description", description),
         ("metadata[order_kind]", "shop".to_string()),
-        ("metadata[items]", items_meta.clone()),
+        ("metadata[items]", truncate_metadata_value(&items_meta)),
         ("metadata[item_count]", count.to_string()),
     ];
     if let Some(email) = email {
         form.push(("receipt_email", email.to_string()));
     }
-    if let Some(shipping) = &req.shipping {
-        // Stripe rejects a partial shipping hash, so only attach it once the
-        // Address Element has produced at least a name + line1.
-        let has_name = non_empty(&shipping.name);
-        let has_line1 = non_empty(&shipping.line1);
-        if has_name && has_line1 {
-            push_shipping(&mut form, shipping);
-        }
-    }
+    form.extend(shipping);
 
     match state
         .stripe
@@ -453,26 +452,25 @@ pub async fn create_intent(
         Ok(body) => {
             let client_secret = body["client_secret"].as_str().unwrap_or_default();
             if client_secret.is_empty() {
-                eprintln!("checkout intent: stripe returned no client_secret: {body}");
-                return error_json(
+                tracing::error!(
+                    response = %body,
+                    "checkout intent: stripe returned no client_secret"
+                );
+                return json_error(
                     StatusCode::BAD_GATEWAY,
                     "Stripe didn’t return a usable payment session. Try again.",
                 );
             }
-            (
-                [(header::CACHE_CONTROL, "no-store")],
-                Json(json!({
-                    "clientSecret": client_secret,
-                    "paymentIntentId": body["id"].as_str().unwrap_or_default(),
-                    "amount": amount,
-                    "currency": "usd",
-                })),
-            )
-                .into_response()
+            no_store(Json(json!({
+                "clientSecret": client_secret,
+                "paymentIntentId": body["id"].as_str().unwrap_or_default(),
+                "amount": amount,
+                "currency": "usd",
+            })))
         }
         Err(err) => {
-            eprintln!("checkout intent error: {err:#}");
-            error_json(
+            tracing::error!(err = %format!("{err:#}"), "checkout intent error");
+            json_error(
                 StatusCode::BAD_GATEWAY,
                 "We couldn’t start the payment. Please try again.",
             )
@@ -487,10 +485,14 @@ fn non_empty(field: &Option<String>) -> bool {
         .is_some_and(|s| !s.is_empty())
 }
 
-fn push_shipping(form: &mut Vec<(&'static str, String)>, s: &ReqShipping) {
+/// The normalized shipping form fields in their stable order — this exact
+/// sequence is BOTH posted to Stripe and folded into the idempotency key, so
+/// the order must never change.
+fn shipping_fields(s: &ReqShipping) -> Vec<(&'static str, String)> {
+    let mut fields: Vec<(&'static str, String)> = Vec::new();
     let mut put = |key: &'static str, value: &Option<String>| {
         if let Some(val) = value.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
-            form.push((key, val.to_string()));
+            fields.push((key, val.to_string()));
         }
     };
     put("shipping[name]", &s.name);
@@ -500,9 +502,15 @@ fn push_shipping(form: &mut Vec<(&'static str, String)>, s: &ReqShipping) {
     put("shipping[address][state]", &s.state);
     put("shipping[address][postal_code]", &s.postal_code);
     put("shipping[address][country]", &s.country);
+    fields
 }
 
-fn idempotency_key(items_meta: &str, amount: u64, email: &str) -> String {
+fn idempotency_key(
+    items_meta: &str,
+    amount: u64,
+    email: &str,
+    shipping: &[(&'static str, String)],
+) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(items_meta.as_bytes());
@@ -510,16 +518,26 @@ fn idempotency_key(items_meta: &str, amount: u64, email: &str) -> String {
     hasher.update(amount.to_le_bytes());
     hasher.update(b"|");
     hasher.update(email.as_bytes());
+    // Shipping folds in as `|key=value` pairs in their stable form order. A
+    // cart WITHOUT shipping hashes exactly as the pre-shipping derivation, so
+    // in-flight no-shipping carts keep replaying their existing intents
+    // across a deploy (pinned by test below).
+    for (key, value) in shipping {
+        hasher.update(b"|");
+        hasher.update(key.as_bytes());
+        hasher.update(b"=");
+        hasher.update(value.as_bytes());
+    }
     format!("checkout-{}", hex::encode(&hasher.finalize()[..16]))
 }
 
-fn error_json(status: StatusCode, message: &str) -> Response {
-    (
-        status,
-        [(header::CACHE_CONTROL, "no-store")],
-        Json(json!({ "error": message })),
-    )
-        .into_response()
+// Truncate a Stripe metadata value to the 500-char limit on a char boundary
+// (`char_indices` walks scalar values, so multi-byte text can't be split).
+fn truncate_metadata_value(value: &str) -> String {
+    match value.char_indices().nth(STRIPE_METADATA_VALUE_MAX_CHARS) {
+        Some((index, _)) => value[..index].to_string(),
+        None => value.to_string(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -530,7 +548,7 @@ pub async fn webhook(State(state): State<AppState>, headers: HeaderMap, body: By
     if !state.stripe.webhook_configured() {
         // No signing secret here (e.g. before `stripe listen`). Don't act on an
         // unverifiable event, but 200 so Stripe/CLI doesn't pile up retries.
-        eprintln!(
+        tracing::warn!(
             "stripe webhook received but STRIPE_WEBHOOK_SECRET is unset — ignoring (unverified)"
         );
         return StatusCode::OK.into_response();
@@ -547,7 +565,7 @@ pub async fn webhook(State(state): State<AppState>, headers: HeaderMap, body: By
             StatusCode::OK.into_response()
         }
         Err(err) => {
-            eprintln!("stripe webhook verification failed: {err:#}");
+            tracing::error!(err = %format!("{err:#}"), "stripe webhook verification failed");
             StatusCode::BAD_REQUEST.into_response()
         }
     }
@@ -563,12 +581,89 @@ fn handle_event(event: &Value) {
             let email = object["receipt_email"].as_str().unwrap_or("—");
             let items = object["metadata"]["items"].as_str().unwrap_or("");
             // Fulfillment hook: this is where an order would be enqueued for
-            // embroidery + a confirmation email sent. Logged for now.
-            println!("✓ payment_intent.succeeded {id} — {amount}¢ — {email} — [{items}]");
+            // embroidery + a confirmation email sent. This log line is the
+            // ONLY fulfillment record today — keep the message + intent_id /
+            // amount_cents fields stable and grep-able.
+            tracing::info!(
+                intent_id = %id,
+                amount_cents = amount,
+                email = %email,
+                items = %items,
+                "payment_intent.succeeded"
+            );
         }
         "payment_intent.payment_failed" => {
-            println!("✗ payment_intent.payment_failed {id}");
+            tracing::warn!(intent_id = %id, "payment_intent.payment_failed");
         }
-        other => println!("· stripe webhook: {other} ({id})"),
+        other => tracing::info!(event_type = %other, intent_id = %id, "stripe webhook event"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ReqShipping, idempotency_key, shipping_fields, truncate_metadata_value};
+
+    fn shipping() -> ReqShipping {
+        ReqShipping {
+            name: Some("Ada Lovelace".to_string()),
+            line1: Some("1 Analytical Engine Way".to_string()),
+            line2: None,
+            city: Some("London".to_string()),
+            state: Some("LDN".to_string()),
+            postal_code: Some("EC1A".to_string()),
+            country: Some("GB".to_string()),
+        }
+    }
+
+    #[test]
+    fn idempotency_key_is_stable_for_identical_inputs() {
+        let fields = shipping_fields(&shipping());
+        let a = idempotency_key("cap-one:2;cap-two:1", 24_000, "buyer@example.com", &fields);
+        let b = idempotency_key("cap-one:2;cap-two:1", 24_000, "buyer@example.com", &fields);
+        assert_eq!(a, b);
+        // Shape contract: "checkout-" + 16-byte (32 hex char) digest prefix.
+        assert!(a.starts_with("checkout-"));
+        assert_eq!(a.len(), "checkout-".len() + 32);
+    }
+
+    #[test]
+    fn shipping_change_changes_the_key() {
+        let original = shipping_fields(&shipping());
+        let edited = shipping_fields(&ReqShipping {
+            line1: Some("2 Difference Engine Rd".to_string()),
+            ..shipping()
+        });
+
+        let no_shipping = idempotency_key("cap-one:1", 8_000, "buyer@example.com", &[]);
+        let with_shipping = idempotency_key("cap-one:1", 8_000, "buyer@example.com", &original);
+        let with_edited = idempotency_key("cap-one:1", 8_000, "buyer@example.com", &edited);
+
+        assert_ne!(no_shipping, with_shipping);
+        assert_ne!(with_shipping, with_edited);
+    }
+
+    // HARD requirement (ledger #13): carts WITHOUT shipping must keep the
+    // exact pre-P5 derivation, so in-flight carts replay their existing
+    // intents across the deploy. Pinned vector computed from the old
+    // sha256(items | amount_le | email) hash.
+    #[test]
+    fn no_shipping_key_matches_the_pre_shipping_derivation() {
+        let key = idempotency_key("cap-one:2;cap-two:1", 24_000, "buyer@example.com", &[]);
+        assert_eq!(key, "checkout-393631d8b94bd5215d1dded3c47a4544");
+    }
+
+    #[test]
+    fn metadata_value_truncates_on_a_char_boundary() {
+        // Short values pass through untouched.
+        assert_eq!(truncate_metadata_value("cap-one:1"), "cap-one:1");
+
+        // Multi-byte text truncates to 500 CHARS without splitting a scalar.
+        let long = "é".repeat(600);
+        let truncated = truncate_metadata_value(&long);
+        assert_eq!(truncated.chars().count(), 500);
+        assert!(long.starts_with(&truncated));
+
+        let ascii = "x".repeat(501);
+        assert_eq!(truncate_metadata_value(&ascii).len(), 500);
     }
 }

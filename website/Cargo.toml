@@ -19,6 +19,8 @@ eng-markup = { workspace = true }
 eng-domain = { workspace = true }
 tantivy = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
+form_urlencoded = { workspace = true }
 dotenvy = { workspace = true }
 uuid = { workspace = true }
 surrealdb = { workspace = true }

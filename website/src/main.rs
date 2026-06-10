@@ -8,6 +8,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use tokio::net::TcpListener;
+use tokio::sync::watch;
 use tracing_subscriber::EnvFilter;
 
 pub mod assets;
@@ -32,7 +33,7 @@ mod stripe;
 // untouched while the implementations live in their own modules.
 pub use assets::{Assets, CssDist, JsDist, asset_url};
 pub use config::is_shop_host;
-pub use state::AppState;
+pub use state::{AppState, CommentsHandle};
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
 // only server the site embeds; the refresh task resolves the guild ID
@@ -53,6 +54,8 @@ async fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("stripe-sync") {
         if let Err(err) = stripe::run(stripe::SyncOptions::from_args(&args)).await {
+            // CLI surface, not the server: stderr is the right channel here
+            // (the tracing sweep deliberately leaves stripe-sync on std{out,err}).
             eprintln!("stripe-sync failed: {err:#}");
             std::process::exit(1);
         }
@@ -72,19 +75,36 @@ async fn main() {
     pages::articles::warm_article_render_cache();
 
     // Polls the Discord widget + invite endpoints for the Auteurs server
-    // every 60s into an in-memory snapshot. Handlers read the snapshot
-    // synchronously with a tokio RwLock — zero I/O on the hot path.
-    tokio::spawn(discord::refresh_loop(AUTEURS_INVITE_CODE));
+    // every 60s, publishing each good snapshot into the watch channel below.
+    // Handlers `borrow()` the AppState receiver — zero I/O on the hot path.
+    let (discord_tx, discord_rx) = watch::channel(None);
+    tokio::spawn(discord::refresh_loop(AUTEURS_INVITE_CODE, discord_tx));
 
-    let comments = Arc::new(
-        comments::CommentStore::connect_from_env()
-            .await
-            .unwrap_or_else(|err| fail_startup("comment store must connect at startup", err)),
-    );
-    let existing_comments = comments
-        .all_visible()
-        .await
-        .unwrap_or_else(|err| fail_startup("visible comments must load at startup", err));
+    // Comments degrade instead of aborting boot (ledger #12): if SurrealDB
+    // is unreachable (or its rows won't load), articles keep serving, the
+    // comments API answers 503, and search builds with no comments.
+    let (comments, existing_comments) = match comments::CommentStore::connect_from_env().await {
+        Ok(store) => {
+            let store = Arc::new(store);
+            match store.all_visible().await {
+                Ok(existing) => (CommentsHandle::connected(store), existing),
+                Err(err) => {
+                    tracing::error!(
+                        err = %format!("{err:#}"),
+                        "visible comments failed to load — comments API disabled"
+                    );
+                    (CommentsHandle::disabled(), Vec::new())
+                }
+            }
+        }
+        Err(err) => {
+            tracing::error!(
+                err = %format!("{err:#}"),
+                "comment store unavailable — comments API disabled"
+            );
+            (CommentsHandle::disabled(), Vec::new())
+        }
+    };
     let search = Arc::new(
         search::SearchEngine::build_in_memory(content::ARTICLES, &existing_comments)
             .unwrap_or_else(|err| fail_startup("search index must build at startup", err)),
@@ -96,6 +116,7 @@ async fn main() {
         search,
         comments,
         stripe,
+        discord: discord_rx,
     };
 
     let app = router::build_router(state);
@@ -115,13 +136,13 @@ async fn main() {
             .expect("set listener non-blocking");
         let local = std_listener.local_addr().ok();
         let listener = TcpListener::from_std(std_listener).expect("convert listenfd socket");
-        println!(
-            "Inherited listener from systemfd ({})",
-            local.map(|a| a.to_string()).unwrap_or_else(|| "?".into())
+        tracing::info!(
+            addr = %local.map(|a| a.to_string()).unwrap_or_else(|| "?".into()),
+            "inherited listener from systemfd"
         );
         listener
     } else {
-        println!("Starting server on http://{addr}");
+        tracing::info!(addr = %addr, "starting server");
         TcpListener::bind(addr)
             .await
             .unwrap_or_else(|err| fail_startup(&format!("failed to bind to {addr}"), err))

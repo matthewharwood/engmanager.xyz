@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
@@ -12,6 +12,7 @@ use super::{
     AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter,
     render_nav_search_toggle,
 };
+use crate::AppState;
 use crate::asset_url;
 use crate::components::article_toc::{self, Heading};
 use crate::components::{
@@ -23,6 +24,7 @@ use crate::content::{
     ARTICLE_RELATIONS, ARTICLES, Article, Category, Tag, article_markdown, public_articles,
     relevance_score, unique_tags,
 };
+use crate::discord::DiscordSnapshot;
 
 const ARTICLE_REVEAL_VARIANTS: [&str; 5] = ["rise", "drift", "hinge", "focus", "thread"];
 
@@ -410,7 +412,7 @@ pub fn warm_article_render_cache() {
     }
 }
 
-pub async fn detail(Path(slug): Path<String>) -> Response {
+pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> Response {
     let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
         Some(article_index) => {
@@ -435,7 +437,10 @@ pub async fn detail(Path(slug): Path<String>) -> Response {
                 return super::not_found::response();
             };
             let inner = HtmlFragment::new(body);
-            let inner = splice_discord_widget(&slug, inner).await;
+            // The Discord snapshot is read from the AppState watch channel
+            // here in the handler and hoisted into the splice (component
+            // renders stay pure — no global reads below this point).
+            let inner = splice_discord_widget(&slug, inner, state.discord.borrow().clone());
             let inner = splice_foottraffic_map(&slug, inner);
             // TOC component: the markup mounts below; its CSS/JS deps are
             // pinned at their pre-P4 head positions inside `layout`.
@@ -538,16 +543,21 @@ fn article_json_ld(headline: &str, date_iso: &str, url: &str) -> HtmlFragment {
 }
 
 // Renders the live Discord widget into the body HTML if the article has
-// a `<!--auteurs-discord-widget-->` sentinel and we have a fresh snapshot.
-// When the snapshot is cold or the article doesn't reference the widget,
-// the sentinel is dropped (empty string) and the article's static fallback
+// a `<!--auteurs-discord-widget-->` sentinel and we have a fresh snapshot
+// (hoisted from the AppState watch channel by the handler). When the
+// snapshot is cold or the article doesn't reference the widget, the
+// sentinel is dropped (empty string) and the article's static fallback
 // (QR code + invite link) remains as the join CTA.
-async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
+fn splice_discord_widget(
+    slug: &str,
+    body: HtmlFragment,
+    snapshot: Option<DiscordSnapshot>,
+) -> HtmlFragment {
     let body_str = body.as_str();
     if !body_str.contains(DISCORD_WIDGET_SENTINEL) {
         return body;
     }
-    let replacement = match crate::discord::snapshot().await {
+    let replacement = match snapshot {
         Some(snap) if slug == "auteurs" => discord_widget::render(&snap).markup.into_string(),
         _ => String::new(),
     };
