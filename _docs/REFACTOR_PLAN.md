@@ -144,3 +144,18 @@ Full catalog lives in the workflow results; the absolutes:
   ~2700 lines) — do NOT migrate it into a component this pass.
 - manifest.webmanifest hardcodes the "Latest Article" shortcut and the
   engman**an**ager.xyz.png filename typo — both load-bearing; leave them.
+
+## Ledger additions (P4)
+
+8. P4: overlay/toc/discord/region CSS moves from critical.css / articles.css /
+   region-map.css into co-located c-<feature>.css files (@layer-wrapped, rules
+   verbatim): critical.css + articles.css hashed URLs change; heads gain
+   c-api-receipt / c-quick-actions / c-article-toc / c-discord-widget /
+   c-region-map links per tier rules; selector sets per page unchanged
+   (none lost, none duplicated).
+9. P4: c-nav.css gains an opacity/transform fallback on .is-open so the
+   dropdown is usable when the anime.js CDN fails (deliberate bug fix);
+   nav script un-caches a rejected CDN import (retry on next open).
+10. P4: build.rs — generated component-asset consts, style.css/script.js
+    filename contract enforced (other css/js under a component dir panics),
+    named-file diagnostics, parallel minify passes. No asset-output changes.
