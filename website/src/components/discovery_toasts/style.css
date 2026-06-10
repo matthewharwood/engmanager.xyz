@@ -1,0 +1,63 @@
+/* Scavenger-hunt discovery toasts — co-located from critical.css.
+ *
+ * Wrapped in `@layer fp.overlay` to rejoin the exact cascade layer these rules
+ * came from. critical.css pre-declares the layer order
+ * (`@layer fp.config, fp.tokens, fp.themes, fp.compat, fp.base, fp.overlay;`)
+ * and loads first on every page, so these additions slot into fp.overlay at the
+ * established position — the cascade is identical to when they lived inline.
+ *
+ * Loaded async (deferred tier): the container is empty + fixed-position at first
+ * paint and toast cards only appear on later discovery events, so this never
+ * blocks render and cannot cause FOUC. The reduced-data `.discovery-toast`
+ * override stays in critical.css (a grouped, cross-component rule). */
+@layer fp.overlay {
+    .discovery-toasts {
+        position: fixed;
+        inset-block-end: 1rem;
+        inset-inline-end: 1rem;
+        z-index: 60;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.4375rem;
+        pointer-events: none;
+    }
+
+    .discovery-toast {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5625rem;
+        padding-block: 0.625rem;
+        padding-inline: 0.875rem;
+        background: var(--brand);
+        color: var(--brand-text);
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 700;
+        line-height: 1;
+        border: 2px solid var(--text-1);
+        box-shadow: 4px 4px 0 0 var(--text-1);
+        opacity: 0;
+        transform: translateY(0.75rem);
+        transition:
+            opacity 280ms cubic-bezier(0.2, 0.8, 0.3, 1),
+            transform 280ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    }
+
+    .discovery-toast.is-visible { opacity: 1; transform: translateY(0); }
+
+    .discovery-toast-glyph { color: var(--brand-text); font-size: 0.875em; }
+
+    .discovery-toast-tag {
+        background: var(--brand-text);
+        color: var(--brand);
+        padding-block: 0.1875rem;
+        padding-inline: 0.375rem;
+        font-weight: 800;
+    }
+
+    .discovery-toast-name { font-weight: 700; }
+    .discovery-toast-count { opacity: 0.85; font-weight: 500; }
+}

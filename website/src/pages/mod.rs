@@ -116,42 +116,15 @@ pub fn render_hunt_chip() -> HtmlFragment {
     }
 }
 
-// Toast container for scavenger-hunt discoveries. Always present in
-// the DOM; experiences.js mounts brutalist toast cards inside it and
-// animates them in/out.
-pub fn render_discovery_toasts() -> HtmlFragment {
-    view! {
-        <div class="discovery-toasts"
-             data-discovery-toasts
-             aria-live="polite"
-             aria-atomic="false"></div>
-    }
-}
+// The discovery-toast container moved to the co-located component
+// `components/discovery_toasts/` (markup + deferred styles). `experiences.js`
+// still drives it from the page level.
 
-// Inline SVG icons used in the site nav. On mobile the text labels are
-// visually hidden (sr-only) and these glyphs take their place to save
-// horizontal room. Discord + GitHub are filled brand marks; folder +
-// search are stroked outlines to match the brutalist line aesthetic.
-//
-// `class="site-nav-icon"` is the shared sizing hook; visibility is
-// flipped per-viewport in critical.css.
-const ICON_FOLDER: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5 L6 4.5 L7.6 6.2 L14 6.2 L14 12.5 L2 12.5 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>"##;
-
-const ICON_DISCORD: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13.55 3.31a13.5 13.5 0 0 0-3.4-1.06.05.05 0 0 0-.05.02c-.15.26-.31.6-.43.87a12.6 12.6 0 0 0-3.78 0c-.12-.27-.29-.61-.44-.87a.05.05 0 0 0-.05-.02 13.5 13.5 0 0 0-3.4 1.06s-.02.01-.03.02C.13 6.18-.18 8.97.03 11.72c0 .02.01.04.03.05a13.6 13.6 0 0 0 4.06 2.04c.03.01.06 0 .07-.02.31-.43.59-.88.83-1.36.01-.03 0-.07-.03-.08-.44-.17-.86-.37-1.27-.6-.03-.02-.04-.07-.01-.09.09-.07.17-.14.25-.21a.05.05 0 0 1 .05 0c2.66 1.21 5.55 1.21 8.18 0a.05.05 0 0 1 .05 0c.08.07.16.14.25.21.03.02.02.07-.01.09-.41.24-.83.43-1.27.6-.03.01-.04.05-.03.08.25.48.53.93.83 1.36.02.02.05.03.07.02a13.5 13.5 0 0 0 4.07-2.04.05.05 0 0 0 .02-.05c.25-3.17-.42-5.94-1.76-8.39 0-.01-.01-.02-.03-.02ZM5.46 10.04c-.81 0-1.48-.74-1.48-1.65 0-.91.65-1.65 1.48-1.65.83 0 1.5.75 1.49 1.65 0 .91-.66 1.65-1.49 1.65Zm5.47 0c-.81 0-1.48-.74-1.48-1.65 0-.91.65-1.65 1.48-1.65.83 0 1.5.75 1.49 1.65 0 .91-.66 1.65-1.49 1.65Z"/></svg>"##;
-
-const ICON_GITHUB: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.32c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.16-.89-1.16-.73-.5.06-.49.06-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.21c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>"##;
-
+// Inline SVG icon for the mobile search toggle. `class="site-nav-icon"` is the
+// shared sizing hook; visibility is flipped per-viewport in critical.css. (The
+// folder / Discord / GitHub nav glyphs moved into the co-located nav component,
+// `components/nav/`, which is the only place they were used.)
 const ICON_SEARCH: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 10 L13.5 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>"##;
-
-pub fn nav_icon_folder() -> HtmlFragment {
-    HtmlFragment::new(ICON_FOLDER.to_string())
-}
-pub fn nav_icon_discord() -> HtmlFragment {
-    HtmlFragment::new(ICON_DISCORD.to_string())
-}
-pub fn nav_icon_github() -> HtmlFragment {
-    HtmlFragment::new(ICON_GITHUB.to_string())
-}
 
 // Mobile-only nav button: tapping it opens the .site-search form
 // (which is display:none on narrow viewports) and focuses the input.

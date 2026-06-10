@@ -197,14 +197,7 @@ async fn upsert_product(client: &Client, key: &str, p: &ShopProduct) -> Result<C
             let price_id = price["id"].as_str().unwrap_or_default().to_string();
             // Make it the product's default price for clean checkout wiring.
             let set: Vec<(&str, String)> = vec![("default_price", price_id.clone())];
-            post(
-                client,
-                key,
-                &format!("/products/{product_id}"),
-                &set,
-                None,
-            )
-            .await?;
+            post(client, key, &format!("/products/{product_id}"), &set, None).await?;
             price_id
         }
     };
@@ -234,7 +227,10 @@ async fn search_product_by_slug(client: &Client, key: &str, slug: &str) -> Resul
     let status = resp.status();
     let body: Value = resp.json().await?;
     if !status.is_success() {
-        bail!("Stripe {status} on /products/search: {}", error_message(&body));
+        bail!(
+            "Stripe {status} on /products/search: {}",
+            error_message(&body)
+        );
     }
     Ok(body["data"].as_array().and_then(|d| d.first()).cloned())
 }

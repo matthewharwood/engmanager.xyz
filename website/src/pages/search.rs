@@ -7,12 +7,12 @@ use eng_markup::{html, view};
 use serde::Deserialize;
 
 use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, nav_icon_discord, nav_icon_folder, nav_icon_github,
-    render_dev_meta, render_global_search, render_nav_search_toggle, render_resource_hints,
-    render_sfx_urls, render_sitemap_link,
+    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_global_search,
+    render_nav_search_toggle, render_resource_hints, render_sfx_urls, render_sitemap_link,
 };
 use crate::AppState;
 use crate::asset_url;
+use crate::components::nav;
 use crate::pages::articles::{Category, Tag};
 use crate::search::{
     ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
@@ -159,6 +159,17 @@ fn render_page(
         cap_summary
     );
 
+    // The search page shows the plain-link nav config (no recent-articles
+    // dropdown), so it pulls in no co-located CSS and no dropdown JS.
+    let nav = nav::render(nav::Props {
+        brand_icon_url: asset_url("favicon.svg"),
+        global_search: render_global_search("Search"),
+        search_toggle: render_nav_search_toggle(),
+        articles: nav::Articles::Link,
+    });
+    let nav_head = nav.head();
+    let nav_markup = nav.markup;
+
     Html(html! {
         <!DOCTYPE html>
         <html lang="en">
@@ -178,8 +189,7 @@ fn render_page(
                 <script src={ asset_url("js/audio.js") } defer></script>
                 <script src={ asset_url("js/search.js") } defer></script>
                 <script src={ asset_url("js/search-keyclick.js") } defer></script>
-                <script src={ asset_url("js/popover-registry.js") } defer></script>
-                <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
+                { nav_head }
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
                 <meta name="theme-color" content="#e64553" />
@@ -187,33 +197,7 @@ fn render_page(
             </head>
             <body class="search-page">
                 <a class="skip-link" href="#main">"Skip to content"</a>
-                <nav class="site-nav" aria-label="Primary">
-                    <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
-                        <img class="site-nav-mark"
-                             src={ asset_url("favicon.svg") }
-                             alt=""
-                             width="20"
-                             height="20"
-                             aria-hidden="true" />
-                        <span class="site-nav-wordmark">"engmanager.xyz"</span>
-                    </a>
-                    { render_global_search("Search") }
-                    <div class="site-nav-links">
-                        { render_nav_search_toggle() }
-                        <a class="site-nav-link" href="/articles/" aria-label="Articles">
-                            { nav_icon_folder() }
-                            <span class="site-nav-link-label">"Articles"</span>
-                        </a>
-                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
-                            { nav_icon_discord() }
-                            <span class="site-nav-link-label">"Discord"</span>
-                        </a>
-                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
-                            { nav_icon_github() }
-                            <span class="site-nav-link-label">"GitHub"</span>
-                        </a>
-                    </div>
-                </nav>
+                { nav_markup }
                 <main id="main" class="search-shell" tabindex="-1">
                     <header class="search-header">
                         <h1>"Search"</h1>

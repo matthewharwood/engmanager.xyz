@@ -295,17 +295,21 @@ impl SearchEngine {
                 }),
         );
 
-        hits.extend(matching_products(&needle).into_iter().map(|(rank, product)| {
-            (
-                rank,
-                TypeaheadHit {
-                    kind: "product",
-                    title: product.name.to_string(),
-                    detail: product.description.to_string(),
-                    url: product_url(product.slug),
-                },
-            )
-        }));
+        hits.extend(
+            matching_products(&needle)
+                .into_iter()
+                .map(|(rank, product)| {
+                    (
+                        rank,
+                        TypeaheadHit {
+                            kind: "product",
+                            title: product.name.to_string(),
+                            detail: product.description.to_string(),
+                            url: product_url(product.slug),
+                        },
+                    )
+                }),
+        );
 
         hits.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.title.cmp(&b.1.title)));
         hits.into_iter().take(limit).map(|(_, hit)| hit).collect()

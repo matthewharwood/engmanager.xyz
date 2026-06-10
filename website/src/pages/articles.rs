@@ -8,12 +8,12 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 use rust_embed::RustEmbed;
 
 use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
-    nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
+    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
     render_global_search, render_liquid_title_filter, render_nav_search_toggle,
     render_quick_actions, render_resource_hints, render_sfx_urls, render_sitemap_link,
 };
 use crate::asset_url;
+use crate::components::{discovery_toasts, nav, to_top};
 
 // Article bodies live in `website/articles/{slug}.md`. They're embedded into
 // the binary at compile time alongside the rest of the static content (so the
@@ -661,61 +661,9 @@ fn receipt_modal() -> HtmlFragment {
     }
 }
 
-// Vercel-style dropdown trigger + panel containing the latest three
-// articles. The trigger keeps the `.is-current` highlight so the nav
-// reads identically to before for users on browsers without JS — the
-// markup is still a clickable disclosure with all targets inside.
-fn render_articles_dropdown() -> HtmlFragment {
-    let items: HtmlFragment = public_articles()
-        .take(3)
-        .enumerate()
-        .map(|(i, a)| {
-            let display = a.title_alias.unwrap_or(a.title);
-            view! {
-                <a class="nav-dropdown-item"
-                   href={ format!("/articles/{}", a.slug) }
-                   role="menuitem">
-                    <span class="nav-dropdown-item-index" aria-hidden="true">
-                        { format!("{}", i + 1) }
-                    </span>
-                    <div class="nav-dropdown-item-body">
-                        <div class="nav-dropdown-item-title">{ display }</div>
-                        <div class="nav-dropdown-item-date">{ a.date.label() }</div>
-                    </div>
-                </a>
-            }
-        })
-        .collect();
-
-    view! {
-        <div class="nav-dropdown">
-            <button class="nav-dropdown-trigger is-current"
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    aria-label="Articles">
-                { nav_icon_folder() }
-                <span class="site-nav-link-label">"Articles"</span>
-                <svg class="nav-dropdown-chevron" viewBox="0 0 10 10" aria-hidden="true">
-                    <path d="M2 4 L5 7 L8 4"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.4"
-                          stroke-linecap="round"
-                          stroke-linejoin="round" />
-                </svg>
-            </button>
-            <div class="nav-dropdown-panel" role="menu">
-                { items }
-                <hr class="nav-dropdown-divider" />
-                <a class="nav-dropdown-all" href="/articles/" role="menuitem">
-                    "All articles"
-                    <span class="nav-dropdown-all-arrow" aria-hidden="true">"→"</span>
-                </a>
-            </div>
-        </div>
-    }
-}
+// The "Articles" nav dropdown moved into the co-located nav component
+// (`components/nav/`). `layout()` hoists the latest-three article rows into
+// `nav::Articles::Dropdown` so the component's render stays pure.
 
 #[derive(Clone, Copy)]
 struct ArticlePageAssets {
@@ -819,6 +767,34 @@ fn layout(
         }
     };
 
+    // Hoist the latest-three article rows out of the (pure) nav component so it
+    // never touches `public_articles()`/`asset_url` itself. Article pages always
+    // render the dropdown config.
+    let nav_dropdown_items: Vec<nav::DropdownItem> = public_articles()
+        .take(3)
+        .map(|a| nav::DropdownItem {
+            display: a.title_alias.unwrap_or(a.title).to_string(),
+            slug: a.slug.to_string(),
+            date_label: a.date.label().to_string(),
+        })
+        .collect();
+    let nav = nav::render(nav::Props {
+        brand_icon_url: asset_url("favicon.svg"),
+        global_search: render_global_search("Search"),
+        search_toggle: render_nav_search_toggle(),
+        articles: nav::Articles::Dropdown(nav_dropdown_items),
+    });
+    let nav_head = nav.head();
+    let nav_markup = nav.markup;
+
+    // Discovery-toast overlay: container + its async (deferred) styles.
+    let toasts = discovery_toasts::render();
+    let toasts_head = toasts.head();
+    let toasts_markup = toasts.markup;
+    let to_top = to_top::render(Default::default());
+    let to_top_head = to_top.head();
+    let to_top_markup = to_top.markup;
+
     html! {
         <!DOCTYPE html>
         <html lang="en">
@@ -848,10 +824,9 @@ fn layout(
                 <script src={ asset_url("js/auteurs-shader.js") } defer></script>
                 <script src={ asset_url("js/comments.js") } defer></script>
                 <script src={ asset_url("js/toc-waypoints.js") } defer></script>
-                <script src={ asset_url("js/to-top.js") } defer></script>
-                <script src={ asset_url("js/popover-registry.js") } defer></script>
-                <script src={ asset_url("js/nav-dropdown.js") } defer></script>
-                <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
+                { to_top_head }
+                { nav_head }
+                { toasts_head }
                 <script src={ asset_url("js/view-transitions.js") } defer></script>
                 <script src={ asset_url("js/quick-actions.js") } defer></script>
                 <script>{ HtmlFragment::new(format!(
@@ -866,43 +841,11 @@ fn layout(
             </head>
             <body class="articles-page">
                 <a class="skip-link" href="#main">"Skip to content"</a>
-                <nav class="site-nav" aria-label="Primary">
-                    <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
-                        <img class="site-nav-mark"
-                             src={ asset_url("favicon.svg") }
-                             alt=""
-                             width="20"
-                             height="20"
-                             aria-hidden="true" />
-                        <span class="site-nav-wordmark">"engmanager.xyz"</span>
-                    </a>
-                    { render_global_search("Search") }
-                    <div class="site-nav-links">
-                        { render_nav_search_toggle() }
-                        { render_articles_dropdown() }
-                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
-                            { nav_icon_discord() }
-                            <span class="site-nav-link-label">"Discord"</span>
-                        </a>
-                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
-                            { nav_icon_github() }
-                            <span class="site-nav-link-label">"GitHub"</span>
-                        </a>
-                    </div>
-                </nav>
+                { nav_markup }
                 { body }
-                <button class="to-top" type="button" aria-label="Scroll to top">
-                    <svg class="to-top-icon" viewBox="0 0 16 16" aria-hidden="true">
-                        <path d="M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="1.6"
-                              stroke-linecap="round"
-                              stroke-linejoin="round" />
-                    </svg>
-                </button>
+                { to_top_markup }
                 { render_quick_actions() }
-                { render_discovery_toasts() }
+                { toasts_markup }
                 { receipt_modal() }
             </body>
         </html>

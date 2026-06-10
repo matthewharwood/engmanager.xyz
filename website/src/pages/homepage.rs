@@ -8,10 +8,11 @@ use std::fmt::Write;
 use super::articles::{Category, Tag, public_articles};
 use super::{
     AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
-    render_discovery_toasts, render_liquid_title_filter, render_quick_actions,
-    render_resource_hints, render_sfx_urls, render_sitemap_link,
+    render_liquid_title_filter, render_quick_actions, render_resource_hints, render_sfx_urls,
+    render_sitemap_link,
 };
 use crate::asset_url;
+use crate::components::discovery_toasts;
 
 const HOME_LIQUID_HEADLINE_ENABLED: bool = true;
 
@@ -422,6 +423,11 @@ pub async fn index() -> Html<String> {
         HtmlFragment::empty()
     };
 
+    // Discovery-toast overlay: container + its async (deferred) styles.
+    let toasts = discovery_toasts::render();
+    let toasts_head = toasts.head();
+    let toasts_markup = toasts.markup;
+
     let page = html! {
         <!DOCTYPE html>
         <html lang="en">
@@ -436,6 +442,7 @@ pub async fn index() -> Html<String> {
                 <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
+                { toasts_head }
                 { home_liquid_styles }
                 <script src={ asset_url("js/theme-toggle.js") }></script>
                 { render_sfx_urls() }
@@ -577,7 +584,7 @@ pub async fn index() -> Html<String> {
                 { render_reveal_card() }
 
                 { render_quick_actions() }
-                { render_discovery_toasts() }
+                { toasts_markup }
 
                 // Brutalist Web API Receipt modal (Popover API). `?` from
                 // anywhere on the site toggles it; experiences.js fills the

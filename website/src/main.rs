@@ -13,6 +13,7 @@ use tokio::net::TcpListener;
 use tower_http::compression::CompressionLayer;
 
 pub mod comments;
+pub mod components;
 pub mod discord;
 pub mod experiences;
 mod pages;

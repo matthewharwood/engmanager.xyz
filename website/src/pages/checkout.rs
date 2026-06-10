@@ -32,7 +32,8 @@ use crate::asset_url;
 
 const CHECKOUT_TITLE: &str = "Checkout · ENGMANAGER.XYZ";
 const SUCCESS_TITLE: &str = "Order confirmed · ENGMANAGER.XYZ";
-const CHECKOUT_DESCRIPTION: &str = "Secure on-site checkout for ENGMANAGER.XYZ embroidered dad caps.";
+const CHECKOUT_DESCRIPTION: &str =
+    "Secure on-site checkout for ENGMANAGER.XYZ embroidered dad caps.";
 // Checkout pages carry order context — never cache them at the browser or edge.
 const CHECKOUT_CACHE_CONTROL: &str = "no-store";
 // Stripe caps a single PaymentIntent at 999,999.99 in the major unit; we cap
@@ -485,7 +486,10 @@ pub async fn create_intent(
 }
 
 fn non_empty(field: &Option<String>) -> bool {
-    field.as_deref().map(str::trim).is_some_and(|s| !s.is_empty())
+    field
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|s| !s.is_empty())
 }
 
 fn push_shipping(form: &mut Vec<(&'static str, String)>, s: &ReqShipping) {
