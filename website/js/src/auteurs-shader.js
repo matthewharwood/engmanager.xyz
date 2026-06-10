@@ -10,9 +10,14 @@
 //   - self-guards: only activates if at least one .auteurs-shader canvas
 //     exists, so this script is safe to load on every article page.
 
+// Lifecycle (JS_ROUTER_CONSTRAINTS §2.12): every canvas tracks its rAF
+// handle so a soft navigation away can cancel the render loop and
+// release the WebGL context instead of leaking a GPU loop on a detached
+// canvas; navigating onto the Auteurs article sets up the new canvases.
+
 (function () {
-    const canvases = document.querySelectorAll("canvas.auteurs-shader");
-    if (!canvases.length) return;
+    // canvas -> dispose()
+    const instances = new Map();
 
     const VS = `#version 300 es
 in vec4 a_position;
@@ -115,6 +120,7 @@ void main() {
     }
 
     function setup(canvas) {
+        if (instances.has(canvas)) return;
         const gl = canvas.getContext("webgl2", {
             alpha: true,
             premultipliedAlpha: false,
@@ -148,6 +154,7 @@ void main() {
             }
         }
 
+        let raf = 0;
         function render(timeMs) {
             const t = timeMs * 0.001;
             resize();
@@ -161,10 +168,26 @@ void main() {
             gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(aPos);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            requestAnimationFrame(render);
+            raf = requestAnimationFrame(render);
         }
-        requestAnimationFrame(render);
+        raf = requestAnimationFrame(render);
+
+        instances.set(canvas, () => {
+            cancelAnimationFrame(raf);
+            gl.getExtension("WEBGL_lose_context")?.loseContext();
+        });
     }
 
-    canvases.forEach(setup);
+    function init(root) {
+        for (const [canvas, dispose] of instances) {
+            if (!canvas.isConnected) {
+                dispose();
+                instances.delete(canvas);
+            }
+        }
+        root.querySelectorAll("canvas.auteurs-shader").forEach(setup);
+    }
+
+    init(document);
+    window.__engNav?.onSwap?.(init);
 })();

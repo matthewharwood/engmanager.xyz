@@ -252,6 +252,10 @@ fn layout(
         .assets(assets)
         .scripts(scripts)
         .speculation_rules(speculation)
+        // Both article surfaces are router-eligible (ledger #16) — hidden
+        // articles included: router eligibility is by path shape, while
+        // `speculation` stays an indexability concern.
+        .nav_router(true)
         .render(page_body)
 }
 

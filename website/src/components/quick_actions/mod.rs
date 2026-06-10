@@ -94,10 +94,13 @@ fn hunt_chip() -> HtmlFragment {
 /// Pure render of the full quick-action cluster: `() -> Rendered`. The
 /// component owns its node tree and the dist assets that make it behave.
 pub fn render() -> Rendered {
+    // `data-swap-region` (ledger #14): names this body-level island for the
+    // soft-navigation router's region reconcile.
     let markup = view! {
         <div class="quick-actions"
              data-quick-actions
-             data-state="collapsed">
+             data-state="collapsed"
+             data-swap-region="quick-actions">
             <button class="quick-actions-peek"
                     type="button"
                     data-quick-actions-toggle

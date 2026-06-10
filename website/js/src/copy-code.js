@@ -71,3 +71,7 @@ if (document.readyState === "loading") {
 } else {
     install();
 }
+
+// Soft navigation: install() is already idempotent (skips <pre>s that
+// have a .code-copy) — just re-run it (JS_ROUTER_CONSTRAINTS §2.10).
+window.__engNav?.onSwap?.(() => install());

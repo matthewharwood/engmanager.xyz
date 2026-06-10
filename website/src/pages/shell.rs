@@ -40,6 +40,15 @@ const DEFAULT_THEME_COLOR: &str = "#e64553";
 /// API endpoints, or search result pages (unbounded query space).
 const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/checkout*"}},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/search*"}}]},"eagerness":"moderate"}]}"#;
 
+/// Inline `window.__engNav` bootstrap (ledger #15): the swap-callback
+/// registry that converted bundles register against (`onSwap`) and the
+/// nav-router fires (`_fire`) after each soft swap. Emitted on EVERY shell
+/// page, ahead of all deferred scripts, so a bundle can register
+/// unconditionally whether or not the page ships the router. Set-based with
+/// per-callback try/catch — one broken callback never blocks the rest.
+/// Kept under 300 bytes (currently ~160).
+const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set();return{onSwap(c){s.add(c);return()=>s.delete(c)},_fire(m){for(const c of s){try{c(m)}catch{}}}}})();</script>"#;
+
 /// Escape a string for embedding inside a JSON string literal that itself
 /// lives in a `<script>` element: the JSON specials (`"`, `\`, control chars)
 /// plus `<`/`>`/`&` as `\uXXXX` so the payload can never form `</script>` or
@@ -152,6 +161,7 @@ pub struct PageShell {
     scripts: Head,
     theme_color: &'static str,
     speculation_rules: bool,
+    nav_router: bool,
     body_class: &'static str,
     /// Extra attribute on `<body>` (checkout's `data-checkout-mode`).
     body_attr: Option<(&'static str, &'static str)>,
@@ -170,6 +180,7 @@ impl PageShell {
             scripts: Head::new(),
             theme_color: DEFAULT_THEME_COLOR,
             speculation_rules: false,
+            nav_router: false,
             body_class,
             body_attr: None,
             skip_link: Some("Skip to content"),
@@ -216,6 +227,18 @@ impl PageShell {
         self
     }
 
+    /// Ship the soft-navigation router, `js/nav-router.js` (ledger #16) —
+    /// router-eligible pages only: homepage, articles index, article detail
+    /// (hidden ones included; eligibility is by path shape), search. The tag
+    /// is appended after every page script through the shared [`Head`]
+    /// collector, so it participates in normal first-seen dedup. The router
+    /// stays DORMANT on speculation-rules browsers (Chromium) — see the
+    /// activation policy in `js/src/nav-router.js`.
+    pub fn nav_router(mut self, enabled: bool) -> Self {
+        self.nav_router = enabled;
+        self
+    }
+
     pub fn body_attr(mut self, name: &'static str, value: &'static str) -> Self {
         self.body_attr = Some((name, value));
         self
@@ -243,6 +266,13 @@ impl PageShell {
         head.add_blocking_js("js/theme-toggle.js");
         head.add_inline(render_sfx_urls());
         head.extend(self.scripts);
+        // Router-eligible pages append the soft-navigation router after every
+        // page script (deferred; execution order is irrelevant — it only
+        // registers a `navigate` listener). The `__engNav` bootstrap it fires
+        // is emitted further up, before any script tier.
+        if self.nav_router {
+            head.add_js("js/nav-router.js");
+        }
 
         let mut doc = String::with_capacity(16 * 1024);
         doc.push_str("<!DOCTYPE html><html lang=\"en\"><head>");
@@ -275,6 +305,10 @@ impl PageShell {
             }
             .as_str(),
         );
+        // ledger #15: the tiny `window.__engNav` registry rides every shell
+        // page, pinned before all script tiers so each deferred bundle can
+        // call `onSwap` at module scope.
+        doc.push_str(ENG_NAV_BOOTSTRAP);
         doc.push_str(head.render().as_str());
         doc.push_str(
             view! {
@@ -284,7 +318,10 @@ impl PageShell {
             .as_str(),
         );
         if self.speculation_rules {
-            doc.push_str(r#"<script type="speculationrules">"#);
+            // ledger #14: `data-server` marks the island as server-owned so
+            // experiences.js never injects a duplicate rules script after a
+            // soft navigation (its onSoftNav guard queries this attribute).
+            doc.push_str(r#"<script type="speculationrules" data-server>"#);
             doc.push_str(SPECULATION_RULES_JSON);
             doc.push_str("</script>");
         }
@@ -362,6 +399,34 @@ mod tests {
         // Body scaffold: skip-link by default, no speculation rules.
         assert!(html.contains(r##"<body class="search-page"><a class="skip-link" href="#main">"##));
         assert!(!html.contains("speculationrules"));
+        // ledger #15: the __engNav bootstrap rides every page, ahead of all
+        // script tiers (theme-toggle included), and stays under 300 bytes.
+        let bootstrap = html.find("window.__engNav=").expect("engNav bootstrap");
+        assert!(bootstrap < theme, "bootstrap must precede every script");
+        assert!(ENG_NAV_BOOTSTRAP.len() < 300, "bootstrap budget is 300B");
+        // ledger #16: the router script is opt-in; default pages skip it.
+        assert!(!html.contains("nav-router"));
+    }
+
+    #[test]
+    fn shell_nav_router_prop_appends_one_deferred_tag() {
+        let mut scripts = Head::new();
+        scripts.add_js("js/audio.js");
+        let html = PageShell::new("Router Page", "homepage")
+            .scripts(scripts)
+            .nav_router(true)
+            .render(HtmlFragment::empty());
+
+        // Exactly one deferred tag, after the page scripts, after the
+        // bootstrap inline.
+        assert_eq!(html.matches("/assets/js/nav-router.").count(), 1);
+        let tag = html.find("/assets/js/nav-router.").expect("router tag");
+        let tag_open = html[..tag].rfind("<script").expect("script tag");
+        let tag_close = tag_open + html[tag_open..].find('>').expect("tag close");
+        assert!(html[tag_open..tag_close].contains("defer"));
+        let bootstrap = html.find("window.__engNav=").expect("engNav bootstrap");
+        let audio = html.find("/assets/js/audio.").expect("audio.js");
+        assert!(bootstrap < audio && audio < tag);
     }
 
     #[test]
@@ -376,7 +441,7 @@ mod tests {
         assert!(html.contains(r#"<body class="checkout-page" data-checkout-mode="checkout">"#));
         assert!(html.contains(r##"<meta name="theme-color" content="#11111b">"##));
         assert!(html.contains(&format!(
-            r#"<script type="speculationrules">{SPECULATION_RULES_JSON}</script>"#
+            r#"<script type="speculationrules" data-server>{SPECULATION_RULES_JSON}</script>"#
         )));
         assert!(!html.contains("skip-link"));
     }

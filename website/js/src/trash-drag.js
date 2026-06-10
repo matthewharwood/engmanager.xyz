@@ -444,6 +444,27 @@ async function flyBack(ghost, origin, original, type) {
     if (type === "dvd") resumeDvdBouncer(origin);
 }
 
+// Bound once per real page load (singleton guard): re-running
+// initDvdBouncer after a soft navigation must not stack window/document
+// listeners, so they live here and resolve the CURRENT dvdState lazily
+// instead of capturing the node (JS_ROUTER_CONSTRAINTS §2.7).
+let dvdListenersBound = false;
+
+function bindDvdListeners() {
+    if (dvdListenersBound) return;
+    dvdListenersBound = true;
+
+    window.addEventListener("resize", () => {
+        clampDvdBouncer();
+        setDvdPosition();
+    }, { passive: true });
+
+    document.addEventListener("pointermove", updateDvdCatchState, { passive: true });
+    document.addEventListener("pointerleave", () => {
+        dvdState?.node.removeAttribute("data-caught");
+    });
+}
+
 function initDvdBouncer() {
     const node = document.querySelector(DVD_SELECTOR);
     if (!node) return;
@@ -468,15 +489,7 @@ function initDvdBouncer() {
     setDvdPosition();
     dvdState.raf = requestAnimationFrame(tickDvdBouncer);
 
-    window.addEventListener("resize", () => {
-        clampDvdBouncer();
-        setDvdPosition();
-    }, { passive: true });
-
-    document.addEventListener("pointermove", updateDvdCatchState, { passive: true });
-    document.addEventListener("pointerleave", () => {
-        node.removeAttribute("data-caught");
-    });
+    bindDvdListeners();
 }
 
 function tickDvdBouncer(now) {
@@ -573,6 +586,15 @@ function updateDvdCatchState(event) {
 
 document.addEventListener("pointerdown", startDrag);
 initDvdBouncer();
+
+// Soft navigation: the homepage trash island (and its DVD node) is a
+// swapped region — cancel the old node's rAF loop and re-init against
+// whatever the new page has. Drag delegation (pointerdown above) uses
+// live selectors and is untouched (JS_ROUTER_CONSTRAINTS §2.7).
+window.__engNav?.onSwap?.(() => {
+    stopDvdBouncer();
+    initDvdBouncer();
+});
 
 document.addEventListener(
     "click",

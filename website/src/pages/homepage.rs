@@ -94,9 +94,12 @@ fn json_escape(s: &str) -> String {
 // and opens with a spring-overshoot entrance. Continue button
 // drives navigation; Close dismisses + keeps the reader on the
 // homepage with the visited state intact.
+// `data-swap-region` (ledger #14): names this body-level island for the
+// soft-navigation router's region reconcile (homepage-only — the router
+// inserts/removes it when soft-navigating in/out of the homepage).
 fn render_reveal_card() -> HtmlFragment {
     view! {
-        <aside id="article-reveal" popover="manual" class="reveal-card">
+        <aside id="article-reveal" popover="manual" class="reveal-card" data-swap-region="reveal">
             <div class="reveal-card-frame">
                 <div class="reveal-card-glint" aria-hidden="true"></div>
                 <header class="reveal-card-head">
@@ -545,8 +548,9 @@ pub async fn index() -> Html<String> {
                 // chip is consumed (hidden across every marquee copy), the
                 // counter ticks up, and the ElevenLabs-generated trash-drop
                 // SFX plays. Misses fly back. js/trash-drag.js owns the
-                // pointer DnD logic.
-                <div class="trash" data-trash>
+                // pointer DnD logic. data-swap-region: ledger #14 (homepage-
+                // only island, region-reconciled by the soft-nav router).
+                <div class="trash" data-trash data-swap-region="trash">
                     <button class="trash-can" type="button" aria-label="Trash" tabindex="-1">
                         <svg class="trash-icon"
                              viewBox="0 0 24 24"
@@ -594,6 +598,7 @@ pub async fn index() -> Html<String> {
             .assets(assets)
             .scripts(scripts)
             .speculation_rules(true)
+            .nav_router(true)
             .render(body),
     )
 }

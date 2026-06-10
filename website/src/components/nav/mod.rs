@@ -177,8 +177,12 @@ pub fn render(props: Props) -> Rendered {
     };
     let global_search = rendered.absorb(global_search);
 
+    // `data-swap-region` (ledger #14): names this body-level island for the
+    // soft-navigation router's region reconcile — the nav VARIES per page
+    // (Dropdown on articles, Link on search, absent on the homepage), so the
+    // router swaps it wholesale instead of pinning it.
     rendered.markup = view! {
-        <nav class="site-nav" aria-label="Primary">
+        <nav class="site-nav" aria-label="Primary" data-swap-region="nav">
             <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
                 <img class="site-nav-mark"
                      src={ brand_icon_url }
@@ -234,7 +238,11 @@ mod tests {
     fn dropdown_config_renders_nav_and_panel() {
         let rendered = render(dropdown_props());
         let html = rendered.markup.into_string();
-        assert!(html.contains(r#"<nav class="site-nav" aria-label="Primary">"#));
+        // Byte-parity pin updated DELIBERATELY for ledger #14: the nav gained
+        // the additive data-swap-region attribute.
+        assert!(
+            html.contains(r#"<nav class="site-nav" aria-label="Primary" data-swap-region="nav">"#)
+        );
         assert!(html.contains(r#"class="nav-dropdown-trigger is-current""#));
         assert!(html.contains(r#"href="/articles/hello-world""#));
         assert!(html.contains("Hello World"));

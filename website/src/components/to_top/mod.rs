@@ -25,8 +25,11 @@ pub struct Props;
 /// Pure render: `Props -> Rendered`. The component owns both its node tree and
 /// the dist assets needed to make that node behave correctly.
 pub fn render(_props: Props) -> Rendered {
+    // `data-swap-region` (ledger #14): names this body-level island for the
+    // soft-navigation router's region reconcile (the button mounts on article
+    // surfaces only, so the router adds/removes it across swaps).
     let markup = view! {
-        <button class="to-top" type="button" aria-label="Scroll to top">
+        <button class="to-top" type="button" aria-label="Scroll to top" data-swap-region="to-top">
             <svg class="to-top-icon" viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"
                       fill="none"

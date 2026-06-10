@@ -28,11 +28,14 @@ pub use super::asset_names::discovery_toasts::STYLE;
 /// Pure render. No `Props` — the container is stateless; the toast cards are
 /// created at runtime by `experiences.js`.
 pub fn render() -> Rendered {
+    // `data-swap-region` (ledger #14): names this body-level island for the
+    // soft-navigation router's region reconcile.
     let markup = view! {
         <div class="discovery-toasts"
              data-discovery-toasts
              aria-live="polite"
-             aria-atomic="false"></div>
+             aria-atomic="false"
+             data-swap-region="toasts"></div>
     };
 
     Rendered {

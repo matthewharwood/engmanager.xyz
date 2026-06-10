@@ -160,6 +160,7 @@ function scheduleMapThemeRefresh() {
 }
 
 function initRegionMap(root) {
+    if (root.regionMap) return;
     const canvas = root.querySelector("[data-region-map-canvas]");
     const config = readConfig(root);
     if (!canvas || !config) {
@@ -292,8 +293,44 @@ function initRegionMap(root) {
     applyMapTheme(instance);
 }
 
+function scanRegionMaps(root) {
+    root.querySelectorAll("[data-region-map]").forEach(initRegionMap);
+}
+
+// Prerender gate (JS_ROUTER_CONSTRAINTS §3): booting Leaflet pulls
+// tile.openstreetmap.org tiles — don't do that from a speculatively
+// prerendered page (third-party traffic + OSM usage policy). Defer the
+// initial scan until the page is actually shown.
 onReady(() => {
-    document.querySelectorAll("[data-region-map]").forEach(initRegionMap);
+    if (document.prerendering) {
+        document.addEventListener(
+            "prerenderingchange",
+            () => scanRegionMaps(document),
+            { once: true },
+        );
+    } else {
+        scanRegionMaps(document);
+    }
+});
+
+// Soft navigation (JS_ROUTER_CONSTRAINTS §2.14): drop instances whose
+// roots left with the old page (tearing down their Leaflet maps so the
+// theme refresher stops touching detached nodes), then adopt any
+// swapped-in maps. The router's head-diff injects leaflet.js BEFORE
+// this bundle in document order, so window.L is ready by the time a
+// rescan needs it.
+window.__engNav?.onSwap?.((root) => {
+    instances.forEach((instance) => {
+        if (!instance.root.isConnected) {
+            try {
+                instance.map.remove();
+            } catch (_error) {
+                // Already torn down — pruning the Set is what matters.
+            }
+            instances.delete(instance);
+        }
+    });
+    scanRegionMaps(root);
 });
 
 window.addEventListener(THEME_EVENT, scheduleMapThemeRefresh);

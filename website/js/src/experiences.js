@@ -146,6 +146,15 @@ const fireInteraction = () => {
 );
 const onInteraction = (fn) => interactionHandlers.push(fn);
 
+// Soft-navigation re-sync (JS_ROUTER_CONSTRAINTS §2.15). Experiences
+// that hold page-scoped references register a hook here; ONE
+// window.__engNav.onSwap registration (see the bootstrap at the bottom
+// of this file) drains the list after every swap. NOTHING else re-runs
+// on a soft navigation — runAll, SW registration, RUM observers and
+// every document/window listener execute exactly once per real load.
+const softNavHooks = [];
+const onSoftNav = (fn) => softNavHooks.push(fn);
+
 const receipt = []; // { api, label, value }
 
 function upsertReceipt(api, label, value) {
@@ -826,6 +835,10 @@ register({
         // Send a tiny ping on pagehide so the API is actually exercised.
         const sent = { value: false };
         window.addEventListener("pagehide", () => {
+            // A discarded speculative prerender fires pagehide too —
+            // never beacon from a page that was never shown
+            // (JS_ROUTER_CONSTRAINTS §3).
+            if (document.prerendering) return;
             if (sent.value) return;
             try {
                 const payload = JSON.stringify({
@@ -880,39 +893,56 @@ register({
     init: (api) => {
         // On selection inside an article body, paint every other
         // occurrence of the selected word with a custom highlight.
-        const article = document.querySelector(".article");
-        if (!article) return false;
-        const highlight = new Highlight();
-        CSS.highlights.set("engmanager-echo", highlight);
-        document.addEventListener("selectionchange", () => {
-            const sel = document.getSelection();
-            highlight.clear();
-            if (!sel || sel.isCollapsed) return;
-            const text = sel.toString().trim();
-            if (text.length < 3) return;
-            const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
-            const needle = text.toLowerCase();
-            let matches = 0;
-            let node;
-            while ((node = walker.nextNode())) {
-                const haystack = node.nodeValue.toLowerCase();
-                let from = 0;
-                while ((from = haystack.indexOf(needle, from)) !== -1) {
-                    try {
-                        const range = new Range();
-                        range.setStart(node, from);
-                        range.setEnd(node, from + needle.length);
-                        highlight.add(range);
-                        matches++;
-                    } catch {}
-                    from += needle.length;
+        // `article` is page-scoped: soft navigations re-query it
+        // (JS_ROUTER_CONSTRAINTS §2.15c). setUp() runs at most once —
+        // on a non-article first load it is deferred until a swap
+        // first lands on an article page.
+        let article = document.querySelector(".article");
+        let ready = false;
+        const setUp = () => {
+            if (ready) return;
+            ready = true;
+            const highlight = new Highlight();
+            CSS.highlights.set("engmanager-echo", highlight);
+            document.addEventListener("selectionchange", () => {
+                if (!article) return;
+                const sel = document.getSelection();
+                highlight.clear();
+                if (!sel || sel.isCollapsed) return;
+                const text = sel.toString().trim();
+                if (text.length < 3) return;
+                const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+                const needle = text.toLowerCase();
+                let matches = 0;
+                let node;
+                while ((node = walker.nextNode())) {
+                    const haystack = node.nodeValue.toLowerCase();
+                    let from = 0;
+                    while ((from = haystack.indexOf(needle, from)) !== -1) {
+                        try {
+                            const range = new Range();
+                            range.setStart(node, from);
+                            range.setEnd(node, from + needle.length);
+                            highlight.add(range);
+                            matches++;
+                        } catch {}
+                        from += needle.length;
+                    }
                 }
-            }
-            // Selection echo with multiple matches → user is using the
-            // highlight feature, not just selecting one word.
-            if (matches > 1) api.discover();
+                // Selection echo with multiple matches → user is using the
+                // highlight feature, not just selecting one word.
+                if (matches > 1) api.discover();
+            });
+            api.log("registry", "engmanager-echo");
+        };
+
+        onSoftNav((root) => {
+            article = root.querySelector(".article");
+            if (article) setUp();
         });
-        api.log("registry", "engmanager-echo");
+
+        if (!article) return false;
+        setUp();
     },
 });
 
@@ -1511,7 +1541,7 @@ register({
     group: "graphics",
     isSupported: () => "IntersectionObserver" in globalThis,
     init: (api) => {
-        api.log("used", "toc-waypoints.js");
+        api.log("used", "c-article-toc.js");
     },
 });
 
@@ -1681,6 +1711,14 @@ register({
         let longTasks = 0;
         let cls = 0;
         let inp = 0;
+        // Prerendered pages: paint/LCP timestamps are relative to the
+        // PRERENDER's timeOrigin, which can be long before the page was
+        // ever shown. Clamp to activationStart so the reported vitals
+        // are user-perceived values (JS_ROUTER_CONSTRAINTS §3) — 0 on
+        // normal loads, so non-prerendered metrics are unchanged.
+        const activationStart =
+            performance.getEntriesByType("navigation")[0]?.activationStart || 0;
+        const sinceActivation = (t) => Math.max(0, t - activationStart);
         try {
             const po = new PerformanceObserver((list) => {
                 longTasks += list.getEntries().length;
@@ -1698,7 +1736,7 @@ register({
                 const entries = list.getEntries();
                 const last = entries[entries.length - 1];
                 if (last) {
-                    recordRumMetric("LCP", last.startTime, {
+                    recordRumMetric("LCP", sinceActivation(last.startTime), {
                         element: last.element?.tagName || null,
                     });
                 }
@@ -1731,7 +1769,7 @@ register({
         try {
             const paint = performance.getEntriesByType("paint");
             const fcp = paint.find((entry) => entry.name === "first-contentful-paint");
-            if (fcp) recordRumMetric("FCP", fcp.startTime);
+            if (fcp) recordRumMetric("FCP", sinceActivation(fcp.startTime));
             const nav = performance.getEntriesByType("navigation")[0];
             if (nav) {
                 const ttfb = nav.responseStart - nav.requestStart;
@@ -1756,11 +1794,17 @@ register({
             rumState.navigation.bfcache = status;
             refreshModal();
         });
+        // Prerender guards (JS_ROUTER_CONSTRAINTS §3): a DISCARDED
+        // speculative prerender fires pagehide (and is "hidden" for its
+        // whole life) — never report RUM for a page that was never
+        // shown. Discarded prerenders never flip the flag.
         window.addEventListener("pagehide", (event) => {
+            if (document.prerendering) return;
             rumState.navigation.pagehidePersisted = event.persisted;
             sendRum("pagehide");
         });
         document.addEventListener("visibilitychange", () => {
+            if (document.prerendering) return;
             if (document.visibilityState === "hidden") sendRum("hidden");
         });
         setTimeout(() => sendRum("settled"), 5000);
@@ -2084,10 +2128,6 @@ register({
     isSupported: () =>
         HTMLScriptElement.supports?.("speculationrules") ?? false,
     init: (api) => {
-        if (document.querySelector('script[type="speculationrules"]')) {
-            api.log("rules", "server-provided");
-            return;
-        }
         const sameOriginPath = (href) => {
             try {
                 const url = new URL(href, location.href);
@@ -2096,39 +2136,75 @@ register({
                 return null;
             }
         };
-        const articleNavUrls = [
-            ...document.querySelectorAll(
-                'a[rel="next"], a[rel="prev"], .article-related-link',
-            ),
-        ]
-            .map((link) => sameOriginPath(link.href))
-            .filter(Boolean);
-        const navPrefetchUrls = [...document.querySelectorAll(".nav-dropdown-item")]
-            .slice(0, 3)
-            .map((link) => sameOriginPath(link.href))
-            .filter(Boolean);
-        const unique = (items) => [...new Set(items)].filter((url) => url !== location.pathname);
-        const prerenderUrls = unique(articleNavUrls).slice(0, 3);
-        const prefetchUrls = unique(navPrefetchUrls).slice(0, 3);
-        if (!prerenderUrls.length && !prefetchUrls.length) {
+        let injected = null;
+        // Build + inject rules from the CURRENT document's links.
+        // Returns a summary string, or false when there are no
+        // candidates (nothing injected).
+        const inject = () => {
+            const articleNavUrls = [
+                ...document.querySelectorAll(
+                    'a[rel="next"], a[rel="prev"], .article-related-link',
+                ),
+            ]
+                .map((link) => sameOriginPath(link.href))
+                .filter(Boolean);
+            const navPrefetchUrls = [...document.querySelectorAll(".nav-dropdown-item")]
+                .slice(0, 3)
+                .map((link) => sameOriginPath(link.href))
+                .filter(Boolean);
+            const unique = (items) => [...new Set(items)].filter((url) => url !== location.pathname);
+            const prerenderUrls = unique(articleNavUrls).slice(0, 3);
+            const prefetchUrls = unique(navPrefetchUrls).slice(0, 3);
+            if (!prerenderUrls.length && !prefetchUrls.length) {
+                return false;
+            }
+            const script = document.createElement("script");
+            script.type = "speculationrules";
+            const rules = {};
+            if (prerenderUrls.length) {
+                rules.prerender = [{ urls: prerenderUrls, eagerness: "moderate" }];
+            }
+            if (prefetchUrls.length) {
+                rules.prefetch = [{ urls: prefetchUrls, eagerness: "conservative" }];
+            }
+            script.textContent = JSON.stringify(rules);
+            document.head.appendChild(script);
+            injected = script;
+            return `${prerenderUrls.length} prerender · ${prefetchUrls.length} prefetch`;
+        };
+
+        // Soft navigation (JS_ROUTER_CONSTRAINTS §2.15a): rebuild from
+        // the new page's links — but ONLY when no server-provided
+        // island (data-server marker, ledger #14) owns the rules; the
+        // server island is inline head content and persists across
+        // swaps. Drop our own stale script first so old-page URLs
+        // never linger.
+        onSoftNav(() => {
+            if (
+                document.querySelector(
+                    'script[type="speculationrules"][data-server]',
+                )
+            ) {
+                return;
+            }
+            injected?.remove();
+            injected = null;
+            inject();
+        });
+
+        // Server island present (ledger #17: defer, never inject a
+        // duplicate). The API-hunt detection/registration above stays
+        // exactly as before.
+        if (document.querySelector('script[type="speculationrules"]')) {
+            api.log("rules", "server-provided");
+            return;
+        }
+        const summary = inject();
+        if (summary === false) {
             api.log("rules", "no candidates");
             return false;
         }
-        const script = document.createElement("script");
-        script.type = "speculationrules";
-        const rules = {};
-        if (prerenderUrls.length) {
-            rules.prerender = [{ urls: prerenderUrls, eagerness: "moderate" }];
-        }
-        if (prefetchUrls.length) {
-            rules.prefetch = [{ urls: prefetchUrls, eagerness: "conservative" }];
-        }
-        script.textContent = JSON.stringify(rules);
-        document.head.appendChild(script);
-        api.log(
-            "rules",
-            `${prerenderUrls.length} prerender · ${prefetchUrls.length} prefetch`,
-        );
+        api.log("rules", summary);
     },
 });
 
@@ -2941,26 +3017,50 @@ function mountScavengerHooks() {
     // ── Hover-prefetch happens on its own ─────────────────────────
     // The hover-prefetch experience (not registered as an API)
     // already exists; we mark Speculation Rules + Fetch as found
-    // on the first link hover.
-    document.querySelectorAll(".article-fluid-link, .nav-dropdown-item").forEach(
-        (link) =>
-            link.addEventListener(
-                "pointerenter",
-                () => {
-                    discover("speculation-rules");
-                    discover("fetch");
-                },
-                { once: true },
-            ),
-    );
+    // on the first link hover. The {once:true} bindings are
+    // per-element, so soft navigations re-bind against the swapped-in
+    // links (discover() is idempotent — a stray double bind on a
+    // surviving node is harmless).
+    const bindHoverDiscover = (root) =>
+        root.querySelectorAll(".article-fluid-link, .nav-dropdown-item").forEach(
+            (link) =>
+                link.addEventListener(
+                    "pointerenter",
+                    () => {
+                        discover("speculation-rules");
+                        discover("fetch");
+                    },
+                    { once: true },
+                ),
+        );
+    bindHoverDiscover(document);
+    onSoftNav(bindHoverDiscover);
 }
 
 // =============================================================================
 // Bootstrap.
 // =============================================================================
 
-if (document.readyState === "loading") {
+// Prerender gate (JS_ROUTER_CONSTRAINTS §3, ledger #17): a speculatively
+// prerendered page must not register the service worker, open a
+// BroadcastChannel, read the battery, attach RUM observers or inject
+// speculation rules — defer the whole bootstrap until activation.
+// Discarded prerenders then never run anything.
+if (document.prerendering) {
+    document.addEventListener("prerenderingchange", runAll, { once: true });
+} else if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", runAll, { once: true });
 } else {
     runAll();
 }
+
+// Soft navigation: drain the per-experience re-sync hooks (speculation
+// rebuild, hover-discover re-bind, .article re-query). The single
+// registration point for this whole bundle.
+window.__engNav?.onSwap?.((root) => {
+    for (const fn of softNavHooks) {
+        try {
+            fn(root);
+        } catch {}
+    }
+});

@@ -36,8 +36,10 @@ pub use super::asset_names::api_receipt::STYLE;
 /// Pure render. No `Props` — the shell is static; `experiences.js` fills the
 /// stats and grid at runtime.
 pub fn render() -> Rendered {
+    // `data-swap-region` (ledger #14): names this body-level island for the
+    // soft-navigation router's region reconcile.
     let markup = view! {
-        <aside id="api-receipt-modal" popover="manual" class="api-receipt">
+        <aside id="api-receipt-modal" popover="manual" class="api-receipt" data-swap-region="receipt">
             <div class="api-receipt-frame">
                 <header class="api-receipt-head">
                     <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
@@ -74,9 +76,11 @@ mod tests {
     #[test]
     fn renders_receipt_modal_shell() {
         let html = render().markup.into_string();
-        assert!(
-            html.contains(r#"<aside id="api-receipt-modal" popover="manual" class="api-receipt">"#)
-        );
+        // Byte-parity pin updated DELIBERATELY for ledger #14: the modal
+        // gained the additive data-swap-region attribute.
+        assert!(html.contains(
+            r#"<aside id="api-receipt-modal" popover="manual" class="api-receipt" data-swap-region="receipt">"#
+        ));
         assert!(html.contains("data-api-receipt-stats"));
         assert!(html.contains("data-api-receipt-grid"));
         assert!(html.contains(r#"popovertargetaction="hide""#));

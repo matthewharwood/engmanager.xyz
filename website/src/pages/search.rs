@@ -226,6 +226,7 @@ fn render_page(
             .assets(assets)
             .scripts(scripts)
             .speculation_rules(true)
+            .nav_router(true)
             .render(body),
     )
 }
