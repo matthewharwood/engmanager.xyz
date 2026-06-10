@@ -159,3 +159,24 @@ Full catalog lives in the workflow results; the absolutes:
 10. P4: build.rs — generated component-asset consts, style.css/script.js
     filename contract enforced (other css/js under a component dir panics),
     named-file diagnostics, parallel minify passes. No asset-output changes.
+
+## Ledger additions (P5)
+
+11. P5: comment POST error mapping — validation failures stay 400 (with
+    message); storage failures become 500 with a GENERIC body (raw anyhow
+    text no longer leaks to clients). Server-side semantics; no golden diff.
+12. P5: comment-store connect failure at startup no longer aborts boot —
+    comments API returns 503 (disabled mode), search index builds with empty
+    comments, articles keep serving. Deliberate resilience change.
+13. P5: PaymentIntent idempotency key now includes normalized shipping
+    fields (fixes Stripe idempotency_error -> 502 on declined-card +
+    edited-address retries). Stripe-API-facing only.
+
+## Notes from P4 gates (carry to P7)
+
+- speculation island pattern is /search* (broader than the plan's /search?*),
+  deliberate.
+- auteurs-shader.js loads on ALL article details (pre-existing; the name is
+  misleading) — candidate for per-slug scoping LATER, not in this refactor.
+- experiences.js:1514 logs provenance label "toc-waypoints.js" (now
+  c-article-toc.js) — cosmetic; fix rides P6's experiences.js edits.
