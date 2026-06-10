@@ -4,7 +4,9 @@
 //! avoid unnecessary allocation via `Bytes::from_static`.)
 
 use std::borrow::Cow;
+#[cfg(not(debug_assertions))]
 use std::collections::HashMap;
+#[cfg(not(debug_assertions))]
 use std::sync::{LazyLock, PoisonError, RwLock};
 
 use axum::body::{Body, Bytes};
@@ -60,11 +62,14 @@ const ASSET_HASH_LEN: usize = 8;
 // the length even so the byte slice and the rendered hex stay in lockstep.
 const _: () = assert!(ASSET_HASH_LEN.is_multiple_of(2));
 
-// Read-through memo for asset_url. Pages call asset_url for the same handful
-// of static paths on every render; in debug builds each call makes rust-embed
-// re-read and re-hash the file from disk. Populated lazily per requested path
-// (NOT an eager scan of the embed list: that would hash every mp3/woff2 at
-// startup and, in debug builds, hit the disk for files nothing requests).
+// Read-through memo for asset_url — RELEASE ONLY. Pages call asset_url for
+// the same handful of static paths on every render; release embeds never
+// change, so hashing once per path is pure win. Populated lazily per
+// requested path (NOT an eager scan of the embed list: that would hash every
+// mp3/woff2 at startup for files nothing requests). Debug builds compile
+// this out (see asset_url) because rust-embed reads from DISK there: a memo
+// would serve stale hashed URLs after an asset edit mid dev-session.
+#[cfg(not(debug_assertions))]
 static ASSET_URL_CACHE: LazyLock<RwLock<HashMap<String, String>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -78,19 +83,31 @@ static ASSET_URL_CACHE: LazyLock<RwLock<HashMap<String, String>>> =
 // or doesn't have an extension, so the request still 404s predictably
 // rather than silently rewriting to something else.
 pub fn asset_url(path: &str) -> String {
-    if let Some(url) = ASSET_URL_CACHE
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .get(path)
+    // Debug builds bypass the memo entirely (release-only-memo, the same
+    // posture as the article render cache in pages/articles.rs): rust-embed
+    // reads from disk per call there, so a memoized hash would pin the OLD
+    // hashed URL after an asset edit mid dev-session. Release embeds are
+    // immutable for the process lifetime, so memoizing is sound there.
+    #[cfg(debug_assertions)]
     {
-        return url.clone();
+        compute_asset_url(path)
     }
-    let url = compute_asset_url(path);
-    ASSET_URL_CACHE
-        .write()
-        .unwrap_or_else(PoisonError::into_inner)
-        .insert(path.to_string(), url.clone());
-    url
+    #[cfg(not(debug_assertions))]
+    {
+        if let Some(url) = ASSET_URL_CACHE
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(path)
+        {
+            return url.clone();
+        }
+        let url = compute_asset_url(path);
+        ASSET_URL_CACHE
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(path.to_string(), url.clone());
+        url
+    }
 }
 
 fn compute_asset_url(path: &str) -> String {

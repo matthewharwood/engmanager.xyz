@@ -54,6 +54,12 @@ async function copyCode(button, codeEl) {
     }, 1500);
 }
 
+// Set on the first soft navigation, never at load: Prism's autoloader pass
+// already highlights the document on a real page load, so the load-time
+// install() below must not re-highlight (double work, flicker). Swapped-in
+// article content arrives unhighlighted — only then do we ask Prism again.
+let softNavigated = false;
+
 function install() {
     const pres = document.querySelectorAll(".article pre");
     pres.forEach((pre) => {
@@ -64,6 +70,12 @@ function install() {
         button.addEventListener("click", () => copyCode(button, code));
         pre.appendChild(button);
     });
+    // Swap-time only (see softNavigated). Guarded so pages without Prism
+    // (or with the CDN blocked) are unaffected; highlightAllUnder routes
+    // new languages through the autoloader exactly like the load pass.
+    if (softNavigated && window.Prism && Prism.highlightAllUnder) {
+        Prism.highlightAllUnder(document);
+    }
 }
 
 if (document.readyState === "loading") {
@@ -73,5 +85,9 @@ if (document.readyState === "loading") {
 }
 
 // Soft navigation: install() is already idempotent (skips <pre>s that
-// have a .code-copy) — just re-run it (JS_ROUTER_CONSTRAINTS §2.10).
-window.__engNav?.onSwap?.(() => install());
+// have a .code-copy) — re-run it, and re-highlight the swapped-in code
+// (JS_ROUTER_CONSTRAINTS §2.10).
+window.__engNav?.onSwap?.(() => {
+    softNavigated = true;
+    install();
+});

@@ -11,7 +11,7 @@ golden-diff vs `/tmp/golden-pre/` showing only ledger-approved changes.
 
 ```
 website/src/
-  main.rs            — composition root ONLY: init tracing, load config,
+  main.rs            — composition root ONLY: load env, init tracing,
                        build state, build router, serve with graceful shutdown
   config.rs          — Config::from_env, dotenvy loading, SITE_ORIGIN/SHOP_ORIGIN,
                        shop-host matching (is_shop_host + SHOP_DEV_HOSTS)
@@ -32,6 +32,8 @@ website/src/
   comments.rs        — SurrealDB store, typed CommentError (thiserror),
                        CommentStatus enum
   discord.rs         — poll loop; snapshot via AppState watch channel
+  experiences.rs     — Web-API-experiences manifest embed + JS↔manifest
+                       parity test (companion to js/src/experiences.js)
   stripe/            — client.rs (shared timeout'd reqwest), checkout.rs, sync.rs
   sitemap.rs
   pages/
@@ -39,11 +41,20 @@ website/src/
                        (description/canonical/OG/robots/JSON-LD), theme_color,
                        page assets, component-head aggregation w/ dedup,
                        speculation-rules island, body scaffold
-    {homepage,articles/,search,shop,checkout,comments,not_found}.rs
+    {homepage,articles,search,shop,checkout,comments,not_found}.rs
   components/        — co-located <feature>/{mod.rs,style.css,script.js};
                        Rendered HOC + Head collector (dedup, tier-ordered,
                        blocking_js + inline_head support), Rendered::absorb
 ```
+
+As-built corrections to the sketch (post-P7 audit): `pages/articles.rs` is a
+single file, not an `articles/` directory; `experiences.rs` exists at the
+crate root (added above); the planned `theme_picker` / `hunt_chip` components
+were folded INTO `components/quick_actions/` (one region, one sheet, one
+script) rather than shipped standalone; and quick_actions CSS landed in the
+CRITICAL tier (the theme-picker + hunt-chip are visible at first paint), not
+the deferred tier the P4 phase line predicted — api_receipt and
+discovery_toasts are the deferred-tier overlays.
 
 ## Phases (sequential; parallel agents only WITHIN a phase, disjoint files)
 
@@ -99,8 +110,11 @@ Anything not listed here that differs from `/tmp/golden-pre/` is a BUG.
    `Cache-Tag`. `Cache-Control` itself byte-unchanged.
 2. 404/5xx HTML: `Cache-Control: no-store` (was: publicly cacheable — bug).
 3. NEW head content (additive only): meta description, canonical, og:*,
+   `article:published_time` (the og `article:` namespace, detail pages only),
    twitter:*, JSON-LD, speculation-rules script; checkout gains the
-   previously-missing `<link rel=manifest>`.
+   previously-missing `<link rel=manifest>`. Meta descriptions derive from
+   the first PROSE paragraph — image alt text is excluded (post-P7 fix; no
+   current article's description changed, the rule is pinned by test).
 4. Duplicate api-receipt-modal markup deduped (single component output —
    byte-identical markup, now from one source).
 5. Articles INDEX page no longer loads detail-only assets (comments.css,
@@ -199,7 +213,13 @@ Full catalog lives in the workflow results; the absolutes:
 18. P6: converted bundles (see _docs/JS_ROUTER_CONSTRAINTS.md section 2)
     change hashed URLs; load-time behavior WITHOUT the router byte-or-
     behavior-identical — conversions are refactor-to-init-fn + immediate
-    call + onSwap registration only.
+    call + onSwap registration only. Beyond the §2 list, the region-swap
+    surface forced conversions of `nav-search-toggle.js` and `c-to-top.js`
+    (their nodes live in swapped `data-swap-region`s, so the §2.110 "no
+    conversion if shell-pinned" carve-out did not apply — both gained the
+    lazy-resolve/data-bound re-init pattern), and `article-section-reveal.js`
+    additionally gained the §3 prerender gate alongside its router-skip
+    behavior.
 
 ## Ledger additions (P7)
 
@@ -209,3 +229,60 @@ Full catalog lives in the workflow results; the absolutes:
 20. P7: CSP report-only header drops upgrade-insecure-requests (ignored in
     report-only mode per spec — dead directive; Chromium console-warns).
     Security headers otherwise byte-identical.
+21. P5 (recorded post-P7): the search Clear-link's `query_encode` moved to
+    `form_urlencoded::byte_serialize`, which encodes `~` as `%7E` and leaves
+    `*` literal where the old hand-rolled encoder differed — byte changes in
+    the emitted href ONLY for queries containing those characters,
+    decode-identical through the parser (round-trip pinned by
+    `clear_link_encoding_is_stable_and_round_trips`).
+22. Post-P7 fix wave (this branch tip): hashed URL churn for
+    `js/nav-router.js` (stale-swap abort re-checks + reduced-motion no-VT
+    swap path), `js/copy-code.js` (Prism re-highlight on soft-nav swaps,
+    flag-guarded so load behavior is unchanged), `js/experiences.js`
+    (receipt-modal toggle/URL-sync re-bind after region swaps + post-swap
+    `?receipt` popover sync). The region-map JSON config island now routes
+    through `escape_script_payload` (byte-neutral for current data,
+    test-pinned); meta-description derivation now skips image alt text (no
+    current article changed — see #3). Server-side only (no golden-byte
+    diff): layer reorder putting security/html-cache headers OUTSIDE the
+    30s timeout (synthesized 408s gain security headers), debug-build
+    asset_url memo bypass, CDN-directive u64 validation, Head cross-tier
+    debug assert, stripe-sync SYNC_VERSION v2, env-before-tracing init
+    order.
+
+## Future work (explicitly deferred)
+
+Accepted-but-not-now items from the P7 adversarial review. None block the
+refactor; each needs either persistence, infra access, or a premise that
+does not hold yet.
+
+- **Stripe webhook event-id dedup** — the handler verifies HMAC + tolerance
+  but does not dedup replayed `evt_*` ids; doing it right needs persistence
+  (a seen-ids table with TTL). Revisit when the webhook actually mutates
+  state (today it only logs/acks).
+- **CommentsHandle live reconnect** — a store that is down AT BOOT stays
+  disabled until restart (ledger #12 chose degrade-don't-abort). A
+  background re-connect loop flipping disabled→connected is the upgrade.
+- **Cloudflare dashboard tasks** (not expressible in code): verify the HTML
+  Cache Rule actually honors `Cloudflare-CDN-Cache-Control` + `Cache-Tag`
+  purge; evaluate Smart Tiered Cache; decide Speed Brain vs the
+  server-emitted speculation-rules island (don't ship both blindly).
+- **shop.js prerender storage-staleness guards** — premise check (P7 fix
+  wave): on the MAIN site no island-bearing page links same-origin to
+  `/products/*` — every shop CTA (article shop-breakout, search product
+  results) is an absolute `https://shop.engmanager.xyz/...` URL,
+  cross-origin from `engmanager.xyz`, so the speculation island
+  (`href_matches:"/*"`, same-origin by construction) can never prerender a
+  shop surface there. EDGE CASE that keeps this item alive: `/search` is
+  not host-partitioned — served ON the shop host, its product links ARE
+  same-origin `/products/*` and the island excludes only
+  `/checkout*`/`/api/*`/`/search*`, so a shopper using
+  `shop.engmanager.xyz/search` could prerender a product page whose
+  shop.js would snapshot localStorage cart state pre-activation. If that
+  path ever matters: add `prerenderingchange` re-hydration to shop.js (cart
+  count, bag state) or exclude `/products/*` from the island on shop-host
+  responses.
+- **CSP enforcement** — the report-only policy (minus the dead
+  upgrade-insecure-requests directive, ledger #20) has been clean; consider
+  promoting to an enforced `Content-Security-Policy` after a burn-in period
+  with report collection.

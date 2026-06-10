@@ -21,7 +21,8 @@
 //! splice the component's `<link>`/`<script>` tags from a single source of
 //! truth. See [`nav`] and [`to_top`] for examples.
 
-use std::collections::HashSet;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Write;
 
 use eng_domain::HtmlFragment;
@@ -141,6 +142,28 @@ enum HeadEntry {
     Inline(HtmlFragment),
 }
 
+/// Tier discriminant for dep-backed [`HeadEntry`] variants. Recorded per dep
+/// in [`Head::seen`] so debug builds can flag a dep re-registered under a
+/// DIFFERENT tier than first seen (see [`Head::push_dep`]).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Tier {
+    BlockingCss,
+    DeferredCss,
+    BlockingJs,
+    DeferredJs,
+}
+
+impl Tier {
+    fn entry(self, dep: &'static str) -> HeadEntry {
+        match self {
+            Tier::BlockingCss => HeadEntry::BlockingCss(dep),
+            Tier::DeferredCss => HeadEntry::DeferredCss(dep),
+            Tier::BlockingJs => HeadEntry::BlockingJs(dep),
+            Tier::DeferredJs => HeadEntry::DeferredJs(dep),
+        }
+    }
+}
+
 /// Ordered, deduplicated collector for everything page/component-specific in
 /// a document `<head>`: component assets ([`Head::add`]), page assets
 /// (`add_css`/`add_js`/`add_blocking_js`), and positioned raw fragments
@@ -148,10 +171,16 @@ enum HeadEntry {
 /// first-seen wins (two components sharing `js/popover-registry.js` emit one
 /// tag, at the first requester's position); `render` routes every dep through
 /// `asset_url` and emits exactly the tag shapes [`Rendered::head`] emits.
+///
+/// Dedup is TIER-BLIND by design: the first registration also decides the
+/// TAG SHAPE, so registering `css/c-foo.css` as critical and later as
+/// deferred silently keeps the critical link. No page does this today;
+/// debug builds assert it stays that way (see [`Head::push_dep`]) — release
+/// behavior is unchanged.
 #[derive(Default)]
 pub struct Head {
     entries: Vec<HeadEntry>,
-    seen: HashSet<&'static str>,
+    seen: HashMap<&'static str, Tier>,
 }
 
 impl Head {
@@ -159,9 +188,26 @@ impl Head {
         Self::default()
     }
 
-    fn push_dep(&mut self, dep: &'static str, entry: fn(&'static str) -> HeadEntry) {
-        if self.seen.insert(dep) {
-            self.entries.push(entry(dep));
+    fn push_dep(&mut self, dep: &'static str, tier: Tier) {
+        match self.seen.entry(dep) {
+            Entry::Vacant(slot) => {
+                slot.insert(tier);
+                self.entries.push(tier.entry(dep));
+            }
+            Entry::Occupied(first) => {
+                // Tier-blind dedup keeps the FIRST tier's tag shape; a
+                // cross-tier re-registration is almost certainly a page
+                // wiring mistake (a deferred sheet silently upgraded to
+                // render-blocking, or worse the inverse → FOUC). Debug-only:
+                // compiled out in release, where behavior is unchanged.
+                debug_assert_eq!(
+                    *first.get(),
+                    tier,
+                    "head dep `{dep}` re-registered under tier {tier:?} but was first \
+                     registered under {:?} — first-seen wins, the second tier is ignored",
+                    first.get()
+                );
+            }
         }
     }
 
@@ -170,19 +216,19 @@ impl Head {
     /// (Same order [`Rendered::head`] emits, so aggregation is byte-stable.)
     pub fn add(&mut self, rendered: &Rendered) {
         for dep in &rendered.critical_css {
-            self.push_dep(dep, HeadEntry::BlockingCss);
+            self.push_dep(dep, Tier::BlockingCss);
         }
         for dep in &rendered.deferred_css {
-            self.push_dep(dep, HeadEntry::DeferredCss);
+            self.push_dep(dep, Tier::DeferredCss);
         }
         for dep in &rendered.js_deps {
-            self.push_dep(dep, HeadEntry::DeferredJs);
+            self.push_dep(dep, Tier::DeferredJs);
         }
     }
 
     /// Render-blocking stylesheet (dist path, e.g. `"css/homepage.css"`).
     pub fn add_css(&mut self, dep: &'static str) {
-        self.push_dep(dep, HeadEntry::BlockingCss);
+        self.push_dep(dep, Tier::BlockingCss);
     }
 
     /// Async (non-render-blocking) stylesheet — the deferred-CSS tier shape
@@ -190,18 +236,18 @@ impl Head {
     /// elements are hidden at first paint (no FOUC); used by `PageShell` to
     /// pin a component's deferred sheet at a fixed head position.
     pub fn add_deferred_css(&mut self, dep: &'static str) {
-        self.push_dep(dep, HeadEntry::DeferredCss);
+        self.push_dep(dep, Tier::DeferredCss);
     }
 
     /// Deferred `<script src ... defer>` (dist path).
     pub fn add_js(&mut self, dep: &'static str) {
-        self.push_dep(dep, HeadEntry::DeferredJs);
+        self.push_dep(dep, Tier::DeferredJs);
     }
 
     /// Synchronous `<script src>` — reserved for scripts that must run before
     /// first paint (theme-toggle.js).
     pub fn add_blocking_js(&mut self, dep: &'static str) {
-        self.push_dep(dep, HeadEntry::BlockingJs);
+        self.push_dep(dep, Tier::BlockingJs);
     }
 
     /// Verbatim fragment pinned at the current insertion point (JSON/data
@@ -217,10 +263,10 @@ impl Head {
     pub fn extend(&mut self, other: Head) {
         for entry in other.entries {
             match entry {
-                HeadEntry::BlockingCss(dep) => self.push_dep(dep, HeadEntry::BlockingCss),
-                HeadEntry::DeferredCss(dep) => self.push_dep(dep, HeadEntry::DeferredCss),
-                HeadEntry::BlockingJs(dep) => self.push_dep(dep, HeadEntry::BlockingJs),
-                HeadEntry::DeferredJs(dep) => self.push_dep(dep, HeadEntry::DeferredJs),
+                HeadEntry::BlockingCss(dep) => self.push_dep(dep, Tier::BlockingCss),
+                HeadEntry::DeferredCss(dep) => self.push_dep(dep, Tier::DeferredCss),
+                HeadEntry::BlockingJs(dep) => self.push_dep(dep, Tier::BlockingJs),
+                HeadEntry::DeferredJs(dep) => self.push_dep(dep, Tier::DeferredJs),
                 HeadEntry::Inline(fragment) => self.entries.push(HeadEntry::Inline(fragment)),
             }
         }

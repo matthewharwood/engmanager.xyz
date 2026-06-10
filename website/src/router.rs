@@ -72,10 +72,14 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
         // Layer stack, innermost first (each `.layer` call wraps everything
         // registered before it). Outermost → innermost at runtime:
-        //   TraceLayer → CompressionLayer → TimeoutLayer(30s)
-        //   → html_cache_layer → security_headers_layer → routes.
-        .layer(axum::middleware::from_fn(http::security_headers_layer))
-        .layer(axum::middleware::from_fn(http::html_cache_layer))
+        //   TraceLayer → CompressionLayer → html_cache_layer
+        //   → security_headers_layer → TimeoutLayer(30s) → routes.
+        // The header layers sit OUTSIDE the timeout deliberately: a 408
+        // synthesized by TimeoutLayer still flows through them, so it gains
+        // the security headers (html_cache_layer ignores it — no text/html
+        // content-type). With the old inner position, timed-out responses
+        // shipped bare.
+        //
         // Hard 30s ceiling per request: a wedged handler returns 408 instead
         // of holding the connection (and the client) forever.
         // (`TimeoutLayer::new` is deprecated in tower-http 0.6.10; this is
@@ -84,6 +88,8 @@ pub fn build_router(state: AppState) -> Router {
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(30),
         ))
+        .layer(axum::middleware::from_fn(http::security_headers_layer))
+        .layer(axum::middleware::from_fn(http::html_cache_layer))
         // Brotli + gzip over the wire for any compressible response
         // (text/css, text/html, application/javascript, etc.). Vary
         // header is added automatically so caches key on encoding.
@@ -341,6 +347,47 @@ mod tests {
             .await
             .expect("router is infallible");
         assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    }
+
+    // Pins the layer-order fix: security_headers_layer wraps TimeoutLayer, so
+    // a 408 synthesized by the timeout (the handler never returned) still
+    // carries the security headers. Built as a minimal router mirroring the
+    // production nesting (timeout inner, headers outer) with a 50ms budget.
+    #[tokio::test]
+    async fn timeout_408_carries_security_headers() {
+        use std::time::Duration;
+
+        use axum::routing::get;
+        use tower_http::timeout::TimeoutLayer;
+
+        let router: Router = Router::new()
+            .route(
+                "/sleep",
+                get(|| async {
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    "too late"
+                }),
+            )
+            .layer(TimeoutLayer::with_status_code(
+                StatusCode::REQUEST_TIMEOUT,
+                Duration::from_millis(50),
+            ))
+            .layer(axum::middleware::from_fn(
+                crate::http::security_headers_layer,
+            ));
+
+        let request = Request::builder()
+            .uri("/sleep")
+            .header(header::HOST, SITE_HOST)
+            .body(Body::empty())
+            .expect("request builds");
+        let response = router.oneshot(request).await.expect("router is infallible");
+        assert_eq!(response.status(), StatusCode::REQUEST_TIMEOUT);
+        assert_eq!(
+            header_str(&response, "x-content-type-options"),
+            Some("nosniff"),
+            "synthesized 408 must pass through security_headers_layer"
+        );
     }
 
     #[tokio::test]

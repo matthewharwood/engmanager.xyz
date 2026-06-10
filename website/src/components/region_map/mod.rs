@@ -27,7 +27,7 @@
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 
-use super::Rendered;
+use super::{Rendered, escape_script_payload};
 
 /// Dist assets emitted by `build.rs` from this folder's `style.css` /
 /// `script.js` — generated consts, so a renamed folder fails compilation
@@ -110,8 +110,12 @@ pub fn render(props: Props) -> Rendered {
             <figcaption>
                 "Pins show Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
             </figcaption>
+            // Config island routed through the shared script-island escaper
+            // (no `</script>` / U+2028/9 breakout possible). Byte-neutral for
+            // this literal — it contains none of the escaped code points —
+            // and pinned by the test below.
             <script type="application/json" data-region-map-config>
-                { HtmlFragment::new(config.to_string()) }
+                { HtmlFragment::new(escape_script_payload(config)) }
             </script>
             <noscript>
                 <p>
@@ -150,6 +154,10 @@ mod tests {
         // JSON config island the scrollspy-free Leaflet mount reads.
         assert!(html.contains(r#"<script type="application/json" data-region-map-config>"#));
         assert!(html.contains(r#""radiusMiles": 180"#));
+        // escape_script_payload adoption is byte-neutral for this literal:
+        // no escape sequences appear in the emitted island.
+        assert!(!html.contains("\\u003c"));
+        assert!(!html.contains("\\u2028"));
         // All four operators present in config, caption, and noscript text.
         for name in ["Matthew", "Marcus", "Jason", "Alex"] {
             assert!(html.matches(name).count() >= 3, "{name} missing");

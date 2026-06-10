@@ -663,12 +663,20 @@ fn markdown_options() -> pulldown_cmark::Options {
 fn derive_meta_description(markdown: &str) -> Option<String> {
     let parser = pulldown_cmark::Parser::new_ext(markdown, markdown_options());
     let mut heading_depth: usize = 0;
+    let mut image_depth: usize = 0;
     let mut in_paragraph = false;
     let mut text = String::new();
     for event in parser {
         match event {
             Event::Start(PmTag::Heading { .. }) => heading_depth += 1,
             Event::End(TagEnd::Heading(_)) => heading_depth = heading_depth.saturating_sub(1),
+            // Image ALT text arrives as Text events between Start(Image) and
+            // End(Image). It belongs to the image, not the prose — collecting
+            // it would make an image-only opener masquerade as a description,
+            // so it is excluded (this is what "the event stream's text
+            // content" above always intended).
+            Event::Start(PmTag::Image { .. }) => image_depth += 1,
+            Event::End(TagEnd::Image) => image_depth = image_depth.saturating_sub(1),
             Event::Start(PmTag::Paragraph) if heading_depth == 0 => {
                 in_paragraph = true;
                 text.clear();
@@ -684,7 +692,9 @@ fn derive_meta_description(markdown: &str) -> Option<String> {
                     ));
                 }
             }
-            Event::Text(t) | Event::Code(t) if in_paragraph => text.push_str(&t),
+            Event::Text(t) | Event::Code(t) if in_paragraph && image_depth == 0 => {
+                text.push_str(&t);
+            }
             Event::SoftBreak | Event::HardBreak if in_paragraph => text.push(' '),
             _ => {}
         }
@@ -959,6 +969,24 @@ mod tests {
         assert_eq!(
             derive_meta_description(markdown).as_deref(),
             Some("This first paragraph links to the docs and mentions code."),
+        );
+    }
+
+    #[test]
+    fn meta_description_skips_image_alt_text() {
+        // An image-only opener (alt text is NOT prose) must be skipped in
+        // favor of the first real paragraph; alt text inside a mixed
+        // paragraph must not leak into the description either.
+        let markdown = "![A decorative hero image](/assets/hero.png)\n\nReal first paragraph.";
+        assert_eq!(
+            derive_meta_description(markdown).as_deref(),
+            Some("Real first paragraph."),
+        );
+
+        let markdown = "Before ![inline alt](/a.png) after.";
+        assert_eq!(
+            derive_meta_description(markdown).as_deref(),
+            Some("Before after."),
         );
     }
 

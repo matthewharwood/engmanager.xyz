@@ -29,7 +29,10 @@ use crate::catalog::{SHOP_PRODUCTS, ShopProduct};
 
 const IMAGE_ORIGIN: &str = "https://shop.engmanager.xyz";
 // Bump to force new idempotency keys (e.g. after changing product fields/price).
-const SYNC_VERSION: &str = "v1";
+// v2: the create params gained `metadata[source]` (catalog provenance) after
+// v1 keys had already been spent — replaying a v1 key with the new param set
+// would make Stripe reject the request as an idempotency conflict.
+const SYNC_VERSION: &str = "v2";
 // One-shot CLI talking to Stripe interactively — laxer deadline than the
 // runtime checkout's 15s, but still bounded (no infinite hang on a dead route).
 const SYNC_HTTP_TIMEOUT: Duration = Duration::from_secs(30);

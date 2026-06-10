@@ -714,20 +714,49 @@ window.addEventListener("popstate", () => {
     else if (!should && isOpen) modal.hidePopover();
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+// Bind the URL-sync toggle listener to the CURRENT modal node. The modal
+// lives inside data-swap-region="receipt", so every soft navigation replaces
+// the node and drops its listeners — same lifecycle as the nav cluster.
+// Re-resolved lazily with a data-bound guard (JS_ROUTER_CONSTRAINTS §2.15);
+// the `?` keydown and popstate handlers above already re-resolve by id per
+// event, so only this per-node binding needs the re-bind.
+function bindReceiptModal() {
     const modal = document.getElementById("api-receipt-modal");
-    if (!modal) return;
+    if (!modal || modal.dataset.receiptBound) return modal;
+    modal.dataset.receiptBound = "true";
     // Sync URL ↔ modal whenever the popover toggles itself (close
     // button, Esc, outside click, our showPopover/hidePopover calls).
     modal.addEventListener("toggle", (event) => {
         setReceiptInUrl(event.newState === "open");
     });
+    return modal;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const modal = bindReceiptModal();
+    if (!modal) return;
     // Deep-link entry.
     if (urlHasReceipt()) {
         // Wait one frame so renderReceiptModal has had a chance to
         // populate before we show the dialog.
         requestAnimationFrame(() => modal.showPopover());
     }
+});
+
+// Soft navigation: the swapped-in receipt region arrives server-fresh
+// (unbound, unpopulated, closed; an OPEN modal that gets swapped out is
+// hidden by the platform without firing toggle, so no stray URL write).
+// Re-bind, re-render receipt + chip from live state, then sync the popover
+// to the URL — a traversal back to a `?receipt` entry must re-open it.
+onSoftNav(() => {
+    const modal = bindReceiptModal();
+    renderReceiptModal();
+    refreshChip();
+    if (!modal) return;
+    const should = urlHasReceipt();
+    const isOpen = modal.matches(":popover-open");
+    if (should && !isOpen) modal.showPopover();
+    else if (!should && isOpen) modal.hidePopover();
 });
 
 // =============================================================================

@@ -42,11 +42,13 @@ const AUTEURS_INVITE_CODE: &str = "sTzQBrbnBM";
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
-
-    // Env files load before any env::var read below (the comment store reads
-    // COMMENTS_DB_*; Stripe code reads STRIPE_*).
+    // Env files load FIRST — before init_tracing so a RUST_LOG set in
+    // .env/.env.local actually shapes the EnvFilter, and before any env::var
+    // read below (the comment store reads COMMENTS_DB_*; Stripe code reads
+    // STRIPE_*).
     config::load_env();
+
+    init_tracing();
 
     // Subcommand: `website stripe-sync …` upserts the shop catalog into Stripe
     // and exits, instead of starting the server. Kept in-process so it reads

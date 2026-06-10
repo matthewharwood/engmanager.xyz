@@ -121,19 +121,33 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
 // Derives the Cloudflare-CDN-Cache-Control value from a handler-set public
 // Cache-Control: the page's own s-maxage horizon (falling back to max-age
 // when no s-maxage is present, e.g. /offline.html) becomes the edge max-age,
-// any stale-while-revalidate window carries over verbatim, and every page
-// gains the same 3-day stale-if-error cushion. Returns None when no horizon
-// can be derived — in that case no CDN header is added at all.
+// any stale-while-revalidate window carries over, and every page gains the
+// same 3-day stale-if-error cushion. Returns None when no horizon can be
+// derived — in that case no CDN header is added at all.
+//
+// DEFENSIVE: only directive values that parse as plain u64 seconds are
+// copied (every emitter in this codebase produces exactly that today). A
+// malformed value — quoted, signed, fractional, garbage — skips the CDN
+// header entirely rather than forwarding bytes we didn't validate into a
+// header the edge interprets.
 fn cdn_cache_control_for(cache_control: &str) -> Option<HeaderValue> {
-    let horizon = directive_value(cache_control, "s-maxage")
-        .or_else(|| directive_value(cache_control, "max-age"))?;
+    let horizon = directive_u64(cache_control, "s-maxage")
+        .or_else(|| directive_u64(cache_control, "max-age"))?;
     let value = match directive_value(cache_control, "stale-while-revalidate") {
-        Some(swr) => format!(
-            "max-age={horizon}, stale-while-revalidate={swr}, stale-if-error={STALE_IF_ERROR_SECS}"
-        ),
+        // SWR present but unparseable → treat the whole header as suspect.
+        Some(swr) => {
+            let swr: u64 = swr.parse().ok()?;
+            format!(
+                "max-age={horizon}, stale-while-revalidate={swr}, stale-if-error={STALE_IF_ERROR_SECS}"
+            )
+        }
         None => format!("max-age={horizon}, stale-if-error={STALE_IF_ERROR_SECS}"),
     };
     HeaderValue::from_str(&value).ok()
+}
+
+fn directive_u64(cache_control: &str, directive: &str) -> Option<u64> {
+    directive_value(cache_control, directive).and_then(|value| value.parse().ok())
 }
 
 fn directive_value<'a>(cache_control: &'a str, directive: &str) -> Option<&'a str> {
@@ -222,5 +236,25 @@ mod tests {
         );
         // No horizon at all → no CDN header.
         assert!(cdn_cache_control_for("public").is_none());
+    }
+
+    // Defensive validation: directive values must parse as plain u64 seconds
+    // or the CDN header is skipped entirely — never forward unvalidated bytes.
+    #[test]
+    fn cdn_cache_control_rejects_non_numeric_directive_values() {
+        for garbage in [
+            "public, max-age=abc",
+            "public, s-maxage=\"3600\"",
+            "public, max-age=-5",
+            "public, max-age=3.5",
+            "public, s-maxage=3600 4800",
+            // Valid horizon but malformed SWR → whole header suspect.
+            "public, s-maxage=3600, stale-while-revalidate=evil",
+        ] {
+            assert!(
+                cdn_cache_control_for(garbage).is_none(),
+                "must reject: {garbage}"
+            );
+        }
     }
 }

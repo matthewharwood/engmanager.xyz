@@ -36,9 +36,15 @@
 // FAILURE SEMANTICS: any error inside the intercept handler falls back to
 // location.assign(destination) — a real navigation, which keeps the service
 // worker's offline fallback intact (router fetches are not mode:"navigate",
-// so sw.js's navigation branch never sees them). An aborted fetch (a newer
-// navigation superseded this one) is not a failure. The user is never left
-// stuck on a half-swapped page.
+// so sw.js's navigation branch never sees them). An ABORT (a newer
+// navigation superseded this one) is not a failure: the handler re-checks
+// event.signal after the fetch resolves and before ANY document mutation,
+// and returns silently — never the assign fallback (which would hijack the
+// newer navigation).
+//
+// REDUCED MOTION: when prefers-reduced-motion is set the swap runs WITHOUT
+// document.startViewTransition and anime.js is never imported — content
+// still updates, nothing animates. (checked live per navigation).
 //
 // SWAP SURFACE: <body> children minus (a) the .skip-link (identical on all
 // eligible pages), (b) [data-swap-region] islands — reconciled individually
@@ -68,6 +74,15 @@
     // "/", "/articles/", "/articles/{slug}" (^/articles/[a-z0-9-]+$), "/search".
     const eligible = (pathname) =>
         /^\/(search|articles\/[a-z0-9-]*)?$/.test(pathname);
+
+    // Live per-navigation check (not cached at load) so an OS-level toggle
+    // mid-session is respected on the very next soft nav. NOTE: critical.css's
+    // reduced-motion guard (`*, *::before, *::after`) does not reach
+    // ::view-transition-* pseudo-elements, so the cross-document VT path is
+    // unguarded (pre-existing gap, tracked in the refactor plan); the router's
+    // own NEW motion is guarded here regardless.
+    const reducedMotion = () =>
+        matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // stem.8hex.ext -> stem.ext (mirrors assets.rs strip_asset_hash).
     const logicalName = (pathname) =>
@@ -341,7 +356,22 @@
                         await res.text(),
                         "text/html",
                     );
+                    // STALE-SWAP GUARD: a newer navigation may have aborted
+                    // this intercept while the response was in flight.
+                    // Re-check before ANY document mutation (head appends
+                    // included) and return silently — an abort is not a
+                    // failure, so it must never reach the assign fallback.
+                    if (event.signal.aborted) return;
                     await syncHeadAssets(newDoc);
+                    // syncHeadAssets awaits blocking stylesheets (up to 2s);
+                    // re-check once more immediately before the body swap.
+                    if (event.signal.aborted) return;
+                    if (reducedMotion()) {
+                        // Reduced motion: plain swap — no view transition,
+                        // and never import anime.js.
+                        swapDocument(newDoc);
+                        return;
+                    }
                     const transition = document.startViewTransition(() =>
                         swapDocument(newDoc),
                     );
