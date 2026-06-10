@@ -84,6 +84,24 @@ impl CommentStore {
         Ok(Self { db })
     }
 
+    // Test-only store backed by SurrealDB's in-memory engine (kv-mem). Keeps
+    // the router-surface tests hermetic — no files, no env vars — while
+    // running the same namespace/table setup as connect_from_env.
+    #[cfg(test)]
+    pub async fn connect_in_memory() -> Result<Self> {
+        let db = any::connect("memory")
+            .await
+            .context("connect in-memory SurrealDB")?;
+        db.use_ns(DEFAULT_NAMESPACE)
+            .use_db(DEFAULT_DATABASE)
+            .await
+            .context("select SurrealDB namespace/database")?;
+        db.query("DEFINE TABLE IF NOT EXISTS comment SCHEMALESS;")
+            .await
+            .context("initialize comment table")?;
+        Ok(Self { db })
+    }
+
     pub async fn all_visible(&self) -> Result<Vec<CommentRecord>> {
         let records: Vec<CommentRecord> = self
             .db

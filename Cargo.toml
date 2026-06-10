@@ -4,14 +4,16 @@ resolver = "3"
 
 [workspace.dependencies]
 axum = "0.8.7"
-tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "net", "sync", "time"] }
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "net", "signal", "sync", "time"] }
 rust-embed = { version = "8", features = ["mime-guess", "interpolate-folder-path"] }
 listenfd = "1"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tower-http = { version = "0.6", features = ["compression-br", "compression-gzip"] }
+tower-http = { version = "0.6", features = ["compression-br", "compression-gzip", "timeout", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tantivy = "0.26.1"
 anyhow = "1"
 dotenvy = "0.15"
@@ -34,3 +36,16 @@ oxc_span = "0.131"
 # the macros expand to absolute paths `::eng_domain::*`.
 eng-markup = { git = "https://github.com/eng-manager-xyz/auteur-rs", rev = "cd7fe0b5f2adcada37eae68f5652e8c9c75c7386" }
 eng-domain = { git = "https://github.com/eng-manager-xyz/auteur-rs", rev = "cd7fe0b5f2adcada37eae68f5652e8c9c75c7386" }
+
+# Release: thin LTO + single codegen unit for cross-crate inlining of the
+# hot render path; strip symbols to shrink the deployed binary. panic stays
+# "unwind" deliberately — a panicking handler task must not abort the server.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+# build.rs runs lightningcss + oxc minification over every asset on each
+# rerun; optimizing the build script and its deps directly speeds `just dev`.
+[profile.dev.build-override]
+opt-level = 3
