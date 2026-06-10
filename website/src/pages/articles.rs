@@ -9,11 +9,15 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 
 use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
 use super::{
-    AVATAR_SRC, avatar_srcset, render_experience_urls, render_global_search,
-    render_liquid_title_filter, render_nav_search_toggle, render_quick_actions,
+    AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter,
+    render_nav_search_toggle,
 };
 use crate::asset_url;
-use crate::components::{Head, discovery_toasts, nav, to_top};
+use crate::components::article_toc::{self, Heading};
+use crate::components::{
+    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, quick_actions,
+    region_map, to_top,
+};
 use crate::config::SITE_ORIGIN;
 use crate::content::{
     ARTICLE_RELATIONS, ARTICLES, Article, Category, Tag, article_markdown, public_articles,
@@ -88,110 +92,22 @@ fn article_meta_tools() -> HtmlFragment {
     }
 }
 
-// Brutalist Web API Receipt modal. Opens on `?` key from anywhere on
-// the site OR when `?receipt` is in the URL on load. Toggling the
-// modal pushes/pops that query param so the state is deep-linkable.
-// Static shell; the JS at js/experiences.js populates the stats +
-// grid from the registry after runAll() finishes.
-fn receipt_modal() -> HtmlFragment {
-    view! {
-        <aside id="api-receipt-modal" popover="manual" class="api-receipt">
-            <div class="api-receipt-frame">
-                <header class="api-receipt-head">
-                    <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
-                    <h2 class="api-receipt-title">"Web API Receipt"</h2>
-                    <div class="api-receipt-stats" data-api-receipt-stats></div>
-                    <button class="api-receipt-close"
-                            type="button"
-                            popovertarget="api-receipt-modal"
-                            popovertargetaction="hide"
-                            aria-label="Close">
-                        "✕"
-                    </button>
-                </header>
-                <div class="api-receipt-grid" data-api-receipt-grid></div>
-                <footer class="api-receipt-foot">
-                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
-                </footer>
-            </div>
-        </aside>
-    }
-}
+// The Web API Receipt modal moved to the co-located component
+// `components/api_receipt/` (ledger #4: one pure render for the copy that
+// lived here and the verbatim twin in pages/homepage.rs).
 
 // The "Articles" nav dropdown moved into the co-located nav component
 // (`components/nav/`). `layout()` hoists the latest-three article rows into
 // `nav::Articles::Dropdown` so the component's render stays pure.
 
-#[derive(Clone, Copy)]
-struct ArticlePageAssets {
-    article_title_effect: bool,
-    section_reveal: bool,
-    region_map: bool,
-}
+// ArticlePageAssets (the per-page asset flag struct) was retired in P4:
+// `layout` now owns the detail-surface page assets (liquid-title +
+// section-reveal — page-level flat assets for now) and `detail()` composes
+// the per-slug extras (the region-map head block) into an extra `Head`.
 
-impl ArticlePageAssets {
-    const NONE: Self = Self {
-        article_title_effect: false,
-        section_reveal: false,
-        region_map: false,
-    };
-
-    fn for_article_detail(slug: &str) -> Self {
-        Self {
-            article_title_effect: true,
-            section_reveal: true,
-            region_map: slug == "project-foottraffic",
-        }
-    }
-}
-
-fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
-    let article_title_assets = if assets.article_title_effect {
-        view! {
-            <link rel="stylesheet" href={ asset_url("css/liquid-title.css") } />
-            <script src={ asset_url("js/liquid-title.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-
-    let region_map_assets = if assets.region_map {
-        let poster_url = asset_url("foottraffic-map-poster.svg");
-        let poster_preload = HtmlFragment::new(format!(
-            r#"<link rel="preload" as="image" href="{poster_url}">"#
-        ));
-        view! {
-            <link rel="preconnect" href="https://unpkg.com" />
-            <link rel="preconnect" href="https://tile.openstreetmap.org" />
-            { poster_preload }
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-            <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-            <script src={ asset_url("js/region-map.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-    let section_reveal_assets = if assets.section_reveal {
-        view! {
-            <script src={ asset_url("js/article-section-reveal.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-
-    view! {
-        { article_title_assets }
-        { section_reveal_assets }
-        { region_map_assets }
-    }
-}
-
-fn render_article_reveal_bootstrap(assets: ArticlePageAssets) -> HtmlFragment {
-    if !assets.section_reveal {
-        return HtmlFragment::empty();
-    }
-
+// Inline `<head>` bootstrap for the one-time section reveal (detail surface
+// only). Stays a raw fragment: it must run before first paint.
+fn render_article_reveal_bootstrap() -> HtmlFragment {
     HtmlFragment::new(
         r#"<script>try{if(!location.hash&&"IntersectionObserver"in window&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.articleReveal="pending";setTimeout(function(){if(document.documentElement.dataset.articleReveal==="pending"){document.documentElement.dataset.articleReveal="fallback"}},2500)}}catch(_){}</script>"#
             .to_string(),
@@ -223,7 +139,7 @@ fn layout(
     title: &str,
     body: HtmlFragment,
     meta: MetaTags,
-    page_assets: ArticlePageAssets,
+    extra_assets: Head,
     surface: Surface,
     speculation: bool,
 ) -> String {
@@ -242,7 +158,9 @@ fn layout(
         .collect();
     let nav = nav::render(nav::Props {
         brand_icon_url: asset_url("favicon.svg"),
-        global_search: render_global_search("Search"),
+        global_search: global_search::render(global_search::Props {
+            placeholder: "Search",
+        }),
         search_toggle: render_nav_search_toggle(),
         articles: nav::Articles::Dropdown(nav_dropdown_items),
     });
@@ -250,15 +168,33 @@ fn layout(
     // Discovery-toast overlay: container + its async (deferred) styles.
     let toasts = discovery_toasts::render();
     let to_top = to_top::render(Default::default());
+    // Receipt modal (ledger #4 dedup) + quick-actions cluster. Their
+    // stylesheets are emitted by PageShell right after critical.css (ledger
+    // #8); the add()s below are byte-neutral dep declarations that global
+    // dedup collapses into those (the cluster's FAB script still lands here).
+    let receipt = api_receipt::render();
+    let quick_actions = quick_actions::render();
 
     let mut assets = Head::new();
     assets.add_css("css/articles.css");
+    // Splits out of articles.css (ledger #8): emitted immediately after it,
+    // in the order the rule blocks occupied inside the file, on BOTH surfaces
+    // (the index loaded these rules via articles.css too — per-page selector
+    // sets stay unchanged). The widget/toc markup renders per page as before.
+    assets.add_css(discord_widget::STYLE);
+    assets.add_css(article_toc::STYLE);
     if detail {
         assets.add_css("css/comments.css");
+        // Detail-surface page assets (formerly ArticlePageAssets flags —
+        // every detail page sets both): the liquid-title effect and the
+        // one-time section reveal. Page-level flat assets for now.
+        assets.add_css("css/liquid-title.css");
+        assets.add_js("js/liquid-title.js");
+        assets.add_js("js/article-section-reveal.js");
     }
-    // Per-slug asset variance (liquid title, section reveal, region map) stays
-    // a verbatim block until the P4 componentization.
-    assets.add_inline(render_article_page_assets(page_assets));
+    // Per-slug extras composed by the caller (the region-map head block on
+    // project-foottraffic); empty for the index and every other slug.
+    assets.extend(extra_assets);
 
     let mut scripts = Head::new();
     scripts.add_js("js/audio.js");
@@ -274,31 +210,43 @@ fn layout(
         scripts.add_js("js/copy-code.js");
         scripts.add_js("js/auteurs-shader.js");
         scripts.add_js("js/comments.js");
-        scripts.add_js("js/toc-waypoints.js");
+        // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
+        // exact head position; its stylesheet is pinned after articles.css
+        // in the assets section above, so only the script lands here.
+        scripts.add_js(article_toc::SCRIPT);
     }
     scripts.add(&to_top);
     scripts.add(&nav);
     scripts.add(&toasts);
+    scripts.add(&receipt);
     scripts.add_js("js/view-transitions.js");
-    scripts.add_js("js/quick-actions.js");
+    scripts.add(&quick_actions);
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
 
     let nav_markup = nav.markup;
     let toasts_markup = toasts.markup;
     let to_top_markup = to_top.markup;
+    let receipt_markup = receipt.markup;
+    let quick_actions_markup = quick_actions.markup;
     let page_body = view! {
         { nav_markup }
         { body }
         { to_top_markup }
-        { render_quick_actions() }
+        { quick_actions_markup }
         { toasts_markup }
-        { receipt_modal() }
+        { receipt_markup }
+    };
+
+    let reveal_bootstrap = if detail {
+        render_article_reveal_bootstrap()
+    } else {
+        HtmlFragment::empty()
     };
 
     PageShell::new(title, "articles-page")
         .meta(meta)
-        .raw_meta(render_article_reveal_bootstrap(page_assets))
+        .raw_meta(reveal_bootstrap)
         .assets(assets)
         .scripts(scripts)
         .speculation_rules(speculation)
@@ -337,7 +285,7 @@ pub async fn index() -> Html<String> {
         "Articles · engmanager.xyz",
         body,
         meta,
-        ArticlePageAssets::NONE,
+        Head::new(),
         Surface::Index,
         true,
     ))
@@ -489,11 +437,13 @@ pub async fn detail(Path(slug): Path<String>) -> Response {
             let inner = HtmlFragment::new(body);
             let inner = splice_discord_widget(&slug, inner).await;
             let inner = splice_foottraffic_map(&slug, inner);
-            let toc = render_toc(&headings);
+            // TOC component: the markup mounts below; its CSS/JS deps are
+            // pinned at their pre-P4 head positions inside `layout`.
+            let toc = article_toc::render(&headings).markup;
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
-            let page_assets = ArticlePageAssets::for_article_detail(&slug);
+            let extra_assets = foottraffic_map_assets(&slug);
             let title = render_article_title(page_title, &vt_name);
             let body = view! {
                 <article id="main"
@@ -568,7 +518,7 @@ pub async fn detail(Path(slug): Path<String>) -> Response {
                 page_title,
                 body,
                 meta,
-                page_assets,
+                extra_assets,
                 Surface::Detail,
                 a.indexed,
             ))
@@ -598,7 +548,7 @@ async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
         return body;
     }
     let replacement = match crate::discord::snapshot().await {
-        Some(snap) if slug == "auteurs" => crate::discord::render(&snap).into_string(),
+        Some(snap) if slug == "auteurs" => discord_widget::render(&snap).markup.into_string(),
         _ => String::new(),
     };
     HtmlFragment::new(body_str.replace(DISCORD_WIDGET_SENTINEL, &replacement))
@@ -610,100 +560,54 @@ fn splice_foottraffic_map(slug: &str, body: HtmlFragment) -> HtmlFragment {
         return body;
     }
     let replacement = if slug == "project-foottraffic" {
-        render_foottraffic_map().into_string()
+        // The map figure moved to the co-located component
+        // `components/region_map/`; the hashed poster URL is hoisted here so
+        // the component render stays pure.
+        region_map::render(region_map::Props {
+            poster_url: asset_url("foottraffic-map-poster.svg"),
+        })
+        .markup
+        .into_string()
     } else {
         String::new()
     };
     HtmlFragment::new(body_str.replace(FOOTTRAFFIC_MAP_SENTINEL, &replacement))
 }
 
-fn render_foottraffic_map() -> HtmlFragment {
-    let config = r#"{
-  "label": "Project FootTraffic regional operators",
-  "center": [39.8283, -98.5795],
-  "zoom": 4,
-  "minZoom": 3,
-  "maxZoom": 12,
-  "pins": [
-    {
-      "name": "Matthew",
-      "role": "Portland operator",
-      "city": "Portland, Oregon",
-      "coords": [45.5152, -122.6784],
-      "radiusMiles": 160
-    },
-    {
-      "name": "Marcus",
-      "role": "LA operator",
-      "city": "Los Angeles, California",
-      "coords": [34.0522, -118.2437],
-      "radiusMiles": 180
-    },
-    {
-      "name": "Jason",
-      "role": "Austin operator",
-      "city": "Austin, Texas",
-      "coords": [30.2672, -97.7431],
-      "radiusMiles": 170
-    },
-    {
-      "name": "Alex",
-      "role": "Detroit operator",
-      "city": "Detroit, Michigan",
-      "coords": [42.3314, -83.0458],
-      "radiusMiles": 160
+// Per-slug head extras for the region map (project-foottraffic only): the
+// preconnects + poster preload + Leaflet CDN pair stay page-level inline
+// fragments, with the component's own CSS/JS pinned at the flat files' old
+// positions between them.
+//
+// ORDERING CONSTRAINT: the Leaflet CDN script MUST precede c-region-map.js.
+// CDN URLs cannot be `js_deps` (those are asset_url dist paths), so the
+// ordering is encoded here by emitting the inline CDN tag immediately before
+// `region_map::SCRIPT`.
+fn foottraffic_map_assets(slug: &str) -> Head {
+    let mut extras = Head::new();
+    if slug != "project-foottraffic" {
+        return extras;
     }
-  ]
-}"#;
-
-    view! {
-        <figure class="region-map" data-region-map aria-labelledby="foottraffic-map-title">
-            <div class="region-map-copy">
-                <h2 id="foottraffic-map-title">"Regional Operator Map"</h2>
-                <p>
-                    "A first pass at the territory model: one operator per region, with the same map module ready for later heat-map and blast-radius layers."
-                </p>
-            </div>
-            <div class="region-map-shell">
-                <div class="region-map-canvas"
-                     data-region-map-canvas
-                     role="application"
-                     tabindex="0"
-                     aria-label="Interactive map of Project FootTraffic operators"></div>
-                <div class="region-map-poster" data-region-map-poster>
-                    <img src={ asset_url("foottraffic-map-poster.svg") }
-                         alt=""
-                         width="1200"
-                         height="675"
-                         loading="eager"
-                         decoding="async" />
-                    <div class="region-map-status" data-region-map-status role="status">
-                        "Loading interactive map"
-                    </div>
-                </div>
-            </div>
-            <figcaption>
-                "Pins show Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
-            </figcaption>
-            <script type="application/json" data-region-map-config>
-                { HtmlFragment::new(config.to_string()) }
-            </script>
-            <noscript>
-                <p>
-                    "Map locations: Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
-                </p>
-            </noscript>
-        </figure>
-    }
+    let poster_url = asset_url("foottraffic-map-poster.svg");
+    let poster_preload = HtmlFragment::new(format!(
+        r#"<link rel="preload" as="image" href="{poster_url}">"#
+    ));
+    extras.add_inline(view! {
+        <link rel="preconnect" href="https://unpkg.com" />
+        <link rel="preconnect" href="https://tile.openstreetmap.org" />
+        { poster_preload }
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    });
+    extras.add_css(region_map::STYLE);
+    extras.add_inline(view! {
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    });
+    extras.add_js(region_map::SCRIPT);
+    extras
 }
 
-// A heading destined for the on-this-page sidebar.
-#[derive(Clone)]
-pub struct Heading {
-    pub level: u32, // 2 or 3
-    pub slug: String,
-    pub text: String,
-}
+// The `Heading` data shape moved to the co-located component
+// `components/article_toc/` (its render input, hoisted by this pipeline).
 
 // Loads the Markdown for an article slug, parses it with pulldown-cmark,
 // assigns an `id` to each h2/h3 (so the sidebar TOC can scroll-anchor to
@@ -975,52 +879,8 @@ fn slugify(text: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-// Sidebar "on this page" navigation. Empty when the article has no h2/h3
-// headings — the CSS hides the empty <aside> on small viewports anyway,
-// but skipping the render here is cleaner. h3 entries get the .is-h3
-// modifier for the indented sub-item treatment.
-fn render_toc(headings: &[Heading]) -> HtmlFragment {
-    if headings.is_empty() {
-        return HtmlFragment::empty();
-    }
-    let items: HtmlFragment = headings
-        .iter()
-        .map(|h| {
-            let class = if h.level == 3 {
-                "article-toc-link is-h3"
-            } else {
-                "article-toc-link"
-            };
-            view! {
-                <li>
-                    <a class={ class } href={ format!("#{}", h.slug) }>
-                        { h.text.clone() }
-                    </a>
-                </li>
-            }
-        })
-        .collect();
-
-    view! {
-        <aside class="article-toc" aria-label="On this page">
-            <div class="article-toc-heading">
-                <svg class="article-toc-icon" viewBox="0 0 16 16" aria-hidden="true">
-                    <g fill="none" stroke="currentColor" stroke-width="1.5"
-                       stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="6" y1="4" x2="14" y2="4" />
-                        <line x1="6" y1="8" x2="14" y2="8" />
-                        <line x1="6" y1="12" x2="14" y2="12" />
-                        <circle cx="3" cy="4" r="0.9" fill="currentColor" />
-                        <circle cx="3" cy="8" r="0.9" fill="currentColor" />
-                        <circle cx="3" cy="12" r="0.9" fill="currentColor" />
-                    </g>
-                </svg>
-                "On this page"
-            </div>
-            <ul class="article-toc-list">{ items }</ul>
-        </aside>
-    }
-}
+// The sidebar "on this page" render moved to the co-located component
+// `components/article_toc/` (markup + styles + the waypoints scrollspy).
 
 #[cfg(test)]
 mod tests {

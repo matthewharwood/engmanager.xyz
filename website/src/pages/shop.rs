@@ -5,10 +5,10 @@ use eng_domain::HtmlFragment;
 use eng_markup::view;
 use serde_json::json;
 
-use super::render_theme_picker;
 use super::shell::PageShell;
 use crate::AppState;
 use crate::catalog::{CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_url};
+use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
 
 const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
@@ -112,7 +112,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
                aria-label="Back to ENGMANAGER.XYZ">
                 { chevron() }
             </a>
-            { render_theme_picker() }
+            { theme_picker() }
             <div class="shop-top-actions">
                 <button class="shop-cart-button"
                         type="button"
@@ -198,7 +198,7 @@ fn render_product_panel() -> HtmlFragment {
                         aria-label="Close product">
                     { x_icon() }
                 </button>
-                { render_theme_picker() }
+                { theme_picker() }
                 <button class="shop-cart-button"
                         type="button"
                         data-cart-toggle

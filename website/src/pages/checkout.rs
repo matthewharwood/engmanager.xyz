@@ -22,11 +22,11 @@ use eng_markup::view;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::render_theme_picker;
 use super::shell::{MetaTags, PageShell};
 use super::shop::product_data_json;
 use crate::AppState;
 use crate::catalog::SHOP_PRODUCTS;
+use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
 
 const CHECKOUT_TITLE: &str = "Checkout · ENGMANAGER.XYZ";
@@ -141,7 +141,7 @@ fn render_page(mode: Mode, state: &AppState) -> String {
                 <span class="checkout-back-label">"Store"</span>
             </a>
             <p class="checkout-wordmark">"ENGMANAGER.XYZ"</p>
-            { render_theme_picker() }
+            { theme_picker() }
         </header>
         { body_main }
     };

@@ -227,12 +227,19 @@ impl PageShell {
     }
 
     pub fn render(self, body: HtmlFragment) -> String {
-        // One combined collector: page assets, then the synchronous theme
+        // One combined collector: the overlay-cluster component sheets split
+        // out of critical.css (ledger #8 — every page carried these rules via
+        // critical.css, so every page keeps them, pinned immediately after the
+        // critical.css link), then page assets, then the synchronous theme
         // runtime (theme-toggle.js MUST stay render-blocking so the theme
         // class lands before first paint; the sfx island MUST precede every
         // audio.js consumer), then page scripts. Merging through `extend`
-        // keeps first-seen dedup global across both sections.
-        let mut head = self.assets;
+        // keeps first-seen dedup global across all sections, so a page that
+        // also declares a component's sheet emits it exactly once, here.
+        let mut head = Head::new();
+        head.add_deferred_css(crate::components::api_receipt::STYLE);
+        head.add_css(crate::components::quick_actions::STYLE);
+        head.extend(self.assets);
         head.add_blocking_js("js/theme-toggle.js");
         head.add_inline(render_sfx_urls());
         head.extend(self.scripts);

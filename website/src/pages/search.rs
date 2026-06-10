@@ -6,11 +6,11 @@ use eng_domain::HtmlFragment;
 use eng_markup::view;
 use serde::Deserialize;
 
+use super::render_nav_search_toggle;
 use super::shell::PageShell;
-use super::{render_global_search, render_nav_search_toggle};
 use crate::AppState;
 use crate::asset_url;
-use crate::components::{Head, nav};
+use crate::components::{Head, global_search, nav};
 use crate::content::{Category, Tag};
 use crate::search::{
     ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
@@ -161,7 +161,9 @@ fn render_page(
     // dropdown), so it pulls in no co-located CSS and no dropdown JS.
     let nav = nav::render(nav::Props {
         brand_icon_url: asset_url("favicon.svg"),
-        global_search: render_global_search("Search"),
+        global_search: global_search::render(global_search::Props {
+            placeholder: "Search",
+        }),
         search_toggle: render_nav_search_toggle(),
         articles: nav::Articles::Link,
     });

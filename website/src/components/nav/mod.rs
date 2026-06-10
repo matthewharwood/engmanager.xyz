@@ -22,10 +22,10 @@ use eng_markup::view;
 use super::Rendered;
 
 /// Dist assets emitted by `build.rs` from this folder's `style.css` /
-/// `script.js`. The dropdown config depends on both; the plain-link config on
-/// neither.
-pub const STYLE: &str = "css/c-nav.css";
-pub const SCRIPT: &str = "js/c-nav.js";
+/// `script.js` — generated consts, so a renamed folder fails compilation
+/// instead of 404ing. The dropdown config depends on both; the plain-link
+/// config on neither.
+pub use super::asset_names::nav::{SCRIPT, STYLE};
 
 /// Shared flat scripts the nav depends on but does NOT own: `popover-registry`
 /// is a general popover bus used site-wide, and `nav-search-toggle` is shared
@@ -60,11 +60,14 @@ pub enum Articles {
 }
 
 /// Props for the site nav. `brand_icon_url` (the hashed favicon URL) and the
-/// `global_search` / `search_toggle` fragments are hoisted by the caller; the
-/// component owns the rest of the shell.
+/// `search_toggle` fragment are hoisted by the caller; `global_search` is the
+/// pre-rendered `components::global_search` child, which the nav absorbs —
+/// markup spliced into the bar, js deps merged after the nav's own
+/// (`Rendered::absorb` keeps execution order: popover-registry stays ahead of
+/// c-nav.js, and pages that pin `js/search.js` earlier win first-seen dedup).
 pub struct Props {
     pub brand_icon_url: String,
-    pub global_search: HtmlFragment,
+    pub global_search: Rendered,
     pub search_toggle: HtmlFragment,
     pub articles: Articles,
 }
@@ -163,7 +166,18 @@ pub fn render(props: Props) -> Rendered {
         ),
     };
 
-    let markup = view! {
+    // Absorb the global-search child: its markup splices into the bar below
+    // and its js deps (search.js + search-keyclick.js) append after the
+    // nav's own deps, preserving execution order.
+    let mut rendered = Rendered {
+        markup: HtmlFragment::empty(),
+        critical_css,
+        deferred_css: Vec::new(),
+        js_deps,
+    };
+    let global_search = rendered.absorb(global_search);
+
+    rendered.markup = view! {
         <nav class="site-nav" aria-label="Primary">
             <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
                 <img class="site-nav-mark"
@@ -190,22 +204,21 @@ pub fn render(props: Props) -> Rendered {
         </nav>
     };
 
-    Rendered {
-        markup,
-        critical_css,
-        deferred_css: Vec::new(),
-        js_deps,
-    }
+    rendered
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    use crate::components::global_search;
+
     fn dropdown_props() -> Props {
         Props {
             brand_icon_url: "/assets/favicon.svg".to_string(),
-            global_search: HtmlFragment::new("<form class=\"site-search\"></form>".to_string()),
+            global_search: global_search::render(global_search::Props {
+                placeholder: "Search",
+            }),
             search_toggle: HtmlFragment::new(
                 "<button class=\"site-search-toggle\"></button>".to_string(),
             ),
@@ -232,14 +245,33 @@ mod tests {
     }
 
     #[test]
-    fn dropdown_config_declares_dropdown_assets() {
+    fn dropdown_config_declares_dropdown_assets_and_absorbed_search() {
         let rendered = render(dropdown_props());
         assert_eq!(rendered.critical_css, vec![STYLE]);
         assert!(rendered.deferred_css.is_empty());
+        // Execution order: the nav's own deps first (popover-registry stays
+        // ahead of c-nav.js), then the absorbed global-search deps.
         assert_eq!(
             rendered.js_deps,
-            vec![POPOVER_REGISTRY, SCRIPT, SEARCH_TOGGLE]
+            vec![
+                POPOVER_REGISTRY,
+                SCRIPT,
+                SEARCH_TOGGLE,
+                "js/search.js",
+                "js/search-keyclick.js",
+            ]
         );
+    }
+
+    #[test]
+    fn nav_splices_absorbed_global_search_markup() {
+        let html = render(dropdown_props()).markup.into_string();
+        // The absorbed child's form lands between the brand and the links.
+        assert!(html.contains(r#"<form class="site-search" action="/search" method="get" role="search" data-search-form>"#));
+        let brand = html.find("site-nav-brand").expect("brand");
+        let search = html.find("site-search-input").expect("search input");
+        let links = html.find("site-nav-links").expect("links");
+        assert!(brand < search && search < links);
     }
 
     #[test]
@@ -253,9 +285,18 @@ mod tests {
             html.contains(r#"<a class="site-nav-link" href="/articles/" aria-label="Articles">"#)
         );
         assert!(!html.contains("nav-dropdown"));
-        // Plain link carries no co-located CSS and no dropdown JS.
+        // Plain link carries no co-located CSS and no dropdown JS — only the
+        // shared flat deps plus the absorbed global-search scripts.
         assert!(rendered.critical_css.is_empty());
         assert!(rendered.deferred_css.is_empty());
-        assert_eq!(rendered.js_deps, vec![POPOVER_REGISTRY, SEARCH_TOGGLE]);
+        assert_eq!(
+            rendered.js_deps,
+            vec![
+                POPOVER_REGISTRY,
+                SEARCH_TOGGLE,
+                "js/search.js",
+                "js/search-keyclick.js",
+            ]
+        );
     }
 }

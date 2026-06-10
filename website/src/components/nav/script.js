@@ -24,7 +24,15 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
     );
 
     let animePromise = null;
-    const loadAnime = () => (animePromise ||= import(ANIME_URL));
+    // A rejected CDN import must not be cached forever: clear the memo so
+    // the next open retries, and resolve null so open()/close() fall back
+    // to the CSS-only path (.is-open keeps the panel fully usable; only
+    // the spring choreography is lost).
+    const loadAnime = () =>
+        (animePromise ||= import(ANIME_URL).catch(() => {
+            animePromise = null;
+            return null;
+        }));
 
     let isOpen = false;
     let activeAnimation = null;
@@ -47,6 +55,8 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
         const anime = await loadAnime();
         // The user may have closed before anime finished loading.
         if (!isOpen) return;
+        // CDN failed: the .is-open CSS fallback already shows the panel.
+        if (!anime) return;
 
         activeAnimation?.pause();
 
@@ -90,6 +100,8 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
         window.__engPopovers?.close("nav-dropdown");
 
         const anime = await loadAnime();
+        // CDN failed: removing .is-open above already hid the panel.
+        if (!anime) return;
 
         activeAnimation?.pause();
         // Reversed-stagger fade-out: the items closest to the trigger

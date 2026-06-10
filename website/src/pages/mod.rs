@@ -100,22 +100,10 @@ pub fn render_dev_meta() -> HtmlFragment {
     }
 }
 
-// Persistent scavenger-hunt chip. On desktop it is positioned directly
-// by CSS; on mobile it lives inside `render_quick_actions()` as one of
-// the expandable FAB actions. Renders as a circular emoji button with
-// a shopping-cart-style count badge in the top-right corner.
-pub fn render_hunt_chip() -> HtmlFragment {
-    view! {
-        <button class="hunt-chip"
-                type="button"
-                popovertarget="api-receipt-modal"
-                aria-label="Open the API hunt log">
-            <span class="hunt-chip-emoji" aria-hidden="true">"🧪"</span>
-            <span class="hunt-chip-badge" data-hunt-chip-count="0">"0"</span>
-            <span class="sr-only">"APIs found"</span>
-        </button>
-    }
-}
+// The quick-actions cluster (FAB rail + theme-picker + hunt-chip) moved to
+// the co-located component `components/quick_actions/` (markup + critical
+// styles + the FAB script). The theme cycler renders standalone on the
+// shop/checkout/404 pages via `components::quick_actions::theme_picker()`.
 
 // The discovery-toast container moved to the co-located component
 // `components/discovery_toasts/` (markup + deferred styles). `experiences.js`
@@ -134,37 +122,6 @@ pub fn render_nav_search_toggle() -> HtmlFragment {
     HtmlFragment::new(format!(
         r##"<button class="site-search-toggle" type="button" aria-label="Open search" aria-expanded="false" data-search-toggle>{ICON_SEARCH}</button>"##
     ))
-}
-
-// Theme cycler. Renders as a single circular emoji button — one emoji
-// per theme, swapped in by js/theme-toggle.js on each click. The
-// theme name lives in a sibling sr-only span so screen readers and
-// the aria-label can announce "Cycle theme · current: Light" etc.
-pub fn render_theme_picker() -> HtmlFragment {
-    view! {
-        <button class="theme-picker"
-                type="button"
-                data-theme-cycle
-                aria-label="Cycle theme · current: Auto">
-            <svg class="theme-picker-shapes"
-                 aria-hidden="true"
-                 viewBox="0 0 32 32"
-                 focusable="false">
-                <circle class="theme-picker-shape theme-picker-shape-auto" cx="16" cy="16" r="10" />
-                <path class="theme-picker-shape theme-picker-shape-light" d="M16 5 L27 25 H5 Z" />
-                <rect class="theme-picker-shape theme-picker-shape-dark" x="7" y="7" width="18" height="18" />
-                <path class="theme-picker-shape theme-picker-shape-catppuccin" d="M16 5 L25.5 10.5 V21.5 L16 27 L6.5 21.5 V10.5 Z" />
-                <path class="theme-picker-shape theme-picker-shape-synthwave" d="M16 5 L19.3 12.2 L27 13 L21.2 18.1 L22.9 25.7 L16 21.8 L9.1 25.7 L10.8 18.1 L5 13 L12.7 12.2 Z" />
-                <path class="theme-picker-shape theme-picker-shape-cyberpunk" d="M25 16 A9 9 0 0 1 16 25" />
-                <path class="theme-picker-shape theme-picker-shape-forest" d="M16 5 L27 16 L16 27 L5 16 Z" />
-                <path class="theme-picker-shape theme-picker-shape-lofi" d="M16 5 L26.5 12.6 L22.5 25 H9.5 L5.5 12.6 Z" />
-                <path class="theme-picker-shape theme-picker-shape-dracula" d="M16 4 L19.5 12.5 L28 16 L19.5 19.5 L16 28 L12.5 19.5 L4 16 L12.5 12.5 Z" />
-                <path class="theme-picker-shape theme-picker-shape-luxury" d="M10 6 H22 L28 16 L22 26 H10 L4 16 Z" />
-            </svg>
-            <span class="theme-picker-emoji" aria-hidden="true" data-theme-emoji>"🪄"</span>
-            <span class="sr-only" data-theme-current-label>"Auto"</span>
-        </button>
-    }
 }
 
 // Single URL map for every SFX in the codebase, exposed as
@@ -228,52 +185,7 @@ pub fn render_experience_urls() -> HtmlFragment {
     )
 }
 
-// Shared quick-action surface. Desktop CSS treats the wrapper as
-// `display: contents`, preserving the existing two fixed chips. Mobile
-// CSS turns the same controls into a tucked right-edge FAB that expands
-// to reveal theme + Web API receipt actions.
-pub fn render_quick_actions() -> HtmlFragment {
-    view! {
-        <div class="quick-actions"
-             data-quick-actions
-             data-state="collapsed">
-            <button class="quick-actions-peek"
-                    type="button"
-                    data-quick-actions-toggle
-                    aria-label="Open quick actions"
-                    aria-expanded="false">
-                <span class="quick-actions-arrow" aria-hidden="true">"←"</span>
-            </button>
-            <div class="quick-actions-bubbles" aria-label="Quick actions">
-                { render_theme_picker() }
-                { render_hunt_chip() }
-            </div>
-        </div>
-    }
-}
-
-pub fn render_global_search(placeholder: &str) -> HtmlFragment {
-    view! {
-        <form class="site-search" action="/search" method="get" role="search" data-search-form>
-            <label class="sr-only" for="site-search-input">"Search articles and comments"</label>
-            <input class="site-search-input"
-                   id="site-search-input"
-                   type="search"
-                   name="q"
-                   autocomplete="off"
-                   role="combobox"
-                   aria-expanded="false"
-                   aria-controls="site-search-results"
-                   aria-autocomplete="list"
-                   placeholder={ placeholder } />
-            <ul class="site-search-results"
-                id="site-search-results"
-                role="listbox"
-                hidden
-                data-search-results></ul>
-            <noscript>
-                <button class="site-search-submit" type="submit">"Search"</button>
-            </noscript>
-        </form>
-    }
-}
+// The global search form moved to the co-located component
+// `components/global_search/` (markup + the flat search.js/search-keyclick.js
+// deps); the nav absorbs it. The homepage hero search is different markup
+// and stays in pages/homepage.rs.

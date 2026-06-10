@@ -20,8 +20,10 @@ use eng_markup::view;
 
 use super::Rendered;
 
-/// Dist asset emitted by `build.rs` from this folder's `style.css`.
-pub const STYLE: &str = "css/c-discovery-toasts.css";
+/// Dist asset emitted by `build.rs` from this folder's `style.css` — a
+/// generated const (no `SCRIPT`: this component ships no `script.js`), so a
+/// renamed folder fails compilation instead of 404ing.
+pub use super::asset_names::discovery_toasts::STYLE;
 
 /// Pure render. No `Props` — the container is stateless; the toast cards are
 /// created at runtime by `experiences.js`.

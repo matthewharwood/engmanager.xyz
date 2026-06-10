@@ -12,9 +12,9 @@ use eng_markup::view;
 use super::Rendered;
 
 /// Dist asset names emitted by `build.rs` from this folder's `style.css` /
-/// `script.js`. Single source of truth shared by `render()`.
-pub const STYLE: &str = "css/c-to-top.css";
-pub const SCRIPT: &str = "js/c-to-top.js";
+/// `script.js` — generated consts (single source of truth shared by
+/// `render()`), so a renamed folder fails compilation instead of 404ing.
+pub use super::asset_names::to_top::{SCRIPT, STYLE};
 
 /// Props for the to-top button. Empty for now — the component is fully
 /// self-contained — but kept as a typed struct so the call site is

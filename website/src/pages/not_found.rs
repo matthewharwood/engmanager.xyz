@@ -3,9 +3,9 @@ use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 
-use super::render_theme_picker;
 use super::shell::PageShell;
 use crate::asset_url;
+use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_island};
 
 pub async fn handler() -> Response {
@@ -41,7 +41,7 @@ fn page() -> String {
                  aria-live="polite">
                 "404 Page Not Found"
             </div>
-            { render_theme_picker() }
+            { theme_picker() }
         </main>
     };
 

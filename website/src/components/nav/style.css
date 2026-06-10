@@ -122,6 +122,10 @@
 .nav-dropdown.is-open .nav-dropdown-panel {
     visibility: visible;
     pointer-events: auto;
+    /* No-anime fallback: keep the open panel usable when the anime.js CDN
+     * import fails. When anime IS present its inline styles override this
+     * and drive the opacity through the spring choreography as before. */
+    opacity: 1;
 }
 
 .nav-dropdown-item {

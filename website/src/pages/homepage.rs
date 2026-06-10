@@ -6,11 +6,8 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 
 use super::shell::{MetaTags, PageShell, json_ld_island};
-use super::{
-    AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter,
-    render_quick_actions,
-};
-use crate::components::{Head, discovery_toasts, json_data_island};
+use super::{AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter};
+use crate::components::{Head, api_receipt, discovery_toasts, json_data_island, quick_actions};
 use crate::config::SITE_ORIGIN;
 use crate::content::{Category, Tag, public_articles};
 
@@ -420,14 +417,24 @@ pub async fn index() -> Html<String> {
         .collect();
     // Discovery-toast overlay: container + its async (deferred) styles.
     let toasts = discovery_toasts::render();
+    // Receipt modal (ledger #4 dedup — one render shared with the article
+    // surfaces). Its deferred stylesheet is emitted by PageShell right after
+    // critical.css (ledger #8); the add() below is a byte-neutral dep
+    // declaration that global dedup collapses into that one.
+    let receipt = api_receipt::render();
+    // Quick-actions cluster: PageShell ships its critical sheet (ledger #8);
+    // only the FAB script lands from the add() in the scripts section below.
+    let quick_actions = quick_actions::render();
 
     let mut assets = Head::new();
     assets.add_css("css/homepage.css");
     assets.add(&toasts);
+    assets.add(&receipt);
     if HOME_LIQUID_HEADLINE_ENABLED {
         assets.add_css("css/liquid-title.css");
     }
     let toasts_markup = toasts.markup;
+    let receipt_markup = receipt.markup;
 
     let mut scripts = Head::new();
     scripts.add_js("js/audio.js");
@@ -442,9 +449,10 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/view-transitions.js");
     scripts.add_js("js/visited-articles.js");
     scripts.add_js("js/trash-drag.js");
-    scripts.add_js("js/quick-actions.js");
+    scripts.add(&quick_actions);
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
+    let quick_actions_markup = quick_actions.markup;
 
     let meta = MetaTags {
         description: Some(HOME_DESCRIPTION.to_string()),
@@ -571,34 +579,13 @@ pub async fn index() -> Html<String> {
                 { json_data_island("articles-data", &articles_data_json()) }
                 { render_reveal_card() }
 
-                { render_quick_actions() }
+                { quick_actions_markup }
                 { toasts_markup }
 
-                // Brutalist Web API Receipt modal (Popover API). `?` from
-                // anywhere on the site toggles it; experiences.js fills the
-                // grid + stats from the registry. Opens when ?receipt is
-                // in the URL on load, and toggling the modal pushes/pops
-                // that query param so the state is deep-linkable.
-                <aside id="api-receipt-modal" popover="manual" class="api-receipt">
-                    <div class="api-receipt-frame">
-                        <header class="api-receipt-head">
-                            <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
-                            <h2 class="api-receipt-title">"Web API Receipt"</h2>
-                            <div class="api-receipt-stats" data-api-receipt-stats></div>
-                            <button class="api-receipt-close"
-                                    type="button"
-                                    popovertarget="api-receipt-modal"
-                                    popovertargetaction="hide"
-                                    aria-label="Close">
-                                "✕"
-                            </button>
-                        </header>
-                        <div class="api-receipt-grid" data-api-receipt-grid></div>
-                        <footer class="api-receipt-foot">
-                            <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
-                        </footer>
-                    </div>
-                </aside>
+                // Brutalist Web API Receipt modal (Popover API) — the
+                // co-located `components/api_receipt` shell, byte-identical
+                // to the inline copy that used to live here (ledger #4).
+                { receipt_markup }
     };
 
     Html(
