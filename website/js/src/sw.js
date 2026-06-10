@@ -6,7 +6,7 @@
 // Served at /sw.js by the Axum handler (see website/src/main.rs) with
 // `Service-Worker-Allowed: /` so it can scope the whole origin.
 
-const CACHE = "engmanager-v3";
+const CACHE = "engmanager-v4";
 const PRECACHE_URLS = ["/offline.html"];
 
 self.addEventListener("install", (event) => {
