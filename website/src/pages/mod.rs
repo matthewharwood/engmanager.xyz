@@ -4,6 +4,7 @@ pub mod comments;
 pub mod homepage;
 pub mod not_found;
 pub mod search;
+pub mod shell;
 pub mod shop;
 
 use eng_domain::HtmlFragment;
@@ -203,11 +204,28 @@ pub fn render_sfx_urls() -> HtmlFragment {
         })
         .collect::<Vec<_>>()
         .join(",");
-    HtmlFragment::new(format!(
-        "<script>window.__engSfxUrls={{themes:{{{theme_entries}}},trash:\"{}\",keyclick:\"{}\"}};</script>",
-        crate::asset_url("trash-drop.mp3"),
-        crate::asset_url("keyclick.mp3"),
-    ))
+    crate::components::script_island(
+        "__engSfxUrls",
+        &format!(
+            "{{themes:{{{theme_entries}}},trash:\"{}\",keyclick:\"{}\"}}",
+            crate::asset_url("trash-drop.mp3"),
+            crate::asset_url("keyclick.mp3"),
+        ),
+    )
+}
+
+// Hashed URLs for the lazily-imported experience modules, exposed as
+// `window.__engUrls` for js/experiences.js. Must precede the experiences.js
+// script tag on every page that loads it (homepage + article surfaces).
+pub fn render_experience_urls() -> HtmlFragment {
+    crate::components::script_island(
+        "__engUrls",
+        &format!(
+            "{{paintHatch:\"{}\",cryptoWorker:\"{}\"}}",
+            crate::asset_url("js/paint-brutalist-hatch.js"),
+            crate::asset_url("js/worker-crypto.js"),
+        ),
+    )
 }
 
 // Shared quick-action surface. Desktop CSS treats the wrapper as

@@ -21,6 +21,9 @@
 //! splice the component's `<link>`/`<script>` tags from a single source of
 //! truth. See [`nav`] and [`to_top`] for examples.
 
+use std::collections::HashSet;
+use std::fmt::Write;
+
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 
@@ -64,27 +67,309 @@ impl Rendered {
     /// `deferred_css` (media-swap pattern + `<noscript>` fallback), then a
     /// deferred `<script>` per `js_dep`. Each href is routed through
     /// `asset_url` for content-addressed caching. Splice into the page `<head>`.
+    ///
+    /// Delegates to [`Head`] so a component spliced directly and a component
+    /// aggregated through a page-level `Head` collector emit byte-identical
+    /// tag shapes from one implementation.
     pub fn head(&self) -> HtmlFragment {
-        let critical = self
-            .critical_css
-            .iter()
-            .copied()
-            .map(|dep| view! { <link rel="stylesheet" href={ asset_url(dep) } /> });
-        // Async CSS: load with `media="print"` (non-render-blocking), then flip
-        // to `all` once it has loaded. `<noscript>` gives no-JS clients the
-        // normal render-blocking link.
-        let deferred = self.deferred_css.iter().copied().map(|dep| {
-            let href = asset_url(dep);
-            view! {
-                <link rel="stylesheet" href={ href.clone() } media="print" onload="this.media='all'" />
-                <noscript><link rel="stylesheet" href={ href } /></noscript>
+        let mut head = Head::new();
+        head.add(self);
+        head.render()
+    }
+
+    /// Merge `child`'s dep lists into `self` (per-tier, order-preserving,
+    /// first-seen dedup) and hand back the child's markup for the parent to
+    /// splice wherever it belongs in the parent's node tree.
+    ///
+    /// `js_deps` order is EXECUTION order: a parent absorbing a child keeps
+    /// its own deps first, then appends the child's unseen deps in the
+    /// child's order (e.g. `popover-registry.js` must stay ahead of
+    /// `c-nav.js` — callers encode that by listing the registry first).
+    #[allow(dead_code)] // adopted by the P4 overlay-cluster migration
+    pub fn absorb(&mut self, child: Rendered) -> HtmlFragment {
+        fn merge(parent: &mut Vec<&'static str>, child: Vec<&'static str>) {
+            for dep in child {
+                if !parent.contains(&dep) {
+                    parent.push(dep);
+                }
             }
-        });
-        let js = self
-            .js_deps
-            .iter()
-            .copied()
-            .map(|dep| view! { <script src={ asset_url(dep) } defer></script> });
-        critical.chain(deferred).chain(js).collect()
+        }
+        merge(&mut self.critical_css, child.critical_css);
+        merge(&mut self.deferred_css, child.deferred_css);
+        merge(&mut self.js_deps, child.js_deps);
+        child.markup
+    }
+}
+
+// =============================================================================
+// Head — page-level `<head>` asset collector.
+// =============================================================================
+
+/// One `<head>` emission slot. The variant picks the TAG SHAPE (tier); the
+/// position in [`Head::entries`] is the insertion order, preserved verbatim so
+/// a migrated page can reproduce its pre-refactor head byte-for-byte (today's
+/// heads interleave tiers — e.g. a component's render-blocking `<link>`
+/// between two deferred `<script>`s — so emission must NOT regroup by tier).
+enum HeadEntry {
+    /// Render-blocking `<link rel="stylesheet">`.
+    BlockingCss(&'static str),
+    /// Async CSS via the `media="print"` + onload swap, with `<noscript>`
+    /// fallback. Only for styles invisible at first paint (no FOUC).
+    DeferredCss(&'static str),
+    /// Synchronous `<script src>` (no `defer`) — the theme-toggle tier: it
+    /// must set the theme class before first paint.
+    BlockingJs(&'static str),
+    /// `<script src ... defer>`.
+    DeferredJs(&'static str),
+    /// Verbatim fragment (data islands, preconnects, external CDN tags) that
+    /// must keep its relative position among the dep-emitted tags.
+    Inline(HtmlFragment),
+}
+
+/// Ordered, deduplicated collector for everything page/component-specific in
+/// a document `<head>`: component assets ([`Head::add`]), page assets
+/// (`add_css`/`add_js`/`add_blocking_js`), and positioned raw fragments
+/// (`add_inline`). Dep entries are deduplicated by dist-path string,
+/// first-seen wins (two components sharing `js/popover-registry.js` emit one
+/// tag, at the first requester's position); `render` routes every dep through
+/// `asset_url` and emits exactly the tag shapes [`Rendered::head`] emits.
+#[derive(Default)]
+pub struct Head {
+    entries: Vec<HeadEntry>,
+    seen: HashSet<&'static str>,
+}
+
+impl Head {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn push_dep(&mut self, dep: &'static str, entry: fn(&'static str) -> HeadEntry) {
+        if self.seen.insert(dep) {
+            self.entries.push(entry(dep));
+        }
+    }
+
+    /// Collect a component's assets at the current insertion point, in the
+    /// component's own load-priority order: critical CSS, deferred CSS, JS.
+    /// (Same order [`Rendered::head`] emits, so aggregation is byte-stable.)
+    pub fn add(&mut self, rendered: &Rendered) {
+        for dep in &rendered.critical_css {
+            self.push_dep(dep, HeadEntry::BlockingCss);
+        }
+        for dep in &rendered.deferred_css {
+            self.push_dep(dep, HeadEntry::DeferredCss);
+        }
+        for dep in &rendered.js_deps {
+            self.push_dep(dep, HeadEntry::DeferredJs);
+        }
+    }
+
+    /// Render-blocking stylesheet (dist path, e.g. `"css/homepage.css"`).
+    pub fn add_css(&mut self, dep: &'static str) {
+        self.push_dep(dep, HeadEntry::BlockingCss);
+    }
+
+    /// Deferred `<script src ... defer>` (dist path).
+    pub fn add_js(&mut self, dep: &'static str) {
+        self.push_dep(dep, HeadEntry::DeferredJs);
+    }
+
+    /// Synchronous `<script src>` — reserved for scripts that must run before
+    /// first paint (theme-toggle.js).
+    pub fn add_blocking_js(&mut self, dep: &'static str) {
+        self.push_dep(dep, HeadEntry::BlockingJs);
+    }
+
+    /// Verbatim fragment pinned at the current insertion point (JSON/data
+    /// islands, preconnect hints, external CDN tags). Islands must precede
+    /// their consumer scripts — e.g. `__engSfxUrls` before `audio.js`,
+    /// `__engUrls` before `experiences.js` — which insertion order encodes.
+    pub fn add_inline(&mut self, fragment: HtmlFragment) {
+        self.entries.push(HeadEntry::Inline(fragment));
+    }
+
+    /// Append every entry of `other` after `self`'s entries, re-applying
+    /// first-seen dedup across the combined collector.
+    pub fn extend(&mut self, other: Head) {
+        for entry in other.entries {
+            match entry {
+                HeadEntry::BlockingCss(dep) => self.push_dep(dep, HeadEntry::BlockingCss),
+                HeadEntry::DeferredCss(dep) => self.push_dep(dep, HeadEntry::DeferredCss),
+                HeadEntry::BlockingJs(dep) => self.push_dep(dep, HeadEntry::BlockingJs),
+                HeadEntry::DeferredJs(dep) => self.push_dep(dep, HeadEntry::DeferredJs),
+                HeadEntry::Inline(fragment) => self.entries.push(HeadEntry::Inline(fragment)),
+            }
+        }
+    }
+
+    /// Emit the collected entries in insertion order, one tag shape per tier.
+    pub fn render(self) -> HtmlFragment {
+        self.entries
+            .into_iter()
+            .map(|entry| match entry {
+                HeadEntry::BlockingCss(dep) => {
+                    view! { <link rel="stylesheet" href={ asset_url(dep) } /> }
+                }
+                // Async CSS: load with `media="print"` (non-render-blocking),
+                // then flip to `all` once loaded. `<noscript>` gives no-JS
+                // clients the normal render-blocking link.
+                HeadEntry::DeferredCss(dep) => {
+                    let href = asset_url(dep);
+                    view! {
+                        <link rel="stylesheet" href={ href.clone() } media="print" onload="this.media='all'" />
+                        <noscript><link rel="stylesheet" href={ href } /></noscript>
+                    }
+                }
+                HeadEntry::BlockingJs(dep) => {
+                    view! { <script src={ asset_url(dep) }></script> }
+                }
+                HeadEntry::DeferredJs(dep) => {
+                    view! { <script src={ asset_url(dep) } defer></script> }
+                }
+                HeadEntry::Inline(fragment) => fragment,
+            })
+            .collect()
+    }
+}
+
+// =============================================================================
+// Script islands — `<script>` payload helpers shared by every JSON/data island.
+// =============================================================================
+
+/// Escape an already-serialized JS/JSON payload for safe embedding inside a
+/// `<script>` element: `<` becomes the `\u003c` escape (no `</script>` or
+/// `<!--` breakout) and the JS-newline code points U+2028/U+2029 become their
+/// escapes (all are valid JSON escape sequences, so the payload stays
+/// parseable either way).
+/// Today's island data contains none of the three, so adoption is byte-neutral.
+pub(crate) fn escape_script_payload(payload: &str) -> String {
+    payload
+        .replace('<', "\\u003c")
+        .replace('\u{2028}', "\\u2028")
+        .replace('\u{2029}', "\\u2029")
+}
+
+/// `<script>window.{var}={payload};</script>` data island. `payload` is the
+/// ALREADY-SERIALIZED object source (hand-rolled or serde) — only the payload
+/// portion is escaped, never the variable name.
+pub fn script_island(var: &str, payload: &str) -> HtmlFragment {
+    script_islands(&[(var, payload)])
+}
+
+/// Multi-assignment island: one `<script>` tag carrying
+/// `window.a=...;window.b=...;` — the shop/checkout pages ship two globals in
+/// a single tag and must keep doing so byte-identically.
+pub fn script_islands(islands: &[(&str, &str)]) -> HtmlFragment {
+    let mut out = String::from("<script>");
+    for (var, payload) in islands {
+        let _ = write!(out, "window.{var}={};", escape_script_payload(payload));
+    }
+    out.push_str("</script>");
+    HtmlFragment::new(out)
+}
+
+/// `<script type="application/json" id="{id}">{payload}</script>` island for
+/// non-executing JSON data read by `document.getElementById` consumers.
+pub fn json_data_island(id: &str, payload: &str) -> HtmlFragment {
+    HtmlFragment::new(format!(
+        r#"<script type="application/json" id="{id}">{}</script>"#,
+        escape_script_payload(payload)
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rendered(critical: Vec<&'static str>, js: Vec<&'static str>) -> Rendered {
+        Rendered {
+            markup: HtmlFragment::new("<div></div>".to_string()),
+            critical_css: critical,
+            deferred_css: Vec::new(),
+            js_deps: js,
+        }
+    }
+
+    #[test]
+    fn script_island_escapes_script_breakout_and_js_newlines() {
+        let html = script_island("__x", "{\"a\":\"</script><b>\u{2028}\u{2029}\"}").into_string();
+        assert_eq!(
+            html,
+            "<script>window.__x={\"a\":\"\\u003c/script>\\u003cb>\\u2028\\u2029\"};</script>"
+        );
+        // The breakout sequences are gone from the emitted bytes.
+        assert!(!html.contains("</script><"));
+        assert!(!html.contains('\u{2028}'));
+    }
+
+    #[test]
+    fn script_islands_pack_multiple_globals_into_one_tag() {
+        let html = script_islands(&[("__a", "1"), ("__b", "{}")]).into_string();
+        assert_eq!(html, "<script>window.__a=1;window.__b={};</script>");
+    }
+
+    #[test]
+    fn head_dedups_shared_deps_and_preserves_insertion_order() {
+        // Two components sharing js/popover-registry.js → exactly one tag, at
+        // the first requester's position; everything else keeps source order.
+        let first = rendered(vec!["css/c-nav.css"], vec!["js/popover-registry.js"]);
+        let second = rendered(
+            vec!["css/c-nav.css"],
+            vec!["js/popover-registry.js", "js/c-nav.js"],
+        );
+
+        let mut head = Head::new();
+        head.add_css("css/homepage.css");
+        head.add(&first);
+        head.add(&second);
+        head.add_js("js/view-transitions.js");
+        let html = head.render().into_string();
+
+        assert_eq!(html.matches("popover-registry").count(), 1);
+        assert_eq!(html.matches("/assets/css/c-nav.").count(), 1);
+        let homepage = html.find("homepage").expect("homepage css");
+        let nav = html.find("c-nav").expect("nav css");
+        let registry = html.find("popover-registry").expect("registry js");
+        let vt = html.find("view-transitions").expect("view transitions js");
+        assert!(homepage < nav && nav < registry && registry < vt);
+    }
+
+    #[test]
+    fn head_inline_entries_keep_their_relative_position() {
+        let mut head = Head::new();
+        head.add_js("js/audio.js");
+        head.add_inline(HtmlFragment::new(
+            "<script>window.__island=1;</script>".to_string(),
+        ));
+        head.add_js("js/experiences.js");
+        let html = head.render().into_string();
+        let audio = html.find("audio").expect("audio");
+        let island = html.find("__island").expect("island");
+        let exp = html.find("experiences").expect("experiences");
+        assert!(audio < island && island < exp);
+    }
+
+    #[test]
+    fn absorb_merges_dep_lists_and_returns_child_markup() {
+        let mut parent = rendered(vec!["css/c-nav.css"], vec!["js/popover-registry.js"]);
+        let child = Rendered {
+            markup: HtmlFragment::new("<span>child</span>".to_string()),
+            critical_css: vec!["css/c-nav.css", "css/c-child.css"],
+            deferred_css: vec!["css/c-child-overlay.css"],
+            js_deps: vec!["js/popover-registry.js", "js/c-child.js"],
+        };
+        let markup = parent.absorb(child);
+        assert_eq!(markup.as_str(), "<span>child</span>");
+        assert_eq!(
+            parent.critical_css,
+            vec!["css/c-nav.css", "css/c-child.css"]
+        );
+        assert_eq!(parent.deferred_css, vec!["css/c-child-overlay.css"]);
+        // Execution order: parent's registry stays first, child's script appends.
+        assert_eq!(
+            parent.js_deps,
+            vec!["js/popover-registry.js", "js/c-child.js"]
+        );
     }
 }

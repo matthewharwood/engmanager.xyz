@@ -2,15 +2,14 @@ use axum::extract::State;
 use axum::http::header;
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
-use eng_markup::{html, view};
+use eng_markup::view;
 use serde_json::json;
 
-use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
-    render_sitemap_link, render_theme_picker,
-};
+use super::render_theme_picker;
+use super::shell::PageShell;
+use crate::AppState;
 use crate::catalog::{CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_url};
-use crate::{AppState, asset_url};
+use crate::components::{Head, script_islands};
 
 const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
 const STORE_ORIGIN: &str = "https://store.engmanager.xyz";
@@ -61,88 +60,87 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
     let products = render_product_grid();
     // One island for the catalog + the Stripe publishable key, so the inline
     // checkout (in the bag drawer) can mount Elements without a page load.
-    let data = HtmlFragment::new(format!(
-        "window.__shopProducts={};window.__checkout={};",
-        product_data_json(),
-        json!({
-            "publishableKey": checkout.publishable_key(),
-            "enabled": checkout.is_enabled(),
-            "currency": "usd",
-            "returnPath": "/",
-        }),
-    ));
+    let data = script_islands(&[
+        ("__shopProducts", &product_data_json()),
+        (
+            "__checkout",
+            &json!({
+                "publishableKey": checkout.publishable_key(),
+                "enabled": checkout.is_enabled(),
+                "currency": "usd",
+                "returnPath": "/",
+            })
+            .to_string(),
+        ),
+    ]);
 
-    html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{ SHOP_TITLE }</title>
-                <meta name="description" content=SHOP_DESCRIPTION />
-                <meta name="robots" content="noindex,follow" />
-                <link rel="canonical" href=STORE_ORIGIN />
-                <link rel="alternate" href=SHOP_ORIGIN />
-                <meta property="og:site_name" content="ENGMANAGER.XYZ" />
-                <meta property="og:type" content="website" />
-                <meta property="og:title" content=SHOP_TITLE />
-                <meta property="og:description" content=SHOP_DESCRIPTION />
-                <meta property="og:url" content=STORE_ORIGIN />
-                <meta name="twitter:card" content="summary" />
-                <meta name="twitter:title" content=SHOP_TITLE />
-                <meta name="twitter:description" content=SHOP_DESCRIPTION />
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/shop.css") } />
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script>{ data }</script>
-                <link rel="preconnect" href="https://js.stripe.com" crossorigin />
-                <link rel="preconnect" href="https://api.stripe.com" crossorigin />
-                <script src="https://js.stripe.com/v3" defer></script>
-                <script src={ asset_url("js/audio.js") } defer></script>
-                <script src={ asset_url("js/shop.js") } defer></script>
-                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="shop-page">
-                <a class="skip-link" href="#main">"Skip to caps"</a>
-                <header class="shop-topbar" aria-label="Store controls">
-                    <a class="shop-home-link"
-                       href="https://engmanager.xyz/"
-                       aria-label="Back to ENGMANAGER.XYZ">
-                        { chevron() }
-                    </a>
-                    { render_theme_picker() }
-                    <div class="shop-top-actions">
-                        <button class="shop-cart-button"
-                                type="button"
-                                data-cart-toggle
-                                aria-label="Open cart"
-                                aria-expanded="false">
-                            <span class="shop-cart-icon" aria-hidden="true"></span>
-                            <span class="shop-cart-count" data-cart-count>"0"</span>
-                        </button>
-                    </div>
-                </header>
-                <main id="main" class="shop-shell">
-                    <h1 id="shop-title" class="sr-only">"Dad Caps"</h1>
-                    <section class="shop-grid" data-shop-grid aria-label="Dad cap products">
-                        { products }
-                    </section>
-                </main>
-                { render_product_panel() }
-                { render_bag() }
-                <div class="shop-backdrop" data-shop-backdrop hidden></div>
-            </body>
-        </html>
-    }
-    .into_string()
+    // Pre-shell shop meta block, kept verbatim (and pinned by the tests
+    // below): its tag set and order predate `MetaTags` and exceed it
+    // (alternate link, og:site_name/og:description, twitter:title/description).
+    let preview_meta = view! {
+        <meta name="description" content=SHOP_DESCRIPTION />
+        <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href=STORE_ORIGIN />
+        <link rel="alternate" href=SHOP_ORIGIN />
+        <meta property="og:site_name" content="ENGMANAGER.XYZ" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content=SHOP_TITLE />
+        <meta property="og:description" content=SHOP_DESCRIPTION />
+        <meta property="og:url" content=STORE_ORIGIN />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content=SHOP_TITLE />
+        <meta name="twitter:description" content=SHOP_DESCRIPTION />
+    };
+
+    let mut assets = Head::new();
+    assets.add_css("css/shop.css");
+
+    let mut scripts = Head::new();
+    scripts.add_inline(data);
+    scripts.add_inline(view! {
+        <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+        <link rel="preconnect" href="https://api.stripe.com" crossorigin />
+        <script src="https://js.stripe.com/v3" defer></script>
+    });
+    scripts.add_js("js/audio.js");
+    scripts.add_js("js/shop.js");
+
+    let body = view! {
+        <header class="shop-topbar" aria-label="Store controls">
+            <a class="shop-home-link"
+               href="https://engmanager.xyz/"
+               aria-label="Back to ENGMANAGER.XYZ">
+                { chevron() }
+            </a>
+            { render_theme_picker() }
+            <div class="shop-top-actions">
+                <button class="shop-cart-button"
+                        type="button"
+                        data-cart-toggle
+                        aria-label="Open cart"
+                        aria-expanded="false">
+                    <span class="shop-cart-icon" aria-hidden="true"></span>
+                    <span class="shop-cart-count" data-cart-count>"0"</span>
+                </button>
+            </div>
+        </header>
+        <main id="main" class="shop-shell">
+            <h1 id="shop-title" class="sr-only">"Dad Caps"</h1>
+            <section class="shop-grid" data-shop-grid aria-label="Dad cap products">
+                { products }
+            </section>
+        </main>
+        { render_product_panel() }
+        { render_bag() }
+        <div class="shop-backdrop" data-shop-backdrop hidden></div>
+    };
+
+    PageShell::new(SHOP_TITLE, "shop-page")
+        .raw_meta(preview_meta)
+        .assets(assets)
+        .scripts(scripts)
+        .skip_link(Some("Skip to caps"))
+        .render(body)
 }
 
 fn render_product_grid() -> HtmlFragment {

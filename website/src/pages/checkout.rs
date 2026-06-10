@@ -18,18 +18,16 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
-use eng_markup::{html, view};
+use eng_markup::view;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::render_theme_picker;
+use super::shell::{MetaTags, PageShell};
 use super::shop::product_data_json;
-use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
-    render_sitemap_link, render_theme_picker,
-};
 use crate::AppState;
-use crate::asset_url;
 use crate::catalog::SHOP_PRODUCTS;
+use crate::components::{Head, script_islands};
 
 const CHECKOUT_TITLE: &str = "Checkout · ENGMANAGER.XYZ";
 const SUCCESS_TITLE: &str = "Order confirmed · ENGMANAGER.XYZ";
@@ -103,65 +101,61 @@ fn render_page(mode: Mode, state: &AppState) -> String {
     // The single data island the client reads: the publishable key (to mount
     // Elements), whether checkout is configured, the mode, and the full product
     // catalog (names/prices/colors) so the receipt can render line items.
-    let data = HtmlFragment::new(format!(
-        "window.__checkout={};window.__shopProducts={};",
-        json!({
-            "publishableKey": state.stripe.publishable_key(),
-            "enabled": state.stripe.is_enabled(),
-            "mode": mode.as_str(),
-            "currency": "usd",
-            "returnPath": "/checkout/success",
-        }),
-        product_data_json(),
-    ));
+    let data = script_islands(&[
+        (
+            "__checkout",
+            &json!({
+                "publishableKey": state.stripe.publishable_key(),
+                "enabled": state.stripe.is_enabled(),
+                "mode": mode.as_str(),
+                "currency": "usd",
+                "returnPath": "/checkout/success",
+            })
+            .to_string(),
+        ),
+        ("__shopProducts", &product_data_json()),
+    ]);
 
     let body_main = match mode {
         Mode::Checkout => render_checkout_main(),
         Mode::Success => render_success_main(),
     };
 
-    html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{ title }</title>
-                <meta name="description" content=CHECKOUT_DESCRIPTION />
-                <meta name="robots" content="noindex,nofollow" />
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/checkout.css") } />
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script>{ data }</script>
-                <link rel="preconnect" href="https://js.stripe.com" crossorigin />
-                <link rel="preconnect" href="https://api.stripe.com" crossorigin />
-                <script src="https://js.stripe.com/v3" defer></script>
-                <script src={ asset_url("js/audio.js") } defer></script>
-                <script src={ asset_url("js/checkout.js") } defer></script>
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="checkout-page" data-checkout-mode={ mode.as_str() }>
-                <a class="skip-link" href="#main">"Skip to content"</a>
-                <header class="checkout-topbar" aria-label="Checkout controls">
-                    <a class="checkout-back" href="/" aria-label="Back to the store">
-                        <span class="checkout-back-arrow" aria-hidden="true">"‹"</span>
-                        <span class="checkout-back-label">"Store"</span>
-                    </a>
-                    <p class="checkout-wordmark">"ENGMANAGER.XYZ"</p>
-                    { render_theme_picker() }
-                </header>
-                { body_main }
-            </body>
-        </html>
-    }
-    .into_string()
+    let mut assets = Head::new();
+    assets.add_css("css/checkout.css");
+
+    let mut scripts = Head::new();
+    scripts.add_inline(data);
+    scripts.add_inline(view! {
+        <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+        <link rel="preconnect" href="https://api.stripe.com" crossorigin />
+        <script src="https://js.stripe.com/v3" defer></script>
+    });
+    scripts.add_js("js/audio.js");
+    scripts.add_js("js/checkout.js");
+
+    let body = view! {
+        <header class="checkout-topbar" aria-label="Checkout controls">
+            <a class="checkout-back" href="/" aria-label="Back to the store">
+                <span class="checkout-back-arrow" aria-hidden="true">"‹"</span>
+                <span class="checkout-back-label">"Store"</span>
+            </a>
+            <p class="checkout-wordmark">"ENGMANAGER.XYZ"</p>
+            { render_theme_picker() }
+        </header>
+        { body_main }
+    };
+
+    PageShell::new(title, "checkout-page")
+        .meta(MetaTags {
+            description: Some(CHECKOUT_DESCRIPTION.to_string()),
+            robots: Some("noindex,nofollow"),
+            ..MetaTags::default()
+        })
+        .assets(assets)
+        .scripts(scripts)
+        .body_attr("data-checkout-mode", mode.as_str())
+        .render(body)
 }
 
 fn render_checkout_main() -> HtmlFragment {

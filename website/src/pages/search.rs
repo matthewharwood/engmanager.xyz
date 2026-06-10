@@ -3,16 +3,14 @@ use axum::extract::{Query, RawQuery, State};
 use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
-use eng_markup::{html, view};
+use eng_markup::view;
 use serde::Deserialize;
 
-use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_global_search,
-    render_nav_search_toggle, render_resource_hints, render_sfx_urls, render_sitemap_link,
-};
+use super::shell::PageShell;
+use super::{render_global_search, render_nav_search_toggle};
 use crate::AppState;
 use crate::asset_url;
-use crate::components::nav;
+use crate::components::{Head, nav};
 use crate::content::{Category, Tag};
 use crate::search::{
     ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
@@ -167,38 +165,20 @@ fn render_page(
         search_toggle: render_nav_search_toggle(),
         articles: nav::Articles::Link,
     });
-    let nav_head = nav.head();
+    let mut assets = Head::new();
+    assets.add_css("css/search.css");
+
+    let mut scripts = Head::new();
+    scripts.add_js("js/audio.js");
+    scripts.add_js("js/search.js");
+    scripts.add_js("js/search-keyclick.js");
+    scripts.add(&nav);
+    scripts.add_js("js/view-transitions.js");
     let nav_markup = nav.markup;
 
-    Html(html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{ title }</title>
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/search.css") } />
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script src={ asset_url("js/audio.js") } defer></script>
-                <script src={ asset_url("js/search.js") } defer></script>
-                <script src={ asset_url("js/search-keyclick.js") } defer></script>
-                { nav_head }
-                <script src={ asset_url("js/view-transitions.js") } defer></script>
-                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="search-page">
-                <a class="skip-link" href="#main">"Skip to content"</a>
-                { nav_markup }
-                <main id="main" class="search-shell" tabindex="-1">
+    let body = view! {
+        { nav_markup }
+        <main id="main" class="search-shell" tabindex="-1">
                     <header class="search-header">
                         <h1>"Search"</h1>
                         <p>{ summary }</p>
@@ -240,9 +220,15 @@ fn render_page(
                     </div>
                     { empty }
                 </main>
-            </body>
-        </html>
-    }.into_string())
+    };
+
+    Html(
+        PageShell::new(title, "search-page")
+            .assets(assets)
+            .scripts(scripts)
+            .speculation_rules(true)
+            .render(body),
+    )
 }
 
 fn render_filters(
