@@ -180,3 +180,23 @@ Full catalog lives in the workflow results; the absolutes:
   misleading) — candidate for per-slug scoping LATER, not in this refactor.
 - experiences.js:1514 logs provenance label "toc-waypoints.js" (now
   c-article-toc.js) — cosmetic; fix rides P6's experiences.js edits.
+
+## Ledger additions (P6)
+
+14. P6: body-level page islands gain data-swap-region attributes (additive,
+    no visual impact); speculation island gains data-server marker.
+15. P6: inline window.__engNav bootstrap script in shell head (all pages).
+16. P6: js/nav-router.js script tag on router-eligible pages (homepage,
+    articles index/detail, search). Router DORMANT on browsers that support
+    Speculation Rules (Chromium keeps prerender + cross-doc VT, unchanged);
+    activates only where Navigation API + same-doc VT exist without
+    speculation support (Firefox 147+, Safari 26.2+). Debug force-flag for
+    testing documented in the file.
+17. P6: experiences.js — document.prerendering guards (no RUM/SW-register/
+    beacons/comment-fetch/OSM-tiles from prerendered pages), speculation
+    injection defers to the server island, provenance label fix; hashed URL
+    changes.
+18. P6: converted bundles (see _docs/JS_ROUTER_CONSTRAINTS.md section 2)
+    change hashed URLs; load-time behavior WITHOUT the router byte-or-
+    behavior-identical — conversions are refactor-to-init-fn + immediate
+    call + onSwap registration only.
