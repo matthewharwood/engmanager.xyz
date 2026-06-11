@@ -10,11 +10,6 @@
 // second click on top would feel doubled.
 
 (() => {
-    const inputs = document.querySelectorAll(
-        "[data-search-form] input[type='search']",
-    );
-    if (!inputs.length) return;
-
     const isDesktop = () => matchMedia("(min-width: 48rem)").matches;
 
     // Skip modifier-only keystrokes and Tab/Escape (UI navigation, not
@@ -38,15 +33,27 @@
         return !SILENT_KEYS.has(event.key);
     };
 
-    inputs.forEach((input) => {
-        input.addEventListener("keydown", (event) => {
-            if (!isDesktop()) return;
-            if (!isAudibleKey(event)) return;
-            window.__engAudio?.play(
-                "keyclick",
-                window.__engSfxUrls?.keyclick,
-                { volume: 0.35 },
-            );
+    // Per-input binding with a marker guard so the soft-nav router can
+    // rescan swapped-in forms without double-binding survivors
+    // (JS_ROUTER_CONSTRAINTS §2.2).
+    const bind = (root) => {
+        root.querySelectorAll(
+            "[data-search-form] input[type='search']",
+        ).forEach((input) => {
+            if (input.dataset.keyclickBound) return;
+            input.dataset.keyclickBound = "true";
+            input.addEventListener("keydown", (event) => {
+                if (!isDesktop()) return;
+                if (!isAudibleKey(event)) return;
+                window.__engAudio?.play(
+                    "keyclick",
+                    window.__engSfxUrls?.keyclick,
+                    { volume: 0.35 },
+                );
+            });
         });
-    });
+    };
+
+    bind(document);
+    window.__engNav?.onSwap?.(bind);
 })();

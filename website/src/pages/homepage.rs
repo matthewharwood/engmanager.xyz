@@ -1,19 +1,27 @@
 use axum::response::Html;
 use eng_domain::{Component, HtmlFragment};
-use eng_markup::{html, view};
+use eng_markup::view;
 
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
-use super::articles::{Category, Tag, public_articles};
-use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, render_dev_meta,
-    render_discovery_toasts, render_liquid_title_filter, render_quick_actions,
-    render_resource_hints, render_sfx_urls, render_sitemap_link,
-};
-use crate::asset_url;
+use super::shell::{MetaTags, PageShell, json_ld_island};
+use super::{AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter};
+use crate::components::{Head, api_receipt, discovery_toasts, json_data_island, quick_actions};
+use crate::config::SITE_ORIGIN;
+use crate::content::{Category, Tag, public_articles};
 
 const HOME_LIQUID_HEADLINE_ENABLED: bool = true;
+
+/// Homepage meta description (~150 chars, ledger #3 additive SEO head).
+const HOME_DESCRIPTION: &str = "Essays from matthew harwood, an engineering manager: AI-assisted development, Rust, developer tooling, and team leadership — plus embroidered dad caps.";
+
+/// JSON-LD `WebSite` object with a `SearchAction` pointing at /search.
+fn website_json_ld() -> HtmlFragment {
+    json_ld_island(&format!(
+        r#"{{"@context":"https://schema.org","@type":"WebSite","name":"ENG MANAGER","url":"{SITE_ORIGIN}/","potentialAction":{{"@type":"SearchAction","target":"{SITE_ORIGIN}/search?q={{search_term_string}}","query-input":"required name=search_term_string"}}}}"#
+    ))
+}
 
 // Serializes the article roster as a JSON island for the gacha
 // reveal card to read on click. JS reads this once on load and
@@ -86,9 +94,12 @@ fn json_escape(s: &str) -> String {
 // and opens with a spring-overshoot entrance. Continue button
 // drives navigation; Close dismisses + keeps the reader on the
 // homepage with the visited state intact.
+// `data-swap-region` (ledger #14): names this body-level island for the
+// soft-navigation router's region reconcile (homepage-only — the router
+// inserts/removes it when soft-navigating in/out of the homepage).
 fn render_reveal_card() -> HtmlFragment {
     view! {
-        <aside id="article-reveal" popover="manual" class="reveal-card">
+        <aside id="article-reveal" popover="manual" class="reveal-card" data-swap-region="reveal">
             <div class="reveal-card-frame">
                 <div class="reveal-card-glint" aria-hidden="true"></div>
                 <header class="reveal-card-head">
@@ -407,61 +418,58 @@ pub async fn index() -> Html<String> {
             }
         })
         .collect();
-    let home_liquid_styles = if HOME_LIQUID_HEADLINE_ENABLED {
-        view! {
-            <link rel="stylesheet" href={ asset_url("css/liquid-title.css") } />
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-    let home_liquid_script = if HOME_LIQUID_HEADLINE_ENABLED {
-        view! {
-            <script src={ asset_url("js/liquid-title.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
+    // Discovery-toast overlay: container + its async (deferred) styles.
+    let toasts = discovery_toasts::render();
+    // Receipt modal (ledger #4 dedup — one render shared with the article
+    // surfaces). Its deferred stylesheet is emitted by PageShell right after
+    // critical.css (ledger #8); the add() below is a byte-neutral dep
+    // declaration that global dedup collapses into that one.
+    let receipt = api_receipt::render();
+    // Quick-actions cluster: PageShell ships its critical sheet (ledger #8);
+    // only the FAB script lands from the add() in the scripts section below.
+    let quick_actions = quick_actions::render();
+
+    let mut assets = Head::new();
+    assets.add_css("css/homepage.css");
+    assets.add(&toasts);
+    assets.add(&receipt);
+    if HOME_LIQUID_HEADLINE_ENABLED {
+        assets.add_css("css/liquid-title.css");
+    }
+    let toasts_markup = toasts.markup;
+    let receipt_markup = receipt.markup;
+
+    let mut scripts = Head::new();
+    scripts.add_js("js/audio.js");
+    if HOME_LIQUID_HEADLINE_ENABLED {
+        scripts.add_js("js/liquid-title.js");
+    }
+    scripts.add_js("js/search.js");
+    scripts.add_js("js/search-keyclick.js");
+    scripts.add_js("js/fit-text.js");
+    scripts.add_js("js/big-cursor.js");
+    scripts.add_js("js/keyboard-nav.js");
+    scripts.add_js("js/view-transitions.js");
+    scripts.add_js("js/visited-articles.js");
+    scripts.add_js("js/trash-drag.js");
+    scripts.add(&quick_actions);
+    scripts.add_inline(render_experience_urls());
+    scripts.add_js("js/experiences.js");
+    let quick_actions_markup = quick_actions.markup;
+
+    let meta = MetaTags {
+        description: Some(HOME_DESCRIPTION.to_string()),
+        canonical: Some(format!("{SITE_ORIGIN}/")),
+        og_title: Some("ENG MANAGER".to_string()),
+        og_type: Some("website"),
+        og_image: Some(AVATAR_SRC),
+        og_url: Some(format!("{SITE_ORIGIN}/")),
+        twitter_card: Some("summary"),
+        json_ld: vec![website_json_ld()],
+        ..MetaTags::default()
     };
 
-    let page = html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>"ENG MANAGER"</title>
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/homepage.css") } />
-                { home_liquid_styles }
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script src={ asset_url("js/audio.js") } defer></script>
-                { home_liquid_script }
-                <script src={ asset_url("js/search.js") } defer></script>
-                <script src={ asset_url("js/search-keyclick.js") } defer></script>
-                <script src={ asset_url("js/fit-text.js") } defer></script>
-                <script src={ asset_url("js/big-cursor.js") } defer></script>
-                <script src={ asset_url("js/keyboard-nav.js") } defer></script>
-                <script src={ asset_url("js/view-transitions.js") } defer></script>
-                <script src={ asset_url("js/visited-articles.js") } defer></script>
-                <script src={ asset_url("js/trash-drag.js") } defer></script>
-                <script src={ asset_url("js/quick-actions.js") } defer></script>
-                <script>{ HtmlFragment::new(format!(
-                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
-                    asset_url("js/paint-brutalist-hatch.js"),
-                    asset_url("js/worker-crypto.js"),
-                )) }</script>
-                <script src={ asset_url("js/experiences.js") } defer></script>
-                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="homepage">
-                <a class="skip-link" href="#main">"Skip to content"</a>
+    let body = view! {
                 <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
                     <svg class="dvd-bouncer-mark"
                          viewBox="0 0 160 72"
@@ -540,8 +548,9 @@ pub async fn index() -> Html<String> {
                 // chip is consumed (hidden across every marquee copy), the
                 // counter ticks up, and the ElevenLabs-generated trash-drop
                 // SFX plays. Misses fly back. js/trash-drag.js owns the
-                // pointer DnD logic.
-                <div class="trash" data-trash>
+                // pointer DnD logic. data-swap-region: ledger #14 (homepage-
+                // only island, region-reconciled by the soft-nav router).
+                <div class="trash" data-trash data-swap-region="trash">
                     <button class="trash-can" type="button" aria-label="Trash" tabindex="-1">
                         <svg class="trash-icon"
                              viewBox="0 0 24 24"
@@ -571,41 +580,25 @@ pub async fn index() -> Html<String> {
                 // JSON island + gacha-style reveal card. The card is
                 // populated + opened by js/visited-articles.js when a
                 // reader clicks an unread article in the stack.
-                <script type="application/json" id="articles-data">
-                    { HtmlFragment::new(articles_data_json()) }
-                </script>
+                { json_data_island("articles-data", &articles_data_json()) }
                 { render_reveal_card() }
 
-                { render_quick_actions() }
-                { render_discovery_toasts() }
+                { quick_actions_markup }
+                { toasts_markup }
 
-                // Brutalist Web API Receipt modal (Popover API). `?` from
-                // anywhere on the site toggles it; experiences.js fills the
-                // grid + stats from the registry. Opens when ?receipt is
-                // in the URL on load, and toggling the modal pushes/pops
-                // that query param so the state is deep-linkable.
-                <aside id="api-receipt-modal" popover="manual" class="api-receipt">
-                    <div class="api-receipt-frame">
-                        <header class="api-receipt-head">
-                            <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
-                            <h2 class="api-receipt-title">"Web API Receipt"</h2>
-                            <div class="api-receipt-stats" data-api-receipt-stats></div>
-                            <button class="api-receipt-close"
-                                    type="button"
-                                    popovertarget="api-receipt-modal"
-                                    popovertargetaction="hide"
-                                    aria-label="Close">
-                                "✕"
-                            </button>
-                        </header>
-                        <div class="api-receipt-grid" data-api-receipt-grid></div>
-                        <footer class="api-receipt-foot">
-                            <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
-                        </footer>
-                    </div>
-                </aside>
-            </body>
-        </html>
+                // Brutalist Web API Receipt modal (Popover API) — the
+                // co-located `components/api_receipt` shell, byte-identical
+                // to the inline copy that used to live here (ledger #4).
+                { receipt_markup }
     };
-    Html(page.into_string())
+
+    Html(
+        PageShell::new("ENG MANAGER", "homepage")
+            .meta(meta)
+            .assets(assets)
+            .scripts(scripts)
+            .speculation_rules(true)
+            .nav_router(true)
+            .render(body),
+    )
 }

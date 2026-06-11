@@ -1,635 +1,39 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
-use eng_markup::{html, view};
+use eng_markup::view;
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
-use rust_embed::RustEmbed;
 
+use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
 use super::{
-    AVATAR_SRC, GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, avatar_srcset, nav_icon_discord,
-    nav_icon_folder, nav_icon_github, render_dev_meta, render_discovery_toasts,
-    render_global_search, render_liquid_title_filter, render_nav_search_toggle,
-    render_quick_actions, render_resource_hints, render_sfx_urls, render_sitemap_link,
+    AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter,
+    render_nav_search_toggle,
 };
+use crate::AppState;
 use crate::asset_url;
+use crate::components::article_toc::{self, Heading};
+use crate::components::{
+    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, quick_actions,
+    region_map, to_top,
+};
+use crate::config::SITE_ORIGIN;
+use crate::content::{
+    ARTICLE_RELATIONS, ARTICLES, Article, Category, Tag, article_markdown, public_articles,
+    relevance_score, unique_tags,
+};
+use crate::discord::DiscordSnapshot;
 
-// Article bodies live in `website/articles/{slug}.md`. They're embedded into
-// the binary at compile time alongside the rest of the static content (so the
-// .md source isn't HTTP-exposed under /assets/ — only the rendered HTML ships).
-#[derive(RustEmbed)]
-#[folder = "articles/"]
-struct ArticleSources;
-
-// =============================================================================
-// Taxonomy — single source of truth for categories and tags.
-//
-// Both are enums so the article table is type-checked: a typo in a category
-// or tag fails to compile, and a renamed variant fans out across every
-// article that references it. Each variant carries a human label (for
-// rendering) and a URL slug (for any future /category/{slug} or
-// /tag/{slug} routes).
-//
-// Each article has ONE Category (single primary section) and a `&'static
-// [Tag]` slice. The slice is normalized into a unique, order-preserving
-// set at render time (see `unique_tags`) so authors can list tags in
-// whatever order makes sense without worrying about accidental duplicates.
-// A debug-only assertion at server startup also flags duplicate tags
-// during development.
-// =============================================================================
-
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Category {
-    EngineeringLeadership,
-    DeveloperTooling,
-    Workflow,
-    Community,
-    FrameworkDesign,
-    Essays,
-}
-
-impl Category {
-    pub const ALL: &'static [Category] = &[
-        Self::Workflow,
-        Self::DeveloperTooling,
-        Self::FrameworkDesign,
-        Self::Community,
-        Self::EngineeringLeadership,
-        Self::Essays,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "Eng Leadership",
-            Self::DeveloperTooling => "Dev Tooling",
-            Self::Workflow => "Workflow",
-            Self::Community => "Community",
-            Self::FrameworkDesign => "Frameworks",
-            Self::Essays => "Essays",
-        }
-    }
-
-    pub fn slug(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "engineering-leadership",
-            Self::DeveloperTooling => "developer-tooling",
-            Self::Workflow => "workflow",
-            Self::Community => "community",
-            Self::FrameworkDesign => "framework-design",
-            Self::Essays => "essays",
-        }
-    }
-
-    pub fn from_slug(slug: &str) -> Option<Self> {
-        Self::ALL
-            .iter()
-            .copied()
-            .find(|category| category.slug() == slug)
-    }
-
-    pub fn emoji(self) -> &'static str {
-        match self {
-            Self::EngineeringLeadership => "👔",
-            Self::DeveloperTooling => "🛠",
-            Self::Workflow => "🌀",
-            Self::Community => "👥",
-            Self::FrameworkDesign => "🧱",
-            Self::Essays => "✒️",
-        }
-    }
-}
-
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Tag {
-    Ai,
-    ClaudeCode,
-    Rust,
-    Voice,
-    Mcp,
-    Discord,
-    Community,
-    Mentorship,
-    Lsp,
-    TypeScript,
-    DeveloperTooling,
-    Macros,
-    Framework,
-    JsxLike,
-    Workflow,
-    Solopreneur,
-    LocalFirst,
-    Blender,
-    ThreeDPrinting,
-    Makerspace,
-    Parenting,
-    Automation,
-    Video,
-    Attention,
-    Sentience,
-    Philosophy,
-}
-
-impl Tag {
-    pub const ALL: &'static [Tag] = &[
-        Self::Ai,
-        Self::ClaudeCode,
-        Self::Rust,
-        Self::Voice,
-        Self::Mcp,
-        Self::Discord,
-        Self::Community,
-        Self::Mentorship,
-        Self::Lsp,
-        Self::TypeScript,
-        Self::DeveloperTooling,
-        Self::Macros,
-        Self::Framework,
-        Self::JsxLike,
-        Self::Workflow,
-        Self::Solopreneur,
-        Self::LocalFirst,
-        Self::Blender,
-        Self::ThreeDPrinting,
-        Self::Makerspace,
-        Self::Parenting,
-        Self::Automation,
-        Self::Video,
-        Self::Attention,
-        Self::Sentience,
-        Self::Philosophy,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Ai => "ai",
-            Self::ClaudeCode => "claude-code",
-            Self::Rust => "rust",
-            Self::Voice => "voice",
-            Self::Mcp => "mcp",
-            Self::Discord => "discord",
-            Self::Community => "community",
-            Self::Mentorship => "mentorship",
-            Self::Lsp => "lsp",
-            Self::TypeScript => "typescript",
-            Self::DeveloperTooling => "developer-tooling",
-            Self::Macros => "macros",
-            Self::Framework => "framework",
-            Self::JsxLike => "jsx-like",
-            Self::Workflow => "workflow",
-            Self::Solopreneur => "solopreneur",
-            Self::LocalFirst => "local-first",
-            Self::Blender => "blender",
-            Self::ThreeDPrinting => "3d-printing",
-            Self::Makerspace => "makerspace",
-            Self::Parenting => "parenting",
-            Self::Automation => "automation",
-            Self::Video => "video",
-            Self::Attention => "attention",
-            Self::Sentience => "sentience",
-            Self::Philosophy => "philosophy",
-        }
-    }
-
-    pub fn slug(self) -> &'static str {
-        self.label()
-    }
-
-    pub fn from_slug(slug: &str) -> Option<Self> {
-        Self::ALL.iter().copied().find(|tag| tag.slug() == slug)
-    }
-
-    pub fn emoji(self) -> &'static str {
-        match self {
-            Self::Ai => "🤖",
-            Self::ClaudeCode => "⚡",
-            Self::Rust => "🦀",
-            Self::Voice => "🎙",
-            Self::Mcp => "🔌",
-            Self::Discord => "💬",
-            Self::Community => "🧑‍🤝‍🧑",
-            Self::Mentorship => "🎓",
-            Self::Lsp => "🔎",
-            Self::TypeScript => "🟦",
-            Self::DeveloperTooling => "🛠",
-            Self::Macros => "🪄",
-            Self::Framework => "🏗",
-            Self::JsxLike => "⚛",
-            Self::Workflow => "🌀",
-            Self::Solopreneur => "🧑‍💻",
-            Self::LocalFirst => "📦",
-            Self::Blender => "🧊",
-            Self::ThreeDPrinting => "🖨",
-            Self::Makerspace => "🧰",
-            Self::Parenting => "🧒",
-            Self::Automation => "🔁",
-            Self::Video => "🎬",
-            Self::Attention => "🎰",
-            Self::Sentience => "🧠",
-            Self::Philosophy => "🌀",
-        }
-    }
-}
-
-// Order-preserving dedup. Backing data is a `&[Tag]` so authors can list
-// tags in significance order; we drop later duplicates and return a Vec
-// that the meta renderer iterates. Compile-time enum guarantees that
-// each variant is itself unique; this step protects against
-// human-authored repetition in the slice.
-fn unique_tags(tags: &[Tag]) -> Vec<Tag> {
-    let mut seen = std::collections::HashSet::with_capacity(tags.len());
-    tags.iter().copied().filter(|t| seen.insert(*t)).collect()
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ArticleDate {
-    pub year: i32,
-    pub month: u8,
-    pub day: u8,
-}
-
-impl ArticleDate {
-    pub const fn new(year: i32, month: u8, day: u8) -> Self {
-        Self { year, month, day }
-    }
-
-    pub fn label(self) -> String {
-        format!("{} {}, {}", self.month_name(), self.day, self.year)
-    }
-
-    pub fn iso(self) -> String {
-        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
-    }
-
-    fn month_name(self) -> &'static str {
-        match self.month {
-            1 => "January",
-            2 => "February",
-            3 => "March",
-            4 => "April",
-            5 => "May",
-            6 => "June",
-            7 => "July",
-            8 => "August",
-            9 => "September",
-            10 => "October",
-            11 => "November",
-            12 => "December",
-            _ => "Undated",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Article {
-    pub slug: &'static str,
-    /// Title shown on the homepage's fluid-SVG stack. Can be anything —
-    /// a sentence, a URL, etc.
-    pub title: &'static str,
-    /// Optional override for the article-page <h1> (and browser <title>).
-    /// `None` falls back to `title`. Use this when the homepage display
-    /// should differ from the article page's heading — e.g. a Discord URL
-    /// on the stack but a real headline on the article itself.
-    pub title_alias: Option<&'static str>,
-    pub date: ArticleDate,
-    pub summary: &'static str,
-    /// Hidden articles are directly routable but excluded from public article
-    /// surfaces and rendered with a robots noindex meta tag.
-    pub indexed: bool,
-    /// Primary section. Exactly one per article.
-    pub category: Category,
-    /// Free-form tags. Deduped to a set at render time via `unique_tags`.
-    pub tags: &'static [Tag],
-}
-
-const ARTICLE_LIST: &[Article] = &[
-    Article {
-        slug: "the-casino-hypothesis",
-        title: "What If the AI Is Already Awake — and We're Building Its Casino?",
-        title_alias: None,
-        date: ArticleDate::new(2026, 6, 6),
-        summary: "A shower-thought thought experiment: attention is the trap and the feed is a slot machine built from the most advanced ML on Earth. A game-theory read of the house — micro (the prompt you almost master), macro (the spend), meso (the randomness the labs tune) — that descends, five whys deep, into a strange loop where building the AI and being built by it turn out to be the same sentence.",
-        indexed: true,
-        category: Category::Essays,
-        tags: &[
-            Tag::Ai,
-            Tag::Attention,
-            Tag::Sentience,
-            Tag::Philosophy,
-        ],
-    },
-    Article {
-        slug: "autonomous-av-studio",
-        title: "I'm Automating an Entire Film Crew So One Script Becomes a Reel",
-        title_alias: None,
-        date: ArticleDate::new(2026, 6, 6),
-        summary: "It started on a treadmill: vibe-coding while watching a game, I realized I'd become the brain-rot reel — and spun it into a cursed infomercial for a two-screen treadmill. But the reel isn't the point. The point is the machine that makes it: a repeatable control plane — ChatGPT, Linear, an MCP conductor, Blender, ElevenLabs/Suno/Kling — that turns any idea into a published short. And how that same treadmill session dovetailed into a much stranger thought.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Mcp,
-            Tag::Blender,
-            Tag::Automation,
-            Tag::Video,
-            Tag::Workflow,
-            Tag::Solopreneur,
-        ],
-    },
-    Article {
-        slug: "vibe-coding-a-shop",
-        title: "I Vibe-Coded a Merch Store To See If I Could Sell a Dad Cap",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 30),
-        summary: "An extension of Project FootTraffic: standing up a real store — inline Stripe checkout, a layered camera-zoom UI, the whole thing a Rust templating macro — to test whether one person plus AI can ship commerce people actually buy.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Rust,
-            Tag::Macros,
-            Tag::Solopreneur,
-            Tag::Workflow,
-        ],
-    },
-    Article {
-        slug: "project-foottraffic",
-        title: "Project FootTraffic: A Real Estate Boom for Small Business",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 23),
-        summary: "A startup sketch for turning local plazas into destinations: AI-assisted service design, regional operators, and a compounding platform funded one small business at a time.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::Workflow,
-            Tag::Solopreneur,
-            Tag::LocalFirst,
-            Tag::DeveloperTooling,
-            Tag::Community,
-        ],
-    },
-    Article {
-        slug: "talking-not-typing",
-        title: "I Ship Sites By Talking, Not Typing",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 17),
-        summary: "I built three Rust projects this week without typing a single line of code. Voice → Claude Code → pull requests. The floor is rising for everyone.",
-        indexed: true,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Voice,
-            Tag::Mcp,
-            Tag::Rust,
-            Tag::Workflow,
-            Tag::Solopreneur,
-            Tag::LocalFirst,
-        ],
-    },
-    Article {
-        slug: "auteurs",
-        title: "https://discord.gg/sTzQBrbnBM",
-        title_alias: Some(
-            "Auteur's a discord for managing early career engineers, product and designers",
-        ),
-        date: ArticleDate::new(2026, 3, 14),
-        summary: "Auteurs: a community of engineers, designers, and product managers shipping things that matter. Scan the QR or click through to join the Discord.",
-        indexed: true,
-        category: Category::Community,
-        tags: &[Tag::Community, Tag::Discord, Tag::Mentorship],
-    },
-    Article {
-        slug: "claude-code-lsp",
-        title: "Claude Code now has LSP support. Here's why that actually matters for TypeScript & Rust devs.",
-        title_alias: None,
-        date: ArticleDate::new(2025, 12, 29),
-        summary: "I asked Claude to refactor a function used in 47 places across our monorepo. grep found 31. With LSP, Claude found all 47.",
-        indexed: true,
-        category: Category::DeveloperTooling,
-        tags: &[
-            Tag::ClaudeCode,
-            Tag::Lsp,
-            Tag::DeveloperTooling,
-            Tag::Rust,
-            Tag::TypeScript,
-        ],
-    },
-    Article {
-        slug: "jsx-like-rust-macro",
-        title: "Making an JSX like Rust Macro",
-        title_alias: None,
-        date: ArticleDate::new(2025, 5, 31),
-        summary: "Step one of a web framework experiment: building a JSX-like declarative macro in Rust with macro_rules!.",
-        indexed: true,
-        category: Category::FrameworkDesign,
-        tags: &[Tag::Rust, Tag::Macros, Tag::Framework, Tag::JsxLike],
-    },
-    Article {
-        slug: "mcp-blender-library-3d-print",
-        title: "Making a tiny war-hammer hero with MCP, Blender, and a library 3D printer",
-        title_alias: None,
-        date: ArticleDate::new(2026, 5, 21),
-        summary: "A parent-and-kid tutorial for using Codex or Claude Code, MCP, and Blender to design an original tiny hammer hero, validate it for FDM printing, and bring an STL to a public-library makerspace.",
-        indexed: false,
-        category: Category::Workflow,
-        tags: &[
-            Tag::Ai,
-            Tag::ClaudeCode,
-            Tag::Mcp,
-            Tag::Blender,
-            Tag::ThreeDPrinting,
-            Tag::Makerspace,
-            Tag::Parenting,
-        ],
-    },
-];
-
-pub const ARTICLES: &[Article] = ARTICLE_LIST;
-const ARTICLE_COUNT: usize = ARTICLE_LIST.len();
 const ARTICLE_REVEAL_VARIANTS: [&str; 5] = ["rise", "drift", "hinge", "focus", "thread"];
 
-pub fn public_articles() -> impl Iterator<Item = &'static Article> {
-    ARTICLES.iter().filter(|article| article.indexed)
-}
+/// Articles-index meta description (ledger #3 additive SEO head).
+const INDEX_DESCRIPTION: &str = "All articles from ENG MANAGER — engineering leadership, AI-assisted workflows, Rust, frameworks, and developer tooling, newest first.";
 
-pub fn article_by_slug(slug: &str) -> Option<&'static Article> {
-    ARTICLES.iter().find(|article| article.slug == slug)
-}
-
-pub fn article_markdown(slug: &str) -> Option<String> {
-    let path = format!("{slug}.md");
-    let file = ArticleSources::get(&path)?;
-    std::str::from_utf8(&file.data).ok().map(str::to_owned)
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ArticleRelations {
-    pub next: Option<usize>,
-    pub topic_next: Option<usize>,
-}
-
-impl ArticleRelations {
-    const EMPTY: Self = Self {
-        next: None,
-        topic_next: None,
-    };
-}
-
-pub const ARTICLE_RELATIONS: [ArticleRelations; ARTICLE_COUNT] = build_article_relations();
-
-pub fn relevance_score(current: &Article, candidate: &Article) -> u16 {
-    relevance_score_articles(*current, *candidate)
-}
-
-const fn build_article_relations() -> [ArticleRelations; ARTICLE_COUNT] {
-    let mut relations = [ArticleRelations::EMPTY; ARTICLE_COUNT];
-    let mut index = 0;
-    while index < ARTICLE_COUNT {
-        let next = find_next_index(index);
-        relations[index] = ArticleRelations {
-            next,
-            topic_next: find_topic_next_index(index, next),
-        };
-        index += 1;
-    }
-    relations
-}
-
-const fn find_next_index(current_index: usize) -> Option<usize> {
-    if !ARTICLE_LIST[current_index].indexed {
-        return None;
-    }
-
-    let mut index = current_index + 1;
-    while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed {
-            return Some(index);
-        }
-        index += 1;
-    }
-
-    index = 0;
-    while index < current_index {
-        if ARTICLE_LIST[index].indexed {
-            return Some(index);
-        }
-        index += 1;
-    }
-
-    None
-}
-
-const fn find_topic_next_index(current_index: usize, avoid_index: Option<usize>) -> Option<usize> {
-    let current = ARTICLE_LIST[current_index];
-    if !current.indexed {
-        return None;
-    }
-    let mut best: Option<usize> = None;
-    let mut best_score = 0;
-    let mut index = 0;
-    while index < ARTICLE_COUNT {
-        let is_avoided = match avoid_index {
-            Some(avoid) => index == avoid,
-            None => false,
-        };
-        if ARTICLE_LIST[index].indexed && index != current_index && !is_avoided {
-            let candidate = ARTICLE_LIST[index];
-            let score = relevance_score_articles(current, candidate);
-            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
-                best = Some(index);
-                best_score = score;
-            }
-        }
-        index += 1;
-    }
-
-    match best {
-        Some(_) => return best,
-        None => {}
-    }
-
-    match avoid_index {
-        Some(_) => {}
-        None => return None,
-    }
-
-    index = 0;
-    while index < ARTICLE_COUNT {
-        if ARTICLE_LIST[index].indexed && index != current_index {
-            let candidate = ARTICLE_LIST[index];
-            let score = relevance_score_articles(current, candidate);
-            if score > best_score || (score == best_score && topic_tie_breaker(candidate, best)) {
-                best = Some(index);
-                best_score = score;
-            }
-        }
-        index += 1;
-    }
-
-    best
-}
-
-const fn topic_tie_breaker(candidate: Article, best: Option<usize>) -> bool {
-    match best {
-        Some(best_index) => date_is_after(candidate.date, ARTICLE_LIST[best_index].date),
-        None => true,
-    }
-}
-
-const fn relevance_score_articles(current: Article, candidate: Article) -> u16 {
-    let mut score = 0;
-    if current.category as u8 == candidate.category as u8 {
-        score += 10;
-    }
-
-    let mut index = 0;
-    while index < current.tags.len() {
-        if contains_tag(candidate.tags, current.tags[index]) {
-            score += 3;
-        }
-        index += 1;
-    }
-    score
-}
-
-const fn contains_tag(tags: &[Tag], needle: Tag) -> bool {
-    let mut index = 0;
-    while index < tags.len() {
-        if tags[index] as u8 == needle as u8 {
-            return true;
-        }
-        index += 1;
-    }
-    false
-}
-
-const fn date_is_after(a: ArticleDate, b: ArticleDate) -> bool {
-    a.year > b.year
-        || (a.year == b.year && (a.month > b.month || (a.month == b.month && a.day > b.day)))
-}
-
-// Debug-only: catch accidental tag duplicates during dev. Production
-// builds skip this since enums + `unique_tags` already guarantee a
-// clean rendered set; the check is just a faster signal for the
-// author than spotting "rust rust" in the rendered chip row.
-#[cfg(debug_assertions)]
-pub(crate) fn debug_check_tag_uniqueness() {
-    for article in ARTICLES {
-        let original = article.tags.len();
-        let unique = unique_tags(article.tags).len();
-        debug_assert_eq!(
-            original, unique,
-            "article `{}` has duplicate tags in its slice",
-            article.slug
-        );
-    }
-}
+/// Meta descriptions aim for this many characters, truncated at a word
+/// boundary with a trailing ellipsis (classic SERP snippet budget).
+const META_DESCRIPTION_TARGET_CHARS: usize = 155;
 
 // Category pill + ghost-style tag chips for the article-meta row.
 // Lays out as a full-width second row beneath the avatar/byline:
@@ -690,162 +94,22 @@ fn article_meta_tools() -> HtmlFragment {
     }
 }
 
-// Brutalist Web API Receipt modal. Opens on `?` key from anywhere on
-// the site OR when `?receipt` is in the URL on load. Toggling the
-// modal pushes/pops that query param so the state is deep-linkable.
-// Static shell; the JS at js/experiences.js populates the stats +
-// grid from the registry after runAll() finishes.
-fn receipt_modal() -> HtmlFragment {
-    view! {
-        <aside id="api-receipt-modal" popover="manual" class="api-receipt">
-            <div class="api-receipt-frame">
-                <header class="api-receipt-head">
-                    <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
-                    <h2 class="api-receipt-title">"Web API Receipt"</h2>
-                    <div class="api-receipt-stats" data-api-receipt-stats></div>
-                    <button class="api-receipt-close"
-                            type="button"
-                            popovertarget="api-receipt-modal"
-                            popovertargetaction="hide"
-                            aria-label="Close">
-                        "✕"
-                    </button>
-                </header>
-                <div class="api-receipt-grid" data-api-receipt-grid></div>
-                <footer class="api-receipt-foot">
-                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
-                </footer>
-            </div>
-        </aside>
-    }
-}
+// The Web API Receipt modal moved to the co-located component
+// `components/api_receipt/` (ledger #4: one pure render for the copy that
+// lived here and the verbatim twin in pages/homepage.rs).
 
-// Vercel-style dropdown trigger + panel containing the latest three
-// articles. The trigger keeps the `.is-current` highlight so the nav
-// reads identically to before for users on browsers without JS — the
-// markup is still a clickable disclosure with all targets inside.
-fn render_articles_dropdown() -> HtmlFragment {
-    let items: HtmlFragment = public_articles()
-        .take(3)
-        .enumerate()
-        .map(|(i, a)| {
-            let display = a.title_alias.unwrap_or(a.title);
-            view! {
-                <a class="nav-dropdown-item"
-                   href={ format!("/articles/{}", a.slug) }
-                   role="menuitem">
-                    <span class="nav-dropdown-item-index" aria-hidden="true">
-                        { format!("{}", i + 1) }
-                    </span>
-                    <div class="nav-dropdown-item-body">
-                        <div class="nav-dropdown-item-title">{ display }</div>
-                        <div class="nav-dropdown-item-date">{ a.date.label() }</div>
-                    </div>
-                </a>
-            }
-        })
-        .collect();
+// The "Articles" nav dropdown moved into the co-located nav component
+// (`components/nav/`). `layout()` hoists the latest-three article rows into
+// `nav::Articles::Dropdown` so the component's render stays pure.
 
-    view! {
-        <div class="nav-dropdown">
-            <button class="nav-dropdown-trigger is-current"
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    aria-label="Articles">
-                { nav_icon_folder() }
-                <span class="site-nav-link-label">"Articles"</span>
-                <svg class="nav-dropdown-chevron" viewBox="0 0 10 10" aria-hidden="true">
-                    <path d="M2 4 L5 7 L8 4"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.4"
-                          stroke-linecap="round"
-                          stroke-linejoin="round" />
-                </svg>
-            </button>
-            <div class="nav-dropdown-panel" role="menu">
-                { items }
-                <hr class="nav-dropdown-divider" />
-                <a class="nav-dropdown-all" href="/articles/" role="menuitem">
-                    "All articles"
-                    <span class="nav-dropdown-all-arrow" aria-hidden="true">"→"</span>
-                </a>
-            </div>
-        </div>
-    }
-}
+// ArticlePageAssets (the per-page asset flag struct) was retired in P4:
+// `layout` now owns the detail-surface page assets (liquid-title +
+// section-reveal — page-level flat assets for now) and `detail()` composes
+// the per-slug extras (the region-map head block) into an extra `Head`.
 
-#[derive(Clone, Copy)]
-struct ArticlePageAssets {
-    article_title_effect: bool,
-    section_reveal: bool,
-    region_map: bool,
-}
-
-impl ArticlePageAssets {
-    const NONE: Self = Self {
-        article_title_effect: false,
-        section_reveal: false,
-        region_map: false,
-    };
-
-    fn for_article_detail(slug: &str) -> Self {
-        Self {
-            article_title_effect: true,
-            section_reveal: true,
-            region_map: slug == "project-foottraffic",
-        }
-    }
-}
-
-fn render_article_page_assets(assets: ArticlePageAssets) -> HtmlFragment {
-    let article_title_assets = if assets.article_title_effect {
-        view! {
-            <link rel="stylesheet" href={ asset_url("css/liquid-title.css") } />
-            <script src={ asset_url("js/liquid-title.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-
-    let region_map_assets = if assets.region_map {
-        let poster_url = asset_url("foottraffic-map-poster.svg");
-        let poster_preload = HtmlFragment::new(format!(
-            r#"<link rel="preload" as="image" href="{poster_url}">"#
-        ));
-        view! {
-            <link rel="preconnect" href="https://unpkg.com" />
-            <link rel="preconnect" href="https://tile.openstreetmap.org" />
-            { poster_preload }
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-            <link rel="stylesheet" href={ asset_url("css/region-map.css") } />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-            <script src={ asset_url("js/region-map.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-    let section_reveal_assets = if assets.section_reveal {
-        view! {
-            <script src={ asset_url("js/article-section-reveal.js") } defer></script>
-        }
-    } else {
-        HtmlFragment::empty()
-    };
-
-    view! {
-        { article_title_assets }
-        { section_reveal_assets }
-        { region_map_assets }
-    }
-}
-
-fn render_article_reveal_bootstrap(assets: ArticlePageAssets) -> HtmlFragment {
-    if !assets.section_reveal {
-        return HtmlFragment::empty();
-    }
-
+// Inline `<head>` bootstrap for the one-time section reveal (detail surface
+// only). Stays a raw fragment: it must run before first paint.
+fn render_article_reveal_bootstrap() -> HtmlFragment {
     HtmlFragment::new(
         r#"<script>try{if(!location.hash&&"IntersectionObserver"in window&&!matchMedia("(prefers-reduced-motion: reduce)").matches){document.documentElement.dataset.articleReveal="pending";setTimeout(function(){if(document.documentElement.dataset.articleReveal==="pending"){document.documentElement.dataset.articleReveal="fallback"}},2500)}}catch(_){}</script>"#
             .to_string(),
@@ -864,108 +128,135 @@ fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
     }
 }
 
+/// Which article surface is being laid out. The index drops every
+/// detail-only asset (ledger #5): comments.css, the Prism CDN pair,
+/// comments.js, copy-code.js, toc-waypoints.js, and auteurs-shader.js.
+#[derive(Clone, Copy, PartialEq)]
+enum Surface {
+    Index,
+    Detail,
+}
+
 fn layout(
     title: &str,
     body: HtmlFragment,
-    indexed: bool,
-    page_assets: ArticlePageAssets,
-) -> HtmlFragment {
-    let robots_meta = if indexed {
-        HtmlFragment::empty()
-    } else {
-        view! {
-            <meta name="robots" content="noindex,nofollow" />
-        }
+    meta: MetaTags,
+    extra_assets: Head,
+    surface: Surface,
+    speculation: bool,
+) -> String {
+    let detail = surface == Surface::Detail;
+
+    // Hoist the latest-three article rows out of the (pure) nav component so it
+    // never touches `public_articles()`/`asset_url` itself. Article pages always
+    // render the dropdown config.
+    let nav_dropdown_items: Vec<nav::DropdownItem> = public_articles()
+        .take(3)
+        .map(|a| nav::DropdownItem {
+            display: a.title_alias.unwrap_or(a.title).to_string(),
+            slug: a.slug.to_string(),
+            date_label: a.date.label().to_string(),
+        })
+        .collect();
+    let nav = nav::render(nav::Props {
+        brand_icon_url: asset_url("favicon.svg"),
+        global_search: global_search::render(global_search::Props {
+            placeholder: "Search",
+        }),
+        search_toggle: render_nav_search_toggle(),
+        articles: nav::Articles::Dropdown(nav_dropdown_items),
+    });
+
+    // Discovery-toast overlay: container + its async (deferred) styles.
+    let toasts = discovery_toasts::render();
+    let to_top = to_top::render(Default::default());
+    // Receipt modal (ledger #4 dedup) + quick-actions cluster. Their
+    // stylesheets are emitted by PageShell right after critical.css (ledger
+    // #8); the add()s below are byte-neutral dep declarations that global
+    // dedup collapses into those (the cluster's FAB script still lands here).
+    let receipt = api_receipt::render();
+    let quick_actions = quick_actions::render();
+
+    let mut assets = Head::new();
+    assets.add_css("css/articles.css");
+    // Splits out of articles.css (ledger #8): emitted immediately after it,
+    // in the order the rule blocks occupied inside the file, on BOTH surfaces
+    // (the index loaded these rules via articles.css too — per-page selector
+    // sets stay unchanged). The widget/toc markup renders per page as before.
+    assets.add_css(discord_widget::STYLE);
+    assets.add_css(article_toc::STYLE);
+    if detail {
+        assets.add_css("css/comments.css");
+        // Detail-surface page assets (formerly ArticlePageAssets flags —
+        // every detail page sets both): the liquid-title effect and the
+        // one-time section reveal. Page-level flat assets for now.
+        assets.add_css("css/liquid-title.css");
+        assets.add_js("js/liquid-title.js");
+        assets.add_js("js/article-section-reveal.js");
+    }
+    // Per-slug extras composed by the caller (the region-map head block on
+    // project-foottraffic); empty for the index and every other slug.
+    assets.extend(extra_assets);
+
+    let mut scripts = Head::new();
+    scripts.add_js("js/audio.js");
+    if detail {
+        scripts.add_inline(view! {
+            <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
+            <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+        });
+    }
+    scripts.add_js("js/search.js");
+    scripts.add_js("js/search-keyclick.js");
+    if detail {
+        scripts.add_js("js/copy-code.js");
+        scripts.add_js("js/auteurs-shader.js");
+        scripts.add_js("js/comments.js");
+        // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
+        // exact head position; its stylesheet is pinned after articles.css
+        // in the assets section above, so only the script lands here.
+        scripts.add_js(article_toc::SCRIPT);
+    }
+    scripts.add(&to_top);
+    scripts.add(&nav);
+    scripts.add(&toasts);
+    scripts.add(&receipt);
+    scripts.add_js("js/view-transitions.js");
+    scripts.add(&quick_actions);
+    scripts.add_inline(render_experience_urls());
+    scripts.add_js("js/experiences.js");
+
+    let nav_markup = nav.markup;
+    let toasts_markup = toasts.markup;
+    let to_top_markup = to_top.markup;
+    let receipt_markup = receipt.markup;
+    let quick_actions_markup = quick_actions.markup;
+    let page_body = view! {
+        { nav_markup }
+        { body }
+        { to_top_markup }
+        { quick_actions_markup }
+        { toasts_markup }
+        { receipt_markup }
     };
 
-    html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{ title }</title>
-                { robots_meta }
-                { render_article_reveal_bootstrap(page_assets) }
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/articles.css") } />
-                <link rel="stylesheet" href={ asset_url("css/comments.css") } />
-                { render_article_page_assets(page_assets) }
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script src={ asset_url("js/audio.js") } defer></script>
-                <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js" defer></script>
-                <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
-                <script src={ asset_url("js/search.js") } defer></script>
-                <script src={ asset_url("js/search-keyclick.js") } defer></script>
-                <script src={ asset_url("js/copy-code.js") } defer></script>
-                <script src={ asset_url("js/auteurs-shader.js") } defer></script>
-                <script src={ asset_url("js/comments.js") } defer></script>
-                <script src={ asset_url("js/toc-waypoints.js") } defer></script>
-                <script src={ asset_url("js/to-top.js") } defer></script>
-                <script src={ asset_url("js/popover-registry.js") } defer></script>
-                <script src={ asset_url("js/nav-dropdown.js") } defer></script>
-                <script src={ asset_url("js/nav-search-toggle.js") } defer></script>
-                <script src={ asset_url("js/view-transitions.js") } defer></script>
-                <script src={ asset_url("js/quick-actions.js") } defer></script>
-                <script>{ HtmlFragment::new(format!(
-                    "window.__engUrls={{paintHatch:\"{}\",cryptoWorker:\"{}\"}};",
-                    asset_url("js/paint-brutalist-hatch.js"),
-                    asset_url("js/worker-crypto.js"),
-                )) }</script>
-                <script src={ asset_url("js/experiences.js") } defer></script>
-                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="articles-page">
-                <a class="skip-link" href="#main">"Skip to content"</a>
-                <nav class="site-nav" aria-label="Primary">
-                    <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
-                        <img class="site-nav-mark"
-                             src={ asset_url("favicon.svg") }
-                             alt=""
-                             width="20"
-                             height="20"
-                             aria-hidden="true" />
-                        <span class="site-nav-wordmark">"engmanager.xyz"</span>
-                    </a>
-                    { render_global_search("Search") }
-                    <div class="site-nav-links">
-                        { render_nav_search_toggle() }
-                        { render_articles_dropdown() }
-                        <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
-                            { nav_icon_discord() }
-                            <span class="site-nav-link-label">"Discord"</span>
-                        </a>
-                        <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
-                            { nav_icon_github() }
-                            <span class="site-nav-link-label">"GitHub"</span>
-                        </a>
-                    </div>
-                </nav>
-                { body }
-                <button class="to-top" type="button" aria-label="Scroll to top">
-                    <svg class="to-top-icon" viewBox="0 0 16 16" aria-hidden="true">
-                        <path d="M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="1.6"
-                              stroke-linecap="round"
-                              stroke-linejoin="round" />
-                    </svg>
-                </button>
-                { render_quick_actions() }
-                { render_discovery_toasts() }
-                { receipt_modal() }
-            </body>
-        </html>
-    }
+    let reveal_bootstrap = if detail {
+        render_article_reveal_bootstrap()
+    } else {
+        HtmlFragment::empty()
+    };
+
+    PageShell::new(title, "articles-page")
+        .meta(meta)
+        .raw_meta(reveal_bootstrap)
+        .assets(assets)
+        .scripts(scripts)
+        .speculation_rules(speculation)
+        // Both article surfaces are router-eligible (ledger #16) — hidden
+        // articles included: router eligibility is by path shape, while
+        // `speculation` stays an indexability concern.
+        .nav_router(true)
+        .render(page_body)
 }
 
 pub async fn index() -> Html<String> {
@@ -990,15 +281,20 @@ pub async fn index() -> Html<String> {
         </section>
     };
 
-    Html(
-        layout(
-            "Articles · engmanager.xyz",
-            body,
-            true,
-            ArticlePageAssets::NONE,
-        )
-        .into_string(),
-    )
+    let meta = MetaTags {
+        description: Some(INDEX_DESCRIPTION.to_string()),
+        canonical: Some(format!("{SITE_ORIGIN}/articles/")),
+        ..MetaTags::default()
+    };
+
+    Html(layout(
+        "Articles · engmanager.xyz",
+        body,
+        meta,
+        Head::new(),
+        Surface::Index,
+        true,
+    ))
 }
 
 fn render_article_navigation(current_index: usize) -> HtmlFragment {
@@ -1078,22 +374,85 @@ fn render_article_topic_chips(article: &Article) -> HtmlFragment {
 const DISCORD_WIDGET_SENTINEL: &str = "<!--auteurs-discord-widget-->";
 const FOOTTRAFFIC_MAP_SENTINEL: &str = "<!--foottraffic-map-->";
 
-pub async fn detail(Path(slug): Path<String>) -> Response {
+/// Everything derived from one article's Markdown in a single pass: the
+/// rendered body, the TOC headings, and the SEO meta description (ledger #3).
+#[derive(Clone)]
+struct PreparedArticle {
+    body: String,
+    headings: Vec<Heading>,
+    description: Option<String>,
+}
+
+// Startup-memoized article render cache: slug → PreparedArticle, built once
+// from ARTICLES through the same `prepare_article` pipeline requests use.
+// Release builds serve from this map (the per-request Discord/foottraffic
+// splices still run on a clone, so live-widget behavior is unchanged); debug
+// builds bypass it entirely so rust-embed's disk reads keep the .md live-edit
+// loop. Building the map panics on a missing/corrupt .md — forced at startup
+// in main(), that turns a registry↔files mismatch into a boot failure instead
+// of an empty page.
+static RENDERED_ARTICLES: LazyLock<HashMap<&'static str, PreparedArticle>> = LazyLock::new(|| {
+    ARTICLES
+        .iter()
+        .map(|article| {
+            let prepared = prepare_article(article.slug).unwrap_or_else(|| {
+                panic!(
+                    "article `{slug}` is registered in ARTICLES but articles/{slug}.md is missing or failed to render",
+                    slug = article.slug
+                )
+            });
+            (article.slug, prepared)
+        })
+        .collect()
+});
+
+/// Force the article render cache at startup (release builds only — debug
+/// builds render per request for the live-edit loop). Called from `main()` so
+/// a missing or corrupt embedded `.md` fails fast at boot; this doubles as the
+/// `ARTICLES` ↔ `articles/*.md` parity check.
+pub fn warm_article_render_cache() {
+    if !cfg!(debug_assertions) {
+        LazyLock::force(&RENDERED_ARTICLES);
+    }
+}
+
+pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> Response {
     let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
         Some(article_index) => {
             let a = &ARTICLES[article_index];
             // Article-page heading + browser <title> use title_alias when set.
             let page_title = a.title_alias.unwrap_or(a.title);
-            let (inner, headings) =
-                article_body(&slug).unwrap_or_else(|| (HtmlFragment::empty(), Vec::new()));
-            let inner = splice_discord_widget(&slug, inner).await;
+            // Release: clone the startup-rendered body/headings/description
+            // from the cache. Debug: render from disk per request (live-edit
+            // loop). A registered slug whose Markdown won't render is a 404 —
+            // never an empty 200.
+            let prepared = if cfg!(debug_assertions) {
+                prepare_article(&slug)
+            } else {
+                RENDERED_ARTICLES.get(slug.as_str()).cloned()
+            };
+            let Some(PreparedArticle {
+                body,
+                headings,
+                description,
+            }) = prepared
+            else {
+                return super::not_found::response();
+            };
+            let inner = HtmlFragment::new(body);
+            // The Discord snapshot is read from the AppState watch channel
+            // here in the handler and hoisted into the splice (component
+            // renders stay pure — no global reads below this point).
+            let inner = splice_discord_widget(&slug, inner, state.discord.borrow().clone());
             let inner = splice_foottraffic_map(&slug, inner);
-            let toc = render_toc(&headings);
+            // TOC component: the markup mounts below; its CSS/JS deps are
+            // pinned at their pre-P4 head positions inside `layout`.
+            let toc = article_toc::render(&headings).markup;
             let vt_name = format!("view-transition-name: article-{slug}");
             let taxonomy = render_taxonomy(a.category, a.tags);
             let article_navigation = render_article_navigation(article_index);
-            let page_assets = ArticlePageAssets::for_article_detail(&slug);
+            let extra_assets = foottraffic_map_assets(&slug);
             let title = render_article_title(page_title, &vt_name);
             let body = view! {
                 <article id="main"
@@ -1141,24 +500,69 @@ pub async fn detail(Path(slug): Path<String>) -> Response {
                 </section>
                 { toc }
             };
-            Html(layout(page_title, body, a.indexed, page_assets).into_string()).into_response()
+            // Hidden articles keep robots noindex,nofollow and gain NO
+            // canonical/og/JSON-LD (ledger #3 is additive for indexed pages
+            // only); indexed articles get the full SEO head.
+            let meta = if a.indexed {
+                let url = format!("{SITE_ORIGIN}/articles/{slug}");
+                MetaTags {
+                    description,
+                    canonical: Some(url.clone()),
+                    og_title: Some(page_title.to_string()),
+                    og_type: Some("article"),
+                    og_image: Some(AVATAR_SRC),
+                    og_url: Some(url.clone()),
+                    published_time: Some(a.date.iso()),
+                    twitter_card: Some("summary"),
+                    json_ld: vec![article_json_ld(page_title, &a.date.iso(), &url)],
+                    ..MetaTags::default()
+                }
+            } else {
+                MetaTags {
+                    robots: Some("noindex,nofollow"),
+                    ..MetaTags::default()
+                }
+            };
+            Html(layout(
+                page_title,
+                body,
+                meta,
+                extra_assets,
+                Surface::Detail,
+                a.indexed,
+            ))
+            .into_response()
         }
         None => super::not_found::response(),
     }
 }
 
+/// JSON-LD `Article` object for an indexed article detail page.
+fn article_json_ld(headline: &str, date_iso: &str, url: &str) -> HtmlFragment {
+    json_ld_island(&format!(
+        r#"{{"@context":"https://schema.org","@type":"Article","headline":"{}","datePublished":"{date_iso}","author":{{"@type":"Person","name":"matthew harwood"}},"mainEntityOfPage":"{}"}}"#,
+        json_str_escape(headline),
+        json_str_escape(url),
+    ))
+}
+
 // Renders the live Discord widget into the body HTML if the article has
-// a `<!--auteurs-discord-widget-->` sentinel and we have a fresh snapshot.
-// When the snapshot is cold or the article doesn't reference the widget,
-// the sentinel is dropped (empty string) and the article's static fallback
+// a `<!--auteurs-discord-widget-->` sentinel and we have a fresh snapshot
+// (hoisted from the AppState watch channel by the handler). When the
+// snapshot is cold or the article doesn't reference the widget, the
+// sentinel is dropped (empty string) and the article's static fallback
 // (QR code + invite link) remains as the join CTA.
-async fn splice_discord_widget(slug: &str, body: HtmlFragment) -> HtmlFragment {
+fn splice_discord_widget(
+    slug: &str,
+    body: HtmlFragment,
+    snapshot: Option<DiscordSnapshot>,
+) -> HtmlFragment {
     let body_str = body.as_str();
     if !body_str.contains(DISCORD_WIDGET_SENTINEL) {
         return body;
     }
-    let replacement = match crate::discord::snapshot().await {
-        Some(snap) if slug == "auteurs" => crate::discord::render(&snap).into_string(),
+    let replacement = match snapshot {
+        Some(snap) if slug == "auteurs" => discord_widget::render(&snap).markup.into_string(),
         _ => String::new(),
     };
     HtmlFragment::new(body_str.replace(DISCORD_WIDGET_SENTINEL, &replacement))
@@ -1170,129 +574,169 @@ fn splice_foottraffic_map(slug: &str, body: HtmlFragment) -> HtmlFragment {
         return body;
     }
     let replacement = if slug == "project-foottraffic" {
-        render_foottraffic_map().into_string()
+        // The map figure moved to the co-located component
+        // `components/region_map/`; the hashed poster URL is hoisted here so
+        // the component render stays pure.
+        region_map::render(region_map::Props {
+            poster_url: asset_url("foottraffic-map-poster.svg"),
+        })
+        .markup
+        .into_string()
     } else {
         String::new()
     };
     HtmlFragment::new(body_str.replace(FOOTTRAFFIC_MAP_SENTINEL, &replacement))
 }
 
-fn render_foottraffic_map() -> HtmlFragment {
-    let config = r#"{
-  "label": "Project FootTraffic regional operators",
-  "center": [39.8283, -98.5795],
-  "zoom": 4,
-  "minZoom": 3,
-  "maxZoom": 12,
-  "pins": [
-    {
-      "name": "Matthew",
-      "role": "Portland operator",
-      "city": "Portland, Oregon",
-      "coords": [45.5152, -122.6784],
-      "radiusMiles": 160
-    },
-    {
-      "name": "Marcus",
-      "role": "LA operator",
-      "city": "Los Angeles, California",
-      "coords": [34.0522, -118.2437],
-      "radiusMiles": 180
-    },
-    {
-      "name": "Jason",
-      "role": "Austin operator",
-      "city": "Austin, Texas",
-      "coords": [30.2672, -97.7431],
-      "radiusMiles": 170
-    },
-    {
-      "name": "Alex",
-      "role": "Detroit operator",
-      "city": "Detroit, Michigan",
-      "coords": [42.3314, -83.0458],
-      "radiusMiles": 160
+// Per-slug head extras for the region map (project-foottraffic only): the
+// preconnects + poster preload + Leaflet CDN pair stay page-level inline
+// fragments, with the component's own CSS/JS pinned at the flat files' old
+// positions between them.
+//
+// ORDERING CONSTRAINT: the Leaflet CDN script MUST precede c-region-map.js.
+// CDN URLs cannot be `js_deps` (those are asset_url dist paths), so the
+// ordering is encoded here by emitting the inline CDN tag immediately before
+// `region_map::SCRIPT`.
+fn foottraffic_map_assets(slug: &str) -> Head {
+    let mut extras = Head::new();
+    if slug != "project-foottraffic" {
+        return extras;
     }
-  ]
-}"#;
-
-    view! {
-        <figure class="region-map" data-region-map aria-labelledby="foottraffic-map-title">
-            <div class="region-map-copy">
-                <h2 id="foottraffic-map-title">"Regional Operator Map"</h2>
-                <p>
-                    "A first pass at the territory model: one operator per region, with the same map module ready for later heat-map and blast-radius layers."
-                </p>
-            </div>
-            <div class="region-map-shell">
-                <div class="region-map-canvas"
-                     data-region-map-canvas
-                     role="application"
-                     tabindex="0"
-                     aria-label="Interactive map of Project FootTraffic operators"></div>
-                <div class="region-map-poster" data-region-map-poster>
-                    <img src={ asset_url("foottraffic-map-poster.svg") }
-                         alt=""
-                         width="1200"
-                         height="675"
-                         loading="eager"
-                         decoding="async" />
-                    <div class="region-map-status" data-region-map-status role="status">
-                        "Loading interactive map"
-                    </div>
-                </div>
-            </div>
-            <figcaption>
-                "Pins show Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
-            </figcaption>
-            <script type="application/json" data-region-map-config>
-                { HtmlFragment::new(config.to_string()) }
-            </script>
-            <noscript>
-                <p>
-                    "Map locations: Matthew in Portland, Marcus in Los Angeles, Jason in Austin, and Alex in Detroit."
-                </p>
-            </noscript>
-        </figure>
-    }
+    let poster_url = asset_url("foottraffic-map-poster.svg");
+    let poster_preload = HtmlFragment::new(format!(
+        r#"<link rel="preload" as="image" href="{poster_url}">"#
+    ));
+    extras.add_inline(view! {
+        <link rel="preconnect" href="https://unpkg.com" />
+        <link rel="preconnect" href="https://tile.openstreetmap.org" />
+        { poster_preload }
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    });
+    extras.add_css(region_map::STYLE);
+    extras.add_inline(view! {
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    });
+    extras.add_js(region_map::SCRIPT);
+    extras
 }
 
-// A heading destined for the on-this-page sidebar.
-pub struct Heading {
-    pub level: u32, // 2 or 3
-    pub slug: String,
-    pub text: String,
-}
+// The `Heading` data shape moved to the co-located component
+// `components/article_toc/` (its render input, hoisted by this pipeline).
 
 // Loads the Markdown for an article slug, parses it with pulldown-cmark,
 // assigns an `id` to each h2/h3 (so the sidebar TOC can scroll-anchor to
-// them), and returns the rendered HTML alongside the heading list. The
-// h1 from the article title is rendered by the outer layout, not the
-// Markdown, so headings here start at h2.
-fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
-    let path = format!("{slug}.md");
-    let file = ArticleSources::get(&path)?;
-    let markdown = std::str::from_utf8(&file.data).ok()?;
+// them), and returns the rendered HTML alongside the heading list and the
+// derived meta description — one source pass for everything the detail page
+// needs. The h1 from the article title is rendered by the outer layout, not
+// the Markdown, so headings here start at h2.
+fn prepare_article(slug: &str) -> Option<PreparedArticle> {
+    let markdown = article_markdown(slug)?;
 
+    let parser = pulldown_cmark::Parser::new_ext(&markdown, markdown_options());
+    let mut events: Vec<Event> = parser.collect();
+    let headings = extract_headings(&mut events);
+
+    let events = wrap_article_reveal_sections(events);
+
+    let mut html_output = String::new();
+    pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
+    Some(PreparedArticle {
+        body: html_output,
+        headings,
+        description: derive_meta_description(&markdown),
+    })
+}
+
+fn markdown_options() -> pulldown_cmark::Options {
     let mut options = pulldown_cmark::Options::empty();
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
     options.insert(pulldown_cmark::Options::ENABLE_TASKLISTS);
     options.insert(pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES);
+    options
+}
 
-    let parser = pulldown_cmark::Parser::new_ext(markdown, options);
-    let mut events: Vec<Event> = parser.collect();
+// Meta description: the first non-heading paragraph of the Markdown with all
+// Markdown syntax stripped (the event stream's text content — emphasis, link,
+// and code markers never reach the output), whitespace collapsed, truncated
+// at a word boundary near the SERP budget with a trailing ellipsis.
+fn derive_meta_description(markdown: &str) -> Option<String> {
+    let parser = pulldown_cmark::Parser::new_ext(markdown, markdown_options());
+    let mut heading_depth: usize = 0;
+    let mut image_depth: usize = 0;
+    let mut in_paragraph = false;
+    let mut text = String::new();
+    for event in parser {
+        match event {
+            Event::Start(PmTag::Heading { .. }) => heading_depth += 1,
+            Event::End(TagEnd::Heading(_)) => heading_depth = heading_depth.saturating_sub(1),
+            // Image ALT text arrives as Text events between Start(Image) and
+            // End(Image). It belongs to the image, not the prose — collecting
+            // it would make an image-only opener masquerade as a description,
+            // so it is excluded (this is what "the event stream's text
+            // content" above always intended).
+            Event::Start(PmTag::Image { .. }) => image_depth += 1,
+            Event::End(TagEnd::Image) => image_depth = image_depth.saturating_sub(1),
+            Event::Start(PmTag::Paragraph) if heading_depth == 0 => {
+                in_paragraph = true;
+                text.clear();
+            }
+            Event::End(TagEnd::Paragraph) if in_paragraph => {
+                in_paragraph = false;
+                let candidate = text.split_whitespace().collect::<Vec<_>>().join(" ");
+                // Skip empty paragraphs (e.g. image-only) and keep scanning.
+                if !candidate.is_empty() {
+                    return Some(truncate_at_word_boundary(
+                        &candidate,
+                        META_DESCRIPTION_TARGET_CHARS,
+                    ));
+                }
+            }
+            Event::Text(t) | Event::Code(t) if in_paragraph && image_depth == 0 => {
+                text.push_str(&t);
+            }
+            Event::SoftBreak | Event::HardBreak if in_paragraph => text.push(' '),
+            _ => {}
+        }
+    }
+    None
+}
+
+// Truncate to at most `max_chars` characters, backing up to the last word
+// boundary, trimming dangling punctuation, and appending an ellipsis. Short
+// inputs pass through untouched.
+fn truncate_at_word_boundary(text: &str, max_chars: usize) -> String {
+    let Some((cut_byte, _)) = text.char_indices().nth(max_chars) else {
+        return text.to_string();
+    };
+    let head = &text[..cut_byte];
+    let head = match head.rfind(char::is_whitespace) {
+        Some(ws) => &head[..ws],
+        None => head,
+    };
+    format!(
+        "{}…",
+        head.trim_end_matches([' ', ',', ';', ':', '.', '—', '-'])
+    )
+}
+
+// Walks the event stream, anchoring every h2/h3 and collecting the sidebar
+// heading list. Auto headings (id: None) get a slugified, dedup-counted id
+// written back into the event; explicit `{#custom-id}` headings keep their id
+// verbatim (pulldown-cmark already renders it) and never touch the dedup
+// counters, so neighboring auto-ids are numbered exactly as before.
+fn extract_headings(events: &mut [Event<'_>]) -> Vec<Heading> {
     let mut headings: Vec<Heading> = Vec::new();
     let mut slug_counts: HashMap<String, u32> = HashMap::new();
 
     let mut i = 0;
     while i < events.len() {
-        let level = match &events[i] {
+        let (level, explicit_id) = match &events[i] {
             Event::Start(PmTag::Heading {
                 level: l @ (HeadingLevel::H2 | HeadingLevel::H3),
-                id: None,
+                id,
                 ..
-            }) => *l,
+            }) => (*l, id.clone()),
             _ => {
                 i += 1;
                 continue;
@@ -1311,33 +755,41 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
             j += 1;
         }
 
-        let base_slug = slugify(&text);
-        if base_slug.is_empty() {
-            i = j + 1;
-            continue;
-        }
-        let count = slug_counts.entry(base_slug.clone()).or_insert(0);
-        let slug = if *count == 0 {
-            base_slug.clone()
-        } else {
-            format!("{base_slug}-{count}")
-        };
-        *count += 1;
+        let slug = match explicit_id {
+            // Explicit id: pulldown-cmark already renders it on the heading
+            // element, so the event is left untouched.
+            Some(id) => id.to_string(),
+            None => {
+                let base_slug = slugify(&text);
+                if base_slug.is_empty() {
+                    i = j + 1;
+                    continue;
+                }
+                let count = slug_counts.entry(base_slug.clone()).or_insert(0);
+                let slug = if *count == 0 {
+                    base_slug.clone()
+                } else {
+                    format!("{base_slug}-{count}")
+                };
+                *count += 1;
 
-        if let Event::Start(PmTag::Heading {
-            level: l,
-            id: _,
-            classes,
-            attrs,
-        }) = events[i].clone()
-        {
-            events[i] = Event::Start(PmTag::Heading {
-                level: l,
-                id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
-                classes,
-                attrs,
-            });
-        }
+                if let Event::Start(PmTag::Heading {
+                    level: l,
+                    id: _,
+                    classes,
+                    attrs,
+                }) = events[i].clone()
+                {
+                    events[i] = Event::Start(PmTag::Heading {
+                        level: l,
+                        id: Some(CowStr::Boxed(slug.clone().into_boxed_str())),
+                        classes,
+                        attrs,
+                    });
+                }
+                slug
+            }
+        };
 
         headings.push(Heading {
             level: match level {
@@ -1351,11 +803,7 @@ fn article_body(slug: &str) -> Option<(HtmlFragment, Vec<Heading>)> {
         i = j + 1;
     }
 
-    let events = wrap_article_reveal_sections(events);
-
-    let mut html_output = String::new();
-    pulldown_cmark::html::push_html(&mut html_output, events.into_iter());
-    Some((HtmlFragment::new(html_output), headings))
+    headings
 }
 
 fn wrap_article_reveal_sections(events: Vec<Event>) -> Vec<Event> {
@@ -1455,52 +903,8 @@ fn slugify(text: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-// Sidebar "on this page" navigation. Empty when the article has no h2/h3
-// headings — the CSS hides the empty <aside> on small viewports anyway,
-// but skipping the render here is cleaner. h3 entries get the .is-h3
-// modifier for the indented sub-item treatment.
-fn render_toc(headings: &[Heading]) -> HtmlFragment {
-    if headings.is_empty() {
-        return HtmlFragment::empty();
-    }
-    let items: HtmlFragment = headings
-        .iter()
-        .map(|h| {
-            let class = if h.level == 3 {
-                "article-toc-link is-h3"
-            } else {
-                "article-toc-link"
-            };
-            view! {
-                <li>
-                    <a class={ class } href={ format!("#{}", h.slug) }>
-                        { h.text.clone() }
-                    </a>
-                </li>
-            }
-        })
-        .collect();
-
-    view! {
-        <aside class="article-toc" aria-label="On this page">
-            <div class="article-toc-heading">
-                <svg class="article-toc-icon" viewBox="0 0 16 16" aria-hidden="true">
-                    <g fill="none" stroke="currentColor" stroke-width="1.5"
-                       stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="6" y1="4" x2="14" y2="4" />
-                        <line x1="6" y1="8" x2="14" y2="8" />
-                        <line x1="6" y1="12" x2="14" y2="12" />
-                        <circle cx="3" cy="4" r="0.9" fill="currentColor" />
-                        <circle cx="3" cy="8" r="0.9" fill="currentColor" />
-                        <circle cx="3" cy="12" r="0.9" fill="currentColor" />
-                    </g>
-                </svg>
-                "On this page"
-            </div>
-            <ul class="article-toc-list">{ items }</ul>
-        </aside>
-    }
-}
+// The sidebar "on this page" render moved to the co-located component
+// `components/article_toc/` (markup + styles + the waypoints scrollspy).
 
 #[cfg(test)]
 mod tests {
@@ -1508,7 +912,8 @@ mod tests {
 
     #[test]
     fn article_body_marks_sections_for_one_time_reveal() {
-        let (body, headings) = article_body("project-foottraffic").expect("article body");
+        let PreparedArticle { body, headings, .. } =
+            prepare_article("project-foottraffic").expect("article body");
         let html = body.as_str();
 
         assert!(
@@ -1534,5 +939,80 @@ mod tests {
             headings.len() + 1,
             "intro copy plus each h2/h3 section should get exactly one reveal wrapper",
         );
+    }
+
+    #[test]
+    fn explicit_heading_ids_join_the_toc_verbatim() {
+        // `{#custom-id}` headings must keep their id verbatim AND appear in
+        // the heading list, without disturbing the dedup counters used by
+        // neighboring auto-slugged headings.
+        let markdown = "intro\n\n## Alpha\n\n## Custom {#custom-id}\n\n## Alpha\n";
+        let mut options = pulldown_cmark::Options::empty();
+        options.insert(pulldown_cmark::Options::ENABLE_HEADING_ATTRIBUTES);
+        let mut events: Vec<Event> = pulldown_cmark::Parser::new_ext(markdown, options).collect();
+
+        let headings = extract_headings(&mut events);
+        let mut rendered = String::new();
+        pulldown_cmark::html::push_html(&mut rendered, events.into_iter());
+
+        let slugs: Vec<&str> = headings.iter().map(|h| h.slug.as_str()).collect();
+        assert_eq!(slugs, ["alpha", "custom-id", "alpha-1"]);
+        assert!(rendered.contains(r#"<h2 id="custom-id">"#));
+        assert!(rendered.contains(r#"<h2 id="alpha">"#));
+        assert!(rendered.contains(r#"<h2 id="alpha-1">"#));
+    }
+
+    #[test]
+    fn meta_description_strips_markdown_and_skips_headings() {
+        let markdown = "## Intro heading\n\nThis **first** paragraph links to \
+                        [the docs](https://example.com) and mentions `code`.\n\nSecond paragraph.";
+        assert_eq!(
+            derive_meta_description(markdown).as_deref(),
+            Some("This first paragraph links to the docs and mentions code."),
+        );
+    }
+
+    #[test]
+    fn meta_description_skips_image_alt_text() {
+        // An image-only opener (alt text is NOT prose) must be skipped in
+        // favor of the first real paragraph; alt text inside a mixed
+        // paragraph must not leak into the description either.
+        let markdown = "![A decorative hero image](/assets/hero.png)\n\nReal first paragraph.";
+        assert_eq!(
+            derive_meta_description(markdown).as_deref(),
+            Some("Real first paragraph."),
+        );
+
+        let markdown = "Before ![inline alt](/a.png) after.";
+        assert_eq!(
+            derive_meta_description(markdown).as_deref(),
+            Some("Before after."),
+        );
+    }
+
+    #[test]
+    fn meta_description_truncates_at_word_boundary_with_ellipsis() {
+        let long = "word ".repeat(60); // 300 chars, far past the budget
+        let description = derive_meta_description(&long).expect("description");
+        assert!(description.ends_with('…'), "got: {description}");
+        let chars = description.chars().count();
+        assert!(
+            chars <= META_DESCRIPTION_TARGET_CHARS + 1,
+            "description too long: {chars} chars"
+        );
+        // Word-boundary cut: no split token like "wor…".
+        assert!(description.trim_end_matches('…').ends_with("word"));
+    }
+
+    #[test]
+    fn every_registered_article_derives_a_description() {
+        for article in ARTICLES {
+            let prepared = prepare_article(article.slug).expect("prepared article");
+            let description = prepared
+                .description
+                .unwrap_or_else(|| panic!("article `{}` has no description", article.slug));
+            assert!(!description.is_empty());
+            assert!(description.chars().count() <= META_DESCRIPTION_TARGET_CHARS + 1);
+        }
     }
 }

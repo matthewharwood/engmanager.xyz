@@ -1,7 +1,7 @@
 use axum::http::header;
 use axum::response::{IntoResponse, Response};
 
-use crate::pages::articles::{ArticleDate, public_articles};
+use crate::content::{ArticleDate, public_articles};
 
 const SITE_ORIGIN: &str = "https://engmanager.xyz";
 const SITEMAP_PATH: &str = "/sitemap.xml";
@@ -115,7 +115,7 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::pages::articles::ARTICLES;
+    use crate::content::ARTICLES;
 
     const SITEMAP_NS: &str = "http://www.sitemaps.org/schemas/sitemap/0.9";
 

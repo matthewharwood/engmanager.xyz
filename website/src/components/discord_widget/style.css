@@ -1,0 +1,187 @@
+/* Live Discord widget card (server-rendered from cached snapshot) —
+ * co-located component styles.
+ *
+ * Moved VERBATIM from css/src/articles.css (ledger #8). Deliberately NOT
+ * @layer-wrapped: articles.css is an unlayered stylesheet, so wrapping
+ * these rules in a layer would demote them below other unlayered page
+ * rules and change the cascade. The c-discord-widget.css link is emitted
+ * immediately after articles.css, preserving the original rule order.
+ *
+ * Tier: critical (render-blocking). The widget is ordinary in-flow
+ * article content — below the fold on the auteurs article but NOT hidden
+ * at first paint, and the deferred tier is reserved for hidden-at-load
+ * elements (no-FOUC rule).
+ */
+/* Live Discord widget card (server-rendered from cached snapshot). */
+.discord-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-block: 1.75rem;
+    padding: 1.25rem;
+    background: var(--ctp-mantle);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.75rem;
+}
+
+.discord-widget-header {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.discord-widget-icon {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    border-radius: 0.625rem;
+    background: linear-gradient(135deg, #5865f2 0%, #4752c4 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+    box-shadow: 0 0.125rem 0.5rem rgba(88, 101, 242, 0.25);
+}
+
+.discord-widget-title {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    margin-inline-end: auto;
+    min-inline-size: 0;
+}
+
+.discord-widget-name {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--ctp-text);
+}
+
+.discord-widget-members {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ctp-subtext0);
+    margin-block-start: 0.125rem;
+}
+
+.discord-widget-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--ctp-subtext1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.discord-widget-pip {
+    inline-size: 0.4375rem;
+    block-size: 0.4375rem;
+    border-radius: 50%;
+    background: var(--ctp-green);
+    box-shadow: 0 0 0.4rem rgba(64, 160, 43, 0.55);
+    animation: discord-pip-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes discord-pip-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.discord-widget-avatars {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.discord-widget-avatar {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--ctp-mantle);
+    background: var(--ctp-base);
+    display: block;
+    margin-inline-start: -0.5rem;
+    object-fit: cover;
+}
+
+.discord-widget-avatar:first-child {
+    margin-inline-start: 0;
+}
+
+.discord-widget-avatars-more {
+    margin-inline-start: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ctp-subtext0);
+}
+
+.discord-widget-channels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.discord-widget-channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding-block: 0.1875rem;
+    padding-inline: 0.5rem;
+    background: var(--ctp-base);
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--ctp-subtext1);
+}
+
+.discord-widget-channel-icon {
+    color: var(--ctp-overlay1);
+    font-weight: 700;
+}
+
+/* Scoped under .article to beat `.article a` (blue + underline). */
+.article .discord-widget-join {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding-block: 0.625rem;
+    padding-inline: 1rem;
+    background: linear-gradient(180deg, #5865f2 0%, #4752c4 100%);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    box-shadow: 0 0.125rem 0.5rem rgba(88, 101, 242, 0.3);
+    transition:
+        transform 120ms ease,
+        box-shadow 120ms ease,
+        filter 120ms ease;
+}
+
+.article .discord-widget-join:hover,
+.article .discord-widget-join:focus-visible {
+    color: #fff;
+    text-decoration: none;
+    transform: translateY(-0.0625rem);
+    box-shadow: 0 0.25rem 0.875rem rgba(88, 101, 242, 0.4);
+    filter: brightness(1.06);
+}
+
+.discord-widget-join-arrow {
+    font-weight: 400;
+    font-size: 0.9375rem;
+    line-height: 1;
+}

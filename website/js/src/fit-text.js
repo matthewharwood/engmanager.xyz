@@ -115,50 +115,64 @@ function syncTitleMetrics(svg, ink) {
     return usesFallback;
 }
 
-(async () => {
-    try {
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
-        const svgs = document.querySelectorAll("svg.fluid-display-svg");
-        const measurements = new Map();
-        for (const svg of svgs) {
-            const text = svg.querySelector("text");
-            if (!text) continue;
-            const ink = measureInk(text);
-            if (!ink) continue;
-            applyFit(svg, ink);
-            measurements.set(svg, ink);
-            const usesFallback = syncTitleMetrics(svg, ink);
-            svg.classList.toggle("is-too-small", usesFallback);
-        }
+// fit(root): measure + fit every not-yet-fitted svg under root, pruning
+// detached entries first so the measurements Map never pins old-page
+// SVGs (JS_ROUTER_CONSTRAINTS §2.3). Called once at load and again on
+// every soft navigation.
+(() => {
+    const measurements = new Map();
 
-        // Re-evaluate the fallback threshold and fitted title metrics
-        // whenever row width changes. The fit (viewBox) doesn't need
-        // re-running — it's container-relative via SVG scaling.
-        let pending = false;
-        const onResize = () => {
-            if (pending) return;
-            pending = true;
-            requestAnimationFrame(() => {
-                pending = false;
-                for (const [svg, ink] of measurements) {
-                    const usesFallback = syncTitleMetrics(svg, ink);
-                    svg.classList.toggle("is-too-small", usesFallback);
+    // Re-evaluate the fallback threshold and fitted title metrics
+    // whenever row width changes. The fit (viewBox) doesn't need
+    // re-running — it's container-relative via SVG scaling.
+    let pending = false;
+    const onResize = () => {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(() => {
+            pending = false;
+            for (const [svg, ink] of measurements) {
+                if (!svg.isConnected) {
+                    measurements.delete(svg);
+                    continue;
                 }
-            });
-        };
-        window.addEventListener("resize", onResize);
-
-        if ("ResizeObserver" in window) {
-            const observer = new ResizeObserver(onResize);
-            for (const svg of measurements.keys()) {
-                observer.observe(svg.closest(".fluid-display-wrap") || svg);
+                const usesFallback = syncTitleMetrics(svg, ink);
+                svg.classList.toggle("is-too-small", usesFallback);
             }
-        }
+        });
+    };
+    window.addEventListener("resize", onResize);
 
-        requestAnimationFrame(onResize);
-    } catch (_err) {
-        // Measurement failed — leave the fallback viewBox in place.
+    const observer =
+        "ResizeObserver" in window ? new ResizeObserver(onResize) : null;
+
+    async function fit(root) {
+        try {
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+            for (const svg of measurements.keys()) {
+                if (!svg.isConnected) measurements.delete(svg);
+            }
+            for (const svg of root.querySelectorAll("svg.fluid-display-svg")) {
+                if (measurements.has(svg)) continue;
+                const text = svg.querySelector("text");
+                if (!text) continue;
+                const ink = measureInk(text);
+                if (!ink) continue;
+                applyFit(svg, ink);
+                measurements.set(svg, ink);
+                const usesFallback = syncTitleMetrics(svg, ink);
+                svg.classList.toggle("is-too-small", usesFallback);
+                observer?.observe(svg.closest(".fluid-display-wrap") || svg);
+            }
+
+            requestAnimationFrame(onResize);
+        } catch (_err) {
+            // Measurement failed — leave the fallback viewBox in place.
+        }
     }
+
+    fit(document);
+    window.__engNav?.onSwap?.(fit);
 })();

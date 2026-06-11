@@ -114,8 +114,21 @@ const startArticleSectionReveal = () => {
 
     sections.forEach((section) => observer.observe(section));
 
-    // Warm the import after setup, but only on no-hash page loads.
-    loadAnime().catch(() => null);
+    // Warm the import after setup, but only on no-hash page loads —
+    // and never from a speculatively prerendered page (CDN traffic from
+    // never-shown documents; JS_ROUTER_CONSTRAINTS §3). Prerendered
+    // pages warm it at activation instead; the reveal itself is
+    // untouched (its IntersectionObserver is browser-paused until
+    // activation anyway).
+    if (document.prerendering) {
+        document.addEventListener(
+            "prerenderingchange",
+            () => loadAnime().catch(() => null),
+            { once: true },
+        );
+    } else {
+        loadAnime().catch(() => null);
+    }
 
     window.addEventListener("hashchange", revealAllWithoutMotion, { once: true });
 };

@@ -94,17 +94,30 @@ function playThemeSfx(theme) {
 // Apply immediately so the theme attaches before paint.
 apply(readStored());
 
+// Prerendered documents snapshot storage early: another tab may change
+// the theme before activation, so re-read + re-apply when the page is
+// actually shown (JS_ROUTER_CONSTRAINTS §3).
+if (document.prerendering) {
+    document.addEventListener(
+        "prerenderingchange",
+        () => apply(readStored()),
+        { once: true },
+    );
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     syncLabel(readStored());
 
-    document.querySelectorAll("[data-theme-cycle]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const current = readStored();
-            const next = nextTheme(current);
-            apply(next);
-            persist(next);
-            playThemeSfx(next);
-        });
+    // Delegated (not per-node) so pickers that arrive inside
+    // router-swapped regions work without re-binding
+    // (JS_ROUTER_CONSTRAINTS §2.16).
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest?.("[data-theme-cycle]")) return;
+        const current = readStored();
+        const next = nextTheme(current);
+        apply(next);
+        persist(next);
+        playThemeSfx(next);
     });
 
     // Cross-tab sync.
@@ -113,3 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
         apply(event.newValue || "auto");
     });
 });
+
+// Soft navigations replace picker nodes — re-stamp label/emoji/shape
+// onto the fresh markup. <html data-theme> itself persists across the
+// swap (the router excludes it from <html> attr reconciliation).
+window.__engNav?.onSwap?.(() => syncLabel(readStored()));

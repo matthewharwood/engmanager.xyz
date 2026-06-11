@@ -1,0 +1,129 @@
+/* On-this-page sidebar TOC — co-located component styles.
+ *
+ * Moved VERBATIM from css/src/articles.css (ledger #8). Deliberately NOT
+ * @layer-wrapped: articles.css is an unlayered stylesheet, so wrapping
+ * these rules in a layer would demote them below other unlayered page
+ * rules and change the cascade. The c-article-toc.css link is emitted
+ * immediately after articles.css (after c-discord-widget.css, mirroring
+ * the order the rule blocks occupied inside the file).
+ *
+ * Tier: critical (render-blocking) — the sidebar is visible at first
+ * paint on wide viewports.
+ *
+ * The desktop `.article-meta-disclosure-tools` hide moves with the TOC:
+ * it is part of this feature (toc-waypoints relocates the action tools
+ * under the "On this page" module, so the header disclosure collapses).
+ */
+/* ===========================================================================
+ * On-this-page sidebar TOC.
+ *
+ * Hidden by default — only appears at viewport widths wide enough to fit
+ * the article column (38rem) + gap + sidebar (14rem) without overlapping.
+ * Position: fixed so it sticks while scrolling without participating in
+ * the article's flow.
+ *
+ * `.is-current` is toggled by scripts/toc-waypoints.js as the reader
+ * scrolls past each heading. CSS animates the color/background swap so
+ * the active waypoint glides between sections.
+ * =========================================================================== */
+.article-toc {
+    display: none;
+}
+
+@media (min-width: 72rem) {
+    .article-toc {
+        display: block;
+        position: fixed;
+        inset-block-start: 5rem;
+        inset-inline-start: calc(50% + 21rem);
+        inline-size: 14rem;
+        max-block-size: calc(100dvh - 7rem);
+        overflow-y: auto;
+        padding-block: 0.25rem;
+        font-family: var(--font-sans);
+    }
+}
+
+/* Desktop: the action tools are relocated under the "On this page" module
+   (toc-waypoints.js), so hide the now-empty header disclosure and present the
+   tools as a divided section beneath the TOC list. */
+@media (min-width: 72rem) {
+    .article-meta-disclosure-tools {
+        display: none;
+    }
+
+    .article-toc .article-meta-tools {
+        margin-block-start: 1rem;
+        padding-block-start: 1rem;
+        border-block-start: 1px solid var(--ctp-surface0);
+    }
+}
+
+.article-toc-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ctp-subtext0);
+    margin-block-end: 0.75rem;
+    padding-inline-start: 0.75rem;
+}
+
+.article-toc-icon {
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    color: var(--ctp-overlay1);
+    flex-shrink: 0;
+}
+
+.article-toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+}
+
+.article-toc-link {
+    display: block;
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ctp-subtext1);
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition:
+        color 200ms ease,
+        background-color 200ms ease,
+        transform 200ms ease;
+}
+
+.article-toc-link:hover,
+.article-toc-link:focus-visible {
+    color: var(--ctp-text);
+    background: color-mix(in oklab, var(--ctp-surface0) 50%, transparent);
+}
+
+.article-toc-link.is-current {
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 9%, transparent);
+    /* No font-weight change: a heavier active state widened the text enough to
+       wrap a line that the inactive state didn't, so highlighting an item made
+       it "carriage return." Colour + the highlight box already read as active,
+       and keeping the weight constant guarantees the line count never shifts. */
+}
+
+.article-toc-link.is-h3 {
+    padding-inline-start: 1.75rem;
+    font-size: 0.75rem;
+    color: var(--ctp-subtext0);
+}
+
+.article-toc-link.is-h3.is-current {
+    color: var(--accent);
+}

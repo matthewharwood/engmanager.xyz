@@ -1,3 +1,14 @@
+/* Project FootTraffic regional-operator map — co-located component styles.
+ *
+ * The ENTIRE former css/src/region-map.css moved here VERBATIM (ledger
+ * #8); the flat file is deleted and the c-region-map.css link replaces it
+ * at the same head position (project-foottraffic article only). Not
+ * @layer-wrapped: the source file was unlayered, and wrapping would
+ * demote the rules below other unlayered page rules.
+ *
+ * Tier: critical (render-blocking) — the map figure (poster image +
+ * status) is visible in-flow article content at first paint.
+ */
 .article .region-map {
     --region-map-tile-filter: saturate(0.78) contrast(1.04) brightness(1.02);
     --region-map-tile-opacity: 0.9;

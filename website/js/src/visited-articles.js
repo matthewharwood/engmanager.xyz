@@ -22,17 +22,6 @@
 const STORAGE_KEY = "engmanager.visited-articles";
 const REVEAL_DELAY_MS = 320;
 
-// JSON island parsed once on script load. Keyed by slug.
-const articlesData = (() => {
-    try {
-        const raw = document.getElementById("articles-data")?.textContent;
-        if (!raw) return {};
-        return JSON.parse(raw);
-    } catch {
-        return {};
-    }
-})();
-
 const loadVisited = () => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -54,63 +43,102 @@ const saveVisited = (set) => {
 };
 
 (() => {
-    const links = Array.from(document.querySelectorAll(".article-fluid-link"));
-    if (!links.length) return;
+    // JSON island (#articles-data) re-parsed on every init: the island
+    // rides inside the swapped page surface, so a soft navigation back
+    // to the homepage brings a fresh copy (JS_ROUTER_CONSTRAINTS §2.4).
+    let articlesData = {};
+    let visited = loadVisited();
 
-    const visited = loadVisited();
-
-    // Initial hydration: mark previously-read articles immediately so
-    // the strike + checkmark are already in place at first paint.
-    links.forEach((link) => {
-        const slug = link.dataset.slug;
-        if (slug && visited.has(slug)) {
-            link.classList.add("is-visited");
+    const parseIsland = () => {
+        try {
+            const raw = document.getElementById("articles-data")?.textContent;
+            articlesData = raw ? JSON.parse(raw) : {};
+        } catch {
+            articlesData = {};
         }
-    });
+    };
 
-    links.forEach((link) => {
-        link.addEventListener("click", (event) => {
+    // Hydration: mark previously-read articles immediately so the
+    // strike + checkmark are already in place at first paint.
+    const hydrate = (root) => {
+        root.querySelectorAll(".article-fluid-link").forEach((link) => {
             const slug = link.dataset.slug;
-            if (!slug) return;
-
-            // Already visited → let normal navigation happen.
-            if (visited.has(slug)) return;
-
-            // Modifier-clicks / middle-click / non-primary → open in
-            // new tab without the reveal flow so the user's intent
-            // is honored.
-            if (
-                event.button !== 0 ||
-                event.metaKey ||
-                event.ctrlKey ||
-                event.shiftKey ||
-                event.altKey
-            ) {
-                visited.add(slug);
-                saveVisited(visited);
+            if (slug && visited.has(slug)) {
                 link.classList.add("is-visited");
-                return;
             }
+        });
+    };
 
-            event.preventDefault();
+    const init = (root) => {
+        parseIsland();
+        hydrate(root);
+    };
+
+    // ONE delegated click listener on the persistent document — swapped
+    // -in article links are covered without re-binding, and re-inits
+    // can never stack handlers.
+    document.addEventListener("click", (event) => {
+        const link = event.target?.closest?.(".article-fluid-link");
+        if (!link) return;
+
+        const slug = link.dataset.slug;
+        if (!slug) return;
+
+        // Already visited → let normal navigation happen.
+        if (visited.has(slug)) return;
+
+        // Modifier-clicks / middle-click / non-primary → open in
+        // new tab without the reveal flow so the user's intent
+        // is honored.
+        if (
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
             visited.add(slug);
             saveVisited(visited);
-            link.classList.add("is-visited", "is-visited-fresh");
+            link.classList.add("is-visited");
+            return;
+        }
 
-            // Notifies the Broadcast Channel experience so other tabs
-            // get the same strike-through in real time.
-            document.dispatchEvent(
-                new CustomEvent("engmanager:visited", { detail: { slug } }),
-            );
+        event.preventDefault();
+        visited.add(slug);
+        saveVisited(visited);
+        link.classList.add("is-visited", "is-visited-fresh");
 
-            // After the strike + check have started painting, open the
-            // gacha-style reveal card. The reader stays in control —
-            // no auto-navigation; they tap "Read →" when ready.
-            const data = articlesData[slug];
-            const href = link.href;
-            setTimeout(() => openReveal(slug, data, href), REVEAL_DELAY_MS);
-        });
+        // Notifies the Broadcast Channel experience so other tabs
+        // get the same strike-through in real time.
+        document.dispatchEvent(
+            new CustomEvent("engmanager:visited", { detail: { slug } }),
+        );
+
+        // After the strike + check have started painting, open the
+        // gacha-style reveal card. The reader stays in control —
+        // no auto-navigation; they tap "Read →" when ready.
+        const data = articlesData[slug];
+        const href = link.href;
+        setTimeout(() => openReveal(slug, data, href), REVEAL_DELAY_MS);
     });
+
+    init(document);
+    window.__engNav?.onSwap?.(init);
+
+    // Prerendered documents snapshot localStorage early — re-read the
+    // visited set at activation so reads made in other tabs while this
+    // page sat prerendered still strike through
+    // (JS_ROUTER_CONSTRAINTS §3 storage-staleness).
+    if (document.prerendering) {
+        document.addEventListener(
+            "prerenderingchange",
+            () => {
+                visited = loadVisited();
+                hydrate(document);
+            },
+            { once: true },
+        );
+    }
 })();
 
 // =============================================================================

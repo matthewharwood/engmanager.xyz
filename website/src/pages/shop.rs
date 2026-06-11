@@ -2,14 +2,14 @@ use axum::extract::State;
 use axum::http::header;
 use axum::response::{Html, IntoResponse, Response};
 use eng_domain::HtmlFragment;
-use eng_markup::{html, view};
+use eng_markup::view;
 use serde_json::json;
 
-use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
-    render_sitemap_link, render_theme_picker,
-};
-use crate::{AppState, asset_url};
+use super::shell::PageShell;
+use crate::AppState;
+use crate::catalog::{CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_url};
+use crate::components::quick_actions::theme_picker;
+use crate::components::{Head, script_islands};
 
 const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
 const STORE_ORIGIN: &str = "https://store.engmanager.xyz";
@@ -44,236 +44,6 @@ fn plus_icon() -> HtmlFragment {
     HtmlFragment::new(PLUS_SVG.to_string())
 }
 
-const CAP_VIEWS: &[CapView] = &[
-    CapView {
-        id: "front",
-        label: "Front",
-        caption: "Crown-forward embroidery read.",
-    },
-    CapView {
-        id: "angle",
-        label: "Angle",
-        caption: "Side sweep, curved brim, panel seams.",
-    },
-    CapView {
-        id: "detail",
-        label: "Detail",
-        caption: "Close stitch pass with thread texture.",
-    },
-    CapView {
-        id: "worn",
-        label: "Worn",
-        caption: "On-head scale for the daily standup.",
-    },
-    CapView {
-        id: "model",
-        label: "Model",
-        caption: "Person-worn product reference.",
-    },
-];
-
-pub(crate) const SHOP_PRODUCTS: &[ShopProduct] = &[
-    ShopProduct {
-        slug: "engmanager-xyz",
-        name: "ENGMANAGER.XYZ 🌀",
-        phrase: "ENGMANAGER.XYZ 🌀",
-        cap_color: "#f4efe6",
-        thread_color: "#111111",
-        accent_color: "#0ea5e9",
-        price: 80,
-        description: "The site cap. Loud enough for the offsite, quiet enough for the retro.",
-    },
-    ShopProduct {
-        slug: "scrum-of-scrums",
-        name: "Scrum of Scrums 🗓️🗓️",
-        phrase: "Scrum of Scrums 🗓️🗓️",
-        cap_color: "#293241",
-        thread_color: "#f2f7ff",
-        accent_color: "#ee6c4d",
-        price: 80,
-        description: "A tiny crown for the meeting that became a meeting about meetings.",
-    },
-    ShopProduct {
-        slug: "scrum-master",
-        name: "Scrum Master 🗓️",
-        phrase: "Scrum Master 🗓️",
-        cap_color: "#e0fbfc",
-        thread_color: "#16324f",
-        accent_color: "#3d5a80",
-        price: 80,
-        description: "Ceremonial, but make it cotton. Built for blockers and board hygiene.",
-    },
-    ShopProduct {
-        slug: "velocity",
-        name: "Velocity",
-        phrase: "Velocity",
-        cap_color: "#f8d8e6",
-        thread_color: "#681a40",
-        accent_color: "#ff7aa2",
-        price: 80,
-        description: "For when the chart is a conversation starter, not a prophecy.",
-    },
-    ShopProduct {
-        slug: "real-programmer",
-        name: "Real Programmer 🧙‍♂️",
-        phrase: "Real Programmer 🧙‍♂️",
-        cap_color: "#111827",
-        thread_color: "#ecfeff",
-        accent_color: "#a78bfa",
-        price: 80,
-        description: "A stitched incantation for people who still read the stack trace.",
-    },
-    ShopProduct {
-        slug: "css-engineer",
-        name: "CSS Engineer 🐐",
-        phrase: "CSS Engineer 🐐",
-        cap_color: "#ffffff",
-        thread_color: "#244c3d",
-        accent_color: "#79b473",
-        price: 80,
-        description: "Cascade control, specificity restraint, and a tiny stitched goat.",
-    },
-    ShopProduct {
-        slug: "time-check",
-        name: "Time Check",
-        phrase: "Time Check",
-        cap_color: "#17324d",
-        thread_color: "#f9f871",
-        accent_color: "#ff4fa3",
-        price: 80,
-        description: "A brim-forward nudge for the room to pause, sync, and check the clock.",
-    },
-    ShopProduct {
-        slug: "standup",
-        name: "Standup 🏋🏻‍♂️",
-        phrase: "Standup 🏋🏻‍♂️",
-        cap_color: "#d4f1f4",
-        thread_color: "#0b4f6c",
-        accent_color: "#ff6b35",
-        price: 80,
-        description: "Fifteen minutes, lifted cleanly, then put back on the rack.",
-    },
-    ShopProduct {
-        slug: "lgtm-plus-two",
-        name: "LGTM +2",
-        phrase: "LGTM +2",
-        cap_color: "#fbf3b9",
-        thread_color: "#3a405a",
-        accent_color: "#f45b69",
-        price: 80,
-        description: "Approval, twice stitched. For reviews that can finally move.",
-    },
-    ShopProduct {
-        slug: "stakeholder",
-        name: "Stakeholder 🥩",
-        phrase: "Stakeholder 🥩",
-        cap_color: "#252422",
-        thread_color: "#fffcf2",
-        accent_color: "#eb5e28",
-        price: 80,
-        description: "For the person who can unblock funding and still asks great questions.",
-    },
-    ShopProduct {
-        slug: "agentic-slop",
-        name: "Agentic Slop 🔮",
-        phrase: "Agentic Slop 🔮",
-        cap_color: "#c7f9cc",
-        thread_color: "#22577a",
-        accent_color: "#38a3a5",
-        price: 80,
-        description: "A mystical output stream, confidently shipped before the evals finish.",
-    },
-    ShopProduct {
-        slug: "step-change",
-        name: "Step Change 🪜",
-        phrase: "Step Change 🪜",
-        cap_color: "#ece4db",
-        thread_color: "#4a4e69",
-        accent_color: "#9a8c98",
-        price: 80,
-        description: "The slope changed. The ladder was apparently involved.",
-    },
-    ShopProduct {
-        slug: "up-and-to-the-right",
-        name: "Up & to the Right",
-        phrase: "Up & to the Right",
-        cap_color: "#fefae0",
-        thread_color: "#283618",
-        accent_color: "#22c55e",
-        price: 80,
-        description: "Optimism with a y-axis. Small chart, big stakeholder energy.",
-    },
-    ShopProduct {
-        slug: "imma-p0",
-        name: "I'mma P0 ❄️",
-        phrase: "I'mma P0 ❄️",
-        cap_color: "#dbeafe",
-        thread_color: "#1d4ed8",
-        accent_color: "#f97316",
-        price: 80,
-        description: "Priority escalated, temperature lowered, incident channel opened.",
-    },
-    ShopProduct {
-        slug: "ownership",
-        name: "Ownership 💪🏻",
-        phrase: "Ownership 💪🏻",
-        cap_color: "#fee2e2",
-        thread_color: "#7f1d1d",
-        accent_color: "#ef4444",
-        price: 80,
-        description: "For the person who picked it up and did not drop the thread.",
-    },
-    ShopProduct {
-        slug: "okrs",
-        name: "OKRs 🎯",
-        phrase: "OKRs 🎯",
-        cap_color: "#e9d5ff",
-        thread_color: "#3b0764",
-        accent_color: "#ef4444",
-        price: 80,
-        description: "Objectives, key results, and one very clear embroidered target.",
-    },
-    ShopProduct {
-        slug: "violently-aligned",
-        name: "Violently Aligned ⚔️",
-        phrase: "Violently Aligned ⚔️",
-        cap_color: "#ccfbf1",
-        thread_color: "#134e4a",
-        accent_color: "#14b8a6",
-        price: 80,
-        description: "Same direction. Extremely little ambiguity about it.",
-    },
-    ShopProduct {
-        slug: "tokenmaxxing",
-        name: "Tokenmaxxing 💸",
-        phrase: "Tokenmaxxing 💸",
-        cap_color: "#f5f5f4",
-        thread_color: "#365314",
-        accent_color: "#84cc16",
-        price: 80,
-        description: "Long context, longer invoice, one more pass for polish.",
-    },
-];
-
-#[derive(Clone, Copy)]
-struct CapView {
-    id: &'static str,
-    label: &'static str,
-    caption: &'static str,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct ShopProduct {
-    pub(crate) slug: &'static str,
-    pub(crate) name: &'static str,
-    pub(crate) phrase: &'static str,
-    pub(crate) cap_color: &'static str,
-    pub(crate) thread_color: &'static str,
-    pub(crate) accent_color: &'static str,
-    pub(crate) price: u16,
-    pub(crate) description: &'static str,
-}
-
 pub async fn index(State(state): State<AppState>) -> Response {
     (
         [(header::CACHE_CONTROL, SHOP_CACHE_CONTROL)],
@@ -290,88 +60,87 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
     let products = render_product_grid();
     // One island for the catalog + the Stripe publishable key, so the inline
     // checkout (in the bag drawer) can mount Elements without a page load.
-    let data = HtmlFragment::new(format!(
-        "window.__shopProducts={};window.__checkout={};",
-        product_data_json(),
-        json!({
-            "publishableKey": checkout.publishable_key(),
-            "enabled": checkout.is_enabled(),
-            "currency": "usd",
-            "returnPath": "/",
-        }),
-    ));
+    let data = script_islands(&[
+        ("__shopProducts", &product_data_json()),
+        (
+            "__checkout",
+            &json!({
+                "publishableKey": checkout.publishable_key(),
+                "enabled": checkout.is_enabled(),
+                "currency": "usd",
+                "returnPath": "/",
+            })
+            .to_string(),
+        ),
+    ]);
 
-    html! {
-        <!DOCTYPE html>
-        <html lang="en">
-            <head>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>{ SHOP_TITLE }</title>
-                <meta name="description" content=SHOP_DESCRIPTION />
-                <meta name="robots" content="noindex,follow" />
-                <link rel="canonical" href=STORE_ORIGIN />
-                <link rel="alternate" href=SHOP_ORIGIN />
-                <meta property="og:site_name" content="ENGMANAGER.XYZ" />
-                <meta property="og:type" content="website" />
-                <meta property="og:title" content=SHOP_TITLE />
-                <meta property="og:description" content=SHOP_DESCRIPTION />
-                <meta property="og:url" content=STORE_ORIGIN />
-                <meta name="twitter:card" content="summary" />
-                <meta name="twitter:title" content=SHOP_TITLE />
-                <meta name="twitter:description" content=SHOP_DESCRIPTION />
-                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
-                { render_sitemap_link() }
-                { render_resource_hints() }
-                <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
-                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
-                <link rel="stylesheet" href={ asset_url("css/shop.css") } />
-                <script src={ asset_url("js/theme-toggle.js") }></script>
-                { render_sfx_urls() }
-                <script>{ data }</script>
-                <link rel="preconnect" href="https://js.stripe.com" crossorigin />
-                <link rel="preconnect" href="https://api.stripe.com" crossorigin />
-                <script src="https://js.stripe.com/v3" defer></script>
-                <script src={ asset_url("js/audio.js") } defer></script>
-                <script src={ asset_url("js/shop.js") } defer></script>
-                <link rel="manifest" href={ asset_url("manifest.webmanifest") } />
-                <meta name="theme-color" content="#e64553" />
-                { render_dev_meta() }
-            </head>
-            <body class="shop-page">
-                <a class="skip-link" href="#main">"Skip to caps"</a>
-                <header class="shop-topbar" aria-label="Store controls">
-                    <a class="shop-home-link"
-                       href="https://engmanager.xyz/"
-                       aria-label="Back to ENGMANAGER.XYZ">
-                        { chevron() }
-                    </a>
-                    { render_theme_picker() }
-                    <div class="shop-top-actions">
-                        <button class="shop-cart-button"
-                                type="button"
-                                data-cart-toggle
-                                aria-label="Open cart"
-                                aria-expanded="false">
-                            <span class="shop-cart-icon" aria-hidden="true"></span>
-                            <span class="shop-cart-count" data-cart-count>"0"</span>
-                        </button>
-                    </div>
-                </header>
-                <main id="main" class="shop-shell">
-                    <h1 id="shop-title" class="sr-only">"Dad Caps"</h1>
-                    <section class="shop-grid" data-shop-grid aria-label="Dad cap products">
-                        { products }
-                    </section>
-                </main>
-                { render_product_panel() }
-                { render_bag() }
-                <div class="shop-backdrop" data-shop-backdrop hidden></div>
-            </body>
-        </html>
-    }
-    .into_string()
+    // Pre-shell shop meta block, kept verbatim (and pinned by the tests
+    // below): its tag set and order predate `MetaTags` and exceed it
+    // (alternate link, og:site_name/og:description, twitter:title/description).
+    let preview_meta = view! {
+        <meta name="description" content=SHOP_DESCRIPTION />
+        <meta name="robots" content="noindex,follow" />
+        <link rel="canonical" href=STORE_ORIGIN />
+        <link rel="alternate" href=SHOP_ORIGIN />
+        <meta property="og:site_name" content="ENGMANAGER.XYZ" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content=SHOP_TITLE />
+        <meta property="og:description" content=SHOP_DESCRIPTION />
+        <meta property="og:url" content=STORE_ORIGIN />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content=SHOP_TITLE />
+        <meta name="twitter:description" content=SHOP_DESCRIPTION />
+    };
+
+    let mut assets = Head::new();
+    assets.add_css("css/shop.css");
+
+    let mut scripts = Head::new();
+    scripts.add_inline(data);
+    scripts.add_inline(view! {
+        <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+        <link rel="preconnect" href="https://api.stripe.com" crossorigin />
+        <script src="https://js.stripe.com/v3" defer></script>
+    });
+    scripts.add_js("js/audio.js");
+    scripts.add_js("js/shop.js");
+
+    let body = view! {
+        <header class="shop-topbar" aria-label="Store controls">
+            <a class="shop-home-link"
+               href="https://engmanager.xyz/"
+               aria-label="Back to ENGMANAGER.XYZ">
+                { chevron() }
+            </a>
+            { theme_picker() }
+            <div class="shop-top-actions">
+                <button class="shop-cart-button"
+                        type="button"
+                        data-cart-toggle
+                        aria-label="Open cart"
+                        aria-expanded="false">
+                    <span class="shop-cart-icon" aria-hidden="true"></span>
+                    <span class="shop-cart-count" data-cart-count>"0"</span>
+                </button>
+            </div>
+        </header>
+        <main id="main" class="shop-shell">
+            <h1 id="shop-title" class="sr-only">"Dad Caps"</h1>
+            <section class="shop-grid" data-shop-grid aria-label="Dad cap products">
+                { products }
+            </section>
+        </main>
+        { render_product_panel() }
+        { render_bag() }
+        <div class="shop-backdrop" data-shop-backdrop hidden></div>
+    };
+
+    PageShell::new(SHOP_TITLE, "shop-page")
+        .raw_meta(preview_meta)
+        .assets(assets)
+        .scripts(scripts)
+        .skip_link(Some("Skip to caps"))
+        .render(body)
 }
 
 fn render_product_grid() -> HtmlFragment {
@@ -380,7 +149,7 @@ fn render_product_grid() -> HtmlFragment {
 
 fn render_product_card(product: &ShopProduct) -> HtmlFragment {
     let href = format!("/products/{}?image=front", product.slug);
-    let price = format!("${}", product.price);
+    let price = product.price.label();
     let image = product_image_url(product, &CAP_VIEWS[0]);
     let alt = format!("{} embroidered dad cap front view", product.name);
 
@@ -429,7 +198,7 @@ fn render_product_panel() -> HtmlFragment {
                         aria-label="Close product">
                     { x_icon() }
                 </button>
-                { render_theme_picker() }
+                { theme_picker() }
                 <button class="shop-cart-button"
                         type="button"
                         data-cart-toggle
@@ -638,8 +407,8 @@ pub(crate) fn product_data_json() -> String {
                 "slug": product.slug,
                 "name": product.name,
                 "phrase": product.phrase,
-                "price": product.price,
-                "priceLabel": format!("${}", product.price),
+                "price": product.price.cents() / 100,
+                "priceLabel": product.price.label(),
                 "description": product.description,
                 "colors": {
                     "cap": product.cap_color,
@@ -673,19 +442,9 @@ fn product_images_json(product: &ShopProduct) -> Vec<serde_json::Value> {
         .collect()
 }
 
-fn product_image_url(product: &ShopProduct, view: &CapView) -> String {
-    asset_url(&product_image_path(product, view))
-}
-
-fn product_image_path(product: &ShopProduct, view: &CapView) -> String {
-    format!("shop/caps/{}-{}.webp", product.slug, view.id)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashSet;
-    use std::path::Path;
 
     #[test]
     fn shop_page_uses_site_assets_and_preview_metadata() {
@@ -704,32 +463,6 @@ mod tests {
         assert!(html.contains("data-shop-grid"));
         assert!(html.contains(".webp"));
         assert!(!html.contains("<style>"));
-    }
-
-    #[test]
-    fn product_catalog_is_full_grid_with_unique_slugs() {
-        assert_eq!(SHOP_PRODUCTS.len(), 18);
-        let slugs = SHOP_PRODUCTS
-            .iter()
-            .map(|product| product.slug)
-            .collect::<HashSet<_>>();
-        assert_eq!(slugs.len(), SHOP_PRODUCTS.len());
-    }
-
-    #[test]
-    fn every_product_view_has_a_generated_asset() {
-        let assets_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
-
-        for product in SHOP_PRODUCTS {
-            for view in CAP_VIEWS {
-                let path = assets_root.join(product_image_path(product, view));
-                assert!(
-                    path.exists(),
-                    "missing generated cap asset: {}",
-                    path.display()
-                );
-            }
-        }
     }
 
     #[test]

@@ -13,10 +13,14 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 eng-markup = { workspace = true }
 eng-domain = { workspace = true }
 tantivy = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
+form_urlencoded = { workspace = true }
 dotenvy = { workspace = true }
 uuid = { workspace = true }
 surrealdb = { workspace = true }
@@ -34,7 +38,11 @@ oxc_parser = { workspace = true }
 oxc_span = { workspace = true }
 
 [dev-dependencies]
+# Router-surface regression tests drive the real Router with
+# tower::ServiceExt::oneshot and read bodies via http-body-util.
+http-body-util = "0.1"
 roxmltree = "0.20"
+tower = { version = "0.5", features = ["util"] }
 
 [features]
 # Enables live-reload via systemfd's LISTEN_FDS socket inheritance.
