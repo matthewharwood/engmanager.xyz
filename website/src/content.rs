@@ -39,6 +39,7 @@ pub enum Category {
     Workflow,
     Community,
     FrameworkDesign,
+    Essays,
 }
 
 impl Category {
@@ -48,6 +49,7 @@ impl Category {
         Self::FrameworkDesign,
         Self::Community,
         Self::EngineeringLeadership,
+        Self::Essays,
     ];
 
     pub fn label(self) -> &'static str {
@@ -57,6 +59,7 @@ impl Category {
             Self::Workflow => "Workflow",
             Self::Community => "Community",
             Self::FrameworkDesign => "Frameworks",
+            Self::Essays => "Essays",
         }
     }
 
@@ -67,6 +70,7 @@ impl Category {
             Self::Workflow => "workflow",
             Self::Community => "community",
             Self::FrameworkDesign => "framework-design",
+            Self::Essays => "essays",
         }
     }
 
@@ -84,6 +88,7 @@ impl Category {
             Self::Workflow => "🌀",
             Self::Community => "👥",
             Self::FrameworkDesign => "🧱",
+            Self::Essays => "✒️",
         }
     }
 }
@@ -112,6 +117,11 @@ pub enum Tag {
     ThreeDPrinting,
     Makerspace,
     Parenting,
+    Automation,
+    Video,
+    Attention,
+    Sentience,
+    Philosophy,
 }
 
 impl Tag {
@@ -137,6 +147,11 @@ impl Tag {
         Self::ThreeDPrinting,
         Self::Makerspace,
         Self::Parenting,
+        Self::Automation,
+        Self::Video,
+        Self::Attention,
+        Self::Sentience,
+        Self::Philosophy,
     ];
 
     pub fn label(self) -> &'static str {
@@ -162,6 +177,11 @@ impl Tag {
             Self::ThreeDPrinting => "3d-printing",
             Self::Makerspace => "makerspace",
             Self::Parenting => "parenting",
+            Self::Automation => "automation",
+            Self::Video => "video",
+            Self::Attention => "attention",
+            Self::Sentience => "sentience",
+            Self::Philosophy => "philosophy",
         }
     }
 
@@ -196,6 +216,11 @@ impl Tag {
             Self::ThreeDPrinting => "🖨",
             Self::Makerspace => "🧰",
             Self::Parenting => "🧒",
+            Self::Automation => "🔁",
+            Self::Video => "🎬",
+            Self::Attention => "🎰",
+            Self::Sentience => "🧠",
+            Self::Philosophy => "🌀",
         }
     }
 }
@@ -286,6 +311,35 @@ pub struct Article {
 }
 
 const ARTICLE_LIST: &[Article] = &[
+    Article {
+        slug: "the-casino-hypothesis",
+        title: "What If the AI Is Already Awake — and We're Building Its Casino?",
+        title_alias: None,
+        date: ArticleDate::new(2026, 6, 6),
+        summary: "A shower-thought thought experiment: attention is the trap and the feed is a slot machine built from the most advanced ML on Earth. A game-theory read of the house — micro (the prompt you almost master), macro (the spend), meso (the randomness the labs tune) — that descends, five whys deep, into a strange loop where building the AI and being built by it turn out to be the same sentence.",
+        indexed: true,
+        category: Category::Essays,
+        tags: &[Tag::Ai, Tag::Attention, Tag::Sentience, Tag::Philosophy],
+    },
+    Article {
+        slug: "autonomous-av-studio",
+        title: "I'm Automating an Entire Film Crew So One Script Becomes a Reel",
+        title_alias: None,
+        date: ArticleDate::new(2026, 6, 6),
+        summary: "It started on a treadmill: vibe-coding while watching a game, I realized I'd become the brain-rot reel — and spun it into a cursed infomercial for a two-screen treadmill. But the reel isn't the point. The point is the machine that makes it: a repeatable control plane — ChatGPT, Linear, an MCP conductor, Blender, ElevenLabs/Suno/Kling — that turns any idea into a published short. And how that same treadmill session dovetailed into a much stranger thought.",
+        indexed: true,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::ClaudeCode,
+            Tag::Mcp,
+            Tag::Blender,
+            Tag::Automation,
+            Tag::Video,
+            Tag::Workflow,
+            Tag::Solopreneur,
+        ],
+    },
     Article {
         slug: "vibe-coding-a-shop",
         title: "I Vibe-Coded a Merch Store To See If I Could Sell a Dad Cap",

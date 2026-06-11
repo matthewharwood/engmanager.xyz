@@ -286,3 +286,10 @@ does not hold yet.
   upgrade-insecure-requests directive, ledger #20) has been clean; consider
   promoting to an enforced `Content-Security-Policy` after a burn-in period
   with report collection.
+- HTTP Range support in the asset handler: surfaced by scrollmill-duo.mp4
+  (22MB) — origin returns 200 + full body for Range requests (pre-existing,
+  predates the refactor). Cloudflare serves ranges from edge cache for
+  default-cached extensions (mp4), but Safari on an edge MISS may refuse
+  video playback without 206 support. Fix: parse single-range requests,
+  slice the embedded Bytes (zero-copy), respond 206 + Content-Range +
+  Accept-Ranges: bytes.
