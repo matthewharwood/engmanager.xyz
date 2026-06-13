@@ -1,0 +1,20 @@
+# Keep the Docker build context small and reproducible. The build needs the
+# Cargo manifests, the `website` crate source, and its embedded content
+# (assets/, articles/, css/src, js/src) — everything else is noise or bloat.
+target/
+**/target/
+.git/
+.github/
+.claude/
+_docs/
+prompts/
+node_modules/
+**/node_modules/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+# Local tooling / editor cruft
+.vscode/
+.idea/
