@@ -506,7 +506,7 @@ pub async fn index() -> Html<String> {
                       role="search"
                       data-search-form>
                     <label class="sr-only" for="site-search-input">
-                        "Search articles and comments"
+                        "Search articles"
                     </label>
                     <input class="home-search-input"
                            id="site-search-input"

@@ -49,8 +49,8 @@
 // SWAP SURFACE: <body> children minus (a) the .skip-link (identical on all
 // eligible pages), (b) [data-swap-region] islands — reconciled individually
 // by region name (nav / to-top / quick-actions / receipt / toasts / trash /
-// reveal), (c) runtime nodes injected by scripts (.big-cursor,
-// .inline-comment-popover) which their owners dispose via onSwap hooks.
+// reveal), (c) runtime nodes injected by scripts (.big-cursor) which
+// their owners dispose via onSwap hooks.
 // After the swap the router fires window.__engNav._fire(document.body):
 // body is the post-swap content root (the homepage renders its content as
 // body-level islands, so <main>/#main alone is not a usable callback scope).
@@ -176,7 +176,7 @@
 
     // Runtime-injected body nodes the router must never treat as page
     // content: the shared skip-link plus script-owned overlays.
-    const KEPT = ".skip-link,.big-cursor,.inline-comment-popover";
+    const KEPT = ".skip-link,.big-cursor";
 
     const regionsOf = (kids) => {
         const map = new Map();

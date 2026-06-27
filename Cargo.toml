@@ -21,12 +21,10 @@ thiserror = "2"
 # crate's extracted codec) — replaces the hand-rolled search query codec.
 form_urlencoded = "1"
 dotenvy = "0.15"
-uuid = { version = "1", features = ["v4", "serde"] }
 # Stripe webhook signature verification (HMAC-SHA256 over the raw body).
 hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
-surrealdb = { version = "3.1.0-beta.3", default-features = false, features = ["kv-mem", "kv-surrealkv", "protocol-ws", "rustls"] }
 lightningcss = "1.0.0-alpha.69"
 oxc_allocator = "0.131"
 oxc_codegen = "0.131"
