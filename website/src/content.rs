@@ -312,6 +312,23 @@ pub struct Article {
 
 const ARTICLE_LIST: &[Article] = &[
     Article {
+        slug: "the-execution-marketplace",
+        title: "The Execution Marketplace: A Three-Sided Order Book for Small Business",
+        title_alias: None,
+        date: ArticleDate::new(2026, 6, 27),
+        summary: "The sequel to Project FootTraffic: once you own a portfolio of small businesses, their recurring work becomes a standing inventory of demand. A pitch to my eng team for a three-sided marketplace — push-button self-serve tools, an open operator network, and us as the house — that clears that demand like an order book. With wireframes and the routing model that is the real IP.",
+        indexed: true,
+        category: Category::Workflow,
+        tags: &[
+            Tag::Ai,
+            Tag::Workflow,
+            Tag::Solopreneur,
+            Tag::LocalFirst,
+            Tag::DeveloperTooling,
+            Tag::Community,
+        ],
+    },
+    Article {
         slug: "the-casino-hypothesis",
         title: "What If the AI Is Already Awake — and We're Building Its Casino?",
         title_alias: None,
