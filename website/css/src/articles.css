@@ -1450,3 +1450,276 @@ html[data-article-reveal="running"]
 
 /* The "to top" button moved to a co-located feature component:
  * website/src/components/to_top/ (style.css + script.js + mod.rs). */
+
+/* ===========================================================================
+ * Execution-marketplace article — Mermaid model diagrams + product
+ * wireframes. The Mermaid diagrams are rendered client-side from an inline
+ * module script in the article body; their theme variables are read from
+ * the live CSS custom properties so they re-skin with every theme. Until
+ * Mermaid swaps the source text for an <svg>, the raw graph definition is
+ * kept out of the layout (visibility:hidden) to avoid a flash of source.
+ * =========================================================================== */
+.model-figure {
+    inline-size: 100%;
+}
+
+.article .mermaid {
+    inline-size: 100%;
+    display: flex;
+    justify-content: center;
+    min-block-size: 2rem;
+    margin: 0;
+}
+
+.article .mermaid:not([data-processed]) {
+    visibility: hidden;
+}
+
+.article .mermaid svg {
+    max-inline-size: 100%;
+    block-size: auto;
+    font-family: var(--font-mono);
+}
+
+/* Product wireframes — a faux browser window framing a low-fidelity mock
+ * of the owner console and the open job board. Mono labels, ghost tiles,
+ * skeleton rows; same token palette as the rest of the article furniture. */
+.wireframe {
+    margin-block: 2rem;
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.75rem;
+    background: var(--ctp-mantle);
+    overflow: hidden;
+}
+
+.wireframe-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.85rem;
+    border-block-end: 1px solid var(--ctp-surface0);
+    background: color-mix(in oklab, var(--accent) 5%, var(--ctp-base));
+}
+
+.wf-dot {
+    inline-size: 0.55rem;
+    block-size: 0.55rem;
+    border-radius: 50%;
+    border: 1px solid var(--ctp-overlay0);
+    flex: 0 0 auto;
+}
+
+.wf-chrome-url {
+    margin-inline-start: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    color: var(--ctp-subtext0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wireframe-screen {
+    padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.wf-label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ctp-subtext0);
+}
+
+.wf-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.wf-tool {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--ctp-surface0));
+    border-radius: 0.5rem;
+    background: color-mix(in oklab, var(--accent) 6%, var(--ctp-base));
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ctp-text);
+}
+
+.wf-compose {
+    border: 1px dashed color-mix(in oklab, var(--accent) 45%, var(--ctp-surface0));
+    border-radius: 0.5rem;
+    background: var(--ctp-base);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.wf-compose-input {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ctp-subtext1);
+    font-style: italic;
+}
+
+.wf-compose-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.wf-note {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ctp-subtext0);
+}
+
+.wf-btn {
+    padding: 0.5rem 0.95rem;
+    background: var(--accent);
+    color: var(--ctp-base);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 0.45rem;
+    white-space: nowrap;
+}
+
+/* Job board feed */
+.wf-feed {
+    gap: 0.6rem;
+}
+
+.wf-job {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.5rem;
+    background: var(--ctp-base);
+    flex-wrap: wrap;
+}
+
+.wf-job-status {
+    flex: 0 0 auto;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    border: 1px solid currentColor;
+}
+
+.wf-job-status.is-open {
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.wf-job-status.is-claimed {
+    color: var(--ctp-overlay1);
+    background: color-mix(in oklab, var(--ctp-overlay1) 14%, transparent);
+}
+
+.wf-job-status.is-house {
+    color: var(--ctp-mauve);
+    background: color-mix(in oklab, var(--ctp-mauve) 16%, transparent);
+}
+
+.wf-job-main {
+    flex: 1 1 12rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-inline-size: 0;
+}
+
+.wf-job-title {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ctp-text);
+    line-height: 1.3;
+}
+
+.wf-job-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.wf-chip {
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--ctp-surface0);
+    color: var(--ctp-subtext1);
+    background: var(--ctp-mantle);
+}
+
+.wf-chip-biz {
+    color: var(--ctp-text);
+    border-color: color-mix(in oklab, var(--accent) 30%, var(--ctp-surface0));
+}
+
+/* Work-type tags keep the neutral base .wf-chip look; named so the modifier
+ * set is complete and the markup reads self-documenting next to biz/sla. */
+.wf-chip-tag {
+    color: var(--ctp-subtext1);
+}
+
+.wf-chip-sla {
+    color: var(--accent);
+    border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+.wf-claim {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.4rem;
+    background: var(--accent);
+    color: var(--ctp-base);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.wf-claimed {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.4rem;
+    border: 1px dashed var(--ctp-surface1, var(--ctp-surface0));
+    color: var(--ctp-subtext0);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 30rem) {
+    .wf-job-status {
+        order: -1;
+    }
+    .wf-claim,
+    .wf-claimed {
+        margin-inline-start: auto;
+    }
+}
