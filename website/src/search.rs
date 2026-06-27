@@ -1,18 +1,16 @@
 use std::cmp::Reverse;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use anyhow::{Context, Result};
 use pulldown_cmark::Event;
 use serde::Serialize;
 use tantivy::collector::TopDocs;
-use tantivy::query::{Query, QueryParser};
+use tantivy::query::QueryParser;
 use tantivy::schema::document::Value;
 use tantivy::schema::{Field, STORED, STRING, Schema, TEXT};
-use tantivy::{Index, IndexReader, IndexWriter, TantivyDocument};
+use tantivy::{Index, IndexReader, TantivyDocument};
 
 use crate::catalog::{PriceCents, SHOP_PRODUCTS, ShopProduct};
-use crate::comments::{CommentRecord, CommentStatus};
 use crate::content::{Article, ArticleDate, Category, Tag, article_markdown, public_articles};
 
 // Shop products live on the dedicated shop host; search results link there with
@@ -20,7 +18,6 @@ use crate::content::{Article, ArticleDate, Category, Tag, article_markdown, publ
 const SHOP_PRODUCT_ORIGIN: &str = "https://shop.engmanager.xyz";
 
 const ARTICLE_SEARCH_LIMIT: usize = 1_000;
-const COMMENT_SEARCH_LIMIT: usize = 1_000;
 const PAGE_SIZE: usize = 20;
 // Upper bound for the client-supplied page param: keeps the pagination
 // arithmetic far from overflow and is absurdly beyond the real corpus.
@@ -37,17 +34,6 @@ struct ArticleDoc {
     date: ArticleDate,
 }
 
-#[derive(Clone, Debug)]
-struct CommentDoc {
-    comment_id: String,
-    article_slug: String,
-    article_title: String,
-    author_name: String,
-    body: String,
-    quote_exact: String,
-    created_at_ms: i64,
-}
-
 #[derive(Clone, Copy)]
 struct ArticleFields {
     slug: Field,
@@ -56,25 +42,11 @@ struct ArticleFields {
     body: Field,
 }
 
-#[derive(Clone, Copy)]
-struct CommentFields {
-    comment_id: Field,
-    article_slug: Field,
-    author_name: Field,
-    body: Field,
-    quote_exact: Field,
-}
-
 pub struct SearchEngine {
     article_index: Index,
     article_reader: IndexReader,
     article_fields: ArticleFields,
     articles: HashMap<String, ArticleDoc>,
-    comment_index: Index,
-    comment_reader: IndexReader,
-    comment_writer: Mutex<IndexWriter<TantivyDocument>>,
-    comment_fields: CommentFields,
-    comments: RwLock<HashMap<String, CommentDoc>>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -98,10 +70,8 @@ pub struct TypeaheadHit {
 #[derive(Clone, Debug)]
 pub struct SearchResults {
     pub article_hits: Vec<ArticleSearchHit>,
-    pub comment_hits: Vec<CommentSearchHit>,
     pub product_hits: Vec<ProductSearchHit>,
     pub total_articles: usize,
-    pub total_comments: usize,
     pub total_products: usize,
     pub facets: FacetCounts,
     pub page: usize,
@@ -116,17 +86,6 @@ pub struct ArticleSearchHit {
     pub category: Category,
     pub tags: Vec<Tag>,
     pub date: ArticleDate,
-}
-
-#[derive(Clone, Debug)]
-pub struct CommentSearchHit {
-    pub comment_id: String,
-    pub article_slug: String,
-    pub article_title: String,
-    pub author_name: String,
-    pub snippet: String,
-    pub quote_exact: String,
-    pub created_at_ms: i64,
 }
 
 #[derive(Clone, Debug)]
@@ -147,10 +106,7 @@ pub struct FacetCounts {
 }
 
 impl SearchEngine {
-    pub fn build_in_memory(
-        articles: &'static [Article],
-        comments: &[CommentRecord],
-    ) -> Result<SearchEngine> {
+    pub fn build_in_memory(articles: &'static [Article]) -> Result<SearchEngine> {
         let (article_index, article_fields) = build_article_index_schema();
         let mut article_writer = article_index
             .writer_with_num_threads(1, 50_000_000)
@@ -178,79 +134,12 @@ impl SearchEngine {
         article_writer.commit().context("commit article index")?;
         let article_reader = article_index.reader().context("create article reader")?;
 
-        let (comment_index, comment_fields) = build_comment_index_schema();
-        let mut comment_writer = comment_index
-            .writer_with_num_threads(1, 50_000_000)
-            .context("create comment index writer")?;
-        let mut comment_docs = HashMap::new();
-        for record in comments
-            .iter()
-            .filter(|record| record.status == CommentStatus::Visible.as_str())
-        {
-            if let Some(doc) = comment_doc_from_record(record, &article_docs) {
-                comment_writer
-                    .add_document(comment_to_tantivy_doc(&comment_fields, &doc))
-                    .context("index comment document")?;
-                comment_docs.insert(doc.comment_id.clone(), doc);
-            }
-        }
-        comment_writer.commit().context("commit comment index")?;
-        let comment_reader = comment_index.reader().context("create comment reader")?;
-
         Ok(SearchEngine {
             article_index,
             article_reader,
             article_fields,
             articles: article_docs,
-            comment_index,
-            comment_reader,
-            comment_writer: Mutex::new(comment_writer),
-            comment_fields,
-            comments: RwLock::new(comment_docs),
         })
-    }
-
-    /// Index a freshly created comment. The tantivy commit + reader reload do
-    /// blocking I/O, so the work runs on the blocking pool (rust-async-runtime
-    /// "spawn_blocking") and the handler awaits the result. Indexing is
-    /// BEST-EFFORT: the comment is already durably stored, callers log a
-    /// failure and still return 201 — the index rebuilds from the store at
-    /// the next boot.
-    pub async fn index_comment(self: &Arc<Self>, record: &CommentRecord) -> Result<()> {
-        let engine = Arc::clone(self);
-        let record = record.clone();
-        tokio::task::spawn_blocking(move || engine.index_comment_blocking(&record))
-            .await
-            .context("comment indexing task panicked")?
-    }
-
-    fn index_comment_blocking(&self, record: &CommentRecord) -> Result<()> {
-        if record.status != CommentStatus::Visible.as_str() {
-            return Ok(());
-        }
-        let Some(doc) = comment_doc_from_record(record, &self.articles) else {
-            return Ok(());
-        };
-
-        // Poisoned lock = a previous indexing thread panicked mid-write; the
-        // writer state is still usable, so recover instead of cascading.
-        let mut writer = self
-            .comment_writer
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
-        writer
-            .add_document(comment_to_tantivy_doc(&self.comment_fields, &doc))
-            .context("index new comment")?;
-        writer.commit().context("commit new comment")?;
-        self.comment_reader
-            .reload()
-            .context("reload comment reader")?;
-        self.comments
-            .write()
-            // Poison recovery: the map insert below can't observe torn state.
-            .unwrap_or_else(PoisonError::into_inner)
-            .insert(doc.comment_id.clone(), doc);
-        Ok(())
     }
 
     pub fn typeahead(&self, q: &str, limit: usize) -> Vec<TypeaheadHit> {
@@ -287,37 +176,6 @@ impl SearchEngine {
             .collect();
 
         hits.extend(
-            self.comments
-                .read()
-                // Poison recovery: read-only view; a poisoned map is still valid.
-                .unwrap_or_else(PoisonError::into_inner)
-                .values()
-                .filter_map(|comment| {
-                    let body = comment.body.to_lowercase();
-                    let quote = comment.quote_exact.to_lowercase();
-                    let rank = if body.contains(&needle) {
-                        3
-                    } else if quote.contains(&needle) {
-                        4
-                    } else {
-                        return None;
-                    };
-                    Some((
-                        rank,
-                        TypeaheadHit {
-                            kind: "comment",
-                            title: format!("Comment on {}", comment.article_title),
-                            detail: comment.body.clone(),
-                            url: format!(
-                                "/articles/{}#comment-{}",
-                                comment.article_slug, comment.comment_id
-                            ),
-                        },
-                    ))
-                }),
-        );
-
-        hits.extend(
             matching_products(&needle)
                 .into_iter()
                 .map(|(rank, product)| {
@@ -339,7 +197,6 @@ impl SearchEngine {
 
     pub fn search(&self, query: &SearchQuery) -> Result<SearchResults> {
         let article_matches = self.article_matches(query)?;
-        let comment_matches = self.comment_matches(query)?;
         let facets = facet_counts(&article_matches);
 
         // Clamp the client-supplied page so `(page - 1) * PAGE_SIZE` can never
@@ -357,20 +214,6 @@ impl SearchEngine {
                 category: article.category,
                 tags: article.tags.clone(),
                 date: article.date,
-            })
-            .collect();
-        let comment_hits = comment_matches
-            .iter()
-            .skip(start)
-            .take(PAGE_SIZE)
-            .map(|comment| CommentSearchHit {
-                comment_id: comment.comment_id.clone(),
-                article_slug: comment.article_slug.clone(),
-                article_title: comment.article_title.clone(),
-                author_name: comment.author_name.clone(),
-                snippet: snippet_for(&comment.body, &comment.quote_exact, &query.q),
-                quote_exact: comment.quote_exact.clone(),
-                created_at_ms: comment.created_at_ms,
             })
             .collect();
 
@@ -401,10 +244,8 @@ impl SearchEngine {
 
         Ok(SearchResults {
             total_articles: article_matches.len(),
-            total_comments: comment_matches.len(),
             total_products,
             article_hits,
-            comment_hits,
             product_hits,
             facets,
             page,
@@ -449,51 +290,6 @@ impl SearchEngine {
         }
         Ok(docs)
     }
-
-    fn comment_matches(&self, query: &SearchQuery) -> Result<Vec<CommentDoc>> {
-        // Poison recovery: read-only view; a poisoned map is still valid.
-        let comments = self.comments.read().unwrap_or_else(PoisonError::into_inner);
-        let mut docs = if query.q.trim().is_empty() {
-            comments.values().cloned().collect::<Vec<_>>()
-        } else {
-            let searcher = self.comment_reader.searcher();
-            let mut parser = QueryParser::for_index(
-                &self.comment_index,
-                vec![
-                    self.comment_fields.body,
-                    self.comment_fields.quote_exact,
-                    self.comment_fields.author_name,
-                ],
-            );
-            parser.set_field_boost(self.comment_fields.body, 2.0);
-            let parsed: Box<dyn Query> = parser.parse_query_lenient(query.q.trim()).0;
-            searcher
-                .search(
-                    parsed.as_ref(),
-                    &TopDocs::with_limit(COMMENT_SEARCH_LIMIT).order_by_score(),
-                )
-                .context("search comment index")?
-                .into_iter()
-                .filter_map(|(_, address)| {
-                    let doc: TantivyDocument = searcher.doc(address).ok()?;
-                    let id = doc.get_first(self.comment_fields.comment_id)?.as_str()?;
-                    comments.get(id).cloned()
-                })
-                .collect::<Vec<_>>()
-        };
-        drop(comments);
-
-        docs.retain(|comment| {
-            self.articles
-                .get(&comment.article_slug)
-                .map(|article| article_matches_filters(article, query))
-                .unwrap_or(false)
-        });
-        if query.q.trim().is_empty() {
-            docs.sort_by_key(|doc| Reverse(doc.created_at_ms));
-        }
-        Ok(docs)
-    }
 }
 
 // The old `title_prefix` ngram field was never queried (typeahead matches the
@@ -519,27 +315,6 @@ fn build_article_index_schema() -> (Index, ArticleFields) {
     )
 }
 
-fn build_comment_index_schema() -> (Index, CommentFields) {
-    let mut builder = Schema::builder();
-    let comment_id = builder.add_text_field("comment_id", STRING | STORED);
-    let article_slug = builder.add_text_field("article_slug", STRING | STORED);
-    let author_name = builder.add_text_field("author_name", TEXT | STORED);
-    let body = builder.add_text_field("body", TEXT | STORED);
-    let quote_exact = builder.add_text_field("quote_exact", TEXT | STORED);
-    let schema = builder.build();
-    let index = Index::create_in_ram(schema);
-    (
-        index,
-        CommentFields {
-            comment_id,
-            article_slug,
-            author_name,
-            body,
-            quote_exact,
-        },
-    )
-}
-
 fn article_to_tantivy_doc(fields: &ArticleFields, article: &ArticleDoc) -> TantivyDocument {
     let mut doc = TantivyDocument::new();
     doc.add_text(fields.slug, &article.slug);
@@ -547,32 +322,6 @@ fn article_to_tantivy_doc(fields: &ArticleFields, article: &ArticleDoc) -> Tanti
     doc.add_text(fields.summary, &article.summary);
     doc.add_text(fields.body, &article.body);
     doc
-}
-
-fn comment_to_tantivy_doc(fields: &CommentFields, comment: &CommentDoc) -> TantivyDocument {
-    let mut doc = TantivyDocument::new();
-    doc.add_text(fields.comment_id, &comment.comment_id);
-    doc.add_text(fields.article_slug, &comment.article_slug);
-    doc.add_text(fields.author_name, &comment.author_name);
-    doc.add_text(fields.body, &comment.body);
-    doc.add_text(fields.quote_exact, &comment.quote_exact);
-    doc
-}
-
-fn comment_doc_from_record(
-    record: &CommentRecord,
-    articles: &HashMap<String, ArticleDoc>,
-) -> Option<CommentDoc> {
-    let article = articles.get(&record.article_slug)?;
-    Some(CommentDoc {
-        comment_id: record.comment_id.clone(),
-        article_slug: record.article_slug.clone(),
-        article_title: article.title.clone(),
-        author_name: record.author_name.clone(),
-        body: record.body.clone(),
-        quote_exact: record.quote_exact.clone(),
-        created_at_ms: record.created_at_ms,
-    })
 }
 
 fn article_matches_filters(article: &ArticleDoc, query: &SearchQuery) -> bool {
@@ -764,7 +513,7 @@ mod tests {
     #[test]
     fn hostile_page_param_cannot_overflow_pagination() {
         let engine =
-            SearchEngine::build_in_memory(ARTICLES, &[]).expect("search engine builds in memory");
+            SearchEngine::build_in_memory(ARTICLES).expect("search engine builds in memory");
         let query = SearchQuery {
             page: usize::MAX,
             ..SearchQuery::default()
@@ -772,6 +521,5 @@ mod tests {
         let results = engine.search(&query).expect("search succeeds");
         assert_eq!(results.page, MAX_PAGE);
         assert!(results.article_hits.is_empty());
-        assert!(results.comment_hits.is_empty());
     }
 }

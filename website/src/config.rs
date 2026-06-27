@@ -38,8 +38,8 @@ static SHOP_DEV_HOSTS: LazyLock<Vec<String>> = LazyLock::new(|| {
 });
 
 // Load local dev env from `.env.local` (preferred) then `.env`, before any
-// `env::var` read in startup (the comment store reads COMMENTS_DB_*; Stripe
-// code reads STRIPE_*). In production (Render) these files don't exist, so
+// `env::var` read in startup (Stripe code reads STRIPE_*). In production
+// (Render) these files don't exist, so
 // this is a no-op and real dashboard env vars are used. dotenvy never
 // overrides variables already present in the environment, so exported vars
 // always win.

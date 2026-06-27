@@ -14,8 +14,8 @@ use crate::components::{Head, global_search, nav};
 use crate::content::{Category, Tag};
 use crate::http::no_store;
 use crate::search::{
-    ArticleSearchHit, CommentSearchHit, ProductSearchHit, SearchQuery, SearchResults,
-    all_indexed_article_tags, parse_article_date,
+    ArticleSearchHit, ProductSearchHit, SearchQuery, SearchResults, all_indexed_article_tags,
+    parse_article_date,
 };
 
 #[derive(Debug, Deserialize)]
@@ -108,7 +108,6 @@ fn render_page(
         format!("Search: {} - engmanager.xyz", params.q.trim())
     };
     let article_results = render_article_results(&results.article_hits);
-    let comment_results = render_comment_results(&results.comment_hits);
     // Only render the Caps group when there are product matches, so article
     // searches aren't cluttered with an empty store section.
     let product_section = if results.product_hits.is_empty() {
@@ -123,10 +122,7 @@ fn render_page(
         }
     };
     let filters = render_filters(params, search_query, results);
-    let empty = if results.total_articles == 0
-        && results.total_comments == 0
-        && results.total_products == 0
-    {
+    let empty = if results.total_articles == 0 && results.total_products == 0 {
         view! {
             <section class="search-empty">
                 <h2>"No matches"</h2>
@@ -146,11 +142,9 @@ fn render_page(
         String::new()
     };
     let summary = format!(
-        "{} article{} · {} comment{}{}",
+        "{} article{}{}",
         results.total_articles,
         plural(results.total_articles),
-        results.total_comments,
-        plural(results.total_comments),
         cap_summary
     );
 
@@ -190,7 +184,7 @@ fn render_page(
                                    type="search"
                                    name="q"
                                    value={ params.q.clone() }
-                                   placeholder="Search articles and comments"
+                                   placeholder="Search articles"
                                    autocomplete="off" />
                             <div class="search-date-row">
                                 <label>
@@ -211,10 +205,6 @@ fn render_page(
                         <section class="search-result-group">
                             <h2>"Articles"</h2>
                             { article_results }
-                        </section>
-                        <section class="search-result-group">
-                            <h2>"Comments"</h2>
-                            { comment_results }
                         </section>
                     </div>
                     { empty }
@@ -352,25 +342,6 @@ fn render_article_results(hits: &[ArticleSearchHit]) -> HtmlFragment {
                     </div>
                     <p>{ hit.snippet.clone() }</p>
                     <div class="search-chip-row">{ tag_chips }</div>
-                </article>
-            }
-        })
-        .collect()
-}
-
-fn render_comment_results(hits: &[CommentSearchHit]) -> HtmlFragment {
-    if hits.is_empty() {
-        return view! { <p class="search-muted">"No comment matches."</p> };
-    }
-    hits.iter()
-        .map(|hit| {
-            let href = format!("/articles/{}#comment-{}", hit.article_slug, hit.comment_id);
-            let byline = format!("{} on {}", hit.author_name, hit.article_title);
-            view! {
-                <article class="search-result search-result-comment">
-                    <a class="search-result-title" href={ href }>{ byline }</a>
-                    <blockquote>{ hit.quote_exact.clone() }</blockquote>
-                    <p>{ hit.snippet.clone() }</p>
                 </article>
             }
         })

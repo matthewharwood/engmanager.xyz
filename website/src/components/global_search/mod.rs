@@ -40,7 +40,7 @@ pub struct Props {
 pub fn render(props: Props) -> Rendered {
     let markup = view! {
         <form class="site-search" action="/search" method="get" role="search" data-search-form>
-            <label class="sr-only" for="site-search-input">"Search articles and comments"</label>
+            <label class="sr-only" for="site-search-input">"Search articles"</label>
             <input class="site-search-input"
                    id="site-search-input"
                    type="search"

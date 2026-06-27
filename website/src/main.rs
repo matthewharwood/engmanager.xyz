@@ -13,7 +13,6 @@ use tracing_subscriber::EnvFilter;
 
 pub mod assets;
 pub mod catalog;
-pub mod comments;
 pub mod components;
 pub mod config;
 pub mod content;
@@ -33,7 +32,7 @@ mod stripe;
 // untouched while the implementations live in their own modules.
 pub use assets::{Assets, CssDist, JsDist, asset_url};
 pub use config::is_shop_host;
-pub use state::{AppState, CommentsHandle};
+pub use state::AppState;
 
 // Discord invite code for the Auteurs server. Hardcoded because it's the
 // only server the site embeds; the refresh task resolves the guild ID
@@ -44,8 +43,7 @@ const AUTEURS_INVITE_CODE: &str = "sTzQBrbnBM";
 async fn main() {
     // Env files load FIRST — before init_tracing so a RUST_LOG set in
     // .env/.env.local actually shapes the EnvFilter, and before any env::var
-    // read below (the comment store reads COMMENTS_DB_*; Stripe code reads
-    // STRIPE_*).
+    // read below (Stripe code reads STRIPE_*).
     config::load_env();
 
     init_tracing();
@@ -82,33 +80,8 @@ async fn main() {
     let (discord_tx, discord_rx) = watch::channel(None);
     tokio::spawn(discord::refresh_loop(AUTEURS_INVITE_CODE, discord_tx));
 
-    // Comments degrade instead of aborting boot (ledger #12): if SurrealDB
-    // is unreachable (or its rows won't load), articles keep serving, the
-    // comments API answers 503, and search builds with no comments.
-    let (comments, existing_comments) = match comments::CommentStore::connect_from_env().await {
-        Ok(store) => {
-            let store = Arc::new(store);
-            match store.all_visible().await {
-                Ok(existing) => (CommentsHandle::connected(store), existing),
-                Err(err) => {
-                    tracing::error!(
-                        err = %format!("{err:#}"),
-                        "visible comments failed to load — comments API disabled"
-                    );
-                    (CommentsHandle::disabled(), Vec::new())
-                }
-            }
-        }
-        Err(err) => {
-            tracing::error!(
-                err = %format!("{err:#}"),
-                "comment store unavailable — comments API disabled"
-            );
-            (CommentsHandle::disabled(), Vec::new())
-        }
-    };
     let search = Arc::new(
-        search::SearchEngine::build_in_memory(content::ARTICLES, &existing_comments)
+        search::SearchEngine::build_in_memory(content::ARTICLES)
             .unwrap_or_else(|err| fail_startup("search index must build at startup", err)),
     );
     // Stripe runtime context for the on-site checkout (reused client + keys).
@@ -116,7 +89,6 @@ async fn main() {
     let stripe = Arc::new(stripe::Checkout::from_env());
     let state = AppState {
         search,
-        comments,
         stripe,
         discord: discord_rx,
     };

@@ -25,7 +25,6 @@ pub mod routes {
     pub const ARTICLE_DETAIL: &str = "/articles/{slug}";
     pub const SEARCH: &str = "/search";
     pub const SEARCH_TYPEAHEAD: &str = "/api/search/typeahead";
-    pub const ARTICLE_COMMENTS: &str = "/api/articles/{slug}/comments";
     pub const CHECKOUT: &str = "/checkout";
     pub const CHECKOUT_SUCCESS: &str = "/checkout/success";
     pub const CHECKOUT_INTENT: &str = "/api/checkout/intent";
@@ -48,10 +47,6 @@ pub fn build_router(state: AppState) -> Router {
         .route(routes::ARTICLE_DETAIL, get(pages::articles::detail))
         .route(routes::SEARCH, get(pages::search::page))
         .route(routes::SEARCH_TYPEAHEAD, get(pages::search::typeahead))
-        .route(
-            routes::ARTICLE_COMMENTS,
-            get(pages::comments::list).post(pages::comments::create),
-        )
         .route(routes::CHECKOUT, get(pages::checkout::page))
         .route(routes::CHECKOUT_SUCCESS, get(pages::checkout::success))
         .route(
@@ -141,20 +136,15 @@ mod tests {
 
     use super::build_router;
     use crate::http::HTML_CACHE_CONTROL;
-    use crate::state::{AppState, CommentsHandle};
-    use crate::{asset_url, comments, content, search, stripe};
+    use crate::state::AppState;
+    use crate::{asset_url, content, search, stripe};
 
     const SITE_HOST: &str = "engmanager.xyz";
     const SHOP_HOST: &str = "shop.localhost";
 
     async fn test_router() -> Router {
-        let comments = CommentsHandle::connected(Arc::new(
-            comments::CommentStore::connect_in_memory()
-                .await
-                .expect("in-memory comment store must connect"),
-        ));
         let search = Arc::new(
-            search::SearchEngine::build_in_memory(content::ARTICLES, &[])
+            search::SearchEngine::build_in_memory(content::ARTICLES)
                 .expect("search index must build from the real articles"),
         );
         // No STRIPE_* env in tests → checkout reports "disabled", which is a
@@ -162,7 +152,6 @@ mod tests {
         let stripe = Arc::new(stripe::Checkout::from_env());
         build_router(AppState {
             search,
-            comments,
             stripe,
             // Cold snapshot (None) — exactly how production boots before the
             // first Discord poll completes.

@@ -129,8 +129,8 @@ fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
 }
 
 /// Which article surface is being laid out. The index drops every
-/// detail-only asset (ledger #5): comments.css, the Prism CDN pair,
-/// comments.js, copy-code.js, toc-waypoints.js, and auteurs-shader.js.
+/// detail-only asset (ledger #5): the Prism CDN pair, copy-code.js,
+/// toc-waypoints.js, and auteurs-shader.js.
 #[derive(Clone, Copy, PartialEq)]
 enum Surface {
     Index,
@@ -186,7 +186,6 @@ fn layout(
     assets.add_css(discord_widget::STYLE);
     assets.add_css(article_toc::STYLE);
     if detail {
-        assets.add_css("css/comments.css");
         // Detail-surface page assets (formerly ArticlePageAssets flags —
         // every detail page sets both): the liquid-title effect and the
         // one-time section reveal. Page-level flat assets for now.
@@ -211,7 +210,6 @@ fn layout(
     if detail {
         scripts.add_js("js/copy-code.js");
         scripts.add_js("js/auteurs-shader.js");
-        scripts.add_js("js/comments.js");
         // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
         // exact head position; its stylesheet is pinned after articles.css
         // in the assets section above, so only the script lands here.
@@ -458,7 +456,6 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                 <article id="main"
                          class="article"
                          tabindex="-1"
-                         data-commentable-article
                          data-article-slug={ slug.clone() }>
                     { title }
                     <header class="article-meta">
@@ -487,17 +484,6 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                     { inner }
                     { article_navigation }
                 </article>
-                <section class="comments-panel"
-                         id="comments"
-                         data-comments-panel
-                         data-article-slug={ slug.clone() }
-                         aria-label="Article comments">
-                    <header class="comments-panel-head">
-                        <h2>"Comments"</h2>
-                        <p>"Select text in the article to leave an inline comment."</p>
-                    </header>
-                    <div class="comments-list" data-comments-list aria-live="polite"></div>
-                </section>
                 { toc }
             };
             // Hidden articles keep robots noindex,nofollow and gain NO
