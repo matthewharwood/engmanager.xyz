@@ -1,0 +1,689 @@
+/* coach.engmanager.xyz — layered on top of shop.css (the page body carries
+   both `shop-page` and `coach-page`), so the topbar, theme picker, bag sheet,
+   icon buttons, and pink CTA are the shop's own rules. Everything here is the
+   coaching-specific layout: hero ticket, spectrum slider, proof list, steps,
+   and the booking sheet's calendar + Icebreakers views. */
+
+.coach-page {
+    font-family: var(--font-mono);
+}
+
+.coach-page .sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.coach-book-chip {
+    min-block-size: 1.75rem;
+    padding-block: 0.3rem;
+    padding-inline: 0.7rem;
+    cursor: pointer;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    border: 0;
+    border-radius: var(--radius-field, 0.5rem);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.coach-book-chip:hover {
+    filter: brightness(1.06);
+}
+
+.coach-book-chip:focus-visible,
+.coach-cta:focus-visible,
+.coach-text-link:focus-visible,
+.coach-text-button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.coach-shell {
+    inline-size: min(100%, 72rem);
+    margin-inline: auto;
+    padding-block: clamp(2.5rem, 7vw, 5.5rem) 5rem;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    display: grid;
+    gap: clamp(4rem, 10vw, 7.5rem);
+}
+
+.coach-kicker {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.coach-title,
+.coach-h2 {
+    margin: 0.8rem 0 1.1rem;
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.coach-title {
+    font-size: clamp(2.1rem, 5.2vw, 3.7rem);
+    line-height: 0.95;
+}
+
+.coach-h2 {
+    font-size: clamp(1.45rem, 3.6vw, 2.5rem);
+    line-height: 1;
+}
+
+.coach-h3 {
+    margin: 0.5rem 0 0;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+
+.coach-lede,
+.coach-sub {
+    margin: 0;
+    max-inline-size: 40rem;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    text-wrap: pretty;
+}
+
+.coach-lede {
+    font-size: clamp(1rem, 1.5vw, 1.12rem);
+}
+
+.coach-text-link {
+    color: var(--text-1);
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+}
+
+.coach-text-button {
+    padding: 0;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.coach-text-button:hover {
+    color: var(--text-1);
+}
+
+/* --- hero --------------------------------------------------------------- */
+
+.coach-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: end;
+}
+
+@media (min-width: 56rem) {
+    .coach-hero {
+        grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 1fr);
+        gap: 4rem;
+    }
+}
+
+.coach-ticket {
+    position: relative;
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.25rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+    box-shadow: 0 1.25rem 2.5rem -1.5rem oklch(from var(--color-base-content) l c h / 0.28);
+}
+
+.coach-ticket-head {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.coach-avatar {
+    inline-size: 3rem;
+    block-size: 3rem;
+    flex: none;
+    object-fit: cover;
+    border-radius: 50%;
+    background: var(--surface-1);
+}
+
+.coach-ticket-name,
+.coach-ticket-role {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.coach-ticket-name {
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.coach-ticket-role {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.coach-specs {
+    margin: 0;
+    display: grid;
+    border-block: 1px dashed var(--border-subtle);
+}
+
+.coach-specs > div {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding-block: 0.55rem;
+}
+
+.coach-specs > div + div {
+    border-block-start: 1px dashed var(--border-subtle);
+}
+
+.coach-specs dt {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.coach-specs dd {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.coach-local-window {
+    margin: 0;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.coach-local-window[hidden] {
+    display: none;
+}
+
+.coach-cta {
+    display: block;
+}
+
+/* shop.css resets `.shop-page button { font: inherit }` at higher specificity
+   than the CTA class; restore the CTA type on button-element CTAs. */
+.coach-page button.shop-cart-checkout {
+    inline-size: 100%;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.coach-ticket-hint {
+    margin: 0;
+    text-align: center;
+}
+
+/* --- spectrum slider ---------------------------------------------------- */
+
+.coach-spectrum {
+    display: grid;
+    justify-items: start;
+}
+
+.coach-slider {
+    --thumb: 2rem;
+    inline-size: 100%;
+    margin-block: 2.25rem 1.5rem;
+    display: grid;
+    gap: 0.9rem;
+}
+
+.coach-slider-input {
+    inline-size: 100%;
+    block-size: var(--thumb);
+    margin: 0;
+    cursor: grab;
+    appearance: none;
+    background: transparent;
+    touch-action: pan-y;
+}
+
+.coach-slider-input:active {
+    cursor: grabbing;
+}
+
+.coach-slider-input:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 0.5rem;
+    border-radius: 999px;
+}
+
+.coach-slider-input::-webkit-slider-runnable-track {
+    block-size: 0.6rem;
+    border-radius: 999px;
+    background:
+        linear-gradient(90deg, var(--color-primary) 0 var(--spectrum, 50%), transparent var(--spectrum, 50%)),
+        repeating-linear-gradient(90deg, var(--border-subtle) 0 2px, transparent 2px 10%),
+        var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.coach-slider-input::-moz-range-track {
+    block-size: 0.6rem;
+    border-radius: 999px;
+    background:
+        repeating-linear-gradient(90deg, var(--border-subtle) 0 2px, transparent 2px 10%),
+        var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.coach-slider-input::-moz-range-progress {
+    block-size: 0.6rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+}
+
+.coach-slider-input::-webkit-slider-thumb {
+    inline-size: var(--thumb);
+    block-size: var(--thumb);
+    margin-block-start: calc((0.6rem - var(--thumb)) / 2);
+    appearance: none;
+    background: var(--surface-1);
+    border: 3px solid var(--text-1);
+    border-radius: 50%;
+    box-shadow: 0 0.35rem 0.9rem oklch(from var(--color-base-content) l c h / 0.25);
+    transition: transform var(--motion-hover, 120ms ease);
+}
+
+.coach-slider-input::-moz-range-thumb {
+    inline-size: var(--thumb);
+    block-size: var(--thumb);
+    background: var(--surface-1);
+    border: 3px solid var(--text-1);
+    border-radius: 50%;
+    box-shadow: 0 0.35rem 0.9rem oklch(from var(--color-base-content) l c h / 0.25);
+}
+
+.coach-slider-input:active::-webkit-slider-thumb {
+    transform: scale(1.12);
+}
+
+.coach-slider-stops {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.coach-slider-stops span {
+    color: var(--text-disabled, var(--text-muted));
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    transition: color 160ms ease;
+}
+
+.coach-slider-stops span:nth-child(2) {
+    text-align: center;
+}
+
+.coach-slider-stops span:last-child {
+    text-align: end;
+}
+
+.coach-slider-stops span[data-active="true"] {
+    color: var(--text-1);
+}
+
+.coach-persona {
+    inline-size: 100%;
+    display: grid;
+    gap: 0.35rem;
+    padding: clamp(1.1rem, 3vw, 1.75rem);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+}
+
+.coach-persona-label {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.coach-persona-headline {
+    margin: 0 0 0.6rem;
+    font-family: var(--font-sans);
+    font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+    text-wrap: balance;
+}
+
+.coach-persona-focus {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+    list-style: none;
+    font-family: var(--font-sans);
+    color: var(--text-2);
+    line-height: 1.45;
+}
+
+.coach-persona-focus li {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+}
+
+.coach-persona-focus li::before {
+    content: "→";
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.coach-persona.is-swapping {
+    animation: coach-persona-swap 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes coach-persona-swap {
+    from {
+        opacity: 0.35;
+        transform: translate3d(0, 0.35rem, 0);
+    }
+}
+
+/* --- proof + steps ------------------------------------------------------ */
+
+.coach-proof,
+.coach-step-list {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    list-style: none;
+}
+
+@media (min-width: 48rem) {
+    .coach-proof,
+    .coach-step-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.coach-proof {
+    margin-block: 1.25rem 1.5rem;
+}
+
+.coach-proof li {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding-block-start: 1rem;
+    border-block-start: 3px solid var(--text-1);
+}
+
+.coach-proof strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.coach-proof span,
+.coach-step p {
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+}
+
+.coach-step {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+}
+
+.coach-step h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.coach-step p {
+    margin: 0;
+}
+
+.coach-step-num {
+    inline-size: 1.8rem;
+    block-size: 1.8rem;
+    display: inline-grid;
+    place-items: center;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 900;
+}
+
+/* --- booking sheet (a wider shop bag) ------------------------------------ */
+
+.coach-booking-sheet {
+    inline-size: min(100vw, 46rem);
+}
+
+.coach-booking-pane {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    contain: layout;
+}
+
+.coach-progress {
+    margin: 0;
+    padding-block: 0 0.75rem;
+    padding-inline: 1rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    list-style: none;
+}
+
+.coach-progress li {
+    padding-block-start: 0.5rem;
+    border-block-start: 3px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.coach-booking[data-booking-state="calendar"] .coach-progress li:nth-child(-n + 2),
+.coach-booking[data-booking-state="icebreakers"] .coach-progress li {
+    border-color: var(--color-primary);
+    color: var(--text-1);
+}
+
+.coach-booking-view {
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: 0 1rem 1rem;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.9rem;
+}
+
+.coach-booking-view[hidden] {
+    display: none;
+}
+
+.coach-calendar {
+    min-block-size: 32rem;
+    display: grid;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-field, 0.5rem);
+}
+
+.coach-calendar-frame {
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 32rem;
+    border: 0;
+}
+
+.coach-calendar-link {
+    place-content: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: var(--surface-2);
+    font-family: var(--font-sans);
+    text-align: center;
+}
+
+.coach-notice {
+    align-self: start;
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-field, 0.5rem);
+}
+
+.coach-external {
+    justify-self: center;
+    font-size: 0.74rem;
+}
+
+.coach-booking-foot {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.coach-booking-foot .shop-checkout-hint {
+    margin: 0;
+    text-align: center;
+}
+
+.coach-icebreakers {
+    position: relative;
+    grid-template-rows: none;
+    align-content: start;
+    gap: 1rem;
+    padding-block-start: 1.5rem;
+}
+
+.coach-intake-steps {
+    margin: 0;
+    padding-inline-start: 1.2rem;
+    display: grid;
+    gap: 0.6rem;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+}
+
+.coach-recap {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    background: var(--surface-2);
+    border-inline-start: 3px solid var(--color-primary);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.coach-icebreakers-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.coach-stamp {
+    inset-block-start: 0.6rem;
+    inset-inline-start: auto;
+    inset-inline-end: 1rem;
+    transform: rotate(-13deg) scale(2.2);
+    font-size: 1.1rem;
+}
+
+.coach-stamp[data-show="true"] {
+    animation: coach-stamp 0.55s cubic-bezier(0.2, 1.5, 0.35, 1) forwards;
+}
+
+@keyframes coach-stamp {
+    0% {
+        opacity: 0;
+        transform: rotate(-13deg) scale(2.2);
+    }
+    55% {
+        opacity: 0.95;
+    }
+    100% {
+        opacity: 0.9;
+        transform: rotate(-13deg) scale(1);
+    }
+}
+
+@media (max-width: 40rem) {
+    .coach-booking-sheet {
+        inline-size: 100vw;
+    }
+    .coach-calendar,
+    .coach-calendar-frame {
+        min-block-size: 36rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .coach-persona.is-swapping,
+    .coach-stamp[data-show="true"] {
+        animation: none;
+    }
+    .coach-stamp[data-show="true"] {
+        opacity: 0.9;
+        transform: rotate(-13deg) scale(1);
+    }
+}

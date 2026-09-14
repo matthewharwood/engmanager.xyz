@@ -1,5 +1,6 @@
 pub mod articles;
 pub mod checkout;
+pub mod coach;
 pub mod homepage;
 pub mod not_found;
 pub mod search;

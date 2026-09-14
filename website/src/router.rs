@@ -13,7 +13,7 @@ use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::config::is_shop_host;
+use crate::config::{is_coach_host, is_shop_host};
 use crate::state::AppState;
 use crate::{assets, http, pages, sitemap};
 
@@ -25,6 +25,7 @@ pub mod routes {
     pub const ARTICLE_DETAIL: &str = "/articles/{slug}";
     pub const SEARCH: &str = "/search";
     pub const SEARCH_TYPEAHEAD: &str = "/api/search/typeahead";
+    pub const COACHING: &str = "/coaching";
     pub const CHECKOUT: &str = "/checkout";
     pub const CHECKOUT_SUCCESS: &str = "/checkout/success";
     pub const CHECKOUT_INTENT: &str = "/api/checkout/intent";
@@ -47,6 +48,7 @@ pub fn build_router(state: AppState) -> Router {
         .route(routes::ARTICLE_DETAIL, get(pages::articles::detail))
         .route(routes::SEARCH, get(pages::search::page))
         .route(routes::SEARCH_TYPEAHEAD, get(pages::search::typeahead))
+        .route(routes::COACHING, get(pages::coach::redirect))
         .route(routes::CHECKOUT, get(pages::checkout::page))
         .route(routes::CHECKOUT_SUCCESS, get(pages::checkout::success))
         .route(
@@ -100,6 +102,8 @@ async fn root_handler(State(state): State<AppState>, headers: HeaderMap) -> Resp
 
     if is_shop_host(host) {
         pages::shop::index(State(state)).await
+    } else if is_coach_host(host) {
+        pages::coach::index().await
     } else {
         pages::homepage::index().await.into_response()
     }
@@ -141,6 +145,7 @@ mod tests {
 
     const SITE_HOST: &str = "engmanager.xyz";
     const SHOP_HOST: &str = "shop.localhost";
+    const COACH_HOST: &str = "coach.localhost";
 
     async fn test_router() -> Router {
         let search = Arc::new(
@@ -376,6 +381,49 @@ mod tests {
             header_str(&response, "x-content-type-options"),
             Some("nosniff"),
             "synthesized 408 must pass through security_headers_layer"
+        );
+    }
+
+    #[tokio::test]
+    async fn coach_host_serves_the_booking_page_with_default_html_caching() {
+        let router = test_router().await;
+
+        let response = get(&router, COACH_HOST, "/").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&response, "cache-control"),
+            Some(HTML_CACHE_CONTROL)
+        );
+        assert_eq!(header_str(&response, "x-frame-options"), Some("DENY"));
+        assert!(
+            header_str(&response, "content-security-policy-report-only")
+                .is_some_and(|csp| csp.contains("frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://calendar.google.com")),
+            "CSP must allow the Google Calendar booking embed"
+        );
+        let body = body_string(response).await;
+        assert!(body.contains("window.__coach="), "coach island missing");
+        assert!(body.contains("data-spectrum-input"));
+        assert!(!body.contains("window.__shopProducts"));
+
+        // The apex homepage is untouched by the coach host.
+        let apex = body_string(get(&router, SITE_HOST, "/").await).await;
+        assert!(!apex.contains("window.__coach="));
+
+        // Unknown coach paths 404; checkout stays shop-only.
+        let missing = get(&router, COACH_HOST, "/nope").await;
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+        let checkout = get(&router, COACH_HOST, "/checkout").await;
+        assert_eq!(checkout.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn apex_coaching_path_redirects_to_the_subdomain() {
+        let router = test_router().await;
+        let response = get(&router, SITE_HOST, "/coaching").await;
+        assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            header_str(&response, "location"),
+            Some("https://coach.engmanager.xyz/")
         );
     }
 
