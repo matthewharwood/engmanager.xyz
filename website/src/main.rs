@@ -13,6 +13,7 @@ use tracing_subscriber::EnvFilter;
 
 pub mod assets;
 pub mod catalog;
+pub mod coaching;
 pub mod components;
 pub mod config;
 pub mod content;

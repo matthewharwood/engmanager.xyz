@@ -24,6 +24,7 @@ const SHOP_HOSTS: &[&str] = &[
     "shop.localhost",
     "store.localhost",
 ];
+const COACH_HOSTS: &[&str] = &["coach.engmanager.xyz", "coach.localhost"];
 
 // Dev-only extra shop hosts, for testing on another device (e.g. a phone over
 // Tailscale). Set SHOP_DEV_HOSTS to a comma-separated list of hostnames/IPs
@@ -102,9 +103,29 @@ pub fn is_shop_host(host: &str) -> bool {
             .any(|shop_host| host_without_port.eq_ignore_ascii_case(shop_host))
 }
 
+/// `coach.engmanager.xyz` (and `coach.localhost` for local dev) — the 1:1
+/// coaching booking page, served from this same binary by `Host` header.
+pub fn is_coach_host(host: &str) -> bool {
+    let host_without_port = host.split(':').next().unwrap_or(host);
+    COACH_HOSTS
+        .iter()
+        .any(|coach_host| host_without_port.eq_ignore_ascii_case(coach_host))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_shop_host;
+    use super::{is_coach_host, is_shop_host};
+
+    #[test]
+    fn coach_host_detection_is_exact_and_port_insensitive() {
+        assert!(is_coach_host("coach.engmanager.xyz"));
+        assert!(is_coach_host("COACH.ENGMANAGER.XYZ:443"));
+        assert!(is_coach_host("coach.localhost:3000"));
+        assert!(!is_coach_host("engmanager.xyz"));
+        assert!(!is_coach_host("shop.engmanager.xyz"));
+        assert!(!is_coach_host("coach.engmanager.xyz.evil.example"));
+        assert!(!is_shop_host("coach.engmanager.xyz"));
+    }
 
     #[test]
     fn shop_host_detection_accepts_production_and_local_hosts() {

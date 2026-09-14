@@ -24,6 +24,9 @@ Visit <http://127.0.0.1:3000>. Routes:
 - `GET /articles/` → article index
 - `GET /articles/{slug}` → individual article
 - `GET /health` → `OK`
+- `GET /coaching` → 308 to `https://coach.engmanager.xyz/`
+- `GET /` on `coach.localhost:3000` → 1:1 coaching booking page
+  (see `_docs/coach-subdomain-runbook.md`)
 
 No database, no env vars required.
 

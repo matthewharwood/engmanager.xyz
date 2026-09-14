@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 #
-# Idempotently attaches shop.engmanager.xyz to the existing Render service.
+# Idempotently attaches a custom domain (default shop.engmanager.xyz) to the
+# existing Render service.
 #
 # Required env:
 #   RENDER_API_KEY     Render API key.
 #   RENDER_SERVICE_ID  Render web service id, e.g. srv_...
 #
 # Optional env:
-#   SHOP_DOMAIN        Custom domain to attach (default: shop.engmanager.xyz)
+#   SHOP_DOMAIN        Custom domain to attach (default: shop.engmanager.xyz);
+#                      a first positional argument wins over it.
 #
 # Usage:
 #   RENDER_API_KEY=... RENDER_SERVICE_ID=srv_... ./scripts/render-shop-domain.sh
+#   RENDER_API_KEY=... RENDER_SERVICE_ID=srv_... ./scripts/render-shop-domain.sh coach.engmanager.xyz
 
 set -euo pipefail
 
 API="https://api.render.com/v1"
-SHOP_DOMAIN="${SHOP_DOMAIN:-shop.engmanager.xyz}"
+SHOP_DOMAIN="${1:-${SHOP_DOMAIN:-shop.engmanager.xyz}}"
 
 : "${RENDER_API_KEY:?Set RENDER_API_KEY.}"
 : "${RENDER_SERVICE_ID:?Set RENDER_SERVICE_ID.}"
