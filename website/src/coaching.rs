@@ -1,5 +1,6 @@
 //! Coaching domain: the 1:1 session offer, its weekly availability window,
-//! the engineer ↔ designer audience spectrum, the Google Calendar booking
+//! the hardware ↔ physical-design audience spectrum and its speed-reader
+//! copy, the Google Calendar booking
 //! page, and the Icebreakers intake doc. Pure data + smart constructors —
 //! page rendering lives in `pages::coach`, which imports from here.
 //!
@@ -134,68 +135,140 @@ impl CoachingOffer {
     }
 }
 
-/// One stop on the engineer ↔ designer slider. `min..=max` partition 0..=100
-/// with no gaps or overlaps (pinned by a test), so every slider value maps to
-/// exactly one persona — client and server share this table via the page's
-/// data island.
+/// The page's promise, and the first line of every speed-reader loop.
+pub fn headline() -> String {
+    format!(
+        "Spend {} minutes. Save a year of searching.",
+        OFFER.session_minutes
+    )
+}
+
+/// Speed-reader speeds, in words per minute. The last one is the default.
+pub const READER_SPEEDS: [u16; 3] = [200, 300, 400];
+pub const READER_DEFAULT_WPM: u16 = 400;
+
+/// One stop on the "where do you live?" spectrum, hardware on the left to
+/// physical design on the right. Its copy is written for about a 7th-grade
+/// reading level (pinned by a test). Client and server share this table via
+/// the page's data island; the slider's value is the index into it.
 pub struct Persona {
     pub id: &'static str,
+    /// Short label under the slider's pip.
     pub label: &'static str,
-    pub min: u8,
-    pub max: u8,
-    pub headline: &'static str,
-    pub focus: [&'static str; 3],
+    /// Who the stop speaks to, for the slider's accessible value text.
+    pub audience: &'static str,
+    /// First paragraph: why job hunting is slow for this person.
+    pub problem: &'static str,
+    /// The one "how it works" sentence that is specific to this stop.
+    pub plan: &'static str,
+}
+
+impl Persona {
+    /// The two paragraphs the speed reader loops after the headline.
+    pub fn paragraphs(&self) -> [String; 2] {
+        [
+            self.problem.to_string(),
+            format!(
+                "Here is how it works. You pick a Friday, pay {price}, and send me your resume with a short Icebreakers doc. I read both before we talk. I lead engineering teams at Uber and I hire people, so I know what makes a hiring manager say yes. In {minutes} minutes, I will tell you exactly what I see. {plan} You will leave with a clear plan instead of another year of guessing.",
+                price = OFFER.price.label(),
+                minutes = OFFER.session_minutes,
+                plan = self.plan,
+            ),
+        ]
+    }
 }
 
 pub const PERSONAS: &[Persona] = &[
     Persona {
-        id: "engineer",
-        label: "Engineer",
-        min: 0,
-        max: 33,
-        headline: "Ship with more leverage, less heroics.",
-        focus: [
-            "Scoping work, estimating it, and getting it through code review",
-            "Web performance, reliability, and owning an on-call rotation",
-            "Getting from junior to mid-level: visibility, promo packets, feedback",
-        ],
+        id: "hardware",
+        label: "Hardware",
+        audience: "Hardware engineers",
+        problem: "You build the parts most people never see, like boards, chips, and firmware that have to work the first time. The trouble is that a resume can hide all of that. Hiring teams skim for a few seconds, and if they can’t see what you built, they move on. I lead software teams, not hardware teams, but a strong resume works the same way everywhere.",
+        plan: "We will make the hard things you built easy to see.",
+    },
+    Persona {
+        id: "backend",
+        label: "Backend",
+        audience: "Backend engineers",
+        problem: "You build systems that stay up, and nobody cheers when a server doesn’t crash. That is the problem. Your best work is quiet, so your resume has to be loud about it. Numbers do the talking: how fast, how big, and how much money it saved. Without them, you look like everyone else in the pile.",
+        plan: "We will turn your tasks into results with real numbers.",
+    },
+    Persona {
+        id: "frontend",
+        label: "Frontend",
+        audience: "Frontend engineers",
+        problem: "You build the part of the product people actually touch, which is good news, because you can show it. The trouble is that most frontend resumes sound the same: React, TypeScript, Tailwind. A list of tools is not a story. Hiring managers want to know what you made better, and who it helped.",
+        plan: "We will turn your tool list into proof of what you built.",
     },
     Persona {
         id: "design-engineer",
         label: "Design engineer",
-        min: 34,
-        max: 66,
-        headline: "Live in the seam between Figma and production.",
-        focus: [
-            "Design systems, component APIs, and prototyping in real code",
-            "Motion, accessibility, and performance as craft, not afterthoughts",
-            "Carving out a design-engineering role on a team that lacks one",
-        ],
+        audience: "Design engineers",
+        problem: "You live between design and code, and that is a rare skill. A lot of teams still don’t know how to hire for it, so you have to explain it for them. Show the prototype. Show the feature that only shipped because you could do both. Make it easy for someone to say yes to you.",
+        plan: "We will shape your story so teams see where you fit.",
     },
     Persona {
-        id: "designer",
-        label: "Designer",
-        min: 67,
-        max: 100,
-        headline: "Make your work land with the engineers who build it.",
-        focus: [
-            "Handoffs, specs, and design reviews engineers actually use",
-            "Learning just enough code to prototype and earn trust",
-            "Portfolio and case-study storytelling for product teams",
-        ],
+        id: "product-designer",
+        label: "Product designer",
+        audience: "Product designers",
+        problem: "You solve problems, not just screens, but a portfolio full of pretty pictures can hide how you think. Hiring teams want the story behind the work. What was broken, what did you try, and what changed? If your case studies skip that part, you might wait a long time for a call back.",
+        plan: "We will sharpen your case studies so your thinking shows.",
+    },
+    Persona {
+        id: "visual-designer",
+        label: "Visual designer",
+        audience: "Visual designers",
+        problem: "Your eye is your edge: type, color, layout, and brand. But taste is hard to prove on a resume. The trick is to connect your craft to what it did for people. Did more people sign up? Did the brand finally feel real? Say it in plain words, then show the proof.",
+        plan: "We will tie your craft to results people care about.",
+    },
+    Persona {
+        id: "physical-designer",
+        label: "Physical designer",
+        audience: "Industrial designers, architects, and anyone who designs physical things",
+        problem: "You design things people can hold, sit in, or walk through. Your work lives in the real world, so it can be hard to show on a screen. I lead software teams, so I won’t pretend to know your tools. Hiring works the same way everywhere, though: show the problem, the making, and the result.",
+        plan: "We will make your process easy to see on a screen.",
     },
 ];
 
-/// Where the slider starts before a visitor touches it.
-pub const DEFAULT_SPECTRUM: u8 = 50;
+/// The stop the slider starts on before a visitor touches it: the middle.
+pub const DEFAULT_PERSONA_ID: &str = "design-engineer";
 
-/// The persona for a slider value (values past 100 clamp to the last stop).
-pub fn persona_for(value: u8) -> &'static Persona {
-    let value = value.min(100);
+pub fn persona_by_id(id: &str) -> Option<&'static Persona> {
+    PERSONAS.iter().find(|persona| persona.id == id)
+}
+
+/// Index of the default stop in [`PERSONAS`] (the slider's initial value).
+pub fn default_persona_index() -> usize {
     PERSONAS
         .iter()
-        .find(|persona| (persona.min..=persona.max).contains(&value))
-        .unwrap_or(&PERSONAS[PERSONAS.len() - 1])
+        .position(|persona| persona.id == DEFAULT_PERSONA_ID)
+        .unwrap_or(0)
+}
+
+/// Split a word around its optimal recognition point (the letter the eye
+/// should land on), the way the speed reader pins it under the reticle notch.
+/// Mirrors `orpIndex` in `js/coach.js`: leading/trailing punctuation is
+/// ignored, and the pivot moves right as the word gets longer.
+pub fn orp_split(word: &str) -> (String, String, String) {
+    let chars: Vec<char> = word.chars().collect();
+    let is_letter = |c: &char| c.is_alphanumeric();
+    let Some(first) = chars.iter().position(is_letter) else {
+        return (String::new(), word.to_string(), String::new());
+    };
+    let last = chars.iter().rposition(is_letter).unwrap_or(first);
+    let offset = match last - first + 1 {
+        0..=1 => 0,
+        2..=5 => 1,
+        6..=9 => 2,
+        10..=13 => 3,
+        _ => 4,
+    };
+    let pivot = first + offset;
+    (
+        chars[..pivot].iter().collect(),
+        chars[pivot].to_string(),
+        chars[pivot + 1..].iter().collect(),
+    )
 }
 
 /// `/copy` forces Google Docs' "Make a copy" dialog, so the client ends up
@@ -358,34 +431,93 @@ mod tests {
     }
 
     #[test]
-    fn personas_partition_the_whole_slider_range() {
-        assert_eq!(PERSONAS.first().map(|p| p.min), Some(0));
-        assert_eq!(PERSONAS.last().map(|p| p.max), Some(100));
-        for pair in PERSONAS.windows(2) {
-            assert_eq!(
-                pair[0].max + 1,
-                pair[1].min,
-                "gap/overlap at {}",
-                pair[1].id
-            );
-        }
-        for value in 0..=100u8 {
-            let hits = PERSONAS
-                .iter()
-                .filter(|p| (p.min..=p.max).contains(&value))
-                .count();
-            assert_eq!(hits, 1, "value {value} must map to exactly one persona");
+    fn spectrum_runs_from_hardware_to_physical_design() {
+        let ids: Vec<&str> = PERSONAS.iter().map(|p| p.id).collect();
+        assert_eq!(
+            ids,
+            [
+                "hardware",
+                "backend",
+                "frontend",
+                "design-engineer",
+                "product-designer",
+                "visual-designer",
+                "physical-designer",
+            ]
+        );
+        let default = &PERSONAS[default_persona_index()];
+        assert_eq!(default.id, DEFAULT_PERSONA_ID);
+        assert_eq!(persona_by_id("backend").map(|p| p.label), Some("Backend"));
+        assert!(persona_by_id("engineer").is_none());
+        for persona in PERSONAS {
+            let [problem, help] = persona.paragraphs();
+            assert!(!problem.is_empty() && help.contains(persona.plan));
+            assert!(help.contains("$100") && help.contains("35 minutes"));
         }
     }
 
     #[test]
-    fn persona_lookup_hits_each_stop() {
-        assert_eq!(persona_for(0).id, "engineer");
-        assert_eq!(persona_for(33).id, "engineer");
-        assert_eq!(persona_for(34).id, "design-engineer");
-        assert_eq!(persona_for(DEFAULT_SPECTRUM).id, "design-engineer");
-        assert_eq!(persona_for(67).id, "designer");
-        assert_eq!(persona_for(255).id, "designer");
+    fn reader_defaults_to_its_fastest_speed() {
+        assert_eq!(READER_SPEEDS.last(), Some(&READER_DEFAULT_WPM));
+        assert!(READER_SPEEDS.windows(2).all(|pair| pair[0] < pair[1]));
+        assert_eq!(headline(), "Spend 35 minutes. Save a year of searching.");
+    }
+
+    #[test]
+    fn orp_pivots_right_as_words_get_longer() {
+        let split = |word: &str| orp_split(word);
+        let owned = |a: &str, b: &str, c: &str| (a.to_string(), b.to_string(), c.to_string());
+        assert_eq!(split("I"), owned("", "I", ""));
+        assert_eq!(split("Spend"), owned("S", "p", "end"));
+        assert_eq!(split("minutes."), owned("mi", "n", "utes."));
+        assert_eq!(split("“Hiring"), owned("“Hi", "r", "ing"));
+        assert_eq!(split("engineering"), owned("eng", "i", "neering"));
+        assert_eq!(split("—"), owned("", "—", ""));
+    }
+
+    /// Flesch–Kincaid grade with a vowel-group syllable estimate. Rough, but
+    /// stable enough to catch copy drifting past a 7th-grade reading level.
+    fn reading_grade(text: &str) -> f64 {
+        fn syllables(word: &str) -> usize {
+            let letters: String = word
+                .chars()
+                .filter(char::is_ascii_alphabetic)
+                .map(|c| c.to_ascii_lowercase())
+                .collect();
+            if letters.len() <= 3 {
+                return usize::from(!letters.is_empty());
+            }
+            let trimmed = letters
+                .strip_suffix("es")
+                .or_else(|| letters.strip_suffix("ed"))
+                .or_else(|| letters.strip_suffix('e'))
+                .unwrap_or(&letters);
+            let mut groups = 0;
+            let mut in_vowel = false;
+            for c in trimmed.chars() {
+                let vowel = "aeiouy".contains(c);
+                if vowel && !in_vowel {
+                    groups += 1;
+                }
+                in_vowel = vowel;
+            }
+            groups.max(1)
+        }
+        let words: Vec<&str> = text.split_whitespace().collect();
+        let sentences = text.matches(['.', '?', '!']).count().max(1);
+        let syllable_count: usize = words.iter().map(|w| syllables(w)).sum();
+        let words_len = words.len().max(1) as f64;
+        0.39 * words_len / sentences as f64 + 11.8 * syllable_count as f64 / words_len - 15.59
+    }
+
+    #[test]
+    fn spectrum_copy_reads_at_or_below_seventh_grade() {
+        for persona in PERSONAS {
+            let [problem, help] = persona.paragraphs();
+            let text = format!("{} {problem} {help}", headline());
+            let grade = reading_grade(&text);
+            assert!(grade <= 7.0, "{} reads at grade {grade:.1}", persona.id);
+        }
     }
 
     #[test]

@@ -1,24 +1,35 @@
-// coach.engmanager.xyz — spectrum slider + booking sheet.
+// coach.engmanager.xyz — speed reader, spectrum slider, booking sheet.
 //
 // Data: window.__coach (see pages/coach.rs `island_json`).
 // URL state mirrors the shop's `?bag=`: `?book=calendar|icebreakers` opens the
 // booking sheet (every transition is a history entry; popstate reconciles),
-// and `?at=0..100` deep-links a spectrum position.
+// and `?role=<persona id>` deep-links a spectrum stop.
 
 (() => {
     const COACH = window.__coach || {};
     const PERSONAS = Array.isArray(COACH.personas) ? COACH.personas : [];
-    const STORAGE_KEY = "engmanager.coach.spectrum";
     const BOOK_STATES = new Set(["calendar", "icebreakers"]);
+    const STORAGE = {
+        role: "engmanager.coach.role",
+        mode: "engmanager.coach.mode",
+        wpm: "engmanager.coach.wpm",
+    };
 
     const els = {
-        slider: document.querySelector("[data-spectrum]"),
+        reader: document.querySelector("[data-reader]"),
+        word: document.querySelector("[data-reader-word]"),
+        pre: document.querySelector("[data-reader-pre]"),
+        pivot: document.querySelector("[data-reader-pivot]"),
+        post: document.querySelector("[data-reader-post]"),
+        progress: document.querySelector("[data-reader-progress]"),
+        text: document.querySelector("[data-reader-text]"),
+        toggle: document.querySelector("[data-reader-toggle]"),
+        modeOptions: document.querySelectorAll("[data-reader-mode-option]"),
+        speedOptions: document.querySelectorAll("[data-reader-speed]"),
+        spectrum: document.querySelector("[data-spectrum]"),
         input: document.querySelector("[data-spectrum-input]"),
         stops: document.querySelectorAll("[data-spectrum-stop]"),
-        persona: document.querySelector("[data-persona]"),
-        personaLabel: document.querySelector("[data-persona-label]"),
-        personaHeadline: document.querySelector("[data-persona-headline]"),
-        personaFocus: document.querySelector("[data-persona-focus]"),
+        current: document.querySelector("[data-spectrum-current]"),
         recap: document.querySelector("[data-spectrum-recap]"),
         localWindow: document.querySelector("[data-local-window]"),
         booking: document.querySelector("[data-booking]"),
@@ -28,83 +39,276 @@
         views: document.querySelectorAll("[data-booking-view]"),
     };
 
-    // --- spectrum ---------------------------------------------------------
-
-    function clampSpectrum(value) {
-        const n = Math.round(Number(value));
-        if (!Number.isFinite(n)) return null;
-        return Math.min(100, Math.max(0, n));
-    }
-
-    function personaFor(value) {
-        return (
-            PERSONAS.find((p) => value >= p.min && value <= p.max) ||
-            PERSONAS[PERSONAS.length - 1] ||
-            null
-        );
-    }
-
-    function readStoredSpectrum() {
+    function readStored(key) {
         try {
-            return clampSpectrum(window.localStorage.getItem(STORAGE_KEY) ?? NaN);
+            return window.localStorage.getItem(key);
         } catch {
             return null;
         }
     }
 
-    function storeSpectrum(value) {
+    function store(key, value) {
         try {
-            window.localStorage.setItem(STORAGE_KEY, String(value));
+            window.localStorage.setItem(key, String(value));
         } catch {}
     }
 
-    function recapText(value, persona) {
-        return `Your spectrum: ${100 - value}% engineering · ${value}% design — ${persona.label}. Tell me why in your Icebreakers doc.`;
+    // --- speed reader --------------------------------------------------------
+    //
+    // Spritz-style RSVP: one word at a time, positioned so its optimal
+    // recognition point (ORP) sits under the reticle notch, so the eye never
+    // moves. Longer words and punctuation hold a little longer.
+
+    const LETTER = /[\p{L}\p{N}]/u;
+    const SPEEDS = (Array.isArray(COACH.reader?.speeds) ? COACH.reader.speeds : [400]).map(Number);
+    const DEFAULT_WPM = Number(COACH.reader?.defaultWpm) || SPEEDS[SPEEDS.length - 1];
+    const LOOP_GAP_BEATS = 5;
+    const START_DELAY_MS = 700;
+    const BACK_MS = 5000;
+
+    const reader = {
+        tokens: [],
+        // elapsed[i] = ms from the start of the loop until token i shows.
+        elapsed: [],
+        total: 0,
+        index: 0,
+        wpm: DEFAULT_WPM,
+        mode: "speed",
+        wantsPlay: true,
+        // Reasons playback is on hold regardless of intent: "booking",
+        // "offscreen", "hidden".
+        holds: new Set(),
+        timer: 0,
+    };
+
+    // Mirrors `orp_split` in coaching.rs.
+    function pivotIndex(chars) {
+        const first = chars.findIndex((c) => LETTER.test(c));
+        if (first < 0) return 0;
+        let last = chars.length - 1;
+        while (last > first && !LETTER.test(chars[last])) last -= 1;
+        const length = last - first + 1;
+        const offset = length <= 1 ? 0 : length <= 5 ? 1 : length <= 9 ? 2 : length <= 13 ? 3 : 4;
+        return first + offset;
     }
 
-    function applySpectrum(value, { animate = false } = {}) {
-        const persona = personaFor(value);
-        if (!persona || !els.input) return;
-        els.input.value = String(value);
-        els.input.setAttribute("aria-valuetext", `${persona.label}, ${value}% designer`);
-        els.slider?.style.setProperty("--spectrum", `${value}%`);
+    function tokenize(blocks) {
+        const tokens = [];
+        blocks.forEach((block) => {
+            const words = String(block).split(/\s+/).filter(Boolean);
+            words.forEach((word, i) => {
+                let pause = "none";
+                if (i === words.length - 1) pause = "block";
+                else if (/[.!?]["”’)]*$/.test(word)) pause = "sentence";
+                else if (/[,;:—–]["”’)]*$/.test(word)) pause = "clause";
+                tokens.push({ chars: Array.from(word), pause });
+            });
+        });
+        return tokens;
+    }
+
+    function tokenMs(token, wpm) {
+        const beat = 60000 / wpm;
+        const letters = token.chars.filter((c) => LETTER.test(c)).length;
+        let factor = 1 + Math.min(0.6, Math.max(0, letters - 7) * 0.1);
+        if (token.pause === "clause") factor += 0.6;
+        else if (token.pause === "sentence") factor += 1.4;
+        else if (token.pause === "block") factor += 2.4;
+        return beat * factor;
+    }
+
+    function retime() {
+        let at = 0;
+        reader.elapsed = reader.tokens.map((token) => {
+            const start = at;
+            at += tokenMs(token, reader.wpm);
+            return start;
+        });
+        reader.total = at;
+    }
+
+    function setProgress(fraction) {
+        els.progress?.style.setProperty("--reader-progress", String(Math.min(1, Math.max(0, fraction))));
+    }
+
+    function showToken(index) {
+        const token = reader.tokens[index];
+        if (!token || !els.pre || !els.pivot || !els.post) return;
+        const at = pivotIndex(token.chars);
+        els.pre.textContent = token.chars.slice(0, at).join("");
+        els.pivot.textContent = token.chars[at] ?? "";
+        els.post.textContent = token.chars.slice(at + 1).join("");
+        setProgress(reader.total ? reader.elapsed[index] / reader.total : 0);
+    }
+
+    function showBlank() {
+        if (els.pre) els.pre.textContent = "";
+        if (els.pivot) els.pivot.textContent = "";
+        if (els.post) els.post.textContent = "";
+        setProgress(1);
+    }
+
+    function isPlaying() {
+        return reader.mode === "speed" && reader.wantsPlay && reader.holds.size === 0 && reader.tokens.length > 0;
+    }
+
+    function schedule(extraMs = 0) {
+        window.clearTimeout(reader.timer);
+        if (!isPlaying()) return;
+        const token = reader.tokens[reader.index];
+        if (!token) return;
+        reader.timer = window.setTimeout(advance, tokenMs(token, reader.wpm) + extraMs);
+    }
+
+    function advance() {
+        if (reader.index >= reader.tokens.length - 1) {
+            // End of the loop: an empty reticle for a beat, then start over.
+            reader.index = 0;
+            showBlank();
+            reader.timer = window.setTimeout(
+                () => {
+                    showToken(0);
+                    schedule();
+                },
+                (60000 / reader.wpm) * LOOP_GAP_BEATS,
+            );
+            return;
+        }
+        reader.index += 1;
+        showToken(reader.index);
+        schedule();
+    }
+
+    // Reconcile the timer and the play/pause button with the current state.
+    function syncPlayback(extraMs = 0) {
+        window.clearTimeout(reader.timer);
+        const playing = isPlaying();
+        if (els.reader) els.reader.dataset.readerPlaying = String(playing);
+        if (els.toggle) {
+            els.toggle.dataset.playing = String(reader.wantsPlay);
+            els.toggle.setAttribute("aria-label", reader.wantsPlay ? "Pause" : "Play");
+        }
+        if (playing) {
+            showToken(reader.index);
+            schedule(extraMs);
+        }
+    }
+
+    function hold(reason, on) {
+        if (on) reader.holds.add(reason);
+        else reader.holds.delete(reason);
+        syncPlayback();
+    }
+
+    function setMode(mode, { remember = true } = {}) {
+        reader.mode = mode === "read" ? "read" : "speed";
+        if (els.reader) els.reader.dataset.readerMode = reader.mode;
+        els.modeOptions.forEach((button) => {
+            button.setAttribute("aria-pressed", String(button.dataset.readerModeOption === reader.mode));
+        });
+        if (remember) store(STORAGE.mode, reader.mode);
+        syncPlayback();
+    }
+
+    function setWpm(wpm, { remember = true } = {}) {
+        const next = SPEEDS.includes(Number(wpm)) ? Number(wpm) : DEFAULT_WPM;
+        reader.wpm = next;
+        els.speedOptions.forEach((button) => {
+            button.setAttribute("aria-pressed", String(Number(button.dataset.readerSpeed) === next));
+        });
+        if (remember) store(STORAGE.wpm, next);
+        retime();
+        syncPlayback();
+    }
+
+    function restart() {
+        reader.index = 0;
+        reader.wantsPlay = true;
+        showToken(0);
+        syncPlayback();
+    }
+
+    function back() {
+        let spent = 0;
+        let index = reader.index;
+        while (index > 0 && spent < BACK_MS) {
+            index -= 1;
+            spent += tokenMs(reader.tokens[index], reader.wpm);
+        }
+        reader.index = index;
+        showToken(index);
+        syncPlayback();
+    }
+
+    function togglePlay() {
+        reader.wantsPlay = !reader.wantsPlay;
+        syncPlayback();
+    }
+
+    // --- spectrum --------------------------------------------------------------
+
+    function personaIndex(id) {
+        return PERSONAS.findIndex((persona) => persona.id === id);
+    }
+
+    function recapText(persona) {
+        return `You picked ${persona.label.toLowerCase()} on the spectrum. Tell me why in your Icebreakers doc.`;
+    }
+
+    function renderParagraphs(persona, { animate }) {
+        if (!els.text) return;
+        els.text.replaceChildren(
+            ...persona.paragraphs.map((paragraph) => {
+                const p = document.createElement("p");
+                p.textContent = paragraph;
+                return p;
+            }),
+        );
+        if (animate) {
+            els.text.classList.remove("is-swapping");
+            // Force a reflow so re-adding the class restarts the animation.
+            void els.text.offsetWidth;
+            els.text.classList.add("is-swapping");
+        }
+    }
+
+    function applyPersona(index, { animate = false } = {}) {
+        const persona = PERSONAS[index];
+        if (!persona) return;
+        if (els.input) {
+            els.input.value = String(index);
+            els.input.setAttribute("aria-valuetext", persona.audience);
+        }
+        els.spectrum?.style.setProperty("--value", String(index));
         els.stops.forEach((stop) => {
             stop.dataset.active = String(stop.dataset.spectrumStop === persona.id);
         });
-        if (els.recap) els.recap.textContent = recapText(value, persona);
+        if (els.current) els.current.textContent = persona.label;
+        if (els.recap) els.recap.textContent = recapText(persona);
+        if (els.reader?.dataset.readerPersona === persona.id) return;
+        if (els.reader) els.reader.dataset.readerPersona = persona.id;
 
-        if (!els.persona || els.persona.dataset.persona === persona.id) return;
-        els.persona.dataset.persona = persona.id;
-        if (els.personaLabel) els.personaLabel.textContent = persona.label;
-        if (els.personaHeadline) els.personaHeadline.textContent = persona.headline;
-        if (els.personaFocus) {
-            els.personaFocus.replaceChildren(
-                ...persona.focus.map((item) => {
-                    const li = document.createElement("li");
-                    li.textContent = item;
-                    return li;
-                }),
-            );
-        }
-        if (animate) {
-            els.persona.classList.remove("is-swapping");
-            // Force a reflow so re-adding the class restarts the animation.
-            void els.persona.offsetWidth;
-            els.persona.classList.add("is-swapping");
-        }
+        renderParagraphs(persona, { animate });
+        reader.tokens = tokenize([COACH.headline, ...persona.paragraphs]);
+        retime();
+        reader.index = 0;
+        showToken(0);
+        syncPlayback();
     }
 
-    function initialSpectrum() {
-        const fromUrl = new URL(window.location.href).searchParams.get("at");
-        const urlValue = fromUrl === null ? null : clampSpectrum(fromUrl);
-        return urlValue ?? readStoredSpectrum() ?? clampSpectrum(COACH.defaultSpectrum) ?? 50;
+    function initialPersonaIndex() {
+        const fromUrl = personaIndex(new URL(window.location.href).searchParams.get("role"));
+        if (fromUrl >= 0) return fromUrl;
+        const stored = personaIndex(readStored(STORAGE.role));
+        if (stored >= 0) return stored;
+        return Math.max(0, personaIndex(COACH.defaultPersona));
     }
 
     els.input?.addEventListener("input", () => {
-        const value = clampSpectrum(els.input.value);
-        if (value === null) return;
-        applySpectrum(value, { animate: true });
-        storeSpectrum(value);
+        const index = Math.round(Number(els.input.value));
+        if (!PERSONAS[index]) return;
+        applyPersona(index, { animate: true });
+        store(STORAGE.role, PERSONAS[index].id);
     });
 
     // --- local-time hint ----------------------------------------------------
@@ -241,6 +445,7 @@
             els.booking.setAttribute("aria-hidden", "true");
             els.openers.forEach((el) => el.setAttribute("aria-expanded", "false"));
             document.body.classList.remove("shop-cart-open");
+            hold("booking", false);
             document.querySelector(".coach-book-chip")?.focus({ preventScroll: true });
             return;
         }
@@ -250,6 +455,7 @@
         els.booking.dataset.bookingState = target;
         els.openers.forEach((el) => el.setAttribute("aria-expanded", "true"));
         document.body.classList.add("shop-cart-open");
+        hold("booking", true);
         els.views.forEach((view) => {
             view.hidden = view.dataset.bookingView !== target;
         });
@@ -296,11 +502,57 @@
         }
         if (target.closest("[data-booking-back]")) {
             setBooking("calendar");
+            return;
+        }
+
+        const mode = target.closest("[data-reader-mode-option]");
+        if (mode) {
+            setMode(mode.dataset.readerModeOption);
+            return;
+        }
+        const speed = target.closest("[data-reader-speed]");
+        if (speed) {
+            setWpm(speed.dataset.readerSpeed);
+            return;
+        }
+        if (target.closest("[data-reader-restart]")) {
+            restart();
+            return;
+        }
+        if (target.closest("[data-reader-back]")) {
+            back();
+            return;
+        }
+        if (target.closest("[data-reader-toggle]")) {
+            togglePlay();
+            return;
+        }
+        // Pip labels are a pointer shortcut; keyboards use the slider itself.
+        const stop = target.closest("[data-spectrum-stop]");
+        if (stop) {
+            const index = personaIndex(stop.dataset.spectrumStop);
+            if (index < 0) return;
+            applyPersona(index, { animate: true });
+            store(STORAGE.role, PERSONAS[index].id);
         }
     });
 
     document.addEventListener("keydown", (event) => {
-        if (bookingState() === "closed") return;
+        if (bookingState() === "closed") {
+            // Space pauses and ← rewinds, but only when nothing else wants the key.
+            if (reader.mode !== "speed" || reader.holds.has("offscreen")) return;
+            if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+            const target = event.target instanceof Element ? event.target : null;
+            if (target?.closest("input, textarea, select, button, a, [contenteditable]")) return;
+            if (event.key === " ") {
+                event.preventDefault();
+                togglePlay();
+            } else if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                back();
+            }
+            return;
+        }
         if (event.key === "Escape") {
             event.preventDefault();
             setBooking(bookingState() === "icebreakers" ? "calendar" : null);
@@ -322,11 +574,31 @@
 
     window.addEventListener("popstate", () => applyBooking(bookFromUrl()));
 
+    document.addEventListener("visibilitychange", () => hold("hidden", document.hidden));
+
+    // Don't flash words at someone who has scrolled down to read the posts.
+    if (els.reader && "IntersectionObserver" in window) {
+        new IntersectionObserver(
+            ([entry]) => hold("offscreen", !entry || entry.intersectionRatio < 0.35),
+            { threshold: [0, 0.35, 1] },
+        ).observe(els.reader);
+    }
+
     // --- boot ------------------------------------------------------------------
 
-    applySpectrum(initialSpectrum());
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const storedMode = readStored(STORAGE.mode);
+
+    applyPersona(initialPersonaIndex());
+    setWpm(readStored(STORAGE.wpm) ?? DEFAULT_WPM, { remember: false });
+    setMode(storedMode === "speed" || storedMode === "read" ? storedMode : reduceMotion ? "read" : "speed", {
+        remember: false,
+    });
+    // Let the first word land before the loop starts moving.
+    syncPlayback(START_DELAY_MS);
     renderLocalWindow();
     const initialBook = bookFromUrl();
     if (initialBook) applyBooking(initialBook);
+    if (els.reader) els.reader.dataset.readerReady = "true";
     document.documentElement.dataset.coachReady = "true";
 })();
