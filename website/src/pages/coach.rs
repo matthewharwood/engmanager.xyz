@@ -322,7 +322,9 @@ fn render_booking_sheet(booking: Option<&BookingPage>) -> HtmlFragment {
                aria-hidden="true"
                hidden>
             <div class="shop-bag-scrim" data-booking-scrim></div>
-            <div class="shop-bag-sheet coach-booking-sheet">
+            // Always light: Google's booking embed has no dark theme, so the
+            // sheet matches it instead of framing a white page in dark chrome.
+            <div class="shop-bag-sheet coach-booking-sheet" data-theme="light">
                 <section class="coach-booking-pane">
                     <header class="shop-cart-head">
                         <h2 id="coach-booking-title">"Book a session"</h2>
@@ -461,6 +463,8 @@ mod tests {
         assert!(html.contains("/assets/js/coach."));
         assert!(html.contains("data-theme-cycle"));
         assert!(html.contains(r#"class="shop-bag coach-booking""#));
+        // The booking sheet is pinned light to match Google's embed.
+        assert!(html.contains(r#"class="shop-bag-sheet coach-booking-sheet" data-theme="light""#));
         // Offer terms.
         assert!(html.contains("35 min"));
         assert!(html.contains("$100"));
