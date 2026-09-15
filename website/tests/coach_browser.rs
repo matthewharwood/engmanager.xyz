@@ -1,7 +1,8 @@
 //! Real-browser integration: headless Chrome loads the coach page from the
 //! compiled binary, runs `js/coach.js`, and we assert on the live DOM — the
-//! `?at=` slider deep link swaps the persona, `?book=` opens the booking
-//! sheet at the right step, and the calendar step loads the Google embed.
+//! speed reader boots and shows a word split on its pivot letter, the `?role=`
+//! deep link swaps the spectrum stop, `?book=` opens the booking sheet at the
+//! right step (pausing the reader), and the calendar step loads the embed.
 //!
 //! Needs a Chrome/Chromium binary (`CHROME_BIN`, else common install paths).
 //! Skips when none is found, unless `REQUIRE_BROWSER_TESTS=1` (set in CI),
@@ -122,6 +123,14 @@ fn tag_with<'a>(dom: &'a str, attr: &str) -> &'a str {
     &dom[open..=close]
 }
 
+/// Text between the first element carrying `attr` and the next `</`.
+fn text_after<'a>(dom: &'a str, attr: &str) -> &'a str {
+    let tag = tag_with(dom, attr);
+    let start = dom.find(tag).expect("tag in dom") + tag.len();
+    let end = start + dom[start..].find("</").expect("closing tag");
+    &dom[start..end]
+}
+
 #[tokio::test]
 async fn coach_page_behaves_in_a_real_browser() {
     let Some(chrome) = chrome_or_skip() else {
@@ -129,7 +138,8 @@ async fn coach_page_behaves_in_a_real_browser() {
     };
     let server = TestServer::start(Some(TEST_BOOKING_URL)).await;
 
-    // Plain load: script booted, sheet closed, local-time hint rendered.
+    // Plain load: script booted, sheet closed, local-time hint rendered, and
+    // the speed reader is playing the default stop with a pivot letter lit.
     let dom = dump_dom(&chrome, &server.url(COACH_HOST, "/"));
     assert!(
         dom.contains(r#"data-coach-ready="true""#),
@@ -147,16 +157,48 @@ async fn coach_page_behaves_in_a_real_browser() {
         "local window hint stayed hidden: {hint}"
     );
     assert!(dom.contains("Next window: "), "local window text missing");
+    let reader = tag_with(&dom, "data-reader-mode=");
+    for needle in [
+        r#"data-reader-mode="speed""#,
+        r#"data-reader-ready="true""#,
+        r#"data-reader-persona="design-engineer""#,
+        r#"data-reader-playing="true""#,
+    ] {
+        assert!(reader.contains(needle), "{needle} missing on {reader}");
+    }
+    let pivot = text_after(&dom, "data-reader-pivot");
+    assert_eq!(
+        pivot.chars().count(),
+        1,
+        "the reticle should light exactly one letter, got {pivot:?}"
+    );
 
-    // Slider deep link + Icebreakers step: persona swaps to Designer, the
-    // recap reflects the position, and the sheet opens on step 3.
-    let dom = dump_dom(&chrome, &server.url(COACH_HOST, "/?at=90&book=icebreakers"));
-    let persona = tag_with(&dom, "data-persona=");
-    assert!(persona.contains(r#"data-persona="designer""#), "{persona}");
-    assert!(dom.contains("Make your work land with the engineers who build it."));
-    assert!(dom.contains("10% engineering · 90% design — Designer"));
+    // Spectrum deep link + Icebreakers step: the stop swaps to Backend, the
+    // paragraphs and recap follow it, the sheet opens on step 3, and the
+    // reader holds while the sheet is up.
+    let dom = dump_dom(
+        &chrome,
+        &server.url(COACH_HOST, "/?role=backend&book=icebreakers"),
+    );
+    let reader = tag_with(&dom, "data-reader-mode=");
+    assert!(
+        reader.contains(r#"data-reader-persona="backend""#),
+        "{reader}"
+    );
+    assert!(
+        reader.contains(r#"data-reader-playing="false""#),
+        "reader must pause behind the sheet: {reader}"
+    );
+    assert!(dom.contains("nobody cheers when a server doesn’t crash"));
+    assert!(dom.contains("You picked backend on the spectrum."));
+    assert_eq!(text_after(&dom, "data-spectrum-current"), "Backend");
     let input = tag_with(&dom, "data-spectrum-input");
-    assert!(input.contains("Designer, 90% designer"), "{input}");
+    assert!(
+        input.contains(r#"aria-valuetext="Backend engineers""#),
+        "{input}"
+    );
+    let stop = tag_with(&dom, r#"data-spectrum-stop="backend""#);
+    assert!(stop.contains(r#"data-active="true""#), "{stop}");
     let sheet = tag_with(&dom, "data-booking-state=");
     assert!(
         sheet.contains(r#"data-booking-state="icebreakers""#),
@@ -175,12 +217,18 @@ async fn coach_page_behaves_in_a_real_browser() {
     assert!(!frame.contains(" src="), "frame loaded too early: {frame}");
 
     // Calendar step: the embed's src is populated from data-src.
-    let dom = dump_dom(&chrome, &server.url(COACH_HOST, "/?book=calendar&at=5"));
+    let dom = dump_dom(
+        &chrome,
+        &server.url(COACH_HOST, "/?book=calendar&role=hardware"),
+    );
     let frame = tag_with(&dom, "data-booking-frame");
     assert!(
         frame.contains(&format!(r#" src="{TEST_BOOKING_URL}?gv=true""#)),
         "calendar step must load the booking embed: {frame}"
     );
-    let persona = tag_with(&dom, "data-persona=");
-    assert!(persona.contains(r#"data-persona="engineer""#), "{persona}");
+    let reader = tag_with(&dom, "data-reader-mode=");
+    assert!(
+        reader.contains(r#"data-reader-persona="hardware""#),
+        "{reader}"
+    );
 }

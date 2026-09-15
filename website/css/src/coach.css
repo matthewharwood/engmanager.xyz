@@ -1,8 +1,9 @@
 /* coach.engmanager.xyz — layered on top of shop.css (the page body carries
    both `shop-page` and `coach-page`), so the topbar, theme picker, bag sheet,
    icon buttons, and pink CTA are the shop's own rules. Everything here is the
-   coaching-specific layout: hero ticket, spectrum slider, proof list, steps,
-   and the booking sheet's calendar + Icebreakers views. */
+   coaching-specific layout: the full-bleed speed reader and its controls, the
+   spectrum slider, the free-reading and community sections, and the booking
+   sheet's calendar + Icebreakers views. */
 
 .coach-page {
     font-family: var(--font-mono);
@@ -45,14 +46,6 @@
     outline-offset: 3px;
 }
 
-.coach-shell {
-    inline-size: min(100%, 72rem);
-    margin-inline: auto;
-    padding-block: clamp(2.5rem, 7vw, 5.5rem) 5rem;
-    padding-inline: clamp(1rem, 4vw, 3rem);
-    display: grid;
-    gap: clamp(4rem, 10vw, 7.5rem);
-}
 
 .coach-kicker {
     margin: 0;
@@ -64,7 +57,6 @@
     text-transform: uppercase;
 }
 
-.coach-title,
 .coach-h2 {
     margin: 0.8rem 0 1.1rem;
     font-family: var(--font-display);
@@ -74,10 +66,6 @@
     text-wrap: balance;
 }
 
-.coach-title {
-    font-size: clamp(2.1rem, 5.2vw, 3.7rem);
-    line-height: 0.95;
-}
 
 .coach-h2 {
     font-size: clamp(1.45rem, 3.6vw, 2.5rem);
@@ -92,7 +80,6 @@
     text-transform: uppercase;
 }
 
-.coach-lede,
 .coach-sub {
     margin: 0;
     max-inline-size: 40rem;
@@ -102,9 +89,6 @@
     text-wrap: pretty;
 }
 
-.coach-lede {
-    font-size: clamp(1rem, 1.5vw, 1.12rem);
-}
 
 .coach-text-link {
     color: var(--text-1);
@@ -127,98 +111,6 @@
 
 .coach-text-button:hover {
     color: var(--text-1);
-}
-
-/* --- hero --------------------------------------------------------------- */
-
-.coach-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2.5rem;
-    align-items: end;
-}
-
-@media (min-width: 56rem) {
-    .coach-hero {
-        grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 1fr);
-        gap: 4rem;
-    }
-}
-
-.coach-ticket {
-    position: relative;
-    display: grid;
-    gap: 1.1rem;
-    padding: 1.25rem;
-    background: var(--surface-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-box, 1rem);
-    box-shadow: 0 1.25rem 2.5rem -1.5rem oklch(from var(--color-base-content) l c h / 0.28);
-}
-
-.coach-ticket-head {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.coach-avatar {
-    inline-size: 3rem;
-    block-size: 3rem;
-    flex: none;
-    object-fit: cover;
-    border-radius: 50%;
-    background: var(--surface-1);
-}
-
-.coach-ticket-name,
-.coach-ticket-role {
-    margin: 0;
-    line-height: 1.2;
-}
-
-.coach-ticket-name {
-    font-size: 0.82rem;
-    font-weight: 900;
-    text-transform: uppercase;
-}
-
-.coach-ticket-role {
-    color: var(--text-muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-}
-
-.coach-specs {
-    margin: 0;
-    display: grid;
-    border-block: 1px dashed var(--border-subtle);
-}
-
-.coach-specs > div {
-    display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
-    gap: 0.75rem;
-    padding-block: 0.55rem;
-}
-
-.coach-specs > div + div {
-    border-block-start: 1px dashed var(--border-subtle);
-}
-
-.coach-specs dt {
-    color: var(--text-muted);
-    font-size: 0.68rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.coach-specs dd {
-    margin: 0;
-    font-size: 0.8rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
 }
 
 .coach-local-window {
@@ -247,258 +139,677 @@
     letter-spacing: 0.04em;
 }
 
-.coach-ticket-hint {
-    margin: 0;
+/* --- speed reader hero -------------------------------------------------------
+   Full bleed. Without JS it is the headline and two paragraphs. With scripting
+   on, everything except "read" mode shows the reticle, so the page never
+   flashes paragraphs before coach.js boots. */
+
+.coach-main {
+    display: grid;
+}
+
+.coach-reader {
+    position: relative;
+    min-block-size: calc(100svh - 2.75rem);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    gap: clamp(1rem, 3vh, 1.75rem);
+    padding-block: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 3vh, 1.75rem);
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    background:
+        radial-gradient(ellipse 60% 42% at 50% 44%, var(--color-primary-soft), transparent 72%),
+        var(--surface-1);
+    border-block-end: 1px solid var(--border-subtle);
+}
+
+.coach-reader-stage {
+    min-block-size: 0;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: clamp(0.9rem, 2.6vh, 1.6rem);
     text-align: center;
 }
 
-/* --- spectrum slider ---------------------------------------------------- */
+.coach-reader-kicker {
+    max-inline-size: 36rem;
+    text-wrap: balance;
+}
+
+.coach-reader-title {
+    margin: 0;
+    max-inline-size: 22ch;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5.6vw, 4.2rem);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    line-height: 0.95;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.coach-reader-text {
+    max-inline-size: 40rem;
+    display: grid;
+    gap: 1rem;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+    line-height: 1.65;
+    text-align: start;
+    text-wrap: pretty;
+}
+
+.coach-reader-text p {
+    margin: 0;
+}
+
+.coach-reader-text p:first-child {
+    color: var(--text-1);
+}
+
+.coach-reader-text.is-swapping {
+    animation: coach-text-swap 360ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes coach-text-swap {
+    from {
+        opacity: 0;
+        transform: translateY(0.4rem);
+    }
+}
+
+/* The reticle: two rules with a notch over the pivot letter. The word is a
+   three-column grid whose outer columns are always equal, so the pivot letter
+   sits dead center no matter how long the word is. */
+.coach-rsvp {
+    inline-size: min(100%, 46rem);
+    display: none;
+    gap: clamp(0.75rem, 2.2vh, 1.25rem);
+    margin-block: clamp(0.25rem, 2vh, 1.5rem);
+}
+
+.coach-rsvp-line {
+    position: relative;
+    display: block;
+    block-size: 2px;
+    background: var(--border-muted);
+}
+
+.coach-rsvp-line::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    inline-size: 2px;
+    block-size: 0.55rem;
+    background: var(--color-primary);
+    translate: -50% 0;
+}
+
+.coach-rsvp-line-end::after {
+    inset-block: auto 0;
+}
+
+.coach-rsvp-progress {
+    position: absolute;
+    inset: 0;
+    background: var(--color-primary);
+    opacity: 0.6;
+    transform: scaleX(var(--reader-progress, 0));
+    transform-origin: 0 50%;
+    transition: transform 180ms linear;
+}
+
+.coach-rsvp-word {
+    margin: 0;
+    min-block-size: 1.3em;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: baseline;
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    font-size: clamp(2.1rem, 9vw, 6.25rem);
+    font-variant-ligatures: none;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    white-space: pre;
+}
+
+.coach-rsvp-pre {
+    text-align: end;
+}
+
+.coach-rsvp-post {
+    text-align: start;
+}
+
+.coach-rsvp-pivot {
+    position: relative;
+    color: var(--color-primary);
+}
+
+/* The little marker under the letter the eye should land on. */
+.coach-rsvp-pivot::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 0.02em;
+    inset-inline-start: 50%;
+    inline-size: 0.13em;
+    block-size: 0.13em;
+    background: currentColor;
+    border-radius: 50%;
+    translate: -50% 0;
+}
+
+.coach-rsvp-pivot:empty::after {
+    display: none;
+}
+
+.coach-reader-actions {
+    inline-size: min(100%, 24rem);
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+}
+
+.coach-reader-actions .coach-cta {
+    inline-size: 100%;
+    min-block-size: 3.5rem;
+    display: grid;
+    place-items: center;
+    font-size: 0.92rem;
+    letter-spacing: 0.05em;
+    box-shadow: 0 1rem 2rem -1rem oklch(from var(--color-primary) l c h / 0.75);
+}
+
+.coach-reader-meta {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.coach-reader-actions .coach-local-window {
+    text-align: center;
+}
+
+/* --- reader controls (right rail on wide screens) --------------------------- */
+
+.coach-reader-rail {
+    display: none;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: center;
+    gap: 0.75rem 1rem;
+}
+
+.coach-rail-group {
+    display: grid;
+    justify-items: center;
+    gap: 0.3rem;
+}
+
+.coach-rail-caption {
+    color: var(--text-muted);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.coach-pills {
+    display: inline-flex;
+    gap: 0.15rem;
+    padding: 0.2rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+}
+
+.coach-pill {
+    min-block-size: 2rem;
+    min-inline-size: 2.9rem;
+    padding-inline: 0.7rem;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.coach-pill:hover {
+    color: var(--text-1);
+}
+
+.coach-pill[aria-pressed="true"] {
+    background: var(--text-1);
+    color: var(--surface-1);
+}
+
+.coach-transport {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.coach-round {
+    inline-size: 2.4rem;
+    block-size: 2.4rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    cursor: pointer;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    color: var(--text-1);
+}
+
+.coach-round svg {
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+}
+
+.coach-round:hover {
+    border-color: var(--border-strong);
+}
+
+.coach-round-primary {
+    background: var(--color-primary);
+    border-color: transparent;
+    color: var(--color-primary-content);
+}
+
+.coach-round[data-playing="true"] .coach-icon-play,
+.coach-round[data-playing="false"] .coach-icon-pause {
+    display: none;
+}
+
+.coach-pill:focus-visible,
+.coach-round:focus-visible,
+.coach-read-card:focus-visible,
+.coach-secondary-cta:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+@media (min-width: 60rem) {
+    .coach-reader-stage {
+        padding-inline: 6.5rem;
+    }
+    .coach-reader-rail {
+        position: absolute;
+        z-index: 2;
+        inset-block-start: 50%;
+        inset-inline-end: clamp(1rem, 2.5vw, 2rem);
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.9rem;
+        padding-block: 0.8rem;
+        padding-inline: 0.45rem;
+        background: color-mix(in oklab, var(--surface-1) 82%, transparent);
+        border: 1px solid var(--border-subtle);
+        border-radius: 1.6rem;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        translate: 0 -50%;
+    }
+    .coach-reader-rail .coach-pills,
+    .coach-reader-rail .coach-transport {
+        flex-direction: column;
+    }
+    .coach-reader-rail .coach-pills {
+        border-radius: 1.3rem;
+    }
+}
+
+/* --- spectrum: where do you live? ------------------------------------------- */
 
 .coach-spectrum {
-    display: grid;
-    justify-items: start;
+    --thumb: 1.35rem;
+    inline-size: min(100%, 60rem);
+    display: none;
+    justify-self: center;
+    gap: 0.55rem;
 }
 
-.coach-slider {
-    --thumb: 2rem;
-    inline-size: 100%;
-    margin-block: 2.25rem 1.5rem;
-    display: grid;
-    gap: 0.9rem;
+.coach-spectrum-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.75rem;
 }
 
-.coach-slider-input {
+.coach-spectrum-hint {
+    margin-inline-end: auto;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+}
+
+.coach-spectrum-current {
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: clamp(0.8rem, 1.4vw, 1rem);
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.coach-spectrum-track {
+    position: relative;
+    display: grid;
+}
+
+/* The rule runs thumb-center to thumb-center, like the range input's travel. */
+.coach-spectrum-rule {
+    position: absolute;
+    inset-block-start: calc(var(--thumb) / 2 - 1px);
+    inset-inline: calc(var(--thumb) / 2);
+    block-size: 2px;
+    background: var(--border-muted);
+    border-radius: 999px;
+    pointer-events: none;
+}
+
+.coach-spectrum-rule::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: calc(100% * var(--value, 0) / var(--last, 1));
+    background: var(--color-primary);
+    border-radius: inherit;
+    transition: inline-size 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.coach-spectrum-input {
+    position: relative;
+    z-index: 1;
     inline-size: 100%;
     block-size: var(--thumb);
     margin: 0;
-    cursor: grab;
+    cursor: pointer;
     appearance: none;
     background: transparent;
     touch-action: pan-y;
 }
 
-.coach-slider-input:active {
-    cursor: grabbing;
-}
-
-.coach-slider-input:focus-visible {
+.coach-spectrum-input:focus-visible {
     outline: 2px solid var(--focus-ring);
-    outline-offset: 0.5rem;
+    outline-offset: 0.35rem;
     border-radius: 999px;
 }
 
-.coach-slider-input::-webkit-slider-runnable-track {
-    block-size: 0.6rem;
-    border-radius: 999px;
-    background:
-        linear-gradient(90deg, var(--color-primary) 0 var(--spectrum, 50%), transparent var(--spectrum, 50%)),
-        repeating-linear-gradient(90deg, var(--border-subtle) 0 2px, transparent 2px 10%),
-        var(--surface-2);
-    box-shadow: inset 0 0 0 1px var(--border-subtle);
+.coach-spectrum-input::-webkit-slider-runnable-track {
+    block-size: var(--thumb);
+    background: transparent;
 }
 
-.coach-slider-input::-moz-range-track {
-    block-size: 0.6rem;
-    border-radius: 999px;
-    background:
-        repeating-linear-gradient(90deg, var(--border-subtle) 0 2px, transparent 2px 10%),
-        var(--surface-2);
-    box-shadow: inset 0 0 0 1px var(--border-subtle);
+.coach-spectrum-input::-moz-range-track {
+    block-size: var(--thumb);
+    background: transparent;
 }
 
-.coach-slider-input::-moz-range-progress {
-    block-size: 0.6rem;
-    border-radius: 999px;
-    background: var(--color-primary);
-}
-
-.coach-slider-input::-webkit-slider-thumb {
+.coach-spectrum-input::-webkit-slider-thumb {
     inline-size: var(--thumb);
     block-size: var(--thumb);
-    margin-block-start: calc((0.6rem - var(--thumb)) / 2);
     appearance: none;
     background: var(--surface-1);
-    border: 3px solid var(--text-1);
+    border: 3px solid var(--color-primary);
     border-radius: 50%;
-    box-shadow: 0 0.35rem 0.9rem oklch(from var(--color-base-content) l c h / 0.25);
-    transition: transform var(--motion-hover, 120ms ease);
+    box-shadow: 0 0.3rem 0.8rem oklch(from var(--color-base-content) l c h / 0.25);
 }
 
-.coach-slider-input::-moz-range-thumb {
+.coach-spectrum-input::-moz-range-thumb {
+    box-sizing: border-box;
     inline-size: var(--thumb);
     block-size: var(--thumb);
     background: var(--surface-1);
-    border: 3px solid var(--text-1);
+    border: 3px solid var(--color-primary);
     border-radius: 50%;
-    box-shadow: 0 0.35rem 0.9rem oklch(from var(--color-base-content) l c h / 0.25);
+    box-shadow: 0 0.3rem 0.8rem oklch(from var(--color-base-content) l c h / 0.25);
 }
 
-.coach-slider-input:active::-webkit-slider-thumb {
-    transform: scale(1.12);
+.coach-spectrum-pips {
+    position: relative;
+    block-size: 2.1rem;
 }
 
-.coach-slider-stops {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+.coach-pip {
+    position: absolute;
+    inset-block-start: calc(var(--thumb) / -2 - 0.25rem);
+    inset-inline-start: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--i) / var(--last, 1));
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    translate: -50% 0;
 }
 
-.coach-slider-stops span {
-    color: var(--text-disabled, var(--text-muted));
-    font-size: 0.7rem;
+.coach-pip::before {
+    content: "";
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    background: var(--surface-1);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px var(--border-strong);
+}
+
+.coach-pip[data-active="true"]::before {
+    background: var(--color-primary);
+    box-shadow: none;
+}
+
+/* Keep the end labels inside the rail: pin them to their dot's outer edge. */
+.coach-pip:first-child {
+    justify-items: start;
+    translate: -0.25rem 0;
+}
+
+.coach-pip:last-child {
+    justify-items: end;
+    translate: calc(-100% + 0.25rem) 0;
+}
+
+.coach-pip-label {
+    inline-size: max-content;
+    max-inline-size: 5.5rem;
+    color: var(--text-muted);
+    font-size: 0.58rem;
     font-weight: 900;
-    text-transform: uppercase;
-    transition: color 160ms ease;
-}
-
-.coach-slider-stops span:nth-child(2) {
+    letter-spacing: 0.05em;
+    line-height: 1.25;
     text-align: center;
+    text-transform: uppercase;
 }
 
-.coach-slider-stops span:last-child {
+.coach-pip:first-child .coach-pip-label {
+    text-align: start;
+}
+
+.coach-pip:last-child .coach-pip-label {
     text-align: end;
 }
 
-.coach-slider-stops span[data-active="true"] {
+.coach-pip:hover .coach-pip-label,
+.coach-pip[data-active="true"] .coach-pip-label {
     color: var(--text-1);
 }
 
-.coach-persona {
-    inline-size: 100%;
-    display: grid;
-    gap: 0.35rem;
-    padding: clamp(1.1rem, 3vw, 1.75rem);
-    background: var(--surface-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-box, 1rem);
-}
-
-.coach-persona-label {
-    margin: 0;
-    color: var(--color-primary);
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.coach-persona-headline {
-    margin: 0 0 0.6rem;
-    font-family: var(--font-sans);
-    font-size: clamp(1.15rem, 2.4vw, 1.5rem);
-    font-weight: 800;
-    line-height: 1.2;
-    text-wrap: balance;
-}
-
-.coach-persona-focus {
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0.55rem;
-    list-style: none;
-    font-family: var(--font-sans);
-    color: var(--text-2);
-    line-height: 1.45;
-}
-
-.coach-persona-focus li {
-    display: grid;
-    grid-template-columns: 1.1rem minmax(0, 1fr);
-}
-
-.coach-persona-focus li::before {
-    content: "→";
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
-
-.coach-persona.is-swapping {
-    animation: coach-persona-swap 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes coach-persona-swap {
-    from {
-        opacity: 0.35;
-        transform: translate3d(0, 0.35rem, 0);
+@media (max-width: 48rem) {
+    .coach-spectrum-pips {
+        block-size: 0.5rem;
+    }
+    .coach-pip-label {
+        display: none;
     }
 }
 
-/* --- proof + steps ------------------------------------------------------ */
+/* --- scripting on: the reader, its controls, and the spectrum --------------- */
 
-.coach-proof,
-.coach-step-list {
-    margin: 0;
+@media (scripting: enabled) {
+    .coach-reader-rail {
+        display: flex;
+    }
+    .coach-spectrum {
+        display: grid;
+    }
+    .coach-reader:not([data-reader-mode="read"]) .coach-rsvp {
+        display: grid;
+    }
+    .coach-reader:not([data-reader-mode="read"]) .coach-reader-title {
+        max-inline-size: 40ch;
+        color: var(--text-2);
+        font-size: clamp(0.9rem, 1.6vw, 1.2rem);
+        line-height: 1.15;
+    }
+    /* Still in the accessibility tree: screen readers get the paragraphs. */
+    .coach-reader:not([data-reader-mode="read"]) .coach-reader-text {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .coach-reader[data-reader-mode="read"] .coach-rail-speed,
+    .coach-reader[data-reader-mode="read"] .coach-rail-transport {
+        display: none;
+    }
+}
+
+/* --- below the fold ----------------------------------------------------------- */
+
+.coach-below {
+    inline-size: min(100%, 72rem);
+    margin-inline: auto;
+    padding-block: clamp(3.5rem, 9vw, 6.5rem);
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    display: grid;
+    gap: clamp(3.5rem, 9vw, 6rem);
+}
+
+.coach-read-list {
+    margin: 1.75rem 0 0;
     padding: 0;
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
     gap: 1rem;
     list-style: none;
 }
 
-@media (min-width: 48rem) {
-    .coach-proof,
-    .coach-step-list {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-.coach-proof {
-    margin-block: 1.25rem 1.5rem;
-}
-
-.coach-proof li {
+.coach-read-card {
+    block-size: 100%;
     display: grid;
-    align-content: start;
-    gap: 0.5rem;
-    padding-block-start: 1rem;
-    border-block-start: 3px solid var(--text-1);
+    grid-template-rows: auto auto 1fr auto;
+    gap: 0.6rem;
+    padding: 1.25rem;
+    color: var(--text-1);
+    text-decoration: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+    transition:
+        transform 160ms ease,
+        border-color 160ms ease;
 }
 
-.coach-proof strong {
-    font-family: var(--font-display);
-    font-size: clamp(1.6rem, 4vw, 2.4rem);
-    line-height: 1;
+.coach-read-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-3px);
+}
+
+.coach-read-date {
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
-.coach-proof span,
-.coach-step p {
-    color: var(--text-2);
+.coach-read-title {
+    margin: 0;
     font-family: var(--font-sans);
-    line-height: 1.5;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.25;
+    text-wrap: balance;
 }
 
-.coach-step {
+.coach-read-blurb {
+    margin: 0;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.coach-read-more {
+    color: var(--color-primary);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.coach-community {
     display: grid;
-    align-content: start;
-    gap: 0.5rem;
-    padding: 1.25rem;
-    background: var(--surface-2);
+    align-items: end;
+    gap: 1.5rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    background: color-mix(in oklab, var(--color-primary) 10%, var(--surface-2));
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-box, 1rem);
 }
 
-.coach-step h3 {
-    margin: 0;
-    font-size: 0.85rem;
+.coach-community .coach-h2 {
+    margin-block: 0.6rem 0.8rem;
+}
+
+.coach-community-actions {
+    display: grid;
+    justify-items: start;
+    gap: 0.8rem;
+}
+
+.coach-secondary-cta {
+    min-block-size: 2.9rem;
+    display: inline-grid;
+    place-items: center;
+    padding-inline: 1.25rem;
+    color: var(--text-1);
+    text-decoration: none;
+    border: 2px solid var(--text-1);
+    border-radius: var(--radius-field, 0.5rem);
+    font-size: 0.8rem;
     font-weight: 900;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
-.coach-step p {
-    margin: 0;
+.coach-secondary-cta:hover {
+    background: var(--text-1);
+    color: var(--surface-1);
 }
 
-.coach-step-num {
-    inline-size: 1.8rem;
-    block-size: 1.8rem;
-    display: inline-grid;
-    place-items: center;
-    background: var(--color-primary);
-    color: var(--color-primary-content);
-    border-radius: 50%;
-    font-size: 0.8rem;
-    font-weight: 900;
+@media (min-width: 52rem) {
+    .coach-community {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 3rem;
+    }
+    .coach-community-actions {
+        justify-items: end;
+    }
 }
 
 /* --- booking sheet (a wider shop bag) ------------------------------------ */
@@ -717,9 +1028,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .coach-persona.is-swapping,
+    .coach-reader-text.is-swapping,
     .coach-stamp[data-show="true"] {
         animation: none;
+    }
+    .coach-rsvp-progress,
+    .coach-spectrum-rule::before,
+    .coach-read-card {
+        transition: none;
+    }
+    .coach-read-card:hover {
+        transform: none;
     }
     .coach-stamp[data-show="true"] {
         opacity: 0.9;

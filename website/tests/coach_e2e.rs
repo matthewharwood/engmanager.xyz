@@ -1,6 +1,6 @@
 //! End-to-end: the compiled binary serves `coach.engmanager.xyz` over real
-//! HTTP — host routing, the booking page contract (offer terms, spectrum
-//! personas, Google Calendar embed, Icebreakers `/copy` link), its hashed
+//! HTTP — host routing, the booking page contract (offer terms, the speed
+//! reader's personas, Google Calendar embed, Icebreakers `/copy` link), its hashed
 //! assets, headers, the apex `/coaching` redirect, and the guard that keeps an
 //! invalid booking URL off the page.
 
@@ -66,29 +66,30 @@ async fn coach_subdomain_serves_the_booking_flow_end_to_end() {
         "https://docs.google.com/document/d/1uTPB3l9oJ5rCKHiqUYOv_EKfcrtLNUtKn6hIBO-Lbn8/copy"
     ));
 
-    // The data island drives the slider + sheet; its persona table must tile
-    // 0..=100 exactly and agree with the server-rendered default persona.
+    // The data island drives the speed reader, the slider, and the sheet:
+    // every stop carries its audience and two paragraphs, and the default
+    // stop's first paragraph is server-rendered for no-JS readers.
     let island = coach_island(&html);
     let personas = island["personas"].as_array().expect("personas array");
-    let mut next_min = 0;
+    assert_eq!(personas.len(), 7);
+    assert_eq!(personas[0]["id"], "hardware");
+    assert_eq!(personas[6]["id"], "physical-designer");
     for persona in personas {
-        assert_eq!(
-            persona["min"], next_min,
-            "persona ranges must be contiguous"
-        );
-        assert_eq!(persona["focus"].as_array().map(Vec::len), Some(3));
-        next_min = persona["max"].as_u64().unwrap() + 1;
+        assert_eq!(persona["paragraphs"].as_array().map(Vec::len), Some(2));
+        assert!(persona["audience"].as_str().is_some_and(|a| !a.is_empty()));
     }
-    assert_eq!(next_min, 101, "persona ranges must end at 100");
-    let default = island["defaultSpectrum"].as_u64().unwrap();
+    let default_id = island["defaultPersona"].as_str().expect("default persona");
     let default_persona = personas
         .iter()
-        .find(|p| p["min"].as_u64().unwrap() <= default && default <= p["max"].as_u64().unwrap())
-        .expect("default spectrum maps to a persona");
-    assert!(html.contains(&format!(
-        r#"data-persona="{}""#,
-        default_persona["id"].as_str().unwrap()
-    )));
+        .find(|p| p["id"] == default_id)
+        .expect("default persona is in the table");
+    let first_paragraph = default_persona["paragraphs"][0].as_str().unwrap();
+    assert!(html.contains(first_paragraph));
+    assert_eq!(
+        island["headline"],
+        "Spend 35 minutes. Save a year of searching."
+    );
+    assert_eq!(island["reader"]["defaultWpm"], 400);
     assert_eq!(island["offer"]["timeZone"], "America/Los_Angeles");
     assert_eq!(island["offer"]["weekday"], 5);
     assert_eq!(island["offer"]["start"], "10:00");
@@ -98,7 +99,7 @@ async fn coach_subdomain_serves_the_booking_flow_end_to_end() {
 
     // --- hashed assets round-trip over HTTP --------------------------------
     for (prefix, content_type, marker) in [
-        ("/assets/css/coach.", "text/css", ".coach-slider"),
+        ("/assets/css/coach.", "text/css", ".coach-rsvp"),
         ("/assets/css/shop.", "text/css", ".shop-bag"),
         ("/assets/js/coach.", "javascript", "__coach"),
     ] {

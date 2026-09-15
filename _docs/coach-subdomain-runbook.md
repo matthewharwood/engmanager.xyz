@@ -113,7 +113,8 @@ then refund it from Stripe.
   - `tests/coach_e2e.rs` — boots the compiled binary and exercises the page,
     assets, headers, host routing, and the invalid-URL guard over real HTTP;
   - `tests/coach_browser.rs` — headless Chrome runs `coach.js` against the
-    binary (slider deep link, booking sheet steps, lazy embed). Skips without
+    binary (speed reader boot, `?role=` spectrum deep link, booking sheet
+    steps, lazy embed). Skips without
     Chrome locally; CI sets `REQUIRE_BROWSER_TESTS=1` so it cannot skip.
 - CI: `.github/workflows/ci.yml` (fmt, clippy `-D warnings`, tests) on every PR
   and push to `main`.
