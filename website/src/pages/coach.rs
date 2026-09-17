@@ -31,19 +31,27 @@ use eng_markup::view;
 use serde_json::json;
 
 use super::shell::{MetaTags, PageShell, json_ld_island};
+use crate::asset_url;
 use crate::coaching::{
-    BOOKING_PAGE, BookingPage, COACH_ORIGIN, DEFAULT_PERSONA_ID, OFFER, PERSONAS,
-    READER_DEFAULT_WPM, READER_SPEEDS, default_persona_index, headline, intake_copy_url,
-    intake_preview_url, orp_split,
+    BOOKING_PAGE, BookingPage, COACH_ORIGIN, DEFAULT_PERSONA_ID, LINKEDIN_RECOMMENDATIONS_URL,
+    OFFER, PERSONAS, READER_DEFAULT_WPM, READER_SPEEDS, TESTIMONIALS, Testimonial,
+    default_persona_index, headline, intake_copy_url, intake_preview_url, orp_split,
 };
 use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
 use crate::content::article_by_slug;
+use crate::pages::AVATAR_SRC;
 
 const COACH_TITLE: &str = "1:1 Coaching · ENGMANAGER.XYZ";
 const COACH_DESCRIPTION: &str = "Spend 35 minutes, save a year of searching. A 1:1 resume review and career call for engineers and designers, from hardware to physical design, with Matthew Harwood, Engineering Manager at Uber. Fridays 10am–2pm PT, $100.";
 
 const SITE_ORIGIN: &str = "https://engmanager.xyz";
+
+/// Intrinsic box of a recommender's headshot, in CSS px. Mirrors
+/// `--coach-avatar` in `coach.css`; the files themselves are 192px so the
+/// circle stays sharp on a 3x display. Rendered as `width`/`height` so the
+/// card reserves the space before the image arrives (no layout shift).
+const AVATAR_PX: u16 = 56;
 
 const X_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
 const CHEVRON_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
@@ -115,6 +123,7 @@ pub(crate) fn page(booking: Option<&BookingPage>) -> String {
         <main id="main" class="coach-main">
             { render_reader(booking) }
             <div class="coach-below">
+                { render_testimonials() }
                 { render_reads() }
                 { render_community() }
             </div>
@@ -129,6 +138,7 @@ pub(crate) fn page(booking: Option<&BookingPage>) -> String {
             robots: Some("index,follow"),
             og_title: Some(COACH_TITLE.to_string()),
             og_type: Some("website"),
+            og_image: Some(AVATAR_SRC),
             og_url: Some(canonical),
             twitter_card: Some("summary"),
             json_ld: vec![json_ld_island(&service_json_ld())],
@@ -273,6 +283,89 @@ fn render_spectrum() -> HtmlFragment {
                 <div class="coach-spectrum-pips" aria-hidden="true">{ pips }</div>
             </div>
         </div>
+    }
+}
+
+fn render_testimonials() -> HtmlFragment {
+    let cards: HtmlFragment = TESTIMONIALS.iter().map(render_testimonial).collect();
+
+    view! {
+        <section class="coach-proof" aria-labelledby="coach-proof-title">
+            <p class="coach-kicker">"Proof · LinkedIn recommendations"</p>
+            <h2 id="coach-proof-title" class="coach-h2">"Don’t take it from me."</h2>
+            <p class="coach-sub">"Two engineers who reported to me wrote these on LinkedIn, under their own names, on their own profiles. Quoted in full, nothing trimmed — click through and check."</p>
+            <ul class="coach-proof-list">{ cards }</ul>
+        </section>
+    }
+}
+
+/// One recommendation card: my one-line takeaway as the heading, then the
+/// quote verbatim, then who said it and how to check.
+fn render_testimonial(person: &'static Testimonial) -> HtmlFragment {
+    // The monogram is always in the markup, UNDER the photo. If the image
+    // ever fails to load, the reader sees initials rather than a broken-image
+    // icon — no JS, no `onerror`. The photo itself is a self-hosted,
+    // content-addressed asset, never a hotlinked `media.licdn.com` URL
+    // (those are signed and expire).
+    let photo = match person.photo {
+        Some(path) => view! {
+            <img class="coach-proof-photo"
+                 src={ asset_url(path) }
+                 alt=""
+                 width={ AVATAR_PX }
+                 height={ AVATAR_PX }
+                 loading="lazy"
+                 decoding="async" />
+        },
+        None => HtmlFragment::empty(),
+    };
+    // Decorative: the name sits right next to it, so AT gets nothing useful
+    // from the picture.
+    let avatar = view! {
+        <span class="coach-proof-avatar" aria-hidden="true">
+            <span class="coach-proof-monogram">{ person.initials }</span>
+            { photo }
+        </span>
+    };
+    let paragraphs: HtmlFragment = person
+        .quote
+        .iter()
+        .map(|paragraph| view! { <p>{ *paragraph }</p> })
+        .collect();
+
+    view! {
+        <li class="coach-proof-card" id={ format!("proof-{}", person.id) }>
+            <h3 class="coach-proof-takeaway">{ person.takeaway }</h3>
+            <figure class="coach-proof-figure">
+                <blockquote class="coach-proof-quote" cite={ LINKEDIN_RECOMMENDATIONS_URL }>
+                    { paragraphs }
+                </blockquote>
+                <figcaption class="coach-proof-who">
+                    { avatar }
+                    <span class="coach-proof-id">
+                        <a class="coach-proof-name"
+                           href={ person.profile_url }
+                           target="_blank"
+                           rel="noopener">
+                            { person.name }
+                        </a>
+                        <span class="coach-proof-headline">{ person.headline }</span>
+                        <span class="coach-proof-school">{ person.school }</span>
+                    </span>
+                </figcaption>
+            </figure>
+            <p class="coach-proof-meta">
+                { person.relationship }
+                " · "
+                <time datetime={ person.date_iso }>{ person.date_label }</time>
+            </p>
+            <a class="coach-text-link coach-proof-link"
+               href={ LINKEDIN_RECOMMENDATIONS_URL }
+               target="_blank"
+               rel="noopener">
+                { format!("Read {}’s recommendation on LinkedIn ↗", person.first_name()) }
+            </a>
+        </li>
     }
 }
 
@@ -461,6 +554,48 @@ fn island_json(booking: Option<&BookingPage>) -> String {
     .to_string()
 }
 
+/// The two LinkedIn recommendations as schema.org `Review`s on the service.
+///
+/// Deliberately NO `reviewRating`: a LinkedIn recommendation carries no stars,
+/// and inventing a 5/5 would be fabricating data the recommender never gave.
+/// That also means Google will not render these as review rich results (its
+/// policy excludes self-serving reviews about your own business anyway) — the
+/// markup is here so machines read the page the way a person does.
+fn review_json_ld() -> Vec<serde_json::Value> {
+    TESTIMONIALS
+        .iter()
+        .map(|person| {
+            json!({
+                "@type": "Review",
+                "datePublished": person.date_iso,
+                "reviewBody": person.quote.join("\n\n"),
+                "author": {
+                    "@type": "Person",
+                    "name": person.name,
+                    "jobTitle": person.headline,
+                    // `sameAs` + `alumniOf` are what let a machine resolve
+                    // the author to a real person rather than a first name.
+                    "sameAs": person.profile_url,
+                    "alumniOf": {
+                        "@type": "CollegeOrUniversity",
+                        "name": person.school_name,
+                    },
+                    "image": person.photo.map(|path| format!("{COACH_ORIGIN}{}", asset_url(path))),
+                },
+                "itemReviewed": {
+                    "@type": "Person",
+                    "name": "Matthew Harwood",
+                },
+                "publisher": {
+                    "@type": "Organization",
+                    "name": "LinkedIn",
+                    "url": LINKEDIN_RECOMMENDATIONS_URL,
+                },
+            })
+        })
+        .collect()
+}
+
 fn service_json_ld() -> String {
     json!({
         "@context": "https://schema.org",
@@ -485,6 +620,7 @@ fn service_json_ld() -> String {
             "priceCurrency": "USD",
             "availability": "https://schema.org/InStock",
         },
+        "review": review_json_ld(),
     })
     .to_string()
 }
@@ -555,6 +691,27 @@ mod tests {
                 read.slug
             )));
         }
+        // Social proof: both recommendations, quoted whole, each attributable.
+        for person in TESTIMONIALS {
+            assert!(html.contains(person.name), "missing {}", person.name);
+            assert!(
+                html.contains(person.school),
+                "missing {}'s school",
+                person.name
+            );
+            assert!(
+                html.contains(&format!(r#"href="{}" target="_blank""#, person.profile_url)),
+                "{} is not linked to their profile",
+                person.name
+            );
+            for paragraph in person.quote {
+                assert!(html.contains(paragraph), "{} is quoted short", person.name);
+            }
+        }
+        assert!(html.contains(LINKEDIN_RECOMMENDATIONS_URL));
+        assert!(html.contains("Read Edison’s recommendation on LinkedIn ↗"));
+        // Nothing points at LinkedIn's expiring image CDN.
+        assert!(!html.contains("licdn.com"));
         assert!(html.contains(r#"href="https://discord.gg/sTzQBrbnBM""#));
         assert!(html.contains(r#"href="https://engmanager.xyz/articles/auteurs""#));
         // Booking embed is lazy (data-src, no src) and has a new-tab fallback.
@@ -573,6 +730,87 @@ mod tests {
         assert!(html.contains(r#""price":"100.00""#));
         assert!(html.contains(r#""priceCurrency":"USD""#));
         assert!(!html.contains("<style>"));
+    }
+
+    /// Every headshot must resolve to a real embedded asset. `asset_url`
+    /// falls back to the FLAT `/assets/{path}` when the file isn't embedded,
+    /// so a hashed URL is proof the bytes shipped — this is what stops a
+    /// typo'd path from going live as a broken image.
+    #[test]
+    fn every_headshot_is_a_real_embedded_asset() {
+        for person in TESTIMONIALS {
+            let Some(path) = person.photo else { continue };
+            let url = asset_url(path);
+            assert_ne!(
+                url,
+                format!("/assets/{path}"),
+                "{} points at {path}, which is not in website/assets/",
+                person.name
+            );
+            assert!(
+                url.ends_with(".webp"),
+                "{}'s headshot should be webp, got {url}",
+                person.name
+            );
+        }
+    }
+
+    #[test]
+    fn headshots_render_with_reserved_space_and_a_monogram_underneath() {
+        let html = page(Some(&booking()));
+        for person in TESTIMONIALS {
+            // The monogram ships even when there is a photo: it is the
+            // fallback the reader sees if the image never arrives.
+            assert!(
+                html.contains(&format!(
+                    r#"<span class="coach-proof-monogram">{}</span>"#,
+                    person.initials
+                )),
+                "{} has no monogram underneath their photo",
+                person.name
+            );
+            let Some(path) = person.photo else { continue };
+            assert!(html.contains(&asset_url(path)));
+        }
+        // Explicit box on every headshot, so the card never reflows when the
+        // image lands.
+        assert_eq!(
+            html.matches(r#"width="56" height="56" loading="lazy" decoding="async""#)
+                .count(),
+            TESTIMONIALS.iter().filter(|p| p.photo.is_some()).count()
+        );
+        // Decorative: the name is right beside it, so the img carries no alt
+        // text and the wrapper is hidden from assistive tech.
+        assert!(html.contains(r#"<span class="coach-proof-avatar" aria-hidden="true">"#));
+    }
+
+    #[test]
+    fn reviews_are_marked_up_without_inventing_a_rating() {
+        let reviews = review_json_ld();
+        assert_eq!(reviews.len(), TESTIMONIALS.len());
+        for (review, person) in reviews.iter().zip(TESTIMONIALS) {
+            assert_eq!(review["author"]["name"], person.name);
+            assert_eq!(review["author"]["sameAs"], person.profile_url);
+            assert_eq!(review["datePublished"], person.date_iso);
+            assert!(
+                review.get("reviewRating").is_none(),
+                "a LinkedIn recommendation has no stars — don't invent one"
+            );
+            assert!(
+                review["reviewBody"]
+                    .as_str()
+                    .is_some_and(|body| body.contains(person.quote[0]))
+            );
+            // Entity signals: the school as a resolvable org, and an
+            // ABSOLUTE image URL (a relative one is useless to a crawler).
+            assert_eq!(review["author"]["alumniOf"]["name"], person.school_name);
+            let image = review["author"]["image"].as_str().unwrap_or_default();
+            assert!(
+                image.starts_with("https://coach.engmanager.xyz/assets/"),
+                "{}'s review image must be absolute, got {image}",
+                person.name
+            );
+        }
     }
 
     #[test]

@@ -106,6 +106,67 @@ mode for appointment payments): book a slot, pay $100, confirm the event lands
 on the calendar with a Meet link and the payment shows in Stripe → Payments,
 then refund it from Stripe.
 
+## Social proof: the LinkedIn recommendations
+
+`TESTIMONIALS` in `website/src/coaching.rs` holds the two recommendations the
+page quotes. LinkedIn has no permalink for a single recommendation, so:
+
+- the recommender's **name** links to their own profile — that is the part a
+  skeptical reader can actually check;
+- **"Read … on LinkedIn"** links to
+  `linkedin.com/in/matthewcharwood/details/recommendations/`, which is behind
+  LinkedIn's login wall for logged-out visitors. That is why the quote is on
+  the page in full, not teased.
+
+House rules, enforced by `testimonials_stay_attributable_and_verbatim`:
+
+- **Quotes are verbatim.** Trim whole sentences from the end or nothing — never
+  reword, never stitch fragments with an ellipsis.
+- **`takeaway` is my line, not theirs.** It renders as the card's `<h3>`,
+  outside the `<blockquote>`, and is never in quotation marks.
+- **No invented ratings.** The schema.org `Review` markup deliberately omits
+  `reviewRating`; a LinkedIn recommendation has no stars, and Google excludes
+  self-serving reviews from rich results anyway.
+
+### Headshots
+
+Both people agreed to their name, photo, school, and quote appearing here.
+
+The photos are **self-hosted**, not hotlinked: `website/assets/coach/<slug>.webp`,
+192×192, EXIF stripped, ~6 KB each. They ship inside the binary and are served
+content-addressed (`/assets/coach/<slug>.<hash>.webp`, `immutable; max-age=1y`)
+through Cloudflare's edge like every other asset. Nothing external can expire
+or go away, which is the whole point.
+
+Never point `photo` at `media.licdn.com`. Those URLs are signed and expire, and
+hotlinking them breaks both the page and LinkedIn's terms. Two tests enforce
+this: one rejects any `photo` that starts with `http`, and
+`every_headshot_is_a_real_embedded_asset` fails if the path does not resolve to
+embedded bytes (`asset_url` silently falls back to a flat, unhashed URL when a
+file is missing — that fallback is what the test catches).
+
+In the markup the monogram is always rendered *underneath* the photo, so a
+failed image shows initials instead of a broken-image icon. No JS, no `onerror`.
+
+To add or replace one:
+
+```bash
+magick <source> -auto-orient -strip \
+  -resize '192x192^' -gravity center -extent 192x192 \
+  -quality 82 -define webp:method=6 \
+  website/assets/coach/<slug>.webp
+```
+
+Then set `photo: Some("coach/<slug>.webp")` and keep `AVATAR_PX` in
+`pages/coach.rs` in sync with `--coach-avatar` in `coach.css`.
+
+The author avatar (`pages/mod.rs`) uses Cloudflare Images instead, which buys
+`format=auto` and `w=` variants. These two are small and fixed-size, so the
+extra moving part is not worth it; moving them later is a one-line change per
+person once someone has a `CF_API_TOKEN` handy.
+
+If someone asks to be removed, delete their entry from `TESTIMONIALS` and ship.
+
 ## Tests
 
 - `cargo test -p website` runs:

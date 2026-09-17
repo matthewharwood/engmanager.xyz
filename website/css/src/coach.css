@@ -699,6 +699,179 @@
     gap: clamp(3.5rem, 9vw, 6rem);
 }
 
+/* Social proof: two LinkedIn recommendations, quoted whole. The card is the
+   read card's surface with a hanging quote mark, so the section reads as part
+   of the same set rather than a bolted-on testimonial widget. */
+
+.coach-proof-list {
+    margin: 1.75rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1rem;
+    list-style: none;
+}
+
+.coach-proof-card {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: 0.9rem;
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 1rem);
+}
+
+/* Decorative “ in the top corner — out of the text's way, and hidden from
+   assistive tech, which already gets the quote from <blockquote>. */
+.coach-proof-card::before {
+    content: "“";
+    position: absolute;
+    inset-block-start: 0.05em;
+    inset-inline-end: 0.9rem;
+    color: var(--color-primary);
+    font-family: var(--font-sans);
+    font-size: 4.5rem;
+    line-height: 1;
+    opacity: 0.22;
+    pointer-events: none;
+}
+
+.coach-proof-takeaway {
+    position: relative;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.25;
+    text-wrap: balance;
+}
+
+/* 1fr on the quote pins every card's attribution block to the same baseline,
+   however long the recommendation runs. */
+.coach-proof-figure {
+    margin: 0;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    gap: 1.1rem;
+}
+
+.coach-proof-quote {
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+}
+
+.coach-proof-quote p {
+    margin: 0;
+}
+
+.coach-proof-who {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    padding-block-start: 0.9rem;
+    border-block-start: 1px solid var(--border-subtle);
+}
+
+/* The headshot stacks ON TOP of the monogram, both filling the same circle.
+   If the image 404s or is blocked, the initials are already underneath — no
+   broken-image icon, no JS. Keep --coach-avatar in sync with AVATAR_PX in
+   pages/coach.rs, which writes the img's width/height. */
+.coach-proof-avatar {
+    --coach-avatar: 3.5rem;
+
+    position: relative;
+    inline-size: var(--coach-avatar);
+    block-size: var(--coach-avatar);
+    flex: none;
+}
+
+.coach-proof-monogram,
+.coach-proof-photo {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: 50%;
+}
+
+.coach-proof-photo {
+    object-fit: cover;
+    border: 1px solid var(--border-subtle);
+}
+
+.coach-proof-monogram {
+    display: grid;
+    place-items: center;
+    background: color-mix(in oklab, var(--color-primary) 22%, var(--surface-3));
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.coach-proof-id {
+    display: grid;
+    gap: 0.15rem;
+    min-inline-size: 0;
+}
+
+.coach-proof-name {
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 900;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+}
+
+.coach-proof-name:hover {
+    color: var(--color-primary);
+}
+
+.coach-proof-name:focus-visible,
+.coach-proof-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.coach-proof-headline,
+.coach-proof-school {
+    color: var(--text-2);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.coach-proof-school {
+    color: var(--text-muted);
+}
+
+.coach-proof-meta {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.coach-proof-link {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    justify-self: start;
+}
+
 .coach-read-list {
     margin: 1.75rem 0 0;
     padding: 0;

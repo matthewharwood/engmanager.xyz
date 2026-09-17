@@ -1,7 +1,7 @@
 //! Coaching domain: the 1:1 session offer, its weekly availability window,
 //! the hardware ↔ physical-design audience spectrum and its speed-reader
-//! copy, the Google Calendar booking
-//! page, and the Icebreakers intake doc. Pure data + smart constructors —
+//! copy, the LinkedIn recommendations quoted as social proof, the Google
+//! Calendar booking page, and the Icebreakers intake doc. Pure data + smart constructors —
 //! page rendering lives in `pages::coach`, which imports from here.
 //!
 //! Scheduling and payment are NOT implemented in this binary: a Google
@@ -270,6 +270,96 @@ pub fn orp_split(word: &str) -> (String, String, String) {
         chars[pivot + 1..].iter().collect(),
     )
 }
+
+/// The "recommendations received" list on my LinkedIn profile. LinkedIn has
+/// no permalink for a SINGLE recommendation, so every card's "read it on
+/// LinkedIn" link lands here and the reader scrolls; the recommender's own
+/// profile is what the name links to, and that is the part that makes the
+/// quote checkable. Note the page is behind LinkedIn's login wall for
+/// logged-out visitors, which is why the quote is on the page in full.
+pub const LINKEDIN_RECOMMENDATIONS_URL: &str =
+    "https://www.linkedin.com/in/matthewcharwood/details/recommendations/";
+
+/// A LinkedIn recommendation from an engineer who reported to me, quoted in
+/// full on the coaching page.
+///
+/// Rules this type exists to enforce by being boring data:
+///   - `quote` is VERBATIM. Trim whole sentences from the end or nothing —
+///     never reword, never stitch fragments together with an ellipsis.
+///   - `takeaway` is MY line, not theirs, so it renders as a heading and is
+///     never wrapped in quotation marks or placed inside the `<blockquote>`.
+///   - `photo` is a self-hosted file under `assets/`, used only with the
+///     person's permission. LinkedIn's own `media.licdn.com` URLs are signed
+///     and expire — hotlinking one breaks the page and their terms with it.
+pub struct Testimonial {
+    pub id: &'static str,
+    pub name: &'static str,
+    /// Monogram shown until a cleared headshot exists.
+    pub initials: &'static str,
+    /// e.g. `Some("coach/edison-lee.webp")`. `None` renders the monogram.
+    pub photo: Option<&'static str>,
+    /// Their LinkedIn headline, as of `date_label`.
+    pub headline: &'static str,
+    /// Displayed under the name, degree included when they list one.
+    pub school: &'static str,
+    /// Just the institution, for schema.org `alumniOf` — the part a machine
+    /// can resolve to a real entity.
+    pub school_name: &'static str,
+    pub profile_url: &'static str,
+    /// The working relationship, in LinkedIn's own words.
+    pub relationship: &'static str,
+    pub date_iso: &'static str,
+    pub date_label: &'static str,
+    /// My one-line summary of what the quote proves.
+    pub takeaway: &'static str,
+    /// The recommendation, verbatim, one entry per paragraph.
+    pub quote: &'static [&'static str],
+}
+
+impl Testimonial {
+    /// `Edison` — what the "read it on LinkedIn" link says.
+    pub fn first_name(&self) -> &'static str {
+        self.name.split(' ').next().unwrap_or(self.name)
+    }
+}
+
+pub const TESTIMONIALS: &[Testimonial] = &[
+    Testimonial {
+        id: "edison-lee",
+        name: "Edison Lee",
+        initials: "EL",
+        photo: Some("coach/edison-lee.webp"),
+        headline: "Building @ Baro (a16z speedrun)",
+        school: "Georgia Institute of Technology · BS Computer Science",
+        school_name: "Georgia Institute of Technology",
+        profile_url: "https://www.linkedin.com/in/edisonylee/",
+        relationship: "Reported to me directly",
+        date_iso: "2026-09-15",
+        date_label: "September 15, 2026",
+        takeaway: "From a scattered set of interests to a clear direction.",
+        quote: &[
+            "I had the opportunity to work with Matt at a time when I had a lot of ambition, but very little clarity on where I wanted to take my career. As my manager, he gave me the freedom to explore my interests, trusted me with opportunities well beyond what I expected, and helped me turn a pretty scattered set of interests into a much clearer sense of direction.",
+            "What I respect most about Matt is the conviction he brings to the way he leads. He has a strong sense for where things are going, the confidence to act on it before it’s obvious, and an eye for recognizing potential in people early. His perspective has stuck with me well beyond the time we worked together, and has shaped a lot of how I think about my own career.",
+        ],
+    },
+    Testimonial {
+        id: "shreyas-s",
+        name: "Shreyas S",
+        initials: "SS",
+        photo: Some("coach/shreyas-s.webp"),
+        headline: "Software Engineer · Google Summer of Code ’24",
+        school: "Vellore Institute of Technology",
+        school_name: "Vellore Institute of Technology",
+        profile_url: "https://www.linkedin.com/in/zhreyas/",
+        relationship: "Reported to me directly",
+        date_iso: "2026-09-15",
+        date_label: "September 15, 2026",
+        takeaway: "From a resume review to owning parts of the product.",
+        quote: &[
+            "I met Matthew through his Discord community while I was still in college, looking for feedback on my projects and how to present my work. He reviewed my resume and portfolio, then helped me turn my experience into case studies that explained what I’d actually built. He also brought me onto my first contract, where I went on to own substantial parts of the product and help onboard new engineers. Working with Matt taught me to think from first principles, question design decisions, and understand how UX and performance affect the people using what we build. Those lessons made a real difference early in my career, and I still draw on them when making product decisions.",
+        ],
+    },
+];
 
 /// `/copy` forces Google Docs' "Make a copy" dialog, so the client ends up
 /// with their own editable Icebreakers doc.
@@ -618,5 +708,60 @@ mod tests {
             booking_page_from(Some("   ")),
             DEFAULT_BOOKING_URL.and_then(|raw| BookingPage::parse(raw).ok())
         );
+    }
+
+    #[test]
+    fn testimonials_stay_attributable_and_verbatim() {
+        for person in TESTIMONIALS {
+            assert!(
+                person
+                    .profile_url
+                    .starts_with("https://www.linkedin.com/in/"),
+                "{} must link to a real LinkedIn profile, so the quote is checkable",
+                person.name
+            );
+            assert!(!person.quote.is_empty(), "{} has no quote", person.name);
+            for paragraph in person.quote {
+                // A quote that ends mid-sentence reads as if it was cut to
+                // flatter me. Trim whole sentences or nothing.
+                assert!(
+                    paragraph.ends_with('.') || paragraph.ends_with('!'),
+                    "{} has a paragraph that stops mid-sentence",
+                    person.name
+                );
+                assert!(
+                    !paragraph.contains('…') && !paragraph.contains("..."),
+                    "{}'s quote is stitched with an ellipsis",
+                    person.name
+                );
+            }
+            // The takeaway is MY summary; it must not read as their speech.
+            assert!(
+                !person.takeaway.contains('"') && !person.takeaway.contains('“'),
+                "{}'s takeaway is my line, not a quote",
+                person.name
+            );
+            assert!(
+                !person.school.is_empty(),
+                "{} is missing a school",
+                person.name
+            );
+            assert_eq!(
+                person.date_iso.len(),
+                10,
+                "{} needs a YYYY-MM-DD date for <time datetime>",
+                person.name
+            );
+            // Headshots are self-hosted with permission — never hotlinked.
+            if let Some(photo) = person.photo {
+                assert!(
+                    !photo.contains("licdn.com") && !photo.starts_with("http"),
+                    "{}'s photo must be a self-hosted asset path",
+                    person.name
+                );
+            }
+        }
+        assert_eq!(TESTIMONIALS[0].first_name(), "Edison");
+        assert_eq!(TESTIMONIALS[1].first_name(), "Shreyas");
     }
 }
