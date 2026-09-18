@@ -25,6 +25,7 @@
 //!     icebreakers) with history entries, exactly like the shop's `?bag=`.
 //!   - `[data-booking-frame]` gets its `src` from `data-src` on first open.
 
+use axum::extract::Query;
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
@@ -34,16 +35,17 @@ use super::shell::{MetaTags, PageShell, json_ld_island};
 use crate::asset_url;
 use crate::coaching::{
     BOOKING_PAGE, BookingPage, COACH_ORIGIN, DEFAULT_PERSONA_ID, LINKEDIN_RECOMMENDATIONS_URL,
-    OFFER, PERSONAS, READER_DEFAULT_WPM, READER_SPEEDS, TESTIMONIALS, Testimonial,
-    default_persona_index, headline, intake_copy_url, intake_preview_url, orp_split,
+    OFFER, PERSONAS, READER_DEFAULT_WPM, READER_SPEEDS, SessionMode, TESTIMONIALS, Testimonial,
+    cta_label, default_persona_index, group_disclaimer, headline, intake_copy_url,
+    intake_preview_url, orp_split,
 };
 use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
 use crate::content::article_by_slug;
 use crate::pages::{SHARE_CARD_SIZE, share_card};
 
-const COACH_TITLE: &str = "1:1 Coaching · ENGMANAGER.XYZ";
 const COACH_DESCRIPTION: &str = "Spend 35 minutes, save a year of searching. A 1:1 resume review and career call for engineers and designers, from hardware to physical design, with Matthew Harwood, Engineering Manager at Uber. Fridays 10am–2pm PT, $100.";
+const GROUP_DESCRIPTION: &str = "Bring your friends into the same 35 minutes. A group resume review and career call for engineers and designers with Matthew Harwood, Engineering Manager at Uber. One person books and pays $100 total, then forwards the Google Meet invite. Fridays 10am–2pm PT.";
 
 const SITE_ORIGIN: &str = "https://engmanager.xyz";
 
@@ -82,8 +84,16 @@ const COACH_READS: [CoachRead; 3] = [
     },
 ];
 
-pub async fn index() -> Response {
-    Html(page(BOOKING_PAGE.as_ref())).into_response()
+/// `?group=1` renders the group framing. It is a real URL, not client-side
+/// state, so a shared link posts the group title and the group share card.
+#[derive(Debug, Default, serde::Deserialize)]
+pub struct CoachQuery {
+    group: Option<String>,
+}
+
+pub async fn index(Query(query): Query<CoachQuery>) -> Response {
+    let mode = SessionMode::from_query(query.group.as_deref());
+    Html(page(BOOKING_PAGE.as_ref(), mode)).into_response()
 }
 
 /// `engmanager.xyz/coaching` → the subdomain (308, method-preserving).
@@ -91,9 +101,13 @@ pub async fn redirect() -> Redirect {
     Redirect::permanent(&format!("{COACH_ORIGIN}/"))
 }
 
-pub(crate) fn page(booking: Option<&BookingPage>) -> String {
+pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
+    // Canonical always points at the 1:1 URL: `?group=1` is the same page with
+    // different framing, not a second page to be indexed separately. The OG
+    // tags below still describe the variant actually being served, which is
+    // what a scraper reads when someone shares the group link.
     let canonical = format!("{COACH_ORIGIN}/");
-    let data = script_islands(&[("__coach", &island_json(booking))]);
+    let data = script_islands(&[("__coach", &island_json(booking, mode))]);
 
     let mut assets = Head::new();
     assets.add_css("css/shop.css");
@@ -121,31 +135,44 @@ pub(crate) fn page(booking: Option<&BookingPage>) -> String {
             </div>
         </header>
         <main id="main" class="coach-main">
-            { render_reader(booking) }
+            { render_reader(booking, mode) }
             <div class="coach-below">
                 { render_testimonials() }
                 { render_reads() }
                 { render_community() }
             </div>
         </main>
-        { render_booking_sheet(booking) }
+        { render_booking_sheet(booking, mode) }
     };
 
-    PageShell::new(COACH_TITLE, "shop-page coach-page")
+    let description = if mode.is_group() {
+        GROUP_DESCRIPTION.to_string()
+    } else {
+        COACH_DESCRIPTION.to_string()
+    };
+    let card_alt = if mode.is_group() {
+        format!(
+            "Same {} minutes, bring your friends — one booking, {} total, one person pays.",
+            OFFER.session_minutes,
+            OFFER.price.label()
+        )
+    } else {
+        "Spend 35 minutes, save a year of searching — 1:1 coaching, $100, recommended on LinkedIn by engineers I managed."
+            .to_string()
+    };
+
+    PageShell::new(mode.page_title(), "shop-page coach-page")
         .meta(MetaTags {
-            description: Some(COACH_DESCRIPTION.to_string()),
+            description: Some(description),
             canonical: Some(canonical.clone()),
             robots: Some("index,follow"),
-            og_title: Some(COACH_TITLE.to_string()),
+            og_title: Some(mode.page_title().to_string()),
             og_type: Some("website"),
-            og_image: Some(share_card(COACH_ORIGIN, "coach")),
-            og_image_alt: Some(
-                "Spend 35 minutes, save a year of searching — 1:1 coaching, $100, recommended on LinkedIn by engineers I managed."
-                    .to_string(),
-            ),
+            og_image: Some(share_card(COACH_ORIGIN, mode.share_card())),
+            og_image_alt: Some(card_alt),
             og_image_size: Some(SHARE_CARD_SIZE),
             og_site_name: Some("ENGMANAGER.XYZ"),
-            og_url: Some(canonical),
+            og_url: Some(format!("{COACH_ORIGIN}{}", mode.href())),
             twitter_card: Some("summary_large_image"),
             json_ld: vec![json_ld_island(&service_json_ld())],
             ..MetaTags::default()
@@ -156,10 +183,56 @@ pub(crate) fn page(booking: Option<&BookingPage>) -> String {
         .render(body)
 }
 
-fn render_reader(booking: Option<&BookingPage>) -> HtmlFragment {
+/// The one piece of UI for "who is coming": a two-option segmented control
+/// that defaults to 1:1, plus the disclaimer on hover or focus.
+///
+/// The options are ANCHORS, not buttons. Each is a real URL the server renders
+/// in full, so the control works with JS off, the back button behaves, and —
+/// the reason it matters here — a shared link carries the mode into the
+/// LinkedIn card.
+fn render_mode_switch(mode: SessionMode) -> HtmlFragment {
+    let options: HtmlFragment = [SessionMode::Solo, SessionMode::Group]
+        .iter()
+        .map(|option| {
+            let current = *option == mode;
+            view! {
+                <a class="coach-mode-option"
+                   href={ option.href() }
+                   data-active={ if current { "true" } else { "false" } }
+                   aria-current={ if current { "page" } else { "false" } }>
+                    { option.label() }
+                </a>
+            }
+        })
+        .collect();
+
+    view! {
+        <div class="coach-mode" data-mode={ if mode.is_group() { "group" } else { "solo" } }>
+            <span class="coach-mode-caption" id="coach-mode-caption">"Who is coming?"</span>
+            <div class="coach-mode-options" role="group" aria-labelledby="coach-mode-caption">
+                { options }
+            </div>
+            // Hover reveals it, focus reveals it, and tapping the button
+            // focuses it — so touch works without a line of JavaScript.
+            <span class="coach-mode-info">
+                <button class="coach-mode-info-trigger"
+                        type="button"
+                        aria-describedby="coach-group-note"
+                        aria-label="How group sessions work">
+                    "i"
+                </button>
+                <span class="coach-mode-note" id="coach-group-note" role="tooltip">
+                    { group_disclaimer() }
+                </span>
+            </span>
+        </div>
+    }
+}
+
+fn render_reader(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragment {
     let persona = &PERSONAS[default_persona_index()];
     let [problem, help] = persona.paragraphs();
-    let title = headline();
+    let title = headline(mode);
     // The reticle shows the loop's first word before the script takes over.
     let first_word = title.split_whitespace().next().unwrap_or_default();
     let (pre, pivot, post) = orp_split(first_word);
@@ -167,7 +240,13 @@ fn render_reader(booking: Option<&BookingPage>) -> HtmlFragment {
     // the click is intercepted and opens the booking sheet instead.
     let cta_href = booking
         .map(|page| page.href().to_string())
-        .unwrap_or_else(|| "/?book=calendar".to_string());
+        .unwrap_or_else(|| {
+            if mode.is_group() {
+                "/?group=1&book=calendar".to_string()
+            } else {
+                "/?book=calendar".to_string()
+            }
+        });
     let speeds: HtmlFragment = READER_SPEEDS
         .iter()
         .map(|wpm| {
@@ -185,7 +264,7 @@ fn render_reader(booking: Option<&BookingPage>) -> HtmlFragment {
     view! {
         <section class="coach-reader" data-reader aria-labelledby="coach-title">
             <div class="coach-reader-stage">
-                <p class="coach-kicker coach-reader-kicker">"1:1 coaching · Matthew Harwood · Eng manager at Uber"</p>
+                <p class="coach-kicker coach-reader-kicker">{ mode.kicker() }</p>
                 <h1 id="coach-title" class="coach-reader-title">{ title }</h1>
                 <div class="coach-rsvp" aria-hidden="true">
                     <span class="coach-rsvp-line"></span>
@@ -203,11 +282,12 @@ fn render_reader(booking: Option<&BookingPage>) -> HtmlFragment {
                     <p>{ help }</p>
                 </div>
                 <div class="coach-reader-actions">
+                    { render_mode_switch(mode) }
                     <a class="shop-cart-checkout coach-cta"
                        href={ cta_href }
                        data-book-open
                        aria-controls="coach-booking">
-                        { format!("Book {} minutes · {}", OFFER.session_minutes, OFFER.price.label()) }
+                        { cta_label(mode) }
                     </a>
                     <p class="coach-reader-meta">
                         { format!("{} · {} · {}", OFFER.duration_label(), OFFER.window_label(), OFFER.meeting) }
@@ -456,7 +536,7 @@ fn render_calendar(booking: Option<&BookingPage>) -> HtmlFragment {
     }
 }
 
-fn render_booking_sheet(booking: Option<&BookingPage>) -> HtmlFragment {
+fn render_booking_sheet(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragment {
     view! {
         <aside id="coach-booking"
                class="shop-bag coach-booking"
@@ -484,6 +564,17 @@ fn render_booking_sheet(booking: Option<&BookingPage>) -> HtmlFragment {
                         <li data-progress-step="icebreakers">"3 · Icebreakers"</li>
                     </ol>
                     <div class="coach-booking-view" data-booking-view="calendar">
+                        { if mode.is_group() {
+                            view! {
+                                <p class="coach-group-note" data-group-note>
+                                    <strong>"Booking for a group."</strong>
+                                    " "
+                                    { group_disclaimer() }
+                                </p>
+                            }
+                        } else {
+                            HtmlFragment::empty()
+                        } }
                         { render_calendar(booking) }
                         <footer class="coach-booking-foot">
                             <p class="shop-checkout-hint">"Payment runs on Google’s booking page through Stripe. Your confirmation email has the Meet link."</p>
@@ -498,6 +589,11 @@ fn render_booking_sheet(booking: Option<&BookingPage>) -> HtmlFragment {
                             <li>"Open the template and click “Make a copy”."</li>
                             <li>"Fill it out, and paste in a link to your resume."</li>
                             <li>"Reply to your booking confirmation email with your copy."</li>
+                            { if mode.is_group() {
+                                view! { <li>"Everyone joining sends their own copy, and you forward them the Meet invite."</li> }
+                            } else {
+                                HtmlFragment::empty()
+                            } }
                         </ol>
                         <p class="coach-recap" data-spectrum-recap>"Tell me where you live on the spectrum, and why."</p>
                         <a class="shop-cart-checkout"
@@ -522,7 +618,7 @@ fn render_booking_sheet(booking: Option<&BookingPage>) -> HtmlFragment {
 /// persona table (so the slider and the server share one source of truth),
 /// the weekly window for the local-time hint, and whether/where the booking
 /// calendar lives.
-fn island_json(booking: Option<&BookingPage>) -> String {
+fn island_json(booking: Option<&BookingPage>, mode: SessionMode) -> String {
     let personas = PERSONAS
         .iter()
         .map(|persona| {
@@ -535,7 +631,8 @@ fn island_json(booking: Option<&BookingPage>) -> String {
         })
         .collect::<Vec<_>>();
     json!({
-        "headline": headline(),
+        "headline": headline(mode),
+        "mode": if mode.is_group() { "group" } else { "solo" },
         "personas": personas,
         "defaultPersona": DEFAULT_PERSONA_ID,
         "reader": {
@@ -644,7 +741,7 @@ mod tests {
 
     #[test]
     fn coach_page_renders_reader_spectrum_reads_and_intake_step() {
-        let html = page(Some(&booking()));
+        let html = page(Some(&booking()), SessionMode::Solo);
 
         assert!(html.contains("<title>1:1 Coaching · ENGMANAGER.XYZ</title>"));
         assert!(html.contains(r#"<link rel="canonical" href="https://coach.engmanager.xyz/">"#));
@@ -763,7 +860,7 @@ mod tests {
 
     #[test]
     fn headshots_render_with_reserved_space_and_a_monogram_underneath() {
-        let html = page(Some(&booking()));
+        let html = page(Some(&booking()), SessionMode::Solo);
         for person in TESTIMONIALS {
             // The monogram ships even when there is a photo: it is the
             // fallback the reader sees if the image never arrives.
@@ -820,6 +917,102 @@ mod tests {
     }
 
     #[test]
+    fn the_page_defaults_to_one_on_one() {
+        // A visitor who touches nothing must get 1:1 — in the copy, the CTA,
+        // the title and the share card.
+        let html = page(Some(&booking()), SessionMode::Solo);
+        assert!(html.contains("Spend 35 minutes. Save a year of searching."));
+        assert!(html.contains("Book 35 minutes · $100"));
+        assert!(html.contains("<title>1:1 Coaching · ENGMANAGER.XYZ</title>"));
+        assert!(html.contains("/assets/og/coach."));
+        assert!(!html.contains("/assets/og/coach-group."));
+        assert!(html.contains(r#"<div class="coach-mode" data-mode="solo">"#));
+        assert!(html.contains(r#"href="/" data-active="true""#));
+        // No group-only copy leaks into the default page.
+        assert!(!html.contains("Booking for a group."));
+        assert!(!html.contains("Everyone joining sends their own copy"));
+
+        assert_eq!(SessionMode::default(), SessionMode::Solo);
+        for query in [None, Some(""), Some("0"), Some("no"), Some("groupon")] {
+            assert_eq!(
+                SessionMode::from_query(query),
+                SessionMode::Solo,
+                "{query:?}"
+            );
+        }
+        assert_eq!(SessionMode::from_query(Some("1")), SessionMode::Group);
+    }
+
+    #[test]
+    fn group_mode_changes_the_verbiage_the_title_and_the_share_card() {
+        let html = page(Some(&booking()), SessionMode::Group);
+
+        // Headline, kicker and CTA all switch.
+        assert!(html.contains("Same 35 minutes. Bring your friends."));
+        assert!(html.contains("Group coaching · Matthew Harwood"));
+        assert!(html.contains("Book for your group · $100 total"));
+        assert!(!html.contains("Book 35 minutes · $100"));
+
+        // What a shared link posts: group title, group description, group card.
+        assert!(html.contains("<title>Group Coaching · ENGMANAGER.XYZ</title>"));
+        assert!(
+            html.contains(
+                r#"<meta property="og:title" content="Group Coaching · ENGMANAGER.XYZ">"#
+            )
+        );
+        assert!(html.contains("/assets/og/coach-group."));
+        assert!(html.contains(
+            r#"<meta property="og:url" content="https://coach.engmanager.xyz/?group=1">"#
+        ));
+        assert!(html.contains("One person books and pays $100 total"));
+
+        // Canonical still points at the 1:1 URL — this is one page with two
+        // framings, not two pages to be indexed.
+        assert!(html.contains(r#"<link rel="canonical" href="https://coach.engmanager.xyz/">"#));
+
+        // The switch reflects the state, and the sheet carries the disclaimer
+        // where the money actually changes hands.
+        assert!(html.contains(r#"<div class="coach-mode" data-mode="group">"#));
+        assert!(html.contains(r#"href="/?group=1" data-active="true""#));
+        assert!(html.contains("Booking for a group."));
+        assert!(html.contains("Everyone joining sends their own copy"));
+    }
+
+    #[test]
+    fn the_disclaimer_never_promises_a_split_payment() {
+        let note = group_disclaimer();
+        // The whole point of the note: one payer, no split, forwarded invite.
+        assert!(note.contains("there is no split payment"));
+        assert!(note.contains("One person books and pays"));
+        assert!(note.contains("Forward the Google Meet invite"));
+
+        // It is reachable without JavaScript, from both the hover tooltip and
+        // the booking sheet.
+        let html = page(Some(&booking()), SessionMode::Group);
+        assert_eq!(html.matches(&note).count(), 2);
+        assert!(
+            html.contains(r#"<span class="coach-mode-note" id="coach-group-note" role="tooltip">"#)
+        );
+        assert!(html.contains(r#"aria-describedby="coach-group-note""#));
+        assert!(!html.contains("<style>"));
+    }
+
+    #[test]
+    fn the_switch_is_links_so_it_works_without_javascript() {
+        // Anchors, not buttons: the mode survives a share, the back button
+        // behaves, and the page works with scripting off.
+        for mode in [SessionMode::Solo, SessionMode::Group] {
+            let html = page(Some(&booking()), mode);
+            assert!(html.contains(r#"<a class="coach-mode-option" href="/""#));
+            assert!(html.contains(r#"<a class="coach-mode-option" href="/?group=1""#));
+        }
+        // With no booking page configured the CTA is a plain link, and it has
+        // to carry the mode with it.
+        assert!(page(None, SessionMode::Group).contains(r#"href="/?group=1&amp;book=calendar""#));
+        assert!(page(None, SessionMode::Solo).contains(r#"href="/?book=calendar""#));
+    }
+
+    #[test]
     fn coach_reads_are_published_articles() {
         for read in &COACH_READS {
             let article = article_by_slug(read.slug)
@@ -830,7 +1023,7 @@ mod tests {
 
     #[test]
     fn coach_page_without_a_booking_page_shows_the_notice_and_no_frame() {
-        let html = page(None);
+        let html = page(None, SessionMode::Solo);
         assert!(html.contains("data-booking-unavailable"));
         assert!(!html.contains("data-booking-frame"));
         assert!(!html.contains("calendar.google.com/calendar/appointments"));
@@ -841,7 +1034,7 @@ mod tests {
     #[test]
     fn short_links_render_as_a_link_not_a_frame() {
         let short = BookingPage::parse("https://calendar.app.google/abc123").expect("short link");
-        let html = page(Some(&short));
+        let html = page(Some(&short), SessionMode::Solo);
         assert!(!html.contains("data-booking-frame"));
         assert!(html.contains(r#"href="https://calendar.app.google/abc123""#));
     }
@@ -849,7 +1042,8 @@ mod tests {
     #[test]
     fn island_carries_the_reader_personas_and_window() {
         let island: serde_json::Value =
-            serde_json::from_str(&island_json(Some(&booking()))).expect("island is JSON");
+            serde_json::from_str(&island_json(Some(&booking()), SessionMode::Solo))
+                .expect("island is JSON");
         assert_eq!(
             island["personas"].as_array().map(Vec::len),
             Some(PERSONAS.len())
