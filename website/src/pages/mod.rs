@@ -235,7 +235,11 @@ mod share_card_tests {
     /// the bytes shipped.
     #[test]
     fn share_card_urls_all_resolve_to_real_assets() {
-        let mut names = vec![DEFAULT_SHARE_CARD.to_string(), "coach".to_string()];
+        let mut names = vec![
+            DEFAULT_SHARE_CARD.to_string(),
+            "coach".to_string(),
+            "coach-group".to_string(),
+        ];
         names.extend(public_articles().map(|a| format!("article-{}", a.slug)));
 
         for name in names {

@@ -688,6 +688,152 @@
     }
 }
 
+/* --- who is coming: one control, 1:1 by default ------------------------- */
+
+.coach-mode {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-block-end: 1rem;
+}
+
+.coach-mode-caption {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.coach-mode-options {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+}
+
+.coach-mode-option {
+    padding-block: 0.4rem;
+    padding-inline: 0.85rem;
+    color: var(--text-2);
+    text-decoration: none;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition:
+        background 140ms ease,
+        color 140ms ease;
+}
+
+.coach-mode-option[data-active="true"] {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+}
+
+.coach-mode-option:not([data-active="true"]):hover {
+    color: var(--text-1);
+    background: var(--surface-3);
+}
+
+.coach-mode-option:focus-visible,
+.coach-mode-info-trigger:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+/* The disclaimer. Hover shows it, keyboard focus shows it, and a tap focuses
+   the button — so touch is covered without any JavaScript. */
+.coach-mode-info {
+    position: relative;
+    display: inline-flex;
+}
+
+.coach-mode-info-trigger {
+    inline-size: 1.4rem;
+    block-size: 1.4rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    cursor: help;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
+    border-radius: 50%;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 900;
+    font-style: italic;
+    line-height: 1;
+}
+
+.coach-mode-note {
+    position: absolute;
+    inset-block-end: calc(100% + 0.6rem);
+    inset-inline-end: -0.5rem;
+    z-index: 5;
+    inline-size: min(22rem, 78vw);
+    padding: 0.85rem 1rem;
+    color: var(--text-1);
+    text-align: start;
+    text-wrap: pretty;
+    background: var(--surface-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-box, 0.85rem);
+    box-shadow: 0 14px 40px oklch(0% 0 0 / 0.35);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: normal;
+    text-transform: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition:
+        opacity 120ms ease,
+        transform 120ms ease,
+        visibility 120ms;
+}
+
+.coach-mode-info:hover .coach-mode-note,
+.coach-mode-info:focus-within .coach-mode-note {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .coach-mode-note,
+    .coach-mode-option {
+        transition: none;
+    }
+}
+
+/* Same disclaimer, but printed rather than hidden, inside the booking sheet —
+   the moment money is about to change hands is not the moment to hide it. */
+.coach-group-note {
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    color: var(--text-2);
+    background: color-mix(in oklab, var(--color-primary) 8%, var(--surface-2));
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-box, 0.85rem);
+    font-family: var(--font-sans);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    text-wrap: pretty;
+}
+
+.coach-group-note strong {
+    color: var(--text-1);
+}
+
 /* --- below the fold ----------------------------------------------------------- */
 
 .coach-below {

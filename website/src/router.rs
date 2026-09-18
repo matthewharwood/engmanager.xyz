@@ -5,7 +5,7 @@
 use std::time::Duration;
 
 use axum::Router;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -94,7 +94,11 @@ pub fn build_router(state: AppState) -> Router {
         .layer(TraceLayer::new_for_http())
 }
 
-async fn root_handler(State(state): State<AppState>, headers: HeaderMap) -> Response {
+async fn root_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    query: Query<pages::coach::CoachQuery>,
+) -> Response {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
@@ -103,7 +107,7 @@ async fn root_handler(State(state): State<AppState>, headers: HeaderMap) -> Resp
     if is_shop_host(host) {
         pages::shop::index(State(state)).await
     } else if is_coach_host(host) {
-        pages::coach::index().await
+        pages::coach::index(query).await
     } else {
         pages::homepage::index().await.into_response()
     }

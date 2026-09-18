@@ -106,6 +106,43 @@ mode for appointment payments): book a slot, pay $100, confirm the event lands
 on the calendar with a Meet link and the payment shows in Stripe → Payments,
 then refund it from Stripe.
 
+## Group sessions (`?group=1`)
+
+One control above the CTA — "Who is coming?" — with two options, defaulting to
+**Just me**. It is deliberately NOT a new product:
+
+- same Google appointment schedule, same $100, same 35 minutes;
+- **one person books and pays**, then forwards the Google Meet invite from
+  their confirmation email to whoever they want in the room;
+- nothing in Google Calendar or Stripe needs to change to support it.
+
+This is not split-the-bill and must never imply that it is. Stripe has no
+multi-payer primitive, and Google's appointment schedule charges the booker at
+booking time. `the_disclaimer_never_promises_a_split_payment` pins the wording.
+
+`SessionMode` (in `coaching.rs`) owns every difference: headline, kicker, CTA
+label, page title, meta description and share card. Group mode changes the
+copy, never the terms.
+
+**The switch is two anchors, not buttons.** `/` and `/?group=1` are both
+server-rendered in full, so it works with JavaScript off, the back button
+behaves, and — the reason it matters — a shared `?group=1` link posts the group
+title, the group description and `og/coach-group.jpg`. That is what makes "the
+verbiage changes for social posting" true rather than a client-side illusion.
+
+Canonical always points at `/`: one page with two framings, not two pages to be
+indexed.
+
+The disclaimer appears twice — on hover/focus of the ⓘ next to the switch (pure
+CSS, `:hover` + `:focus-within`, so touch works by tapping the button), and
+printed in full at the top of the booking sheet. The second one is not
+optional: the moment money is about to change hands is not the moment to hide
+the terms.
+
+If you later want real seat pricing (solo $100 / pair $150 / group $240),
+create extra Google appointment schedules and widen `BookingPage` to a list —
+about a day's work, and still no database.
+
 ## Social proof: the LinkedIn recommendations
 
 `TESTIMONIALS` in `website/src/coaching.rs` holds the two recommendations the

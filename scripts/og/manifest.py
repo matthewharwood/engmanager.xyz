@@ -47,6 +47,20 @@ def cards(origin: str) -> list:
             "byline": BYLINE,
         },
         {
+            "name": "coach-group",
+            "kicker": "Group coaching · 35 minutes",
+            "domain": "COACH." + SITE,
+            "headline": "Same 35 minutes. Bring your friends.",
+            "headlineSize": 66,
+            "terms": "One booking · $100 total · one person pays · Fridays PT",
+            "proof": {
+                "faces": ["edison-lee.webp", "shreyas-s.webp"],
+                "kicker": "Recommended on LinkedIn by engineers I managed",
+                "names": "Edison Lee · Shreyas S",
+                "schools": "Georgia Institute of Technology · Vellore Institute of Technology",
+            },
+        },
+        {
             "name": "coach",
             "kicker": "1:1 coaching · 35 minutes",
             "domain": "COACH." + SITE,

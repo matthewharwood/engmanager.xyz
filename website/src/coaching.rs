@@ -135,11 +135,112 @@ impl CoachingOffer {
     }
 }
 
+/// Who is in the room. One session, one price, one payer — `Group` changes
+/// the framing and the copy, NOT the product: the same Google appointment
+/// schedule takes the same $100 from one person, who forwards the Meet invite
+/// to whoever they want there.
+///
+/// Deliberately not a "split the bill" feature. Stripe has no multi-payer
+/// primitive, and Google's appointment schedule charges the booker at booking
+/// time — so any UI implying the site splits a payment would be a lie. The
+/// disclaimer says so in as many words.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SessionMode {
+    /// The default. A visitor who touches nothing gets 1:1.
+    #[default]
+    Solo,
+    Group,
+}
+
+impl SessionMode {
+    /// `?group=1` is the only thing that turns this on; anything else is 1:1.
+    pub fn from_query(group: Option<&str>) -> Self {
+        match group {
+            Some("1" | "true" | "yes") => Self::Group,
+            _ => Self::Solo,
+        }
+    }
+
+    pub fn is_group(self) -> bool {
+        matches!(self, Self::Group)
+    }
+
+    /// The path the segmented control links to, so the mode survives a share.
+    pub fn href(self) -> &'static str {
+        match self {
+            Self::Solo => "/",
+            Self::Group => "/?group=1",
+        }
+    }
+
+    /// Label inside the segmented control.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Solo => "Just me",
+            Self::Group => "Bring friends",
+        }
+    }
+
+    pub fn page_title(self) -> &'static str {
+        match self {
+            Self::Solo => "1:1 Coaching · ENGMANAGER.XYZ",
+            Self::Group => "Group Coaching · ENGMANAGER.XYZ",
+        }
+    }
+
+    /// Kicker above the speed reader.
+    pub fn kicker(self) -> &'static str {
+        match self {
+            Self::Solo => "1:1 coaching · Matthew Harwood · Eng manager at Uber",
+            Self::Group => "Group coaching · Matthew Harwood · Eng manager at Uber",
+        }
+    }
+
+    /// The share card in `assets/og/`.
+    pub fn share_card(self) -> &'static str {
+        match self {
+            Self::Solo => "coach",
+            Self::Group => "coach-group",
+        }
+    }
+}
+
 /// The page's promise, and the first line of every speed-reader loop.
-pub fn headline() -> String {
+pub fn headline(mode: SessionMode) -> String {
+    match mode {
+        SessionMode::Solo => format!(
+            "Spend {} minutes. Save a year of searching.",
+            OFFER.session_minutes
+        ),
+        SessionMode::Group => format!(
+            "Same {} minutes. Bring your friends.",
+            OFFER.session_minutes
+        ),
+    }
+}
+
+/// Label on the primary CTA. The group label says "total" because that is the
+/// single most important fact about group mode: the price does not go up.
+pub fn cta_label(mode: SessionMode) -> String {
+    match mode {
+        SessionMode::Solo => format!(
+            "Book {} minutes · {}",
+            OFFER.session_minutes,
+            OFFER.price.label()
+        ),
+        SessionMode::Group => {
+            format!("Book for your group · {} total", OFFER.price.label())
+        }
+    }
+}
+
+/// The hover/focus disclaimer. Says the quiet part out loud: there is no split
+/// payment, and the invite is forwarded by hand.
+pub fn group_disclaimer() -> String {
     format!(
-        "Spend {} minutes. Save a year of searching.",
-        OFFER.session_minutes
+        "One person books and pays the {price} — there is no split payment.          Forward the Google Meet invite from your confirmation email to whoever          you want in the room, and settle up between yourselves. Everyone joining          should send me their own resume and Icebreakers doc, so I have read all          of them before the {minutes} minutes start.",
+        price = OFFER.price.label(),
+        minutes = OFFER.session_minutes,
     )
 }
 
@@ -550,7 +651,10 @@ mod tests {
     fn reader_defaults_to_its_fastest_speed() {
         assert_eq!(READER_SPEEDS.last(), Some(&READER_DEFAULT_WPM));
         assert!(READER_SPEEDS.windows(2).all(|pair| pair[0] < pair[1]));
-        assert_eq!(headline(), "Spend 35 minutes. Save a year of searching.");
+        assert_eq!(
+            headline(SessionMode::Solo),
+            "Spend 35 minutes. Save a year of searching."
+        );
     }
 
     #[test]
@@ -604,7 +708,7 @@ mod tests {
     fn spectrum_copy_reads_at_or_below_seventh_grade() {
         for persona in PERSONAS {
             let [problem, help] = persona.paragraphs();
-            let text = format!("{} {problem} {help}", headline());
+            let text = format!("{} {problem} {help}", headline(SessionMode::Solo));
             let grade = reading_grade(&text);
             assert!(grade <= 7.0, "{} reads at grade {grade:.1}", persona.id);
         }
