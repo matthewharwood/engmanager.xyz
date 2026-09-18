@@ -14,6 +14,7 @@ use super::{
 };
 use crate::AppState;
 use crate::asset_url;
+use crate::coaching::{COACH_ORIGIN, OFFER, SessionMode, TESTIMONIALS, cta_label, headline};
 use crate::components::article_toc::{self, Heading};
 use crate::components::{
     Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, quick_actions,
@@ -320,6 +321,69 @@ fn render_article_navigation(current_index: usize) -> HtmlFragment {
     }
 }
 
+/// The coaching call to action, under the next-up pagination on every
+/// article.
+///
+/// Every fact in here is pulled from `coaching::` — the headline, the price,
+/// the window, the recommenders — so it cannot drift from the coaching page
+/// itself. Change the offer once and all eleven articles follow.
+///
+/// This renders unconditionally, unlike `render_article_navigation`, which
+/// returns nothing for the last article in a chain.
+fn render_coaching_cta() -> HtmlFragment {
+    let faces: HtmlFragment = TESTIMONIALS
+        .iter()
+        .map(|person| match person.photo {
+            Some(path) => view! {
+                <img class="article-coach-face"
+                     src={ asset_url(path) }
+                     alt=""
+                     width="36"
+                     height="36"
+                     loading="lazy"
+                     decoding="async" />
+            },
+            None => view! {
+                <span class="article-coach-face article-coach-face-monogram">{ person.initials }</span>
+            },
+        })
+        .collect();
+    let names = TESTIMONIALS
+        .iter()
+        .map(|person| person.name)
+        .collect::<Vec<_>>()
+        .join(" · ");
+
+    view! {
+        <aside class="article-coach" aria-labelledby="article-coach-title">
+            <p class="article-coach-kicker">"1:1 coaching · Matthew Harwood"</p>
+            <h2 id="article-coach-title" class="article-coach-title">
+                { headline(SessionMode::Solo) }
+            </h2>
+            <p class="article-coach-copy">
+                "A resume review and career call for engineers and designers. You send me your resume and a short intake doc, I read both before we talk, and you leave with a plan instead of another year of guessing."
+            </p>
+            <div class="article-coach-actions">
+                <a class="article-coach-cta" href={ format!("{COACH_ORIGIN}/") }>
+                    { cta_label(SessionMode::Solo) }
+                </a>
+                <a class="article-coach-secondary" href={ format!("{COACH_ORIGIN}/?group=1") }>
+                    "Or bring friends →"
+                </a>
+            </div>
+            <p class="article-coach-terms">
+                { format!("{} · {} · {}", OFFER.duration_label(), OFFER.window_label(), OFFER.meeting) }
+            </p>
+            <div class="article-coach-proof">
+                <span class="article-coach-faces" aria-hidden="true">{ faces }</span>
+                <span class="article-coach-proof-text">
+                    { format!("Recommended on LinkedIn by {names}, engineers I managed.") }
+                </span>
+            </div>
+        </aside>
+    }
+}
+
 fn render_next_article_card(
     current_index: usize,
     article_index: usize,
@@ -483,6 +547,7 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                     </header>
                     { inner }
                     { article_navigation }
+                    { render_coaching_cta() }
                 </article>
                 { toc }
             };
@@ -1003,5 +1068,34 @@ mod tests {
             assert!(!description.is_empty());
             assert!(description.chars().count() <= META_DESCRIPTION_TARGET_CHARS + 1);
         }
+    }
+
+    /// Every fact in the CTA is pulled from `coaching::`, so the module
+    /// cannot drift from the coaching page. If someone changes the price or
+    /// the Friday window, all eleven articles follow — and this test proves
+    /// the values are not hardcoded copies.
+    #[test]
+    fn the_coaching_cta_reads_its_facts_from_the_coaching_domain() {
+        use crate::coaching::{COACH_ORIGIN, OFFER, SessionMode, cta_label, headline};
+
+        let html = render_coaching_cta().into_string();
+
+        assert!(html.contains(&headline(SessionMode::Solo)));
+        assert!(html.contains(&cta_label(SessionMode::Solo)));
+        assert!(html.contains(&OFFER.window_label()));
+        assert!(html.contains(&OFFER.duration_label()));
+        assert!(html.contains(OFFER.meeting));
+        assert!(html.contains(&format!(r#"href="{COACH_ORIGIN}/""#)));
+        assert!(html.contains(&format!(r#"href="{COACH_ORIGIN}/?group=1""#)));
+
+        // Social proof rides along, with the same self-hosted headshots the
+        // coaching page uses — never a hotlinked LinkedIn URL.
+        for person in crate::coaching::TESTIMONIALS {
+            assert!(html.contains(person.name), "{} is missing", person.name);
+            if let Some(photo) = person.photo {
+                assert!(html.contains(&crate::asset_url(photo)));
+            }
+        }
+        assert!(!html.contains("licdn.com"));
     }
 }
