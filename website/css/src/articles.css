@@ -1274,6 +1274,162 @@ html[data-article-reveal="running"]
  * table: one cyclical next article plus one relevance-ranked next-by-topic
  * article. Both cards intentionally share one shape and one arrow direction.
  * =========================================================================== */
+/* --- coaching CTA, under the next-up pagination --------------------------
+   Sits on every article. Deliberately uses the article's own type and the
+   primary accent rather than importing the coach page's look: it is a band in
+   this page, not an ad pasted onto it. */
+
+.article-coach {
+    margin-block-start: clamp(2.5rem, 7vw, 4rem);
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    background: color-mix(in oklab, var(--color-primary) 9%, var(--surface-2));
+    border: 2px solid var(--text-1);
+    border-radius: var(--radius-box, 1rem);
+}
+
+.article-coach-kicker {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.article-coach-title {
+    margin: 0.6rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 3.2vw, 1.85rem);
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.article-coach-copy {
+    margin: 0.8rem 0 0;
+    max-inline-size: 44rem;
+    color: var(--text-2);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+}
+
+.article-coach-actions {
+    margin-block-start: 1.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+}
+
+.article-coach-cta {
+    min-block-size: 2.9rem;
+    display: inline-grid;
+    place-items: center;
+    padding-inline: 1.35rem;
+    background: var(--color-primary);
+    border-radius: var(--radius-field, 0.5rem);
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* `.article a` (0,1,1) colours every in-prose link and beats a bare
+   `.article-coach-cta` (0,1,0), which silently rendered the button's label in
+   the prose-link blue on the primary fill — unreadable. These rules carry the
+   `.article` prefix so they outrank it, and the :hover pair has to restate the
+   colour because `.article a:hover` (0,2,1) would otherwise win back. */
+.article .article-coach-cta,
+.article .article-coach-cta:visited,
+.article .article-coach-cta:hover {
+    color: var(--color-primary-content);
+    text-decoration: none;
+}
+
+.article .article-coach-cta:hover {
+    filter: brightness(1.06);
+}
+
+.article .article-coach-secondary,
+.article .article-coach-secondary:visited {
+    color: var(--text-1);
+}
+
+.article .article-coach-secondary {
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+}
+
+.article .article-coach-secondary:hover {
+    color: var(--color-primary);
+}
+
+.article-coach-cta:focus-visible,
+.article-coach-secondary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+.article-coach-terms {
+    margin: 0.9rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.article-coach-proof {
+    margin-block-start: 1.1rem;
+    padding-block-start: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    border-block-start: 1px solid var(--border-subtle);
+}
+
+.article-coach-faces {
+    display: inline-flex;
+    flex: none;
+}
+
+.article-coach-face {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--surface-2);
+}
+
+.article-coach-face + .article-coach-face {
+    margin-inline-start: -0.6rem;
+}
+
+.article-coach-face-monogram {
+    display: grid;
+    place-items: center;
+    background: color-mix(in oklab, var(--color-primary) 22%, var(--surface-3));
+    color: var(--text-1);
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 900;
+}
+
+.article-coach-proof-text {
+    color: var(--text-2);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    text-wrap: pretty;
+}
+
 .article-nextup {
     margin-block-start: clamp(3rem, 8vw, 5rem);
     border-block: 2px solid var(--text-1);
@@ -1416,6 +1572,7 @@ html[data-article-reveal="running"]
 
 @supports (content-visibility: auto) {
     .article-nextup,
+    .article-coach,
     .discord-widget,
     .auteurs-product-stamp,
     .article :where(figure, pre, blockquote) {
