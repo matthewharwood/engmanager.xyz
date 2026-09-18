@@ -31,6 +31,40 @@ pub fn avatar_srcset(widths: &[u16]) -> String {
         .join(", ")
 }
 
+/// Every share card is 1200x630 — the box LinkedIn, X, Slack, Discord and
+/// iMessage all render at 1.91:1. Emitted as `og:image:width`/`height`.
+pub const SHARE_CARD_SIZE: (u16, u16) = (1200, 630);
+
+/// Absolute URL of a share card in `website/assets/og/`, content-addressed
+/// like every other asset.
+///
+/// `origin` matters: a scraper never resolves a relative `og:image`, and the
+/// coaching page lives on its own subdomain, so the card URL has to be built
+/// against whichever origin the page is served from.
+///
+/// `name` is the card's basename, e.g. `"coach"` or `"article-auteurs"`.
+/// Cards are produced by `./scripts/generate-og.sh`; a name with no file
+/// behind it is caught by `share_card_urls_all_resolve_to_real_assets`.
+pub fn share_card(origin: &str, name: &str) -> String {
+    format!("{origin}{}", crate::asset_url(&format!("og/{name}.jpg")))
+}
+
+/// The card a page falls back to when it has none of its own.
+pub const DEFAULT_SHARE_CARD: &str = "default";
+
+/// `article-<slug>` if that article has its own card, else the site card.
+/// Article cards are generated for every public article, but a brand-new
+/// article renders before anyone reruns the generator — so this degrades to
+/// the site card instead of emitting a 404 URL to a scraper.
+pub fn article_share_card(slug: &str) -> String {
+    let name = format!("article-{slug}");
+    let path = format!("og/{name}.jpg");
+    if crate::asset_url(&path) == format!("/assets/{path}") {
+        return DEFAULT_SHARE_CARD.to_string();
+    }
+    name
+}
+
 pub fn render_resource_hints() -> HtmlFragment {
     HtmlFragment::new(
         r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" href="/assets/fonts/monumentextended-black-webfont.woff2" as="font" type="font/woff2" crossorigin>"#
@@ -189,3 +223,79 @@ pub fn render_experience_urls() -> HtmlFragment {
 // `components/global_search/` (markup + the flat search.js/search-keyclick.js
 // deps); the nav absorbs it. The homepage hero search is different markup
 // and stays in pages/homepage.rs.
+
+#[cfg(test)]
+mod share_card_tests {
+    use super::*;
+    use crate::content::public_articles;
+
+    /// A share card that 404s is worse than none at all: the scraper shows a
+    /// broken card and caches it. `asset_url` falls back to a flat, unhashed
+    /// `/assets/{path}` when a file is not embedded, so a hashed URL is proof
+    /// the bytes shipped.
+    #[test]
+    fn share_card_urls_all_resolve_to_real_assets() {
+        let mut names = vec![DEFAULT_SHARE_CARD.to_string(), "coach".to_string()];
+        names.extend(public_articles().map(|a| format!("article-{}", a.slug)));
+
+        for name in names {
+            let path = format!("og/{name}.jpg");
+            assert_ne!(
+                crate::asset_url(&path),
+                format!("/assets/{path}"),
+                "{path} is missing — rerun ./scripts/generate-og.sh and commit the result"
+            );
+        }
+    }
+
+    /// Scrapers never resolve a relative og:image, and the coaching page is
+    /// on its own subdomain, so the origin has to come along.
+    #[test]
+    fn share_card_urls_are_absolute_and_content_addressed() {
+        let url = share_card("https://coach.engmanager.xyz", "coach");
+        assert!(url.starts_with("https://coach.engmanager.xyz/assets/og/coach."));
+        assert!(url.ends_with(".jpg"));
+        assert_ne!(
+            url, "https://coach.engmanager.xyz/assets/og/coach.jpg",
+            "the URL should carry a content hash"
+        );
+    }
+
+    /// Every public article has its own card today. An article added before
+    /// the generator is rerun must fall back to the site card rather than
+    /// point a scraper at a file that does not exist.
+    #[test]
+    fn articles_use_their_own_card_and_fall_back_to_the_site_card() {
+        for article in public_articles() {
+            assert_eq!(
+                article_share_card(article.slug),
+                format!("article-{}", article.slug),
+                "{} has no card; rerun ./scripts/generate-og.sh",
+                article.slug
+            );
+        }
+        assert_eq!(
+            article_share_card("an-article-written-five-minutes-ago"),
+            DEFAULT_SHARE_CARD
+        );
+    }
+
+    /// The cards are the one asset a scraper downloads before it will render
+    /// a link, so they stay small; and every one is the 1.91:1 box.
+    #[test]
+    fn cards_are_small_enough_for_a_scraper_to_fetch() {
+        let (width, height) = SHARE_CARD_SIZE;
+        assert_eq!((width, height), (1200, 630));
+
+        for name in [DEFAULT_SHARE_CARD, "coach", "article-auteurs"] {
+            let bytes = std::fs::metadata(format!("assets/og/{name}.jpg"))
+                .unwrap_or_else(|_| panic!("assets/og/{name}.jpg is missing"))
+                .len();
+            assert!(
+                bytes < 300_000,
+                "{name}.jpg is {bytes} bytes; LinkedIn caps og:image at 5MB but \
+                 anything over ~300KB just slows the first scrape"
+            );
+        }
+    }
+}

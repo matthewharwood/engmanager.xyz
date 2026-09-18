@@ -6,7 +6,10 @@ use std::collections::BTreeSet;
 use std::fmt::Write;
 
 use super::shell::{MetaTags, PageShell, json_ld_island};
-use super::{AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter};
+use super::{
+    AVATAR_SRC, DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, avatar_srcset, render_experience_urls,
+    render_liquid_title_filter, share_card,
+};
 use crate::components::{Head, api_receipt, discovery_toasts, json_data_island, quick_actions};
 use crate::config::SITE_ORIGIN;
 use crate::content::{Category, Tag, public_articles};
@@ -462,9 +465,15 @@ pub async fn index() -> Html<String> {
         canonical: Some(format!("{SITE_ORIGIN}/")),
         og_title: Some("ENG MANAGER".to_string()),
         og_type: Some("website"),
-        og_image: Some(AVATAR_SRC),
+        og_image: Some(share_card(SITE_ORIGIN, DEFAULT_SHARE_CARD)),
+        og_image_alt: Some(
+            "ENG MANAGER — essays on building software with AI, leading engineering teams, and shipping real things end to end."
+                .to_string(),
+        ),
+        og_image_size: Some(SHARE_CARD_SIZE),
+        og_site_name: Some("ENGMANAGER.XYZ"),
         og_url: Some(format!("{SITE_ORIGIN}/")),
-        twitter_card: Some("summary"),
+        twitter_card: Some("summary_large_image"),
         json_ld: vec![website_json_ld()],
         ..MetaTags::default()
     };

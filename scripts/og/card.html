@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>og card</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&display=block">
+<style>
+  /* Monument Extended Black — the site's display face, loaded from the same
+     file the site ships so the card cannot drift from the brand. */
+  @font-face {
+    font-family: "Monument Extended";
+    src: url("./monumentextended-black-webfont.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: block;
+  }
+
+  /* Dark palette, copied from the :root dark block in critical.css. */
+  :root {
+    --base-100: oklch(22% 0.012 270);
+    --base-200: oklch(18% 0.012 270);
+    --base-300: oklch(14% 0.012 270);
+    --content: oklch(94% 0.005 270);
+    --primary: oklch(70% 0.20 270);
+    --text-2: oklch(94% 0.005 270 / 0.78);
+    --muted: oklch(94% 0.005 270 / 0.55);
+    --border: oklch(94% 0.005 270 / 0.14);
+
+    --font-display: "Monument Extended", "Archivo", sans-serif;
+    --font-sans: "Archivo", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { width: 1200px; height: 630px; }
+
+  body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 56px 64px;
+    background: var(--base-100);
+    color: var(--content);
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+
+  /* Brand glow, bottom-left, so the headline never sits on flat black. */
+  body::before {
+    content: "";
+    position: absolute;
+    inset-block-end: -340px;
+    inset-inline-start: -180px;
+    width: 900px;
+    height: 900px;
+    background: radial-gradient(circle, oklch(70% 0.20 270 / 0.30), transparent 62%);
+    pointer-events: none;
+  }
+
+  body > * { position: relative; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .domain {
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 0.98;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    /* Set per card by the generator so long titles stay on the canvas. */
+    font-size: var(--h1-size, 62px);
+  }
+
+  /* The middle is a FIXED box. Article summaries vary wildly in length, so
+     nothing in here is allowed to grow and push the byline off the canvas:
+     the summary clamps to three lines and the headline shrinks to fit. */
+  .middle {
+    flex: none;
+    height: 396px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .summary {
+    margin-block-start: 22px;
+    max-width: 46ch;
+    font-size: 24px;
+    line-height: 1.4;
+    color: var(--text-2);
+    text-wrap: pretty;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .terms {
+    margin-block-start: 26px;
+    font-family: var(--font-mono);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Proof strip: the two people who recommended me, as faces. */
+  .proof {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 22px 26px;
+    background: var(--base-200);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+
+  .faces { display: flex; flex: none; }
+
+  .faces img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--base-200);
+  }
+
+  .faces img + img { margin-inline-start: -22px; }
+
+  .proof-text { display: grid; gap: 5px; min-width: 0; }
+
+  .proof-kicker {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  .proof-names { font-size: 21px; font-weight: 800; line-height: 1.3; }
+  .proof-schools { font-size: 17px; color: var(--muted); line-height: 1.3; }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .byline { display: flex; align-items: center; gap: 16px; }
+
+  .byline img {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border);
+  }
+
+  .byline-name { font-size: 21px; font-weight: 800; line-height: 1.25; }
+  .byline-role { font-size: 17px; color: var(--muted); line-height: 1.25; }
+
+  .stamp {
+    padding: 12px 22px;
+    background: var(--primary);
+    color: oklch(15% 0.06 270);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* --- auteurs layout: the article's own WebGL orb as the hero, with the
+         Discord QR as a stamp you can point a phone camera at ------------- */
+
+  body.auteurs { display: block; padding: 0; }
+  body.auteurs::before { display: none; }
+
+  .auteurs-wrap { position: relative; width: 1200px; height: 630px; }
+
+  /* The orb bleeds off the right edge so it reads as a texture, not a sticker. */
+  .orb {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 664px;
+    width: 620px;
+    height: 620px;
+    transform: translateY(-50%);
+  }
+
+  .orb canvas { width: 100%; height: 100%; display: block; }
+
+  .auteurs-copy {
+    position: absolute;
+    inset-block: 56px;
+    inset-inline-start: 64px;
+    width: 600px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .auteurs-copy h1 { line-height: 0.95; }
+  .auteurs-copy .summary { max-width: 19ch; -webkit-line-clamp: 4; }
+
+  /* The stamp: a real white card, because a QR needs quiet-zone contrast to
+     scan off a screen. 232px on a 1200px canvas stays scannable when the
+     card is opened full size. */
+  .stamp-card {
+    position: absolute;
+    inset-block-end: 40px;
+    inset-inline-end: 44px;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 18px 18px 14px;
+    background: oklch(98% 0.01 100);
+    border-radius: 22px;
+    box-shadow: 0 18px 50px oklch(14% 0.012 270 / 0.55);
+  }
+
+  .stamp-card img { width: 264px; height: 264px; display: block; border-radius: 10px; }
+
+  .stamp-caption {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(26% 0.04 270);
+  }
+
+  .stamp-url {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 700;
+    color: oklch(45% 0.03 270);
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="kicker" id="kicker"></span>
+    <span class="domain" id="domain"></span>
+  </div>
+
+  <div class="middle">
+    <h1 id="headline"></h1>
+    <p class="summary" id="summary" hidden></p>
+    <p class="terms" id="terms" hidden></p>
+  </div>
+
+  <div class="proof" id="proof" hidden>
+    <div class="faces" id="faces"></div>
+    <div class="proof-text">
+      <span class="proof-kicker" id="proof-kicker"></span>
+      <span class="proof-names" id="proof-names"></span>
+      <span class="proof-schools" id="proof-schools"></span>
+    </div>
+  </div>
+
+  <div class="auteurs-wrap" id="auteurs-wrap" hidden>
+    <div class="orb"><canvas class="auteurs-shader"></canvas></div>
+    <div class="auteurs-copy">
+      <div>
+        <span class="kicker" id="a-kicker"></span>
+        <h1 id="a-headline" style="margin-block-start: 18px"></h1>
+        <p class="summary" id="a-summary"></p>
+      </div>
+      <div class="byline">
+        <img id="a-byline-img" alt="">
+        <div>
+          <div class="byline-name" id="a-byline-name"></div>
+          <div class="byline-role" id="a-byline-role"></div>
+        </div>
+      </div>
+    </div>
+    <div class="stamp-card">
+      <img id="qr-img" alt="">
+      <span class="stamp-caption" id="qr-caption"></span>
+      <span class="stamp-url" id="qr-url"></span>
+    </div>
+  </div>
+
+  <div class="foot" id="foot" hidden>
+    <div class="byline">
+      <img id="byline-img" alt="">
+      <div>
+        <div class="byline-name" id="byline-name"></div>
+        <div class="byline-role" id="byline-role"></div>
+      </div>
+    </div>
+    <span class="stamp" id="stamp" hidden></span>
+  </div>
+
+<script>
+(async () => {
+  const card = await fetch('./card.json', { cache: 'no-store' }).then(r => r.json());
+
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (value === undefined || value === null || value === '') { el.hidden = true; return; }
+    el.textContent = value;
+    el.hidden = false;
+  };
+
+  // Fonts MUST be applied before anything is measured. Monument Extended is
+  // far wider than the fallback, so a headline measured pre-swap reports
+  // fewer lines than it will actually render — the fit loop then decides the
+  // card is fine and the summary ends up printed over the byline.
+  const loadAssets = async () => {
+    // Request the faces EXPLICITLY. document.fonts.ready resolves immediately
+    // when nothing has asked for a font yet, which is exactly the state we are
+    // in here — so awaiting it alone measures the fallback and the headline
+    // comes out two lines shorter than it renders.
+    await Promise.all([
+      document.fonts.load('900 60px "Monument Extended"'),
+      document.fonts.load('800 24px "Archivo"'),
+      document.fonts.load('400 24px "Archivo"'),
+    ]);
+    await document.fonts.ready;
+    // Force a layout pass so the swapped metrics are live before measuring.
+    void document.body.offsetHeight;
+    await Promise.all([...document.images].map((img) =>
+      img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = res; })));
+  };
+
+  const markReady = () => { document.documentElement.dataset.ready = 'true'; };
+
+  if (card.layout === 'auteurs') {
+    document.body.classList.add('auteurs');
+    for (const id of ['kicker', 'domain']) document.getElementById(id).hidden = true;
+    document.querySelector('.top').hidden = true;
+    document.querySelector('.middle').hidden = true;
+    document.getElementById('auteurs-wrap').hidden = false;
+
+    set('a-kicker', card.kicker);
+    set('a-headline', card.headline);
+    set('a-summary', card.summary);
+    if (card.headlineSize) {
+      document.getElementById('a-headline').style.setProperty('--h1-size', card.headlineSize + 'px');
+    }
+    document.getElementById('a-byline-img').src = card.byline.image;
+    set('a-byline-name', card.byline.name);
+    set('a-byline-role', card.byline.role);
+    document.getElementById('qr-img').src = card.qr.image;
+    set('qr-caption', card.qr.caption);
+    set('qr-url', card.qr.url);
+
+    // The article's own shader, byte for byte — the card cannot drift from
+    // what the page actually renders.
+    await new Promise((res) => {
+      const tag = document.createElement('script');
+      tag.src = './auteurs-shader.js';
+      tag.onload = tag.onerror = res;
+      document.head.append(tag);
+    });
+    // Let the orb animate into a settled frame before the screenshot.
+    await new Promise((res) => setTimeout(res, 1200));
+    await loadAssets();
+    markReady();
+    return;
+  }
+
+  await loadAssets();
+
+  set('kicker', card.kicker);
+  set('domain', card.domain);
+  set('headline', card.headline);
+  set('summary', card.summary);
+  set('terms', card.terms);
+
+  if (card.headlineSize) {
+    document.getElementById('headline').style.setProperty('--h1-size', card.headlineSize + 'px');
+  }
+
+  if (card.proof) {
+    document.getElementById('faces').innerHTML = card.proof.faces
+      .map((src) => '<img src="' + src + '" alt="">').join('');
+    set('proof-kicker', card.proof.kicker);
+    set('proof-names', card.proof.names);
+    set('proof-schools', card.proof.schools);
+    document.getElementById('proof').hidden = false;
+  }
+
+  if (card.byline) {
+    document.getElementById('byline-img').src = card.byline.image;
+    set('byline-name', card.byline.name);
+    set('byline-role', card.byline.role);
+    set('stamp', card.stamp);
+    document.getElementById('foot').hidden = false;
+  }
+
+  // Shrink the headline until the middle block fits its fixed box.
+  //
+  // Measure the CHILDREN, not middle.scrollHeight: the box is a centred flex
+  // column, so overflowing content spills out of BOTH ends and scrollHeight
+  // reports it as fitting while the summary visibly runs over the byline.
+  const h1 = document.getElementById('headline');
+  const middle = document.querySelector('.middle');
+
+  const contentHeight = () => [...middle.children]
+    .filter((el) => !el.hidden)
+    .reduce((sum, el) => {
+      const cs = getComputedStyle(el);
+      return sum + el.getBoundingClientRect().height
+        + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
+    }, 0);
+
+  let size = parseFloat(getComputedStyle(h1).fontSize);
+  while (contentHeight() > middle.clientHeight - 4 && size > 26) {
+    size -= 2;
+    h1.style.setProperty('--h1-size', size + 'px');
+  }
+  if (contentHeight() > middle.clientHeight) {
+    throw new Error('card does not fit: ' + card.headline);
+  }
+
+  markReady();
+})();
+</script>
+</body>
+</html>
