@@ -9,8 +9,8 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 
 use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
 use super::{
-    AVATAR_SRC, avatar_srcset, render_experience_urls, render_liquid_title_filter,
-    render_nav_search_toggle,
+    AVATAR_SRC, SHARE_CARD_SIZE, article_share_card, avatar_srcset, render_experience_urls,
+    render_liquid_title_filter, render_nav_search_toggle, share_card,
 };
 use crate::AppState;
 use crate::asset_url;
@@ -496,10 +496,13 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                     canonical: Some(url.clone()),
                     og_title: Some(page_title.to_string()),
                     og_type: Some("article"),
-                    og_image: Some(AVATAR_SRC),
+                    og_image: Some(share_card(SITE_ORIGIN, &article_share_card(&slug))),
+                    og_image_alt: Some(format!("{page_title} — ENGMANAGER.XYZ")),
+                    og_image_size: Some(SHARE_CARD_SIZE),
+                    og_site_name: Some("ENGMANAGER.XYZ"),
                     og_url: Some(url.clone()),
                     published_time: Some(a.date.iso()),
-                    twitter_card: Some("summary"),
+                    twitter_card: Some("summary_large_image"),
                     json_ld: vec![article_json_ld(page_title, &a.date.iso(), &url)],
                     ..MetaTags::default()
                 }

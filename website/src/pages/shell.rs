@@ -98,8 +98,20 @@ pub struct MetaTags {
     pub robots: Option<&'static str>,
     pub og_title: Option<String>,
     pub og_type: Option<&'static str>,
-    pub og_image: Option<&'static str>,
+    /// Absolute URL of the 1200x630 share card. Scrapers do NOT resolve
+    /// relative URLs, so this must include the origin.
+    pub og_image: Option<String>,
+    /// Alt text for the card, and the explicit pixel box. LinkedIn in
+    /// particular renders a small card (or nothing on a first scrape) when
+    /// the dimensions are absent, because it will not block on downloading
+    /// the image to find out how big it is.
+    pub og_image_alt: Option<String>,
+    pub og_image_size: Option<(u16, u16)>,
     pub og_url: Option<String>,
+    /// LinkedIn and Slack read `og:description`; only Google reads the plain
+    /// `<meta name=description>`. Defaults to `description` when unset.
+    pub og_description: Option<String>,
+    pub og_site_name: Option<&'static str>,
     /// `article:published_time` (ISO date) — article detail pages only.
     pub published_time: Option<String>,
     pub twitter_card: Option<&'static str>,
@@ -109,6 +121,12 @@ pub struct MetaTags {
 impl MetaTags {
     fn render(self) -> HtmlFragment {
         let mut out = HtmlFragment::empty();
+        // Social scrapers fall back to the page description when the page
+        // does not spell out an og:description, so mirror it by default.
+        let og_description = self
+            .og_description
+            .clone()
+            .or_else(|| self.description.clone());
         if let Some(description) = self.description {
             out.push_fragment(view! { <meta name="description" content={ description } /> });
         }
@@ -125,7 +143,31 @@ impl MetaTags {
             out.push_fragment(view! { <meta property="og:type" content={ og_type } /> });
         }
         if let Some(og_image) = self.og_image {
-            out.push_fragment(view! { <meta property="og:image" content={ og_image } /> });
+            out.push_fragment(view! { <meta property="og:image" content={ og_image.clone() } /> });
+            // Twitter falls back to og:image, but Slack and a few others only
+            // look at twitter:image when a twitter:card is present.
+            out.push_fragment(view! { <meta name="twitter:image" content={ og_image } /> });
+            if let Some((width, height)) = self.og_image_size {
+                out.push_fragment(view! { <meta property="og:image:width" content={ width } /> });
+                out.push_fragment(view! { <meta property="og:image:height" content={ height } /> });
+            }
+            if let Some(alt) = self.og_image_alt {
+                out.push_fragment(
+                    view! { <meta property="og:image:alt" content={ alt.clone() } /> },
+                );
+                out.push_fragment(view! { <meta name="twitter:image:alt" content={ alt } /> });
+            }
+        }
+        if let Some(site_name) = self.og_site_name {
+            out.push_fragment(view! { <meta property="og:site_name" content={ site_name } /> });
+        }
+        if let Some(description) = og_description {
+            out.push_fragment(
+                view! { <meta property="og:description" content={ description.clone() } /> },
+            );
+            out.push_fragment(
+                view! { <meta name="twitter:description" content={ description } /> },
+            );
         }
         if let Some(og_url) = self.og_url {
             out.push_fragment(view! { <meta property="og:url" content={ og_url } /> });
@@ -454,10 +496,14 @@ mod tests {
             robots: Some("noindex,nofollow"),
             og_title: Some("Title".to_string()),
             og_type: Some("website"),
-            og_image: Some("https://example.com/a.png"),
+            og_image: Some("https://example.com/a.png".to_string()),
+            og_image_alt: Some("Alt text.".to_string()),
+            og_image_size: Some((1200, 630)),
             og_url: Some("https://engmanager.xyz/".to_string()),
+            og_description: None,
+            og_site_name: Some("ENGMANAGER.XYZ"),
             published_time: Some("2026-05-30".to_string()),
-            twitter_card: Some("summary"),
+            twitter_card: Some("summary_large_image"),
             json_ld: vec![json_ld_island(r#"{"@type":"WebSite"}"#)],
         };
         let html = meta.render().into_string();
@@ -467,10 +513,20 @@ mod tests {
             r#"<meta name="robots""#,
             r#"<meta property="og:title""#,
             r#"<meta property="og:type""#,
-            r#"<meta property="og:image""#,
+            r#"<meta property="og:image" content="https://example.com/a.png">"#,
+            r#"<meta name="twitter:image""#,
+            r#"<meta property="og:image:width" content="1200">"#,
+            r#"<meta property="og:image:height" content="630">"#,
+            r#"<meta property="og:image:alt""#,
+            r#"<meta name="twitter:image:alt""#,
+            r#"<meta property="og:site_name""#,
+            // og:description mirrors the page description when unset — the
+            // scrapers that matter read og:description, not name=description.
+            r#"<meta property="og:description" content="A description.">"#,
+            r#"<meta name="twitter:description""#,
             r#"<meta property="og:url""#,
             r#"<meta property="article:published_time""#,
-            r#"<meta name="twitter:card""#,
+            r#"<meta name="twitter:card" content="summary_large_image">"#,
             r#"<script type="application/ld+json">"#,
         ];
         let mut last = 0;

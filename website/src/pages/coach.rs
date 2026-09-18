@@ -40,7 +40,7 @@ use crate::coaching::{
 use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, script_islands};
 use crate::content::article_by_slug;
-use crate::pages::AVATAR_SRC;
+use crate::pages::{SHARE_CARD_SIZE, share_card};
 
 const COACH_TITLE: &str = "1:1 Coaching · ENGMANAGER.XYZ";
 const COACH_DESCRIPTION: &str = "Spend 35 minutes, save a year of searching. A 1:1 resume review and career call for engineers and designers, from hardware to physical design, with Matthew Harwood, Engineering Manager at Uber. Fridays 10am–2pm PT, $100.";
@@ -138,9 +138,15 @@ pub(crate) fn page(booking: Option<&BookingPage>) -> String {
             robots: Some("index,follow"),
             og_title: Some(COACH_TITLE.to_string()),
             og_type: Some("website"),
-            og_image: Some(AVATAR_SRC),
+            og_image: Some(share_card(COACH_ORIGIN, "coach")),
+            og_image_alt: Some(
+                "Spend 35 minutes, save a year of searching — 1:1 coaching, $100, recommended on LinkedIn by engineers I managed."
+                    .to_string(),
+            ),
+            og_image_size: Some(SHARE_CARD_SIZE),
+            og_site_name: Some("ENGMANAGER.XYZ"),
             og_url: Some(canonical),
-            twitter_card: Some("summary"),
+            twitter_card: Some("summary_large_image"),
             json_ld: vec![json_ld_island(&service_json_ld())],
             ..MetaTags::default()
         })
