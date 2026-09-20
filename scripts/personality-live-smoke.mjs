@@ -103,6 +103,7 @@ function privacy(response, {document = false, noStore = true} = {}) {
   requireThat(!directives.has('report-uri') && !directives.has('report-to'), 'Unexpected CSP reporting endpoint.');
   if (document) {
     requireThat(headers.get('content-type')?.startsWith('text/html'), 'Document MIME type is not HTML.');
+    requireThat(headers.get('cache-control')?.split(',').map(value => value.trim()).includes('no-transform'), 'Document permits edge HTML transformation or injected analytics.');
     if (noStore) {
       requireThat(headers.get('cache-control')?.split(',').map(value => value.trim()).includes('no-store'), 'Document is missing Cache-Control: no-store.');
       for (const name of ['cdn-cache-control', 'cloudflare-cdn-cache-control']) {
@@ -192,6 +193,10 @@ export async function smoke({origin, expectLocal = false}) {
       const {response, bytes} = await request(origin, '/personality/sw.js'); privacy(response);
       requireThat(response.headers.get('service-worker-allowed') === '/personality/', 'Incorrect service worker scope.');
       requireThat(response.headers.get('cache-control')?.includes('no-cache'), 'Worker update path may be stale.');
+      requireThat(response.headers.get('cache-control')?.split(',').map(value => value.trim()).includes('no-store'), 'Worker update path permits storage despite the edge cache override.');
+      for (const name of ['cdn-cache-control', 'cloudflare-cdn-cache-control']) {
+        requireThat(!response.headers.has(name) || response.headers.get(name).includes('no-store'), `Worker has cacheable ${name}.`);
+      }
       requireThat(digest(bytes) === release.assets['sw.js'], 'Worker route bytes differ from the pinned release.');
       return 'Exact release bytes · /personality/ scope';
     });
