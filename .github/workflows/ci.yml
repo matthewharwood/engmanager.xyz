@@ -42,9 +42,9 @@ jobs:
         run: |
           npm ci --prefix scripts --ignore-scripts
           npm test --prefix scripts
-          node website/assets/personality/ai/v1/generate-manifest.mjs
+          node scripts/personality-release.mjs --verify-published
           node scripts/personality-release.mjs
-          git diff --exit-code -- website/assets/personality/v1/release.mjs website/assets/personality/v1/ai-cache-config.mjs website/assets/personality/ai/v1/assets.mjs
+          git diff --exit-code -- website/assets/personality/v2/release.mjs
 
       - name: Format
         run: cargo fmt --all --check

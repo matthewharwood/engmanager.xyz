@@ -135,7 +135,8 @@ fn render(route: &str, label: &str, content: HtmlFragment) -> String {
                 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
                 <link rel="stylesheet" href="/assets/personality/v1/style.css" />
                 <link rel="stylesheet" href="/assets/personality/v1/charts.css" />
-                <script type="module" src="/assets/personality/v1/app.mjs"></script>
+                <link id="personality-presentation-style" rel="stylesheet" href="/assets/personality/v2/style.css" media="not all" />
+                <script type="module" src="/assets/personality/v2/bootstrap.mjs"></script>
             </head>
             <body class="personality" data-personality-route=route>
                 <a class="skip-link" href="#personality-app">"Skip to content"</a>
@@ -176,7 +177,9 @@ mod tests {
             "id=\"page-crumb\"",
             "id=\"save-status\"",
             "type=\"module\"",
-            "/assets/personality/v1/app.mjs",
+            "/assets/personality/v2/bootstrap.mjs",
+            "id=\"personality-presentation-style\"",
+            "media=\"not all\"",
         ] {
             assert!(html.contains(expected), "missing {expected}");
         }
