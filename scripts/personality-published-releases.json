@@ -11,6 +11,12 @@
       "manifest": "assets.mjs",
       "manifestSha256": "587cef88071d65384a8b8a815ec9ae401a16795202bdea9a1dce185217955958",
       "treeSha256": "37f8a9275209815e9f22e93199221dcd3cf00ff5cd1e16ad036755c0bf3fa69f"
+    },
+    "v2": {
+      "manifest": "release.mjs",
+      "manifestSha256": "1d95f04bccf8b8ea397da69a700431c410de10d729b8b45e2d0e8bb19f0fe4cd",
+      "treeSha256": "2c2ef9d6a8fe6eae90935cc1263ca45f191ca3fc2584cb9c0cef4db744c2305b",
+      "publishedCommit": "2f2a4000e00884363a4cf0133e0d9f01f26dcf34"
     }
   }
 }

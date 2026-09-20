@@ -5,7 +5,8 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 
-const BASE = '/assets/personality/v2/';
+const BASE = '/assets/personality/v3/';
+const PREVIOUS_BASE = '/assets/personality/v2/';
 const LEGACY_BASE = '/assets/personality/v1/';
 const PUBLIC_ORIGIN = 'https://engmanager.xyz';
 const STEPS = ['prepare', 'test', 'review', 'report', 'share', 'library'];
@@ -57,18 +58,25 @@ export function parseRegistry(source) {
 
 export function parsePresentationRegistry(source) {
   const data = registryData(source);
-  exactKeys(data, ['v', 'presentation', 'legacy', 'releases', 'ready', 'assets'], 'presentation registry');
-  requireThat(data.v === 2 && data.presentation === 'prompt-evidence-v2' && data.ready === true, 'Unsupported or incomplete presentation release.');
+  const latest = data.v === 3;
+  exactKeys(data, ['v', 'presentation', 'legacy', ...(latest ? ['previous'] : []), 'releases', 'ready', 'assets'], 'presentation registry');
+  requireThat(((latest && data.presentation === 'portrait-pdf-v3') || (data.v === 2 && data.presentation === 'prompt-evidence-v2')) && data.ready === true, 'Unsupported or incomplete presentation release.');
+  const currentBase = latest ? BASE : PREVIOUS_BASE;
+  if (latest) {
+    exactKeys(data.previous, ['root', 'manifestSha256', 'releaseDigest'], 'previous presentation reference');
+    requireThat(data.previous.root === PREVIOUS_BASE && HASH.test(data.previous.manifestSha256) && HASH.test(data.previous.releaseDigest), 'Invalid previous presentation reference.');
+  }
   exactKeys(data.legacy, ['root', 'manifestSha256', 'releaseDigest'], 'legacy release reference');
   requireThat(data.legacy.root === LEGACY_BASE && HASH.test(data.legacy.manifestSha256) && HASH.test(data.legacy.releaseDigest), 'Invalid legacy release reference.');
   requireThat(data.assets && typeof data.assets === 'object' && !Array.isArray(data.assets), 'Invalid presentation assets.');
   const entries = Object.entries(data.assets);
   requireThat(entries.length >= REQUIRED.length && entries.length <= 160, 'Unexpected presentation asset count.');
   for (const [name, hash] of entries) {
-    requireThat(name.length <= 220 && /^\/assets\/personality\/v[12]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
-      !name.split('/').some(part => part === '.' || part === '..') && typeof hash === 'string' && HASH.test(hash), 'Unsafe presentation asset path or invalid digest.');
+    requireThat(name.length <= 220 && /^\/assets\/personality\/v[123]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
+      !name.split('/').some(part => part === '.' || part === '..') && (latest || !name.startsWith('/assets/personality/v3/')) &&
+      typeof hash === 'string' && HASH.test(hash), 'Unsafe presentation asset path or invalid digest.');
   }
-  requireThat(['app.mjs', 'bootstrap.mjs', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'style.css', 'offline.mjs', 'sw.js', 'release-format.mjs'].every(name => Object.hasOwn(data.assets, BASE + name)), 'Missing current presentation assets.');
+  requireThat(['app.mjs', 'bootstrap.mjs', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'style.css', 'offline.mjs', 'sw.js', 'release-format.mjs'].every(name => Object.hasOwn(data.assets, currentBase + name)), 'Missing current presentation assets.');
   requireThat(REQUIRED.every(name => Object.hasOwn(data.assets, LEGACY_BASE + name)), 'Missing legacy public assets.');
   return data;
 }
@@ -191,8 +199,9 @@ export async function smoke({origin, expectLocal = false}) {
     privacy(response);
     requireThat(/javascript/.test(response.headers.get('content-type') || ''), 'Registry MIME type is not JavaScript.');
     release = parsePresentationRegistry(bytes.toString('utf8'));
+    requireThat(release.v === 3, 'Current presentation must be v3.');
     if (expectLocal) {
-      const local = await readFile(new URL('../website/assets/personality/v2/release.mjs', import.meta.url));
+      const local = await readFile(new URL('../website/assets/personality/v3/release.mjs', import.meta.url));
       requireThat(bytes.equals(local), `Deployed registry differs from local bytes (remote ${digest(bytes)}, local ${digest(local)}).`);
     }
     return `${Object.keys(release.assets).length} assets · sha256 ${digest(bytes)}${expectLocal ? ' · exact local match' : ''}`;
@@ -207,6 +216,16 @@ export async function smoke({origin, expectLocal = false}) {
       requireThat(JSON.stringify(legacy.releases) === JSON.stringify(release.releases), 'Scientific identities changed in the presentation release.');
       for (const [name, hash] of Object.entries(legacy.assets)) requireThat(release.assets[LEGACY_BASE + name] === hash, 'A legacy asset is missing or changed.');
       return 'Original manifest, scientific identities, and all original asset hashes retained';
+    });
+    await check('Frozen v2 presentation compatibility', async () => {
+      const {bytes} = await request(origin, PREVIOUS_BASE + 'release.mjs', {limit: 256 * 1024});
+      const previous = parsePresentationRegistry(bytes.toString('utf8'));
+      const lock = JSON.parse(await readFile(new URL('./personality-published-releases.json', import.meta.url), 'utf8'));
+      requireThat(previous.v === 2 && digest(bytes) === lock.roots.v2.manifestSha256 && digest(bytes) === release.previous.manifestSha256, 'Published v2 manifest has changed.');
+      requireThat(digest(JSON.stringify(previous)) === release.previous.releaseDigest, 'Previous installation digest changed.');
+      requireThat(release.assets[PREVIOUS_BASE + 'release.mjs'] === digest(bytes), 'Previous manifest is missing from the offline release.');
+      for (const [name, hash] of Object.entries(previous.assets)) requireThat(release.assets[name] === hash, 'A previous presentation asset is missing or changed.');
+      return 'Original v2 manifest and all its asset hashes retained';
     });
     // Exclude images, audio, fonts and the optional AI model/runtime installation.
     // Verify every small code/style/data file, including the required file list.
