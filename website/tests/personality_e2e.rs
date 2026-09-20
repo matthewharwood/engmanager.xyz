@@ -19,7 +19,7 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
 use common::TestServer;
 
-const FIXTURE: &str = r#"<!doctype html><html><head><meta charset="utf-8"><title>Personality browser checks</title></head><body>
+const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Personality browser checks</title></head><body>
 <pre id="result">RUNNING</pre><iframe id="app" title="Assessment under test" style="width:1200px;height:1000px"></iframe>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
@@ -35,6 +35,14 @@ async function pdfDownload(label){
   const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes){if(node.tagName==='A'&&node.download.endsWith('.pdf')&&node.href.startsWith('blob:'))downloads.push(node.download);}});
   observer.observe(doc().body,{childList:true});
   try{click('Download PDF');await until(()=>blobs.length===1&&downloads.length===1,label);return new Uint8Array(await blobs[0].arrayBuffer());}
+  finally{observer.disconnect();urlApi.createObjectURL=originalCreate;}
+}
+async function kitDownload(label){
+  const blobs=[],downloads=[],urlApi=frame.contentWindow.URL,originalCreate=urlApi.createObjectURL;
+  urlApi.createObjectURL=function(blob){if(blob.type.startsWith('text/markdown'))blobs.push(blob);return originalCreate.call(this,blob);};
+  const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes){if(node.tagName==='A'&&node.download.endsWith('.md')&&node.href.startsWith('blob:'))downloads.push(node.download);}});
+  observer.observe(doc().body,{childList:true});
+  try{click('Download report kit (.md)');await until(()=>blobs.length===1&&downloads.length===1,label);return {text:await blobs[0].text(),filename:downloads[0]};}
   finally{observer.disconnect();urlApi.createObjectURL=originalCreate;}
 }
 try{
@@ -99,6 +107,42 @@ try{
   assert(completed.state.wording==='she'&&completed.state.modules.length===3,'portrait wording and all three selected profiles persist');
   assert(doc().querySelector('.page-header').textContent.includes('170 of 170'),'review reports complete170 coverage');
   click('Read my report →');await until(()=>doc().querySelector('#choose-experiments'),'complete report');
+  await until(()=>doc().querySelector('#kit-name')&&!doc().querySelector('#kit-name').disabled,'report kit ready');
+  assert(doc().querySelector('#report-kit')&&doc().querySelector('.report-hero').textContent.includes('The person behind the numbers'),'report leads with narrative workflow');
+  assert(!doc().querySelector('#local-reflection-tools').open,'local model setup is secondary and collapsed');
+  doc().querySelector('#kit-name').value='Synthetic Person';doc().querySelector('#kit-name').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  doc().querySelector('#kit-context').value='A synthetic collaborator should understand my working preferences.';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  await until(()=>doc().querySelector('.kit-customize [role="status"]').textContent==='Report details saved on this device.','optional kit details saved');
+  const {createReportKit}=await import('/assets/personality/v2/report-kit.mjs');
+  const beforeKit=await store.loadActive(),expectedKit=createReportKit(beforeKit.state,{name:'Synthetic Person',context:'A synthetic collaborator should understand my working preferences.'});
+  const downloadedKit=await kitDownload('complete Markdown report kit download');
+  assert(downloadedKit.text===expectedKit.text&&downloadedKit.filename===expectedKit.filename,'one actual download contains the complete prompt and exact evidence');
+  assert((await store.loadActive()).revision===beforeKit.revision,'downloading the kit never rewrites scored answers');
+  const beforeAnchor=frame.contentWindow.location.href;
+  doc().querySelector('a[data-report-anchor][href="#your-scores"]').click();
+  assert(frame.contentWindow.location.href===beforeAnchor,'report navigation scrolls without rewriting a snapshot fragment or reloading');
+  const nav=frame.contentWindow.navigator;
+  Object.defineProperty(nav,'clipboard',{configurable:true,value:{writeText:async()=>{throw new Error('Clipboard denied for test');}}});
+  click('Copy complete kit');
+  await until(()=>doc().querySelector('.kit-status').textContent.includes('Clipboard access is unavailable'),'clipboard fallback');
+  assert(doc().querySelector('#kit-preview').value===expectedKit.text&&doc().querySelector('#kit-preview').selectionEnd===expectedKit.text.length,'clipboard denial exposes selectable complete kit text');
+  delete nav.clipboard;
+  await go('/personality/report',()=>doc().querySelector('#kit-name')?.value==='Synthetic Person','kit details survive refresh');
+  assert(doc().querySelector('#kit-context').value==='A synthetic collaborator should understand my working preferences.','per-assessment context restores from IndexedDB');
+  assert((await store.loadActive()).revision===beforeKit.revision,'optional details and refresh leave scored assessment revision intact');
+  doc().querySelector('#kit-context').value='Temporary navigation race note';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  click('Share this report');await until(()=>doc().querySelector('.share-domains'),'navigate immediately after detail edit');
+  doc().querySelector('a[data-route="report"]').click();await until(()=>doc().querySelector('#kit-context')?.value==='Temporary navigation race note','pending details settle before remount');
+  doc().querySelector('#kit-context').value='A synthetic collaborator should understand my working preferences.';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  await until(()=>doc().querySelector('.kit-customize [role="status"]').textContent==='Report details saved on this device.','remounted settings accept next edit without false conflict');
+  doc().querySelector('.kit-preview').open=true;
+  await until(()=>doc().querySelector('#kit-preview').value.includes('A synthetic collaborator'),'kit preview opens');
+  doc().querySelector('#kit-context').value='Updated open preview';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  await until(()=>doc().querySelector('#kit-preview').value.includes('Updated open preview'),'open preview updates with export details');
+  doc().querySelector('#kit-context').value='A synthetic collaborator should understand my working preferences.';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  await until(()=>doc().querySelector('#kit-preview').value.includes('A synthetic collaborator'),'open preview restored');
+
+
   const experiments=doc().querySelectorAll('#choose-experiments input[type="checkbox"]');experiments[0].click();experiments[1].click();
   await until(()=>doc().querySelector('#save-status').textContent==='Saved on this device','report experiments saved');
   const originalFull=await store.loadActive();
@@ -145,6 +189,13 @@ try{
   assert((await store.loadActive()).revision===reflected.revision,'reflection refresh does not rewrite assessment or kept prose');
   assert(doc().querySelector('.report-enhancement').textContent===frozenText&&doc().querySelector('#reflection-format').value==='writing','refresh restores exact frozen text and saved preferences');
   assert(doc().querySelector('#reflection-example').value===kept.context.example,'explicitly saved private context survives refresh');
+  assert(!doc().querySelector('#kit-include-reflection').checked,'kept reflection export requires an explicit separate choice');
+  const privateKit=await kitDownload('kit excludes private local reflection context');
+  assert(!privateKit.text.includes(kept.context.example),'report kit excludes unused private local AI notes');
+  doc().querySelector('#kit-include-reflection').click();
+  const reflectedKit=await kitDownload('optional kept reflection kit');
+  assert(reflectedKit.text===createReportKit((await store.loadActive()).state,{name:'Synthetic Person',context:'A synthetic collaborator should understand my working preferences.',enhancement:kept.enhancement,includeReflection:true}).text,'explicit reflection choice includes exact reviewed text with provenance');
+  assert(!reflectedKit.text.includes(kept.context.example),'including kept prose still excludes unused private context');
   click('Share this report');await until(()=>doc().querySelector('input[name="share-kind"][value="enhanced"]'),'enhanced sharing controls');
   doc().querySelector('input[name="share-kind"][value="enhanced"]').click();
   assert(doc().querySelector('.reflection-disclosure').textContent.includes(kept.enhancement.sections[0].body),'enhanced sharing discloses the actual frozen prose');
@@ -207,11 +258,11 @@ try{
   await until(()=>doc().querySelector('.privacy-settings').textContent.includes('Ready offline.'),'worker OFFLINE_READY acknowledgement');
   await until(()=>frame.contentWindow.navigator.serviceWorker.controller?.scriptURL.endsWith('/personality/sw.js'),'scoped worker controls assessment');
   assert(true,'explicit UI installation completes and scoped worker takes control');
-  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v1-')&&!name.includes(':staging:'));
+  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v2-')&&!name.includes(':staging:'));
   assert(cacheNames.length===1,'exactly one completed release cache is installed');
   const releaseCache=await caches.open(cacheNames[0]);
   const cacheURLs=(await releaseCache.keys()).map(request=>new URL(request.url));
-  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v1'),'ready marker commits after public files');
+  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v2'),'ready marker commits after public files');
   assert(cacheURLs.every(url=>!url.search&&!url.hash),'offline cache keys contain no answer or share parameters');
   assert(!await caches.match('/__test'),'test fixture is outside the assessment cache');
   await fetch('/__outage',{method:'POST'});
@@ -229,6 +280,8 @@ try{
   const pdfBytes=await pdfDownload('offline PDF blob and download anchor');
   assert(new TextDecoder().decode(pdfBytes.slice(0,5))==='%PDF-'&&pdfBytes.length>1000,'real PDF button builds a PDF blob and download while origin is unavailable');
   assert(doc().querySelector('.report-enhancement').textContent===frozenText,'offline PDF and report preserve saved reflection without generation');
+  const offlineKit=await kitDownload('offline report kit download');
+  assert(offlineKit.text===createReportKit((await store.loadActive()).state,{name:'Synthetic Person',context:'A synthetic collaborator should understand my working preferences.'}).text,'complete report kit downloads with saved optional details while the origin is unavailable');
   await go(enhancedURL,()=>doc().querySelector('.report-enhancement')&&doc().querySelector('.shared-banner'),'offline enhanced shared report');
   assert(doc().querySelector('.report-enhancement').textContent===frozenText,'enhanced snapshot verifies and renders its exact kept prose offline');
   assert((await store.loadActive()).state.responses[0]===4,'offline reports and PDF generation preserve original answers');
@@ -241,7 +294,7 @@ try{
   assert(requests.filter(request=>new URL(request.uri,location.origin).searchParams.has('r')).every(request=>!request.referrer?.includes(publicToken)), 'public score query is not propagated through subresource referrers');
   store.close();result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nAPP: '+doc()?.querySelector('#save-status')?.textContent+'\n'+doc()?.querySelector('#action-error')?.textContent+'\nREFLECTION: '+doc()?.querySelector('#enhance-report [role="status"]')?.textContent+'\nRECENT CHECKS: '+checks.slice(-6).join('\n');document.body.dataset.testResult='failed';}
-</script></body></html>"#;
+</script></body></html>"##;
 
 #[derive(Clone)]
 struct Proxy {

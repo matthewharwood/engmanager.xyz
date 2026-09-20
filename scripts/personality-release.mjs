@@ -1,59 +1,75 @@
 #!/usr/bin/env node
-// Rebuild only before publishing an immutable v1 release. Published source paths
-// and manifest hashes must be retained; substantive later versions use /v2/.
+// Published v1 and optional ai/v1 are immutable. This command verifies them,
+// then generates the independent v2 presentation/offline manifest only.
 import {readFile, writeFile, readdir} from 'node:fs/promises';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {releaseSource} from '../website/assets/personality/v2/release-format.mjs';
 
-const root = fileURLToPath(new URL('../website/assets/personality/v1/', import.meta.url));
-const allowIncomplete = process.argv.includes('--allow-incomplete');
+const assetsRoot = fileURLToPath(new URL('../website/assets/personality/', import.meta.url));
+const lockURL = new URL('./personality-published-releases.json', import.meta.url);
 const digest = value => createHash('sha256').update(value).digest('hex');
-// Copy only the tiny pinned cache routing metadata into the base release.
-// Runtime binaries and user-imported model weights are separate installations.
-const {AI_ASSETS,AI_RUNTIME_CACHE,AI_MANIFEST_DIGEST}=await import('../website/assets/personality/ai/v1/assets.mjs');
-await writeFile(path.join(root,'ai-cache-config.mjs'),'// Generated optional-runtime routing metadata; no model bytes.\nexport const AI_CACHE = Object.freeze('+JSON.stringify({name:AI_RUNTIME_CACHE,digest:AI_MANIFEST_DIGEST,ready:'/assets/personality/ai/v1/__runtime-ready',paths:[...AI_ASSETS.map(a=>a.path),'/assets/personality/ai/v1/assets.mjs']})+');\n');
-const {BANK} = await import(pathToFileURL(path.join(root, 'bank.mjs')));
-const assets = {};
-async function walk(directory, prefix = '') {
-  for (const entry of (await readdir(directory, {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {
+const ordered = (a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+export async function inventory(directory, prefix = '') {
+  const result = {};
+  for (const entry of (await readdir(directory, {withFileTypes: true})).sort(ordered)) {
     const relative = prefix + entry.name;
-    if (entry.isDirectory()) await walk(path.join(directory, entry.name), `${relative}/`);
-    else if (entry.isFile() && entry.name !== 'release.mjs') assets[relative] = digest(await readFile(path.join(directory, entry.name)));
+    if (entry.isDirectory()) Object.assign(result, await inventory(path.join(directory, entry.name), `${relative}/`));
+    else if (entry.isFile()) result[relative] = digest(await readFile(path.join(directory, entry.name)));
+    else throw new Error(`Unexpected non-file in public release: ${relative}`);
+  }
+  return result;
+}
+
+export async function verifyPublishedReleases() {
+  const lock = JSON.parse(await readFile(lockURL, 'utf8'));
+  for (const [name, expected] of Object.entries(lock.roots)) {
+    const files = await inventory(path.join(assetsRoot, name));
+    if (digest(JSON.stringify(files)) !== expected.treeSha256) {
+      throw new Error(`Published ${name} bytes changed. Restore the immutable release and publish changes under a new version directory.`);
+    }
+    if (files[expected.manifest] !== expected.manifestSha256) throw new Error(`Published ${name} manifest changed.`);
+  }
+  return lock;
+}
+
+export async function generatePresentationRelease({allowIncomplete = false} = {}) {
+  await verifyPublishedReleases();
+  const {RELEASE: base} = await import('../website/assets/personality/v1/release.mjs');
+  const root = path.join(assetsRoot, 'v2');
+  const current = await inventory(root);
+  delete current['release.mjs'];
+  const required = ['app.mjs', 'bootstrap.mjs', 'style.css', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'offline.mjs', 'sw.js', 'release-format.mjs'];
+  const missing = required.filter(file => !Object.hasOwn(current, file));
+  if (missing.length && !allowIncomplete) throw new Error(`Presentation release incomplete: ${missing.join(', ')}`);
+  const baseManifest = await readFile(path.join(assetsRoot, 'v1/release.mjs'));
+  const assets = Object.fromEntries([
+    ...Object.entries(base.assets).map(([name, hash]) => [`/assets/personality/v1/${name}`, hash]),
+    ['/assets/personality/v1/release.mjs', digest(baseManifest)],
+    ...Object.entries(current).map(([name, hash]) => [`/assets/personality/v2/${name}`, hash]),
+  ].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
+  const release = {
+    v: 2,
+    presentation: 'prompt-evidence-v2',
+    legacy: {root: '/assets/personality/v1/', manifestSha256: digest(baseManifest), releaseDigest: digest(JSON.stringify(base))},
+    // State, scoring, exact links and IDB records retain the live v1 identities.
+    releases: base.releases,
+    ready: base.ready && missing.length === 0,
+    assets,
+  };
+  await writeFile(path.join(root, 'release.mjs'), releaseSource(release));
+  return release;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const args = process.argv.slice(2);
+  if (args.some(arg => !['--allow-incomplete', '--verify-published'].includes(arg))) throw new Error('Unknown release argument.');
+  if (args.includes('--verify-published')) {
+    await verifyPublishedReleases();
+    console.log('Published v1 and ai/v1 bytes verified unchanged.');
+  } else {
+    const release = await generatePresentationRelease({allowIncomplete: args.includes('--allow-incomplete')});
+    console.log(`Personality v2 presentation: ${Object.keys(release.assets).length} public assets; ${release.ready ? 'complete' : 'incomplete development manifest'}. Published releases unchanged.`);
   }
 }
-await walk(root);
-const required = ['app.mjs', 'style.css', 'bank.mjs', 'core.mjs', 'store.mjs', 'share.mjs', 'report-content.mjs', 'report.mjs', 'charts.mjs', 'charts.css', 'pdf.mjs', 'offline.mjs', 'sw.js', 'enhancement.mjs', 'enhancement-share.mjs', 'reflection-ui.mjs', 'ai-cache-config.mjs'];
-const missing = required.filter(file => !assets[file]);
-if (missing.length && !allowIncomplete) throw new Error(`Release incomplete: ${missing.join(', ')}`);
-let blockIds = [];
-if (assets['report-content.mjs']) {
-  const content = await import(pathToFileURL(path.join(root, 'report-content.mjs')));
-  blockIds = [...(content.BLOCK_IDS ?? content.EXPERIMENTS?.map(item => item.id) ?? [])].sort();
-}
-const contentFiles = ['report-content.mjs', 'enhancement.mjs'];
-const templateFiles = ['report.mjs', 'charts.mjs', 'pdf.mjs'];
-const fileDigest = files => digest(JSON.stringify(files.map(file => [file, assets[file] ?? null])));
-const aliases = ['ipip-neo-120', 'onet-mini-ip-30', 'twivi-20'];
-const modules = ['big5', 'interests', 'values'];
-const release = {
-  v: 1,
-  releases: {
-    instruments: modules.map((module, index) => [aliases[index], BANK.instrumentVersions[index], digest(JSON.stringify({
-      administration: BANK.modules.find(item => item.id === module), items: BANK.items.filter(item => item.module === module),
-    }))]),
-    content: ['content-v1', fileDigest(contentFiles)],
-    scoring: ['score-v1', assets['core.mjs'] ?? digest('incomplete')],
-    template: ['report-v1', fileDigest(templateFiles)],
-    order: ['source-v1', digest(JSON.stringify(BANK.items.map(item => [item.id, item.module, item.slot])))],
-  },
-  blockIds,
-  ready: missing.length === 0,
-  assets,
-};
-const output = '// Generated by scripts/personality-release.mjs; do not edit hashes by hand.\n' +
-  'const data = ' + JSON.stringify(release, null, 2) + ';\n' +
-  'function freeze(value) { if (value && typeof value === "object") { Object.values(value).forEach(freeze); Object.freeze(value); } return value; }\n' +
-  'export const RELEASE = freeze(data);\n';
-await writeFile(path.join(root, 'release.mjs'), output);
-console.log(`Personality release: ${Object.keys(assets).length} public assets; ${release.ready ? 'complete' : 'incomplete development manifest'}.`);

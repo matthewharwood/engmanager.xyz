@@ -395,7 +395,7 @@ mod tests {
             assert_eq!(header_str(&response, name), Some("no-store"));
         }
         let worker = body_string(response).await;
-        let pinned = get(&router, SITE_HOST, "/assets/personality/v1/sw.js").await;
+        let pinned = get(&router, SITE_HOST, "/assets/personality/v2/sw.js").await;
         assert_eq!(
             header_str(&pinned, "cache-control"),
             Some(if cfg!(debug_assertions) {
@@ -405,6 +405,13 @@ mod tests {
             })
         );
         assert_eq!(body_string(pinned).await, worker);
+        let legacy = get(&router, SITE_HOST, "/assets/personality/v1/sw.js").await;
+        assert_eq!(legacy.status(), StatusCode::OK);
+        assert!(
+            body_string(legacy)
+                .await
+                .contains("/assets/personality/v1/release.mjs")
+        );
     }
 
     #[tokio::test]
@@ -413,6 +420,10 @@ mod tests {
         assert_eq!(
             asset_url("personality/v1/app.mjs"),
             "/assets/personality/v1/app.mjs"
+        );
+        assert_eq!(
+            asset_url("personality/v2/bootstrap.mjs"),
+            "/assets/personality/v2/bootstrap.mjs"
         );
         let module = get(&router, SITE_HOST, "/assets/personality/v1/core.mjs").await;
         assert_eq!(module.status(), StatusCode::OK);
@@ -431,6 +442,7 @@ mod tests {
             "/assets/personality/v999/app.mjs",
             "/assets/personality/v1/app.12345678.mjs",
             "/assets/personality/v1/core.12345678.mjs",
+            "/assets/personality/v2/bootstrap.12345678.mjs",
         ] {
             assert_eq!(
                 get(&router, SITE_HOST, path).await.status(),

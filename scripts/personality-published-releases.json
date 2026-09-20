@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "publishedCommit": "c5517f5c0613657dfbb76951adeb8deb917bd191",
+  "roots": {
+    "v1": {
+      "manifest": "release.mjs",
+      "manifestSha256": "3ee2044e67c4931dbd8092f05a231afb325b8296d2173abc549f9111ecf8d573",
+      "treeSha256": "d379d8d836693e3b4100796897881eb530251f5c422e0bb181b77ca30cebad1a"
+    },
+    "ai/v1": {
+      "manifest": "assets.mjs",
+      "manifestSha256": "587cef88071d65384a8b8a815ec9ae401a16795202bdea9a1dce185217955958",
+      "treeSha256": "37f8a9275209815e9f22e93199221dcd3cf00ff5cd1e16ad036755c0bf3fa69f"
+    }
+  }
+}
