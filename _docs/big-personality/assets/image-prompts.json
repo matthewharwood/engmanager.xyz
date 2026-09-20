@@ -1,0 +1,14 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "date": "2026-09-19",
+  "prompts": [
+    {
+      "key": "hero",
+      "prompt": "Create a sophisticated editorial illustration for a research-informed self-understanding report for early-career engineers and product designers. Wide landscape composition, premium analog paper collage and fine risograph texture, warm ivory background, midnight ink outlines, muted cobalt, vermilion and moss green accents. Six translucent optical lenses with subtly different shapes partially overlap above an abstract small human silhouette and a drafting grid, evoking multiple perspectives on a whole person without classifying or ranking them. Spacious calm composition, left third has quiet negative space for later HTML typography; the six lenses centered toward the right. No words, no letters, no numbers, no logos, no charts, no scientific claims. Beautiful tactile editorial artwork, not a UI screenshot. Six lenses are metaphorical, never a score or personality type. 1536x1024 landscape."
+    },
+    {
+      "key": "work-interests",
+      "prompt": "Create a premium editorial illustration for the work-interests chapter of a self-reflection report for people in tech. Wide landscape composition, warm ivory paper background, tactile cut-paper collage and subtle risograph texture, midnight ink, muted cobalt, vermilion and moss green. A single shared creative workbench contains six equal visual motifs: a crafted mechanical object, a magnifying lens over an abstract puzzle, sculptural paper forms, two simple chairs facing each other, a small flag beside an open notebook, and carefully arranged index cards. Motifs should feel connected by an airy continuous pencil line, equally important, spacious and thoughtful, no people stereotypes, no hierarchy, no trophies. No text, no labels, no letters, no numbers, no graphs, no logos. The image supports an exploration of different activities people enjoy, never diagnostic. 1536x1024 landscape."
+    }
+  ]
+}

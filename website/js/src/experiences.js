@@ -2100,7 +2100,7 @@ register({
         "serviceWorker" in navigator && location.protocol !== "file:",
     init: async (api) => {
         // Dev mode (built with `--features dev`, i.e. `just dev`):
-        // unregister any installed SW + nuke every cache so source
+        // unregister the blog SW and clear its caches so source
         // edits show up on next reload without manual DevTools work.
         // The dev marker is emitted by render_dev_meta() in pages/mod.rs.
         const isDev =
@@ -2109,10 +2109,10 @@ register({
         if (isDev) {
             try {
                 const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map((r) => r.unregister()));
+                await Promise.all(regs.filter((r) => new URL(r.scope).pathname === "/").map((r) => r.unregister()));
                 if ("caches" in window) {
                     const keys = await caches.keys();
-                    await Promise.all(keys.map((k) => caches.delete(k)));
+                    await Promise.all(keys.filter((k) => /^engmanager-v\d+$/.test(k)).map((k) => caches.delete(k)));
                 }
                 api.log(
                     "dev",
@@ -2160,6 +2160,7 @@ register({
         const sameOriginPath = (href) => {
             try {
                 const url = new URL(href, location.href);
+                if (url.pathname === "/articles/big-personality" || url.pathname === "/personality" || url.pathname.startsWith("/personality/")) return null;
                 return url.origin === location.origin ? url.pathname : null;
             } catch {
                 return null;

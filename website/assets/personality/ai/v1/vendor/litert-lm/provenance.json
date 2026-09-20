@@ -1,0 +1,11 @@
+{
+  "package": "@litert-lm/core",
+  "version": "0.17.1",
+  "license": "Apache-2.0",
+  "source": "https://registry.npmjs.org/@litert-lm/core/-/core-0.17.1.tgz",
+  "npmIntegrity": "sha512-eUxw6ggqZrvNA8Uk/w0TwglRWryn/clrjqHYyfxQWRl0uz5Txmte+qss0u3Dt+X6W/io4G8ADk97LmjMxVRHUg==",
+  "verifiedAt": "2026-09-19",
+  "modifications": [
+    "Relative wasm-utils import; default WASM path self-hosted; only portable compat asyncify WASM included"
+  ]
+}

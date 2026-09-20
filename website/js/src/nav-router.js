@@ -56,6 +56,8 @@
 // body-level islands, so <main>/#main alone is not a usable callback scope).
 
 (() => {
+    const personalityBoundary = (path) => path === "/articles/big-personality" || path === "/personality" || path.startsWith("/personality/");
+    if (personalityBoundary(location.pathname)) return;
     let force = /[?&]engnav=force(&|$)/.test(location.search);
     try {
         force ||= localStorage.__engNavForce === "1";
@@ -332,6 +334,7 @@
         const dest = new URL(event.destination.url);
         if (dest.origin !== location.origin) return;
         const path = dest.pathname;
+        if (personalityBoundary(path) || personalityBoundary(location.pathname)) return;
         if (/^\/(checkout|api\/)/.test(path)) return;
         // Same-pathname: ?receipt/?bag/?image state-only changes AND
         // same-page /search?q= form GETs proceed as real navigations.

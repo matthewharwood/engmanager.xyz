@@ -1,0 +1,1934 @@
+{
+  "schemaVersion": 1,
+  "instrumentId": "ipip-neo-120",
+  "bankVersion": "1.0.0-official-key-2026-09-19",
+  "title": "IPIP-NEO-120: official IPIP key wording",
+  "language": "en",
+  "itemCount": 120,
+  "domainCount": 5,
+  "facetCount": 30,
+  "status": "Published public-domain Big Five item set; local presentation and report require evaluation in intended audience.",
+  "license": {
+    "status": "Public domain",
+    "appliesTo": "IPIP items, scales, and inventories",
+    "commercialUse": true,
+    "permissionRequired": false,
+    "source": "https://ipip.ori.org/newPermission.htm"
+  },
+  "provenance": {
+    "retrievedOn": "2026-09-19",
+    "wordingAndKeySource": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+    "itemNumberSource": "https://bpb-us-e1.wpmucdn.com/sites.psu.edu/dist/1/163537/files/2023/07/IPIPNEO120.pdf",
+    "itemNumberSourceLocation": "Table 1, journal pages 81–83 (PDF pages 4–6)",
+    "publication": "Johnson, J. A. (2014). Measuring thirty facets of the Five Factor Model with a 120-item public domain inventory: Development of the IPIP-NEO-120. Journal of Research in Personality, 51, 78–89.",
+    "doi": "https://doi.org/10.1016/j.jrp.2014.05.003",
+    "textHandling": "Verbatim item text from official IPIP key; HTML whitespace trimmed. No item paraphrases. Published item numbers restored independently from Johnson Table 1.",
+    "knownDiscrepancies": [
+      {
+        "itemId": "ipip-neo-120-058",
+        "officialKeyText": "Believe that there is no absolute right and wrong.",
+        "publicationText": "Believe that there is no absolute right or wrong.",
+        "decision": "Use official IPIP website wording consistently; lock this as the bank version. Norm matching must audit this variant."
+      }
+    ]
+  },
+  "administration": {
+    "order": "Ascending publishedItemNumber; save order with the attempt.",
+    "instructions": "Describe yourself as you generally are now, across your life, rather than only at work. Choose how accurately each statement describes you. There are no right or wrong answers. You may skip a statement.",
+    "instructionsStatus": "Product-authored administration text; not a quotation of the original instructions. Evaluate comprehension and comparability in pilot.",
+    "scaleSource": "https://ipip.ori.org/newScoringInstructions.htm",
+    "responseOptions": [
+      {
+        "value": 1,
+        "label": "Very Inaccurate"
+      },
+      {
+        "value": 2,
+        "label": "Moderately Inaccurate"
+      },
+      {
+        "value": 3,
+        "label": "Neither Inaccurate nor Accurate"
+      },
+      {
+        "value": 4,
+        "label": "Moderately Accurate"
+      },
+      {
+        "value": 5,
+        "label": "Very Accurate"
+      }
+    ],
+    "missingValue": null,
+    "skipIsNeutral": false,
+    "preselectedAnswer": false,
+    "requiredToFinish": false
+  },
+  "scoring": {
+    "algorithmVersion": "ipip-sum-complete-only-v1",
+    "allowedResponseValues": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "positiveFormula": "response",
+    "negativeFormula": "6 - response",
+    "facetAggregation": "sum of the four keyed items",
+    "facetRange": [
+      4,
+      20
+    ],
+    "domainAggregation": "sum of all 24 keyed items in the domain",
+    "domainRange": [
+      24,
+      120
+    ],
+    "displayMean": "keyed sum / item count",
+    "displayRange": [
+      1,
+      5
+    ],
+    "optionalPompFormula": "25 * (displayMean - 1)",
+    "optionalPompLabel": "Position on the possible score range, not a percentile",
+    "missingnessPolicy": "Allow skips. Score a facet only when all 4 responses are present and a domain only when all 24 responses are present. Otherwise return null with status incomplete and answered/required counts. Still show all complete scales.",
+    "missingnessPolicyStatus": "Conservative product policy, not a published IPIP missingness rule.",
+    "imputation": false,
+    "percentiles": false,
+    "confidenceIntervals": false,
+    "higherNMeans": "More self-reported negative emotionality, not emotional stability.",
+    "weights": "Equal item weights. No AI, adaptive weighting, demographic adjustment, or ipsatization.",
+    "totalPersonalityScore": false
+  },
+  "domains": [
+    {
+      "id": "N",
+      "name": "Neuroticism",
+      "itemCount": 24,
+      "facetIds": [
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "N5",
+        "N6"
+      ],
+      "positiveItemCount": 17,
+      "reverseItemCount": 7
+    },
+    {
+      "id": "E",
+      "name": "Extraversion",
+      "itemCount": 24,
+      "facetIds": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "positiveItemCount": 18,
+      "reverseItemCount": 6
+    },
+    {
+      "id": "O",
+      "name": "Openness to Experience",
+      "itemCount": 24,
+      "facetIds": [
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6"
+      ],
+      "positiveItemCount": 12,
+      "reverseItemCount": 12
+    },
+    {
+      "id": "A",
+      "name": "Agreeableness",
+      "itemCount": 24,
+      "facetIds": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6"
+      ],
+      "positiveItemCount": 7,
+      "reverseItemCount": 17
+    },
+    {
+      "id": "C",
+      "name": "Conscientiousness",
+      "itemCount": 24,
+      "facetIds": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "positiveItemCount": 11,
+      "reverseItemCount": 13
+    }
+  ],
+  "facets": [
+    {
+      "id": "N1",
+      "domain": "N",
+      "name": "Anxiety",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-001",
+        "ipip-neo-120-031",
+        "ipip-neo-120-061",
+        "ipip-neo-120-091"
+      ],
+      "publishedAlpha": {
+        "value": 0.78,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "N2",
+      "domain": "N",
+      "name": "Anger",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-006",
+        "ipip-neo-120-036",
+        "ipip-neo-120-066",
+        "ipip-neo-120-096"
+      ],
+      "publishedAlpha": {
+        "value": 0.87,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "N3",
+      "domain": "N",
+      "name": "Depression",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-011",
+        "ipip-neo-120-041",
+        "ipip-neo-120-071",
+        "ipip-neo-120-101"
+      ],
+      "publishedAlpha": {
+        "value": 0.85,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "N4",
+      "domain": "N",
+      "name": "Self-Consciousness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-016",
+        "ipip-neo-120-046",
+        "ipip-neo-120-076",
+        "ipip-neo-120-106"
+      ],
+      "publishedAlpha": {
+        "value": 0.7,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "N5",
+      "domain": "N",
+      "name": "Immoderation",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-021",
+        "ipip-neo-120-051",
+        "ipip-neo-120-081",
+        "ipip-neo-120-111"
+      ],
+      "publishedAlpha": {
+        "value": 0.69,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "N6",
+      "domain": "N",
+      "name": "Vulnerability",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-026",
+        "ipip-neo-120-056",
+        "ipip-neo-120-086",
+        "ipip-neo-120-116"
+      ],
+      "publishedAlpha": {
+        "value": 0.76,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E1",
+      "domain": "E",
+      "name": "Friendliness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-002",
+        "ipip-neo-120-032",
+        "ipip-neo-120-062",
+        "ipip-neo-120-092"
+      ],
+      "publishedAlpha": {
+        "value": 0.81,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E2",
+      "domain": "E",
+      "name": "Gregariousness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-007",
+        "ipip-neo-120-037",
+        "ipip-neo-120-067",
+        "ipip-neo-120-097"
+      ],
+      "publishedAlpha": {
+        "value": 0.79,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E3",
+      "domain": "E",
+      "name": "Assertiveness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-012",
+        "ipip-neo-120-042",
+        "ipip-neo-120-072",
+        "ipip-neo-120-102"
+      ],
+      "publishedAlpha": {
+        "value": 0.85,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E4",
+      "domain": "E",
+      "name": "Activity Level",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-017",
+        "ipip-neo-120-047",
+        "ipip-neo-120-077",
+        "ipip-neo-120-107"
+      ],
+      "publishedAlpha": {
+        "value": 0.69,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E5",
+      "domain": "E",
+      "name": "Excitement-Seeking",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-022",
+        "ipip-neo-120-052",
+        "ipip-neo-120-082",
+        "ipip-neo-120-112"
+      ],
+      "publishedAlpha": {
+        "value": 0.73,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "E6",
+      "domain": "E",
+      "name": "Cheerfulness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-027",
+        "ipip-neo-120-057",
+        "ipip-neo-120-087",
+        "ipip-neo-120-117"
+      ],
+      "publishedAlpha": {
+        "value": 0.79,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O1",
+      "domain": "O",
+      "name": "Imagination",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-003",
+        "ipip-neo-120-033",
+        "ipip-neo-120-063",
+        "ipip-neo-120-093"
+      ],
+      "publishedAlpha": {
+        "value": 0.74,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O2",
+      "domain": "O",
+      "name": "Artistic Interests",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-008",
+        "ipip-neo-120-038",
+        "ipip-neo-120-068",
+        "ipip-neo-120-098"
+      ],
+      "publishedAlpha": {
+        "value": 0.74,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O3",
+      "domain": "O",
+      "name": "Emotionality",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-013",
+        "ipip-neo-120-043",
+        "ipip-neo-120-073",
+        "ipip-neo-120-103"
+      ],
+      "publishedAlpha": {
+        "value": 0.65,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O4",
+      "domain": "O",
+      "name": "Adventurousness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-018",
+        "ipip-neo-120-048",
+        "ipip-neo-120-078",
+        "ipip-neo-120-108"
+      ],
+      "publishedAlpha": {
+        "value": 0.7,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O5",
+      "domain": "O",
+      "name": "Intellect",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-023",
+        "ipip-neo-120-053",
+        "ipip-neo-120-083",
+        "ipip-neo-120-113"
+      ],
+      "publishedAlpha": {
+        "value": 0.73,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "O6",
+      "domain": "O",
+      "name": "Liberalism",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-028",
+        "ipip-neo-120-058",
+        "ipip-neo-120-088",
+        "ipip-neo-120-118"
+      ],
+      "publishedAlpha": {
+        "value": 0.63,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A1",
+      "domain": "A",
+      "name": "Trust",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-004",
+        "ipip-neo-120-034",
+        "ipip-neo-120-064",
+        "ipip-neo-120-094"
+      ],
+      "publishedAlpha": {
+        "value": 0.85,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A2",
+      "domain": "A",
+      "name": "Morality",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-009",
+        "ipip-neo-120-039",
+        "ipip-neo-120-069",
+        "ipip-neo-120-099"
+      ],
+      "publishedAlpha": {
+        "value": 0.74,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A3",
+      "domain": "A",
+      "name": "Altruism",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-014",
+        "ipip-neo-120-044",
+        "ipip-neo-120-074",
+        "ipip-neo-120-104"
+      ],
+      "publishedAlpha": {
+        "value": 0.73,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A4",
+      "domain": "A",
+      "name": "Cooperation",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-019",
+        "ipip-neo-120-049",
+        "ipip-neo-120-079",
+        "ipip-neo-120-109"
+      ],
+      "publishedAlpha": {
+        "value": 0.71,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A5",
+      "domain": "A",
+      "name": "Modesty",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-024",
+        "ipip-neo-120-054",
+        "ipip-neo-120-084",
+        "ipip-neo-120-114"
+      ],
+      "publishedAlpha": {
+        "value": 0.73,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "A6",
+      "domain": "A",
+      "name": "Sympathy",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-029",
+        "ipip-neo-120-059",
+        "ipip-neo-120-089",
+        "ipip-neo-120-119"
+      ],
+      "publishedAlpha": {
+        "value": 0.72,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C1",
+      "domain": "C",
+      "name": "Self-Efficacy",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-005",
+        "ipip-neo-120-035",
+        "ipip-neo-120-065",
+        "ipip-neo-120-095"
+      ],
+      "publishedAlpha": {
+        "value": 0.77,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C2",
+      "domain": "C",
+      "name": "Orderliness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-010",
+        "ipip-neo-120-040",
+        "ipip-neo-120-070",
+        "ipip-neo-120-100"
+      ],
+      "publishedAlpha": {
+        "value": 0.83,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C3",
+      "domain": "C",
+      "name": "Dutifulness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-015",
+        "ipip-neo-120-045",
+        "ipip-neo-120-075",
+        "ipip-neo-120-105"
+      ],
+      "publishedAlpha": {
+        "value": 0.67,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C4",
+      "domain": "C",
+      "name": "Achievement-Striving",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-020",
+        "ipip-neo-120-050",
+        "ipip-neo-120-080",
+        "ipip-neo-120-110"
+      ],
+      "publishedAlpha": {
+        "value": 0.79,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C5",
+      "domain": "C",
+      "name": "Self-Discipline",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-025",
+        "ipip-neo-120-055",
+        "ipip-neo-120-085",
+        "ipip-neo-120-115"
+      ],
+      "publishedAlpha": {
+        "value": 0.71,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    },
+    {
+      "id": "C6",
+      "domain": "C",
+      "name": "Cautiousness",
+      "itemCount": 4,
+      "itemIds": [
+        "ipip-neo-120-030",
+        "ipip-neo-120-060",
+        "ipip-neo-120-090",
+        "ipip-neo-120-120"
+      ],
+      "publishedAlpha": {
+        "value": 0.88,
+        "sampleN": 619150,
+        "source": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+        "note": "External study estimate; not a reliability estimate for this product's users."
+      }
+    }
+  ],
+  "items": [
+    {
+      "facet": "N1",
+      "text": "Worry about things.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 1,
+      "id": "ipip-neo-120-001",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E1",
+      "text": "Make friends easily.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 2,
+      "id": "ipip-neo-120-002",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O1",
+      "text": "Have a vivid imagination.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 3,
+      "id": "ipip-neo-120-003",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A1",
+      "text": "Trust others.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 4,
+      "id": "ipip-neo-120-004",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C1",
+      "text": "Complete tasks successfully.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 5,
+      "id": "ipip-neo-120-005",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N2",
+      "text": "Get angry easily.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 6,
+      "id": "ipip-neo-120-006",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E2",
+      "text": "Love large parties.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 7,
+      "id": "ipip-neo-120-007",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O2",
+      "text": "Believe in the importance of art.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 8,
+      "id": "ipip-neo-120-008",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A2",
+      "text": "Use others for my own ends.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 9,
+      "id": "ipip-neo-120-009",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C2",
+      "text": "Like to tidy up.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 10,
+      "id": "ipip-neo-120-010",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N3",
+      "text": "Often feel blue.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 11,
+      "id": "ipip-neo-120-011",
+      "reverseKeyed": false,
+      "contentNote": "Historical facet label is Depression. This is not a clinical depression screen or diagnosis."
+    },
+    {
+      "facet": "E3",
+      "text": "Take charge.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 12,
+      "id": "ipip-neo-120-012",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O3",
+      "text": "Experience my emotions intensely.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 13,
+      "id": "ipip-neo-120-013",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A3",
+      "text": "Love to help others.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 14,
+      "id": "ipip-neo-120-014",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C3",
+      "text": "Keep my promises.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 15,
+      "id": "ipip-neo-120-015",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N4",
+      "text": "Find it difficult to approach others.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 16,
+      "id": "ipip-neo-120-016",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E4",
+      "text": "Am always busy.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 17,
+      "id": "ipip-neo-120-017",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O4",
+      "text": "Prefer variety to routine.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 18,
+      "id": "ipip-neo-120-018",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A4",
+      "text": "Love a good fight.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 19,
+      "id": "ipip-neo-120-019",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C4",
+      "text": "Work hard.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 20,
+      "id": "ipip-neo-120-020",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N5",
+      "text": "Go on binges.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 21,
+      "id": "ipip-neo-120-021",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E5",
+      "text": "Love excitement.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 22,
+      "id": "ipip-neo-120-022",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O5",
+      "text": "Love to read challenging material.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 23,
+      "id": "ipip-neo-120-023",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A5",
+      "text": "Believe that I am better than others.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 24,
+      "id": "ipip-neo-120-024",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C5",
+      "text": "Am always prepared.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 25,
+      "id": "ipip-neo-120-025",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N6",
+      "text": "Panic easily.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 26,
+      "id": "ipip-neo-120-026",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E6",
+      "text": "Radiate joy.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 27,
+      "id": "ipip-neo-120-027",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O6",
+      "text": "Tend to vote for liberal political candidates.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 28,
+      "id": "ipip-neo-120-028",
+      "reverseKeyed": false,
+      "contentNote": "Contains culture-dependent political or moral-value wording. Permit skip; do not infer political identity."
+    },
+    {
+      "facet": "A6",
+      "text": "Sympathize with the homeless.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 29,
+      "id": "ipip-neo-120-029",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C6",
+      "text": "Jump into things without thinking.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 30,
+      "id": "ipip-neo-120-030",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N1",
+      "text": "Fear for the worst.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 31,
+      "id": "ipip-neo-120-031",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E1",
+      "text": "Feel comfortable around people.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 32,
+      "id": "ipip-neo-120-032",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O1",
+      "text": "Enjoy wild flights of fantasy.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 33,
+      "id": "ipip-neo-120-033",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A1",
+      "text": "Believe that others have good intentions.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 34,
+      "id": "ipip-neo-120-034",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C1",
+      "text": "Excel in what I do.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 35,
+      "id": "ipip-neo-120-035",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N2",
+      "text": "Get irritated easily.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 36,
+      "id": "ipip-neo-120-036",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E2",
+      "text": "Talk to a lot of different people at parties.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 37,
+      "id": "ipip-neo-120-037",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O2",
+      "text": "See beauty in things that others might not notice.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 38,
+      "id": "ipip-neo-120-038",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A2",
+      "text": "Cheat to get ahead.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 39,
+      "id": "ipip-neo-120-039",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C2",
+      "text": "Often forget to put things back in their proper place.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 40,
+      "id": "ipip-neo-120-040",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N3",
+      "text": "Dislike myself.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 41,
+      "id": "ipip-neo-120-041",
+      "reverseKeyed": false,
+      "contentNote": "Historical facet label is Depression. This is not a clinical depression screen or diagnosis."
+    },
+    {
+      "facet": "E3",
+      "text": "Try to lead others.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 42,
+      "id": "ipip-neo-120-042",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O3",
+      "text": "Feel others' emotions.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 43,
+      "id": "ipip-neo-120-043",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A3",
+      "text": "Am concerned about others.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 44,
+      "id": "ipip-neo-120-044",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C3",
+      "text": "Tell the truth.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 45,
+      "id": "ipip-neo-120-045",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N4",
+      "text": "Am afraid to draw attention to myself.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 46,
+      "id": "ipip-neo-120-046",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E4",
+      "text": "Am always on the go.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 47,
+      "id": "ipip-neo-120-047",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O4",
+      "text": "Prefer to stick with things that I know.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 48,
+      "id": "ipip-neo-120-048",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A4",
+      "text": "Yell at people.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 49,
+      "id": "ipip-neo-120-049",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C4",
+      "text": "Do more than what's expected of me.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 1,
+      "publishedItemNumber": 50,
+      "id": "ipip-neo-120-050",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N5",
+      "text": "Rarely overindulge.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 51,
+      "id": "ipip-neo-120-051",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E5",
+      "text": "Seek adventure.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 52,
+      "id": "ipip-neo-120-052",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O5",
+      "text": "Avoid philosophical discussions.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 53,
+      "id": "ipip-neo-120-053",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A5",
+      "text": "Think highly of myself.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 54,
+      "id": "ipip-neo-120-054",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C5",
+      "text": "Carry out my plans.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 55,
+      "id": "ipip-neo-120-055",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N6",
+      "text": "Become overwhelmed by events.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 56,
+      "id": "ipip-neo-120-056",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E6",
+      "text": "Have a lot of fun.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 57,
+      "id": "ipip-neo-120-057",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O6",
+      "text": "Believe that there is no absolute right and wrong.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 58,
+      "id": "ipip-neo-120-058",
+      "reverseKeyed": false,
+      "contentNote": "Contains culture-dependent political or moral-value wording. Permit skip; do not infer political identity.",
+      "provenanceNote": "Current official IPIP key uses 'right and wrong'; Johnson (2014), Table 1 uses 'right or wrong'. This bank retains the current official-key wording and records the discrepancy."
+    },
+    {
+      "facet": "A6",
+      "text": "Feel sympathy for those who are worse off than myself.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 59,
+      "id": "ipip-neo-120-059",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C6",
+      "text": "Make rash decisions.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 2,
+      "publishedItemNumber": 60,
+      "id": "ipip-neo-120-060",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N1",
+      "text": "Am afraid of many things.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 61,
+      "id": "ipip-neo-120-061",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E1",
+      "text": "Avoid contacts with others.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 62,
+      "id": "ipip-neo-120-062",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O1",
+      "text": "Love to daydream.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 63,
+      "id": "ipip-neo-120-063",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A1",
+      "text": "Trust what people say.",
+      "key": 1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 64,
+      "id": "ipip-neo-120-064",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "C1",
+      "text": "Handle tasks smoothly.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 65,
+      "id": "ipip-neo-120-065",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N2",
+      "text": "Lose my temper.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 66,
+      "id": "ipip-neo-120-066",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E2",
+      "text": "Prefer to be alone.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 67,
+      "id": "ipip-neo-120-067",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O2",
+      "text": "Do not like poetry.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 68,
+      "id": "ipip-neo-120-068",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A2",
+      "text": "Take advantage of others.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 69,
+      "id": "ipip-neo-120-069",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C2",
+      "text": "Leave a mess in my room.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 70,
+      "id": "ipip-neo-120-070",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N3",
+      "text": "Am often down in the dumps.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 71,
+      "id": "ipip-neo-120-071",
+      "reverseKeyed": false,
+      "contentNote": "Historical facet label is Depression. This is not a clinical depression screen or diagnosis."
+    },
+    {
+      "facet": "E3",
+      "text": "Take control of things.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 72,
+      "id": "ipip-neo-120-072",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O3",
+      "text": "Rarely notice my emotional reactions.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 73,
+      "id": "ipip-neo-120-073",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A3",
+      "text": "Am indifferent to the feelings of others.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 74,
+      "id": "ipip-neo-120-074",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C3",
+      "text": "Break rules.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 75,
+      "id": "ipip-neo-120-075",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N4",
+      "text": "Only feel comfortable with friends.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 76,
+      "id": "ipip-neo-120-076",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E4",
+      "text": "Do a lot in my spare time.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 77,
+      "id": "ipip-neo-120-077",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O4",
+      "text": "Dislike changes.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 78,
+      "id": "ipip-neo-120-078",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A4",
+      "text": "Insult people.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 79,
+      "id": "ipip-neo-120-079",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C4",
+      "text": "Do just enough work to get by.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 80,
+      "id": "ipip-neo-120-080",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N5",
+      "text": "Easily resist temptations.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 81,
+      "id": "ipip-neo-120-081",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E5",
+      "text": "Enjoy being reckless.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 82,
+      "id": "ipip-neo-120-082",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O5",
+      "text": "Have difficulty understanding abstract ideas.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 83,
+      "id": "ipip-neo-120-083",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A5",
+      "text": "Have a high opinion of myself.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 84,
+      "id": "ipip-neo-120-084",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C5",
+      "text": "Waste my time.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 85,
+      "id": "ipip-neo-120-085",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N6",
+      "text": "Feel that I'm unable to deal with things.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 86,
+      "id": "ipip-neo-120-086",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E6",
+      "text": "Love life.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 87,
+      "id": "ipip-neo-120-087",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O6",
+      "text": "Tend to vote for conservative political candidates.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 88,
+      "id": "ipip-neo-120-088",
+      "reverseKeyed": true,
+      "contentNote": "Contains culture-dependent political or moral-value wording. Permit skip; do not infer political identity."
+    },
+    {
+      "facet": "A6",
+      "text": "Am not interested in other people's problems.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 89,
+      "id": "ipip-neo-120-089",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C6",
+      "text": "Rush into things.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 90,
+      "id": "ipip-neo-120-090",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N1",
+      "text": "Get stressed out easily.",
+      "key": 1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 91,
+      "id": "ipip-neo-120-091",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "E1",
+      "text": "Keep others at a distance.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 92,
+      "id": "ipip-neo-120-092",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O1",
+      "text": "Like to get lost in thought.",
+      "key": 1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 93,
+      "id": "ipip-neo-120-093",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "A1",
+      "text": "Distrust people.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 94,
+      "id": "ipip-neo-120-094",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C1",
+      "text": "Know how to get things done.",
+      "key": 1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 95,
+      "id": "ipip-neo-120-095",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "N2",
+      "text": "Am not easily annoyed.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 96,
+      "id": "ipip-neo-120-096",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E2",
+      "text": "Avoid crowds.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 97,
+      "id": "ipip-neo-120-097",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O2",
+      "text": "Do not enjoy going to art museums.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 98,
+      "id": "ipip-neo-120-098",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A2",
+      "text": "Obstruct others' plans.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 99,
+      "id": "ipip-neo-120-099",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C2",
+      "text": "Leave my belongings around.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 100,
+      "id": "ipip-neo-120-100",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N3",
+      "text": "Feel comfortable with myself.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 101,
+      "id": "ipip-neo-120-101",
+      "reverseKeyed": true,
+      "contentNote": "Historical facet label is Depression. This is not a clinical depression screen or diagnosis."
+    },
+    {
+      "facet": "E3",
+      "text": "Wait for others to lead the way.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 102,
+      "id": "ipip-neo-120-102",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O3",
+      "text": "Don't understand people who get emotional.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 103,
+      "id": "ipip-neo-120-103",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A3",
+      "text": "Take no time for others.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 104,
+      "id": "ipip-neo-120-104",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C3",
+      "text": "Break my promises.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 105,
+      "id": "ipip-neo-120-105",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N4",
+      "text": "Am not bothered by difficult social situations.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 106,
+      "id": "ipip-neo-120-106",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E4",
+      "text": "Like to take it easy.",
+      "key": -1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 107,
+      "id": "ipip-neo-120-107",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "O4",
+      "text": "Am attached to conventional ways.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 108,
+      "id": "ipip-neo-120-108",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A4",
+      "text": "Get back at others.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 109,
+      "id": "ipip-neo-120-109",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C4",
+      "text": "Put little time and effort into my work.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 3,
+      "publishedItemNumber": 110,
+      "id": "ipip-neo-120-110",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N5",
+      "text": "Am able to control my cravings.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 111,
+      "id": "ipip-neo-120-111",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E5",
+      "text": "Act wild and crazy.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 112,
+      "id": "ipip-neo-120-112",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O5",
+      "text": "Am not interested in theoretical discussions.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 113,
+      "id": "ipip-neo-120-113",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "A5",
+      "text": "Boast about my virtues.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 114,
+      "id": "ipip-neo-120-114",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C5",
+      "text": "Have difficulty starting tasks.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 115,
+      "id": "ipip-neo-120-115",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "N6",
+      "text": "Remain calm under pressure.",
+      "key": -1,
+      "domain": "N",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 116,
+      "id": "ipip-neo-120-116",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "E6",
+      "text": "Look at the bright side of life.",
+      "key": 1,
+      "domain": "E",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 117,
+      "id": "ipip-neo-120-117",
+      "reverseKeyed": false
+    },
+    {
+      "facet": "O6",
+      "text": "Believe that we should be tough on crime.",
+      "key": -1,
+      "domain": "O",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 118,
+      "id": "ipip-neo-120-118",
+      "reverseKeyed": true,
+      "contentNote": "Contains culture-dependent political or moral-value wording. Permit skip; do not infer political identity."
+    },
+    {
+      "facet": "A6",
+      "text": "Try not to think about the needy.",
+      "key": -1,
+      "domain": "A",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 119,
+      "id": "ipip-neo-120-119",
+      "reverseKeyed": true
+    },
+    {
+      "facet": "C6",
+      "text": "Act without thinking.",
+      "key": -1,
+      "domain": "C",
+      "sourceFacetPosition": 4,
+      "publishedItemNumber": 120,
+      "id": "ipip-neo-120-120",
+      "reverseKeyed": true
+    }
+  ]
+}

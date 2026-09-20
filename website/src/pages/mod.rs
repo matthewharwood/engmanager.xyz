@@ -3,6 +3,7 @@ pub mod checkout;
 pub mod coach;
 pub mod homepage;
 pub mod not_found;
+pub mod personality;
 pub mod search;
 pub mod shell;
 pub mod shop;

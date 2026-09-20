@@ -1,0 +1,4 @@
+*.pdf binary
+*.wasm binary
+# Preserve upstream vendored source bytes, including their whitespace.
+website/assets/personality/**/vendor/** -whitespace

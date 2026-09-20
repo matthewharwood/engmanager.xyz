@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-09-19",
+  "assets": [
+    {
+      "file": "report-ready.mp3",
+      "bytes": 24703,
+      "sha256": "d201c8828a9d50cb36db949be0bf6e12c55707e311aeefbab6a47fa76c432ba3",
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bit_rate": "128000"
+          }
+        ],
+        "format": {
+          "duration": "1.480000",
+          "size": "24703"
+        }
+      }
+    },
+    {
+      "file": "section-complete.mp3",
+      "bytes": 10493,
+      "sha256": "dba0f1c55839e2543d5f615eb21e583d7a70ae4a84894da7abef83386532f310",
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bit_rate": "128000"
+          }
+        ],
+        "format": {
+          "duration": "0.600000",
+          "size": "10493"
+        }
+      }
+    },
+    {
+      "file": "six-lenses-hero.png",
+      "bytes": 2915337,
+      "sha256": "dfc4087cbbe73f0c3ed4e6a48afa9d3551753e4691a8e3b16c665e1b7017b50e"
+    },
+    {
+      "file": "work-interests.png",
+      "bytes": 2884598,
+      "sha256": "fd0ea034992515a2af7989403a3355ac382020b8a041cd29f487784d9281d501"
+    }
+  ]
+}

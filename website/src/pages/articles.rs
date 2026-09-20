@@ -479,6 +479,9 @@ pub fn warm_article_render_cache() {
 }
 
 pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> Response {
+    if slug == "big-personality" {
+        return super::personality::article().await;
+    }
     let article = ARTICLES.iter().position(|a| a.slug == slug);
     match article {
         Some(article_index) => {

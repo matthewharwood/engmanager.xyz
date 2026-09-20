@@ -83,6 +83,11 @@ static ASSET_URL_CACHE: LazyLock<RwLock<HashMap<String, String>>> =
 // or doesn't have an extension, so the request still 404s predictably
 // rather than silently rewriting to something else.
 pub fn asset_url(path: &str) -> String {
+    // Assessment releases are explicit, immutable directories. Never manufacture
+    // a hash alias that could silently resolve to different instrument bytes.
+    if path.starts_with("personality/") {
+        return format!("/assets/{path}");
+    }
     // Debug builds bypass the memo entirely (release-only-memo, the same
     // posture as the article render cache in pages/articles.rs): rust-embed
     // reads from disk per call there, so a memoized hash would pin the OLD
@@ -192,6 +197,25 @@ pub(crate) async fn sw_handler() -> Response {
     }
 }
 
+/// Assessment worker has a narrower scope and a separate cache namespace.
+pub(crate) async fn personality_sw_handler() -> Response {
+    match Assets::get("personality/v1/sw.js") {
+        Some(file) => (
+            [
+                (header::CONTENT_TYPE, "application/javascript".to_string()),
+                (header::CACHE_CONTROL, "no-cache, max-age=0".to_string()),
+                (
+                    HeaderName::from_static("service-worker-allowed"),
+                    "/personality/".to_string(),
+                ),
+            ],
+            embedded_body(file.data),
+        )
+            .into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
 pub(crate) async fn offline_handler() -> Response {
     (
         [
@@ -210,9 +234,13 @@ pub(crate) async fn asset_handler(Path(path): Path<String>) -> Response {
     // Try the hashed form first (rewriting `styles.HASH.css` → `styles.css`);
     // fall back to the literal path so flat URLs (fonts in CSS, Markdown
     // images) keep resolving.
-    let file = strip_asset_hash(&path)
-        .and_then(|stripped| lookup_asset(&stripped))
-        .or_else(|| lookup_asset(&path));
+    let file = if path.starts_with("personality/") {
+        lookup_asset(&path)
+    } else {
+        strip_asset_hash(&path)
+            .and_then(|stripped| lookup_asset(&stripped))
+            .or_else(|| lookup_asset(&path))
+    };
 
     match file {
         Some(file) => {
@@ -222,7 +250,11 @@ pub(crate) async fn asset_handler(Path(path): Path<String>) -> Response {
             // the browser. `immutable` tells the browser to skip revalidation.
             // Safe under hashed URLs because the URL itself changes whenever
             // the bytes change.
-            let cache_control = "public, max-age=31536000, immutable";
+            let cache_control = if cfg!(debug_assertions) && path.starts_with("personality/") {
+                "no-cache, max-age=0"
+            } else {
+                "public, max-age=31536000, immutable"
+            };
             (
                 [
                     (header::CONTENT_TYPE, mime.to_string()),

@@ -1,5 +1,6 @@
-//! End-to-end: every article on the blog carries the coaching call to action,
+//! End-to-end: standard blog articles carry the coaching call to action,
 //! and it sits UNDER the next-up pagination.
+//! The private personality introduction instead leads into the questionnaire.
 //!
 //! Black box on purpose. The CTA's whole job is to appear on every article a
 //! reader can actually reach, so it is checked by fetching every one of those
@@ -62,6 +63,14 @@ async fn every_article_ends_with_the_coaching_call_to_action() {
             .unwrap_or_else(|error| panic!("GET {path}: {error}"));
         assert_eq!(response.status(), StatusCode::OK, "GET {path}");
         let html = response.text().await.expect("body");
+
+        if slug == "big-personality" {
+            assert!(html.contains("data-personality-route=\"article\""));
+            assert!(html.contains("href=\"/personality/prepare\""));
+            assert!(!html.contains("class=\"article-coach\""));
+            assert!(!html.contains("experiences.js"));
+            continue;
+        }
 
         let cta = html
             .find(r#"<aside class="article-coach""#)
