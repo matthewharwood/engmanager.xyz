@@ -1,0 +1,12 @@
+{
+  "name": "engmanager-personality-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test personality-core.test.mjs personality-report.test.mjs personality-offline.test.mjs personality-enhancement.test.mjs personality-ai-runtime.test.mjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.4"
+  },
+  "engines": { "node": ">=22" }
+}

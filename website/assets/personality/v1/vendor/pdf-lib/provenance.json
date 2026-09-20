@@ -1,0 +1,40 @@
+{
+  "name": "pdf-lib",
+  "version": "1.17.1",
+  "license": "MIT",
+  "source": "https://github.com/Hopding/pdf-lib/tree/v1.17.1",
+  "artifact": "pdf-lib.min.mjs",
+  "sha256": "72c052d97b4d5d9fa6cdbdcb7ad709f03d4ddb1122390cb3afeba4d88651d969",
+  "additionalDependencies": [
+    {
+      "name": "@pdf-lib/fontkit",
+      "version": "1.1.1",
+      "license": "MIT; see FONTKIT-README.md",
+      "source": "https://registry.npmjs.org/@pdf-lib/fontkit/-/fontkit-1.1.1.tgz",
+      "modification": "Bare pako import rewritten to the adjacent vendored module."
+    },
+    {
+      "name": "pako",
+      "version": "1.0.11",
+      "license": "MIT AND Zlib; see PAKO-LICENSE",
+      "modification": "Original UMD bundle wrapped in a module-local CommonJS export shim."
+    }
+  ],
+  "fonts": "Static instances of Atkinson Hyperlegible Next, Source Serif 4, and JetBrains Mono; retain the adjacent OFL notices.",
+  "files": {
+    "LICENSE.md": "f2c9fc00fdb66eb99ac156ba52d734af66d8d309f65753ae809ad34ee2883bcb",
+    "SOURCE-SERIF-OFL.txt": "e10247b156f9d26f268773f29f25c5a3084e68d5b447809863ef79096e8df27e",
+    "fontkit.min.mjs": "b58620f5a3ce94a379bb4caaa0a0965824d2942c7fef729fbe43fb0ccde6683f",
+    "mono.ttf": "19b62d33822a9931faf4b3cba0b9dd4ddb59b7f503f1349ce3f4e9f8751f91c8",
+    "fontkit-package.json": "42b7a756ea4c11abfa664ffe9f9b67c1e30e564b5e2fb6db5b1775dac3eabb35",
+    "body.ttf": "799fdcfe06e2ff7362fb76b2e129d273be6d0dfabe7d6db46afce334b5dcd85b",
+    "pako.mjs": "4440f56857a19be8180a645b1cb430c6649361c2d3aba58446c4a380093590dc",
+    "PAKO-LICENSE": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539",
+    "pdf-lib.min.mjs": "72c052d97b4d5d9fa6cdbdcb7ad709f03d4ddb1122390cb3afeba4d88651d969",
+    "bold.ttf": "62e04430c328d943601d0fec080a63b4fa3a0351c7d14cef571e4727a3d815b5",
+    "FONTKIT-README.md": "7315fcc54511f5ffc906969c39333f93cd47f5217ab014fe45acff14bd5ec4c0",
+    "ATKINSON-OFL.txt": "474a034e99845062f661855caaa505880d0e9009deddc2727a92795eab374955",
+    "JETBRAINS-OFL.txt": "bb1c26eb6fe1839e3759548777c8a35b9495ce4878a4b833b1b63d43ff313a4b",
+    "serif.ttf": "1c1362853dfb07e4e673e927abc3f6fc2dcdbb45aa9b272836ca1b6a831c9d94"
+  }
+}

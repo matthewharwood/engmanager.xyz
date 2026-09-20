@@ -23,6 +23,9 @@ pub mod routes {
     pub const ROOT: &str = "/";
     pub const ARTICLES_INDEX: &str = "/articles/";
     pub const ARTICLE_DETAIL: &str = "/articles/{slug}";
+    pub const PERSONALITY: &str = "/personality";
+    pub const PERSONALITY_STEP: &str = "/personality/{step}";
+    pub const PERSONALITY_WORKER: &str = "/personality/sw.js";
     pub const SEARCH: &str = "/search";
     pub const SEARCH_TYPEAHEAD: &str = "/api/search/typeahead";
     pub const COACHING: &str = "/coaching";
@@ -46,6 +49,12 @@ pub fn build_router(state: AppState) -> Router {
         .route(routes::ROOT, get(root_handler))
         .route(routes::ARTICLES_INDEX, get(pages::articles::index))
         .route(routes::ARTICLE_DETAIL, get(pages::articles::detail))
+        .route(routes::PERSONALITY, get(pages::personality::redirect))
+        .route(routes::PERSONALITY_STEP, get(pages::personality::page))
+        .route(
+            routes::PERSONALITY_WORKER,
+            get(assets::personality_sw_handler),
+        )
         .route(routes::SEARCH, get(pages::search::page))
         .route(routes::SEARCH_TYPEAHEAD, get(pages::search::typeahead))
         .route(routes::COACHING, get(pages::coach::redirect))
@@ -116,6 +125,9 @@ async fn root_handler(
 // Host dispatch deliberately keeps the handler-calls-handler pattern from the
 // pre-refactor main.rs (P1 moves code, it does not redesign the dispatch).
 async fn fallback_handler(State(state): State<AppState>, headers: HeaderMap, uri: Uri) -> Response {
+    if pages::personality::is_boundary(uri.path()) {
+        return pages::personality::not_found();
+    }
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
@@ -220,6 +232,141 @@ mod tests {
 
         let response = get(&router, SITE_HOST, "/definitely-not-a-page").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn personality_routes_enforce_the_private_document_boundary() {
+        let router = test_router().await;
+        let redirect = get(&router, SITE_HOST, "/personality").await;
+        assert_eq!(redirect.status(), StatusCode::TEMPORARY_REDIRECT);
+        assert_eq!(
+            header_str(&redirect, "location"),
+            Some("/personality/prepare")
+        );
+        for (step, _) in crate::pages::personality::STEPS {
+            let path = format!("/personality/{step}");
+            let response = get(&router, SITE_HOST, &path).await;
+            assert_eq!(response.status(), StatusCode::OK, "{path}");
+            assert_eq!(header_str(&response, "cache-control"), Some("no-store"));
+            assert_eq!(
+                header_str(&response, "referrer-policy"),
+                Some("no-referrer")
+            );
+            assert!(
+                header_str(&response, "content-security-policy")
+                    .is_some_and(|csp| csp.contains("script-src 'self' 'wasm-unsafe-eval';")
+                        && csp.contains("connect-src 'self';")
+                        && !csp.contains("https:"))
+            );
+            assert!(header_str(&response, "content-security-policy-report-only").is_none());
+            assert!(header_str(&response, "cloudflare-cdn-cache-control").is_none());
+            let body = body_string(response).await;
+            assert!(body.contains(&format!("data-personality-route=\"{step}\"")));
+            assert!(!body.contains("__engNav"));
+            assert!(!body.contains("experiences.js"));
+            assert!(!body.contains("fonts.googleapis"));
+        }
+        for path in ["/personality/unknown", "/personality/unknown/nested"] {
+            let response = get(&router, SITE_HOST, path).await;
+            assert_eq!(response.status(), StatusCode::NOT_FOUND);
+            assert_eq!(header_str(&response, "cache-control"), Some("no-store"));
+            let body = body_string(response).await;
+            assert!(body.contains("data-personality-route=\"not-found\""));
+        }
+    }
+
+    #[tokio::test]
+    async fn personality_ai_worker_has_scoped_wasm_permissions_and_exact_asset_paths() {
+        let router = test_router().await;
+        let response = get(&router, SITE_HOST, "/assets/personality/ai/v1/worker.js").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        let csp = header_str(&response, "content-security-policy").expect("enforced worker policy");
+        assert!(csp.contains("script-src 'self' 'wasm-unsafe-eval';"));
+        assert!(csp.contains("connect-src 'self';"));
+        assert!(!csp.contains("https:"));
+        assert!(!csp.contains("'unsafe-eval'"));
+        assert_eq!(
+            header_str(&response, "referrer-policy"),
+            Some("no-referrer")
+        );
+        assert!(header_str(&response, "content-security-policy-report-only").is_none());
+        assert_eq!(
+            get(
+                &router,
+                SITE_HOST,
+                "/assets/personality/ai/v1/worker.deadbeef.js"
+            )
+            .await
+            .status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            get(
+                &router,
+                SITE_HOST,
+                "/assets/personality/ai/v1/model.litertlm"
+            )
+            .await
+            .status(),
+            StatusCode::NOT_FOUND
+        );
+    }
+
+    #[tokio::test]
+    async fn personality_article_is_indexed_but_uses_the_reduced_shell() {
+        let router = test_router().await;
+        let response = get(&router, SITE_HOST, "/articles/big-personality").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&response, "referrer-policy"),
+            Some("no-referrer")
+        );
+        let body = body_string(response).await;
+        assert!(body.contains("data-personality-route=\"article\""));
+        assert!(body.contains("Creating value and communicating value"));
+        assert!(body.contains("/personality/prepare"));
+        assert!(!body.contains("speculationrules"));
+        assert!(!body.contains("__engNav"));
+        let sitemap = body_string(get(&router, SITE_HOST, "/sitemap.xml").await).await;
+        assert!(sitemap.contains("https://engmanager.xyz/articles/big-personality"));
+        let search = body_string(get(&router, SITE_HOST, "/search?q=Six-Seven").await).await;
+        assert!(search.contains("/articles/big-personality"));
+        let encoded = get(&router, SITE_HOST, "/articles/big%2Dpersonality").await;
+        assert_eq!(encoded.status(), StatusCode::OK);
+        assert_eq!(header_str(&encoded, "referrer-policy"), Some("no-referrer"));
+        assert!(header_str(&encoded, "content-security-policy").is_some());
+    }
+
+    #[tokio::test]
+    async fn personality_assets_resolve_only_exact_release_paths() {
+        let router = test_router().await;
+        assert_eq!(
+            asset_url("personality/v1/app.mjs"),
+            "/assets/personality/v1/app.mjs"
+        );
+        let module = get(&router, SITE_HOST, "/assets/personality/v1/core.mjs").await;
+        assert_eq!(module.status(), StatusCode::OK);
+        assert!(
+            header_str(&module, "content-type").is_some_and(|mime| mime.contains("javascript"))
+        );
+        assert_eq!(
+            header_str(&module, "cache-control"),
+            Some(if cfg!(debug_assertions) {
+                "no-cache, max-age=0"
+            } else {
+                "public, max-age=31536000, immutable"
+            })
+        );
+        for path in [
+            "/assets/personality/v999/app.mjs",
+            "/assets/personality/v1/app.12345678.mjs",
+            "/assets/personality/v1/core.12345678.mjs",
+        ] {
+            assert_eq!(
+                get(&router, SITE_HOST, path).await.status(),
+                StatusCode::NOT_FOUND
+            );
+        }
     }
 
     // /checkout is host-partitioned: the cart lives in shop-origin

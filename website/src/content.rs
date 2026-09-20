@@ -312,6 +312,16 @@ pub struct Article {
 
 const ARTICLE_LIST: &[Article] = &[
     Article {
+        slug: "big-personality",
+        title: "The Big Six-Seven: Understand Yourself Before You Perform Yourself",
+        title_alias: None,
+        date: ArticleDate::new(2026, 9, 19),
+        summary: "Creating value and communicating value are different skills. A private, local-first guide to Big Five personality, work interests, and personal values for early-career engineers and product people.",
+        indexed: true,
+        category: Category::EngineeringLeadership,
+        tags: &[Tag::Community, Tag::Mentorship, Tag::LocalFirst],
+    },
+    Article {
         slug: "the-execution-marketplace",
         title: "The Execution Marketplace: A Three-Sided Order Book for Small Business",
         title_alias: None,

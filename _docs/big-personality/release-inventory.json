@@ -1,0 +1,24 @@
+{
+  "kind": "research-package-instrument-inventory",
+  "version": "0.3.0",
+  "date": "2026-09-19",
+  "status": "not-a-deployed-instrument-release",
+  "banks": [
+    {
+      "path": "question-bank.json",
+      "bytes": 50274,
+      "sha256": "b21235e5305b9a6c10d040d9535ff13c48bfee37ab410b6f0738601c1d2fa5f9"
+    },
+    {
+      "path": "extension-question-bank.json",
+      "bytes": 49100,
+      "sha256": "79ae5fe37236f8053ea54589dbac3b3362ff767428578728685ae92273ddfd07"
+    }
+  ],
+  "scoredItemCount": 170,
+  "preview": {
+    "release": "design-0.3",
+    "protocol": "p-v1",
+    "status": "synthetic-preview-not-production-snapshot-codec"
+  }
+}

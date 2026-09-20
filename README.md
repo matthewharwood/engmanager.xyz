@@ -23,12 +23,32 @@ Visit <http://127.0.0.1:3000>. Routes:
 - `GET /` → homepage
 - `GET /articles/` → article index
 - `GET /articles/{slug}` → individual article
+- `GET /articles/big-personality` → The Big Six-Seven introduction, rendered in its private assessment shell
+- `GET /personality` → redirect to `/personality/prepare`
+- `GET /personality/{prepare,test,review,report,share,library}` → allowlisted local-first assessment screens; unknown steps return 404
+- `GET /personality/sw.js` → the assessment service worker, scoped to `/personality/`
 - `GET /health` → `OK`
 - `GET /coaching` → 308 to `https://coach.engmanager.xyz/`
 - `GET /` on `coach.localhost:3000` → 1:1 coaching booking page
   (see `_docs/coach-subdomain-runbook.md`)
 
 No database, no env vars required.
+
+The personality experience uses native browser modules under
+`website/assets/personality/v1/`, embedded by Rust with no separate Node build.
+Its route map, architecture, privacy boundaries, release rules, and verification
+record are in [`_docs/big-personality/production-implementation.md`](_docs/big-personality/production-implementation.md).
+Run `npm ci --prefix scripts --ignore-scripts` followed by `npm test --prefix scripts`
+for the scoring, IndexedDB, sharing, PDF, and offline checks. Before publishing a
+new immutable release, run `node scripts/personality-release.mjs` and rerun tests.
+These are exact, versioned asset paths: an unknown filename or invented hash
+returns 404. Publish changed assessment releases under a new version directory
+rather than replacing an immutable release. The Rust shell contains no global
+RUM, soft router, speculative preloading, remote fonts, or remote scripts. It
+enforces a same-origin CSP and `Referrer-Policy: no-referrer`. Questionnaire HTML
+is `no-store`; answers and reports are stored only in browser IndexedDB. The
+root blog service worker bypasses the assessment and preserves its separately
+scoped worker and cache namespace. Share parameters never enter the blog cache.
 
 ### Live reload (recommended for development)
 

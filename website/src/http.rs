@@ -164,7 +164,13 @@ fn directive_value<'a>(cache_control: &'a str, directive: &str) -> Option<&'a st
 }
 
 pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Response {
+    let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
     let mut response = next.run(req).await;
+    let personality_boundary = personality_boundary
+        || response
+            .extensions()
+            .get::<crate::pages::personality::PrivateDocument>()
+            .is_some();
     let headers = response.headers_mut();
     headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,
@@ -172,7 +178,11 @@ pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Re
     );
     headers.insert(
         header::REFERRER_POLICY,
-        HeaderValue::from_static("strict-origin-when-cross-origin"),
+        HeaderValue::from_static(if personality_boundary {
+            "no-referrer"
+        } else {
+            "strict-origin-when-cross-origin"
+        }),
     );
     headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
     headers.insert(
@@ -193,6 +203,14 @@ pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Re
             "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://calendar.google.com; media-src 'self'; worker-src 'self'; manifest-src 'self'",
         ),
     );
+    if personality_boundary {
+        // This is enforced, with no reporting endpoint. Local data never needs
+        // a CDN, analytics SDK, inline script, embedded frame, or remote model.
+        headers.remove(header::CONTENT_SECURITY_POLICY_REPORT_ONLY);
+        headers.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(
+            "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'",
+        ));
+    }
     response
 }
 

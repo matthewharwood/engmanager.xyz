@@ -72,6 +72,8 @@ Cargo.lock
 
 node_modules/
 dist/
+!website/assets/personality/ai/v1/vendor/litert-lm/dist/
+!website/assets/personality/ai/v1/vendor/litert-lm/dist/**
 build/
 .cache/
 
@@ -97,3 +99,9 @@ Desktop.ini
 # Linux
 .Trash-*
 *~
+
+# Private supplied assessment and generated local QA artifacts.
+/_docs/big5.pdf
+/output/
+__pycache__/
+*.pyc

@@ -6,7 +6,7 @@
 // Served at /sw.js by the Axum handler (see website/src/main.rs) with
 // `Service-Worker-Allowed: /` so it can scope the whole origin.
 
-const CACHE = "engmanager-v4";
+const CACHE = "engmanager-v5";
 const PRECACHE_URLS = ["/offline.html"];
 
 self.addEventListener("install", (event) => {
@@ -26,7 +26,7 @@ self.addEventListener("activate", (event) => {
                 await self.registration.navigationPreload.enable();
             }
             const keys = await caches.keys();
-            await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+            await Promise.all(keys.filter((k) => /^engmanager-v\d+$/.test(k) && k !== CACHE).map((k) => caches.delete(k)));
             await self.clients.claim();
         })(),
     );
@@ -37,6 +37,9 @@ self.addEventListener("fetch", (event) => {
     if (request.method !== "GET") return;
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
+    // The narrower /personality/ worker owns these documents and public
+    // release assets. The blog worker must never cache share-query URLs.
+    if (url.pathname === "/personality" || url.pathname.startsWith("/personality/") || url.pathname.startsWith("/assets/personality/")) return;
 
     if (request.mode === "navigate") {
         event.respondWith(networkFirstNavigation(event));

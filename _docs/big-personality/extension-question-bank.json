@@ -1,0 +1,1250 @@
+{
+  "schemaVersion": 2,
+  "bankId": "big-personality-extensions-en",
+  "bankVersion": "0.2.0",
+  "language": "en",
+  "createdAt": "2026-09-19",
+  "counts": {
+    "miniIpItems": 30,
+    "twiviItems": 20,
+    "totalExtensionRatingItems": 50,
+    "corePersonalityItems": 120,
+    "totalAssessmentRatingItems": 170,
+    "unscoredAppendixPrompts": 24
+  },
+  "provenance": [
+    {
+      "id": "onet_mini_ip_2016_appendix_a",
+      "title": "Development of an O*NET Mini Interest Profiler (Mini-IP) for Mobile Devices: Psychometric Characteristics",
+      "authors": [
+        "James Rounds",
+        "Colin Wee Jian Ming",
+        "Mengyang Cao",
+        "Chelsea Song",
+        "Phil Lewis"
+      ],
+      "date": "2016-03-16",
+      "url": "https://www.onetcenter.org/dl_files/Mini-IP.pdf",
+      "location": "Appendix A, printed pages 19-20 / PDF pages 18-19; scoring printed page 13 / PDF page 12",
+      "wording": "All 30 activity items transcribed without change; whitespace-only line joins. Item 6 uses the updated final Appendix A wording.",
+      "license": "CC BY-ND 4.0 for the complete unmodified assessment tool",
+      "licenseUrl": "https://creativecommons.org/licenses/by-nd/4.0/",
+      "licenseOptionsUrl": "https://www.onetcenter.org/license_tools.html",
+      "developerLicenseUrl": "https://www.onetcenter.org/license_toolsdev.html",
+      "attribution": "This page includes information from the O*NET Career Exploration Tools by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). Used under the CC BY-ND 4.0 license. O*NET® is a trademark of USDOL/ETA.",
+      "releaseGate": "Retain the complete unmodified instrument, instructions, response labels, scoring, career-exploration purpose, and attribution. Verify the full administration against official materials before public release. Content or purpose adaptations require compliance with the O*NET Tools Developer License, including applicable validation obligations. This JSON is an implementation inventory, not a license certification."
+    },
+    {
+      "id": "twivi_gosling_official_2016",
+      "title": "Twenty Item Values Inventory (TwIVI): Administration and Scoring Instructions",
+      "authors": [
+        "Carson J. Sandy",
+        "Samuel D. Gosling",
+        "Shalom H. Schwartz",
+        "Tim Koelkebeck"
+      ],
+      "publicationYear": 2016,
+      "url": "https://gosling.psy.utexas.edu/two-short-measures-of-values-tivi-and-twivi/",
+      "instrumentUrl": "https://gosling.psy.utexas.edu/wp-content/uploads/2016/12/TwIVI-TIVI-Administration-and-Scoring-Instructions.docx",
+      "instrumentFileSha256": "f799aaed88f606312918d7286d6f757eb89a0b97030156b755475091b3dd0e2c",
+      "validationPaperUrl": "https://doi.org/10.1080/00223891.2016.1231115",
+      "authorHostedPaperUrl": "https://gosling.psy.utexas.edu/wp-content/uploads/2016/12/Sandy-et-al-JPA-2016-Brief-values-measures.pdf",
+      "permission": "Author grants anyone use for any purpose without requesting permission, on the official instrument page. This is a permissive author statement, not an asserted CC or public-domain license.",
+      "permissionEvidenceQuote": "ANYONE CAN USE IT FOR ANY PURPOSE. NO NEED TO ASK ME FOR PERMISSION.",
+      "permissionVerifiedOn": "2026-09-19",
+      "wording": "All 20 source items extracted from official DOCX in published order. SourceText retains spelling and punctuation; display variants follow official preferred-pronoun recommendation. Do not rewrite content for workplace-specific administration.",
+      "attribution": "Sandy, C. J., Gosling, S. D., Schwartz, S. H., & Koelkebeck, T. (2016, published online). The development and validation of brief and ultrabrief measures of values. Journal of Personality Assessment. https://doi.org/10.1080/00223891.2016.1231115",
+      "evidenceBoundary": "Established brief measure of ten personal values. Two-item scales have limited precision, especially security and tradition. Not a clinical tool, seven-factor personality model, or validated tech-career classifier."
+    }
+  ],
+  "modules": [
+    {
+      "id": "work_interests",
+      "displayName": "Work Interests",
+      "instrumentName": "O*NET® Mini Interest Profiler",
+      "instrumentVersion": "2016 Appendix A; English; complete 30-item form",
+      "kind": "established_instrument",
+      "required": false,
+      "scoringVersion": "mini-ip-raw-zero-based-v1",
+      "instructionsImplementationNote": "Ask the reader how much they would like or dislike doing each activity. Implement the complete official administration instructions without changing the career-exploration purpose; the final wording is a release verification item. Do not ask about skill, pay, or current experience.",
+      "responseOptions": [
+        {
+          "value": 1,
+          "label": "Strongly Dislike",
+          "scoreValue": 0
+        },
+        {
+          "value": 2,
+          "label": "Dislike",
+          "scoreValue": 1
+        },
+        {
+          "value": 3,
+          "label": "Unsure",
+          "scoreValue": 2
+        },
+        {
+          "value": 4,
+          "label": "Like",
+          "scoreValue": 3
+        },
+        {
+          "value": 5,
+          "label": "Strongly Like",
+          "scoreValue": 4
+        }
+      ],
+      "domains": [
+        {
+          "id": "realistic",
+          "label": "Realistic",
+          "itemIds": [
+            "MIP001",
+            "MIP007",
+            "MIP013",
+            "MIP019",
+            "MIP025"
+          ]
+        },
+        {
+          "id": "investigative",
+          "label": "Investigative",
+          "itemIds": [
+            "MIP002",
+            "MIP008",
+            "MIP014",
+            "MIP020",
+            "MIP026"
+          ]
+        },
+        {
+          "id": "artistic",
+          "label": "Artistic",
+          "itemIds": [
+            "MIP003",
+            "MIP009",
+            "MIP015",
+            "MIP021",
+            "MIP027"
+          ]
+        },
+        {
+          "id": "social",
+          "label": "Social",
+          "itemIds": [
+            "MIP004",
+            "MIP010",
+            "MIP016",
+            "MIP022",
+            "MIP028"
+          ]
+        },
+        {
+          "id": "enterprising",
+          "label": "Enterprising",
+          "itemIds": [
+            "MIP005",
+            "MIP011",
+            "MIP017",
+            "MIP023",
+            "MIP029"
+          ]
+        },
+        {
+          "id": "conventional",
+          "label": "Conventional",
+          "itemIds": [
+            "MIP006",
+            "MIP012",
+            "MIP018",
+            "MIP024",
+            "MIP030"
+          ]
+        }
+      ],
+      "scoring": {
+        "inputRange": [
+          1,
+          5
+        ],
+        "scoreRange": [
+          0,
+          20
+        ],
+        "formula": "For each domain, sum(answer - 1) across its five items.",
+        "missingPolicy": "Do not impute. A final profile requires all 30 items answered. The complete module may be skipped.",
+        "reverseScoredItems": [],
+        "norms": null,
+        "percentiles": false,
+        "ties": "Preserve all ties; display full six-score vector.",
+        "flatProfile": "Describe no leading interest; do not force an interest code or compute profile correlation when variance is zero.",
+        "interpretation": "Interest endorsement only. Not ability, job suitability, diagnosis, or independent sixth personality factor."
+      },
+      "items": [
+        {
+          "id": "MIP001",
+          "sourceItemNumber": 1,
+          "order": 1,
+          "domain": "realistic",
+          "text": "Build kitchen cabinets",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP002",
+          "sourceItemNumber": 2,
+          "order": 2,
+          "domain": "investigative",
+          "text": "Develop a new medicine",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP003",
+          "sourceItemNumber": 3,
+          "order": 3,
+          "domain": "artistic",
+          "text": "Write books or plays",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP004",
+          "sourceItemNumber": 4,
+          "order": 4,
+          "domain": "social",
+          "text": "Help people with personal or emotional problems",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP005",
+          "sourceItemNumber": 5,
+          "order": 5,
+          "domain": "enterprising",
+          "text": "Manage a department within a large company",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP006",
+          "sourceItemNumber": 6,
+          "order": 6,
+          "domain": "conventional",
+          "text": "Install software across computers on a large network",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP007",
+          "sourceItemNumber": 7,
+          "order": 7,
+          "domain": "realistic",
+          "text": "Repair household appliances",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP008",
+          "sourceItemNumber": 8,
+          "order": 8,
+          "domain": "investigative",
+          "text": "Study ways to reduce water pollution",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP009",
+          "sourceItemNumber": 9,
+          "order": 9,
+          "domain": "artistic",
+          "text": "Compose or arrange music",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP010",
+          "sourceItemNumber": 10,
+          "order": 10,
+          "domain": "social",
+          "text": "Give career guidance to people",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP011",
+          "sourceItemNumber": 11,
+          "order": 11,
+          "domain": "enterprising",
+          "text": "Start your own business",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP012",
+          "sourceItemNumber": 12,
+          "order": 12,
+          "domain": "conventional",
+          "text": "Operate a calculator",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP013",
+          "sourceItemNumber": 13,
+          "order": 13,
+          "domain": "realistic",
+          "text": "Assemble electronic parts",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP014",
+          "sourceItemNumber": 14,
+          "order": 14,
+          "domain": "investigative",
+          "text": "Conduct chemical experiments",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP015",
+          "sourceItemNumber": 15,
+          "order": 15,
+          "domain": "artistic",
+          "text": "Create special effects for movies",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP016",
+          "sourceItemNumber": 16,
+          "order": 16,
+          "domain": "social",
+          "text": "Perform rehabilitation therapy",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP017",
+          "sourceItemNumber": 17,
+          "order": 17,
+          "domain": "enterprising",
+          "text": "Negotiate business contracts",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP018",
+          "sourceItemNumber": 18,
+          "order": 18,
+          "domain": "conventional",
+          "text": "Keep shipping and receiving records",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP019",
+          "sourceItemNumber": 19,
+          "order": 19,
+          "domain": "realistic",
+          "text": "Drive a truck to deliver packages to offices and homes",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP020",
+          "sourceItemNumber": 20,
+          "order": 20,
+          "domain": "investigative",
+          "text": "Examine blood samples using a microscope",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP021",
+          "sourceItemNumber": 21,
+          "order": 21,
+          "domain": "artistic",
+          "text": "Paint sets for plays",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP022",
+          "sourceItemNumber": 22,
+          "order": 22,
+          "domain": "social",
+          "text": "Do volunteer work at a non-profit organization",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP023",
+          "sourceItemNumber": 23,
+          "order": 23,
+          "domain": "enterprising",
+          "text": "Market a new line of clothing",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP024",
+          "sourceItemNumber": 24,
+          "order": 24,
+          "domain": "conventional",
+          "text": "Inventory supplies using a hand-held computer",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP025",
+          "sourceItemNumber": 25,
+          "order": 25,
+          "domain": "realistic",
+          "text": "Test the quality of parts before shipment",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP026",
+          "sourceItemNumber": 26,
+          "order": 26,
+          "domain": "investigative",
+          "text": "Develop a way to better predict the weather",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP027",
+          "sourceItemNumber": 27,
+          "order": 27,
+          "domain": "artistic",
+          "text": "Write scripts for movies or television shows",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP028",
+          "sourceItemNumber": 28,
+          "order": 28,
+          "domain": "social",
+          "text": "Teach a high-school class",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP029",
+          "sourceItemNumber": 29,
+          "order": 29,
+          "domain": "enterprising",
+          "text": "Sell merchandise at a department store",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        },
+        {
+          "id": "MIP030",
+          "sourceItemNumber": 30,
+          "order": 30,
+          "domain": "conventional",
+          "text": "Stamp, sort, and distribute mail for an organization",
+          "reverse": false,
+          "sourceId": "onet_mini_ip_2016_appendix_a"
+        }
+      ]
+    },
+    {
+      "id": "personal_values",
+      "displayName": "Personal Values",
+      "instrumentName": "Twenty Item Values Inventory (TwIVI)",
+      "instrumentVersion": "2016 official administration DOCX; English; complete 20-item form",
+      "kind": "established_instrument",
+      "required": false,
+      "scoringVersion": "twivi-pair-means-centered-v1",
+      "instructions": "Here we briefly describe some people. Please read each description and think about how much each person is or is not like you. Using a 6-point scale from “not like me at all” to “very much like me,” choose how similar the person is to you.",
+      "responsePrompt": "HOW MUCH LIKE YOU IS THIS PERSON?",
+      "responseOptions": [
+        {
+          "value": 1,
+          "label": "Not like me at all",
+          "scoreValue": 1
+        },
+        {
+          "value": 2,
+          "label": "Not like me",
+          "scoreValue": 2
+        },
+        {
+          "value": 3,
+          "label": "A little like me",
+          "scoreValue": 3
+        },
+        {
+          "value": 4,
+          "label": "Somewhat like me",
+          "scoreValue": 4
+        },
+        {
+          "value": 5,
+          "label": "Like me",
+          "scoreValue": 5
+        },
+        {
+          "value": 6,
+          "label": "Very much like me",
+          "scoreValue": 6
+        }
+      ],
+      "sourceResponsePresentationOrder": [
+        6,
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "pronounPolicy": {
+        "default": "they",
+        "allowed": [
+          "they",
+          "she",
+          "he"
+        ],
+        "purpose": "Optional portrait wording preference, not a demographic question.",
+        "sourcePermission": "Official author instructions recommend branching for preferred he/she/they pronouns.",
+        "persistInPublicShare": false
+      },
+      "domains": [
+        {
+          "id": "conformity",
+          "label": "Conformity",
+          "itemIds": [
+            "TWIVI001",
+            "TWIVI011"
+          ]
+        },
+        {
+          "id": "tradition",
+          "label": "Tradition",
+          "itemIds": [
+            "TWIVI002",
+            "TWIVI012"
+          ]
+        },
+        {
+          "id": "benevolence",
+          "label": "Benevolence",
+          "itemIds": [
+            "TWIVI003",
+            "TWIVI013"
+          ]
+        },
+        {
+          "id": "universalism",
+          "label": "Universalism",
+          "itemIds": [
+            "TWIVI004",
+            "TWIVI014"
+          ]
+        },
+        {
+          "id": "self_direction",
+          "label": "Self-Direction",
+          "itemIds": [
+            "TWIVI005",
+            "TWIVI015"
+          ]
+        },
+        {
+          "id": "stimulation",
+          "label": "Stimulation",
+          "itemIds": [
+            "TWIVI006",
+            "TWIVI016"
+          ]
+        },
+        {
+          "id": "hedonism",
+          "label": "Hedonism",
+          "itemIds": [
+            "TWIVI007",
+            "TWIVI017"
+          ]
+        },
+        {
+          "id": "achievement",
+          "label": "Achievement",
+          "itemIds": [
+            "TWIVI008",
+            "TWIVI018"
+          ]
+        },
+        {
+          "id": "power",
+          "label": "Power",
+          "itemIds": [
+            "TWIVI009",
+            "TWIVI019"
+          ]
+        },
+        {
+          "id": "security",
+          "label": "Security",
+          "itemIds": [
+            "TWIVI010",
+            "TWIVI020"
+          ]
+        }
+      ],
+      "scoring": {
+        "inputRange": [
+          1,
+          6
+        ],
+        "rawMeanRange": [
+          1,
+          6
+        ],
+        "rawPairSumRange": [
+          2,
+          12
+        ],
+        "centeredPriorityRange": [
+          -4.5,
+          4.5
+        ],
+        "primaryOutput": "Ten values with raw pair means and a separate within-person relative-priority view.",
+        "formula": "For each value d, rawMean[d] = (answer[d] + answer[d+10]) / 2. grandMean = sum(all 20 answers) / 20. centeredPriority[d] = rawMean[d] - grandMean.",
+        "canonicalIntegerFormula": "Store pairSum[d] and totalSum. rawMean=pairSum/2; grandMean=totalSum/20; centeredNumerator[d]=10*pairSum[d]-totalSum; centeredPriority=centeredNumerator/20.",
+        "centering": "The author specifies mean-centering all20 responses as one way to control response-level differences. This app uses it for the within-person priorities view; never treat it as norm-referencing.",
+        "missingPolicy": "A final values profile requires all20 valid answers. Missing is null, never imputed. Preserve progress and show completion only until complete; the entire module may be skipped. This is a conservative product completeness rule, not a published missing-data estimator.",
+        "reverseScoredItems": [],
+        "norms": null,
+        "percentiles": false,
+        "ties": "Preserve ties; do not assign a forced leading value or type.",
+        "flatProfile": "All ten centered priorities are zero. Explain no differentiated priorities in these responses; zero does not mean no values.",
+        "algebraicConstraint": "The ten centered priorities sum to zero, apart from display rounding; they are not independent scores. A single centered score can range from -4.5 to +4.5.",
+        "interpretation": "Relative priorities among ten measured values. A negative centered value is below that reader's mean endorsement, not rejection of the value or a moral deficit.",
+        "crossUserComparisons": "Not offered in v1. No population percentiles or diagnostic thresholds."
+      },
+      "items": [
+        {
+          "id": "TWIVI001",
+          "sourceItemNumber": 1,
+          "order": 1,
+          "domain": "conformity",
+          "sourceText": "S/he believes s/he should always show respect to his/her parents and to older people. It is important to him/her to be obedient",
+          "text": "They believe they should always show respect to their parents and to older people. It is important to them to be obedient",
+          "textByPronoun": {
+            "they": "They believe they should always show respect to their parents and to older people. It is important to them to be obedient",
+            "she": "She believes she should always show respect to her parents and to older people. It is important to her to be obedient",
+            "he": "He believes he should always show respect to his parents and to older people. It is important to him to be obedient"
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI002",
+          "sourceItemNumber": 2,
+          "order": 2,
+          "domain": "tradition",
+          "sourceText": "Religious belief is important to him/her. S/he tries hard to do what his religion requires.",
+          "text": "Religious belief is important to them. They try hard to do what their religion requires.",
+          "textByPronoun": {
+            "they": "Religious belief is important to them. They try hard to do what their religion requires.",
+            "she": "Religious belief is important to her. She tries hard to do what her religion requires.",
+            "he": "Religious belief is important to him. He tries hard to do what his religion requires."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI003",
+          "sourceItemNumber": 3,
+          "order": 3,
+          "domain": "benevolence",
+          "sourceText": "It's very important to him/her to help the people around him/her. S/he wants to care for their well-being.",
+          "text": "It's very important to them to help the people around them. They want to care for their well-being.",
+          "textByPronoun": {
+            "they": "It's very important to them to help the people around them. They want to care for their well-being.",
+            "she": "It's very important to her to help the people around her. She wants to care for their well-being.",
+            "he": "It's very important to him to help the people around him. He wants to care for their well-being."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI004",
+          "sourceItemNumber": 4,
+          "order": 4,
+          "domain": "universalism",
+          "sourceText": "S/he thinks it is important that every person in the world be treated equally. S/he believes everyone should have equal opportunities in life.",
+          "text": "They think it is important that every person in the world be treated equally. They believe everyone should have equal opportunities in life.",
+          "textByPronoun": {
+            "they": "They think it is important that every person in the world be treated equally. They believe everyone should have equal opportunities in life.",
+            "she": "She thinks it is important that every person in the world be treated equally. She believes everyone should have equal opportunities in life.",
+            "he": "He thinks it is important that every person in the world be treated equally. He believes everyone should have equal opportunities in life."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI005",
+          "sourceItemNumber": 5,
+          "order": 5,
+          "domain": "self_direction",
+          "sourceText": "S/he thinks it's important to be interested in things. S/he likes to be curious and to try to understand all sorts of things.",
+          "text": "They think it's important to be interested in things. They like to be curious and to try to understand all sorts of things.",
+          "textByPronoun": {
+            "they": "They think it's important to be interested in things. They like to be curious and to try to understand all sorts of things.",
+            "she": "She thinks it's important to be interested in things. She likes to be curious and to try to understand all sorts of things.",
+            "he": "He thinks it's important to be interested in things. He likes to be curious and to try to understand all sorts of things."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI006",
+          "sourceItemNumber": 6,
+          "order": 6,
+          "domain": "stimulation",
+          "sourceText": "S/he likes to take risks. S/he is always looking for adventures.",
+          "text": "They like to take risks. They are always looking for adventures.",
+          "textByPronoun": {
+            "they": "They like to take risks. They are always looking for adventures.",
+            "she": "She likes to take risks. She is always looking for adventures.",
+            "he": "He likes to take risks. He is always looking for adventures."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI007",
+          "sourceItemNumber": 7,
+          "order": 7,
+          "domain": "hedonism",
+          "sourceText": "S/he seeks every chance he can to have fun. It is important to him/her to do things that give him/her pleasure.",
+          "text": "They seek every chance they can to have fun. It is important to them to do things that give them pleasure.",
+          "textByPronoun": {
+            "they": "They seek every chance they can to have fun. It is important to them to do things that give them pleasure.",
+            "she": "She seeks every chance she can to have fun. It is important to her to do things that give her pleasure.",
+            "he": "He seeks every chance he can to have fun. It is important to him to do things that give him pleasure."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI008",
+          "sourceItemNumber": 8,
+          "order": 8,
+          "domain": "achievement",
+          "sourceText": "Getting ahead in life is important to him/her. S/he strives to do better than others.",
+          "text": "Getting ahead in life is important to them. They strive to do better than others.",
+          "textByPronoun": {
+            "they": "Getting ahead in life is important to them. They strive to do better than others.",
+            "she": "Getting ahead in life is important to her. She strives to do better than others.",
+            "he": "Getting ahead in life is important to him. He strives to do better than others."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI009",
+          "sourceItemNumber": 9,
+          "order": 9,
+          "domain": "power",
+          "sourceText": "S/he always wants to be the one who makes the decisions. S/he likes to be the leader.",
+          "text": "They always want to be the one who makes the decisions. They like to be the leader.",
+          "textByPronoun": {
+            "they": "They always want to be the one who makes the decisions. They like to be the leader.",
+            "she": "She always wants to be the one who makes the decisions. She likes to be the leader.",
+            "he": "He always wants to be the one who makes the decisions. He likes to be the leader."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI010",
+          "sourceItemNumber": 10,
+          "order": 10,
+          "domain": "security",
+          "sourceText": "It is important to him/her that things be organized and clean. S/he really does not like things to be a mess.",
+          "text": "It is important to them that things be organized and clean. They really do not like things to be a mess.",
+          "textByPronoun": {
+            "they": "It is important to them that things be organized and clean. They really do not like things to be a mess.",
+            "she": "It is important to her that things be organized and clean. She really does not like things to be a mess.",
+            "he": "It is important to him that things be organized and clean. He really does not like things to be a mess."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI011",
+          "sourceItemNumber": 11,
+          "order": 11,
+          "domain": "conformity",
+          "sourceText": "It is important to him/her to always behave properly. S/he wants to avoid doing anything people would say is wrong.",
+          "text": "It is important to them to always behave properly. They want to avoid doing anything people would say is wrong.",
+          "textByPronoun": {
+            "they": "It is important to them to always behave properly. They want to avoid doing anything people would say is wrong.",
+            "she": "It is important to her to always behave properly. She wants to avoid doing anything people would say is wrong.",
+            "he": "It is important to him to always behave properly. He wants to avoid doing anything people would say is wrong."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI012",
+          "sourceItemNumber": 12,
+          "order": 12,
+          "domain": "tradition",
+          "sourceText": "S/he thinks it is best to do things in traditional ways. It is important to him/her to keep up the customs s/he has learned.",
+          "text": "They think it is best to do things in traditional ways. It is important to them to keep up the customs they have learned.",
+          "textByPronoun": {
+            "they": "They think it is best to do things in traditional ways. It is important to them to keep up the customs they have learned.",
+            "she": "She thinks it is best to do things in traditional ways. It is important to her to keep up the customs she has learned.",
+            "he": "He thinks it is best to do things in traditional ways. It is important to him to keep up the customs he has learned."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI013",
+          "sourceItemNumber": 13,
+          "order": 13,
+          "domain": "benevolence",
+          "sourceText": "It is important to him/her to respond to the needs of others. S/he tries to support those s/he knows.",
+          "text": "It is important to them to respond to the needs of others. They try to support those they know.",
+          "textByPronoun": {
+            "they": "It is important to them to respond to the needs of others. They try to support those they know.",
+            "she": "It is important to her to respond to the needs of others. She tries to support those she knows.",
+            "he": "It is important to him to respond to the needs of others. He tries to support those he knows."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI014",
+          "sourceItemNumber": 14,
+          "order": 14,
+          "domain": "universalism",
+          "sourceText": "S/he believes all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to him/her.",
+          "text": "They believe all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to them.",
+          "textByPronoun": {
+            "they": "They believe all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to them.",
+            "she": "She believes all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to her.",
+            "he": "He believes all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to him."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI015",
+          "sourceItemNumber": 15,
+          "order": 15,
+          "domain": "self_direction",
+          "sourceText": "Thinking up new ideas and being creative is important to him/her. S/he likes to do things in his/her own original way.",
+          "text": "Thinking up new ideas and being creative is important to them. They like to do things in their own original way.",
+          "textByPronoun": {
+            "they": "Thinking up new ideas and being creative is important to them. They like to do things in their own original way.",
+            "she": "Thinking up new ideas and being creative is important to her. She likes to do things in her own original way.",
+            "he": "Thinking up new ideas and being creative is important to him. He likes to do things in his own original way."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI016",
+          "sourceItemNumber": 16,
+          "order": 16,
+          "domain": "stimulation",
+          "sourceText": "S/he thinks it is important to do lots of different things in life. S/he always looks for new things to try.",
+          "text": "They think it is important to do lots of different things in life. They always look for new things to try.",
+          "textByPronoun": {
+            "they": "They think it is important to do lots of different things in life. They always look for new things to try.",
+            "she": "She thinks it is important to do lots of different things in life. She always looks for new things to try.",
+            "he": "He thinks it is important to do lots of different things in life. He always looks for new things to try."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI017",
+          "sourceItemNumber": 17,
+          "order": 17,
+          "domain": "hedonism",
+          "sourceText": "S/he really wants to enjoy life. Having a good time is very important to him/her.",
+          "text": "They really want to enjoy life. Having a good time is very important to them.",
+          "textByPronoun": {
+            "they": "They really want to enjoy life. Having a good time is very important to them.",
+            "she": "She really wants to enjoy life. Having a good time is very important to her.",
+            "he": "He really wants to enjoy life. Having a good time is very important to him."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI018",
+          "sourceItemNumber": 18,
+          "order": 18,
+          "domain": "achievement",
+          "sourceText": "Being very successful is important to him/her. S/he likes to impress other people.",
+          "text": "Being very successful is important to them. They like to impress other people.",
+          "textByPronoun": {
+            "they": "Being very successful is important to them. They like to impress other people.",
+            "she": "Being very successful is important to her. She likes to impress other people.",
+            "he": "Being very successful is important to him. He likes to impress other people."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI019",
+          "sourceItemNumber": 19,
+          "order": 19,
+          "domain": "power",
+          "sourceText": "It is important to him/her to be in charge and tell others what to do. S/he wants people to do what s/he says.",
+          "text": "It is important to them to be in charge and tell others what to do. They want people to do what they say.",
+          "textByPronoun": {
+            "they": "It is important to them to be in charge and tell others what to do. They want people to do what they say.",
+            "she": "It is important to her to be in charge and tell others what to do. She wants people to do what she says.",
+            "he": "It is important to him to be in charge and tell others what to do. He wants people to do what he says."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        },
+        {
+          "id": "TWIVI020",
+          "sourceItemNumber": 20,
+          "order": 20,
+          "domain": "security",
+          "sourceText": "Having a stable government is important to him/her. S/he is concerned that the social order be protected.",
+          "text": "Having a stable government is important to them. They are concerned that the social order be protected.",
+          "textByPronoun": {
+            "they": "Having a stable government is important to them. They are concerned that the social order be protected.",
+            "she": "Having a stable government is important to her. She is concerned that the social order be protected.",
+            "he": "Having a stable government is important to him. He is concerned that the social order be protected."
+          },
+          "wordingStatus": "Exact source text retained; display changes only pronouns and required verb agreement as recommended by the author. Source punctuation retained.",
+          "reverse": false,
+          "sourceId": "twivi_gosling_official_2016"
+        }
+      ],
+      "reportCaveats": [
+        "Two items per value provide a brief estimate with limited precision; avoid fine-grained rankings of near-ties.",
+        "The tradition items include religion and custom; low scores do not imply absence of cultural attachment or meaning.",
+        "The security pair covers order/cleanliness and stable government; do not relabel this score as job security or financial caution.",
+        "Power items concern leadership/control; do not equate a score with ethical worth or leadership competence.",
+        "Work applications are editorial hypotheses to discuss after scoring; the items measure personal values generally.",
+        "The validation study does not demonstrate statistical independence from Big Five traits or RIASEC interests, nor validate this combined product."
+      ]
+    }
+  ],
+  "goldenFixtures": [
+    {
+      "id": "mini_all_strongly_dislike",
+      "answers": "111111111111111111111111111111",
+      "expected": {
+        "realistic": 0,
+        "investigative": 0,
+        "artistic": 0,
+        "social": 0,
+        "enterprising": 0,
+        "conventional": 0
+      },
+      "moduleId": "work_interests"
+    },
+    {
+      "id": "mini_all_unsure",
+      "answers": "333333333333333333333333333333",
+      "expected": {
+        "realistic": 10,
+        "investigative": 10,
+        "artistic": 10,
+        "social": 10,
+        "enterprising": 10,
+        "conventional": 10
+      },
+      "moduleId": "work_interests"
+    },
+    {
+      "id": "mini_all_strongly_like",
+      "answers": "555555555555555555555555555555",
+      "expected": {
+        "realistic": 20,
+        "investigative": 20,
+        "artistic": 20,
+        "social": 20,
+        "enterprising": 20,
+        "conventional": 20
+      },
+      "moduleId": "work_interests"
+    },
+    {
+      "id": "mini_first_only_strongly_like",
+      "answers": "511111111111111111111111111111",
+      "expected": {
+        "realistic": 4,
+        "investigative": 0,
+        "artistic": 0,
+        "social": 0,
+        "enterprising": 0,
+        "conventional": 0
+      },
+      "moduleId": "work_interests"
+    },
+    {
+      "id": "twivi_all_1",
+      "moduleId": "personal_values",
+      "answers": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "expectedRawMeans": {
+        "conformity": 1,
+        "tradition": 1,
+        "benevolence": 1,
+        "universalism": 1,
+        "self_direction": 1,
+        "stimulation": 1,
+        "hedonism": 1,
+        "achievement": 1,
+        "power": 1,
+        "security": 1
+      },
+      "expectedGrandMean": 1,
+      "expectedCenteredPriorities": {
+        "conformity": 0,
+        "tradition": 0,
+        "benevolence": 0,
+        "universalism": 0,
+        "self_direction": 0,
+        "stimulation": 0,
+        "hedonism": 0,
+        "achievement": 0,
+        "power": 0,
+        "security": 0
+      }
+    },
+    {
+      "id": "twivi_all_3",
+      "moduleId": "personal_values",
+      "answers": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "expectedRawMeans": {
+        "conformity": 3,
+        "tradition": 3,
+        "benevolence": 3,
+        "universalism": 3,
+        "self_direction": 3,
+        "stimulation": 3,
+        "hedonism": 3,
+        "achievement": 3,
+        "power": 3,
+        "security": 3
+      },
+      "expectedGrandMean": 3,
+      "expectedCenteredPriorities": {
+        "conformity": 0,
+        "tradition": 0,
+        "benevolence": 0,
+        "universalism": 0,
+        "self_direction": 0,
+        "stimulation": 0,
+        "hedonism": 0,
+        "achievement": 0,
+        "power": 0,
+        "security": 0
+      }
+    },
+    {
+      "id": "twivi_all_6",
+      "moduleId": "personal_values",
+      "answers": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "expectedRawMeans": {
+        "conformity": 6,
+        "tradition": 6,
+        "benevolence": 6,
+        "universalism": 6,
+        "self_direction": 6,
+        "stimulation": 6,
+        "hedonism": 6,
+        "achievement": 6,
+        "power": 6,
+        "security": 6
+      },
+      "expectedGrandMean": 6,
+      "expectedCenteredPriorities": {
+        "conformity": 0,
+        "tradition": 0,
+        "benevolence": 0,
+        "universalism": 0,
+        "self_direction": 0,
+        "stimulation": 0,
+        "hedonism": 0,
+        "achievement": 0,
+        "power": 0,
+        "security": 0
+      }
+    },
+    {
+      "id": "twivi_conformity_only_maximum",
+      "moduleId": "personal_values",
+      "answers": [
+        6,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        6,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "expectedRawMeans": {
+        "conformity": 6,
+        "tradition": 1,
+        "benevolence": 1,
+        "universalism": 1,
+        "self_direction": 1,
+        "stimulation": 1,
+        "hedonism": 1,
+        "achievement": 1,
+        "power": 1,
+        "security": 1
+      },
+      "expectedGrandMean": 1.5,
+      "expectedCenteredPriorities": {
+        "conformity": 4.5,
+        "tradition": -0.5,
+        "benevolence": -0.5,
+        "universalism": -0.5,
+        "self_direction": -0.5,
+        "stimulation": -0.5,
+        "hedonism": -0.5,
+        "achievement": -0.5,
+        "power": -0.5,
+        "security": -0.5
+      }
+    },
+    {
+      "id": "twivi_missing_last",
+      "moduleId": "personal_values",
+      "answers": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        null
+      ],
+      "expectedStatus": "incomplete",
+      "expectedProfile": null
+    }
+  ],
+  "productName": "The Big Six-Seven",
+  "productSubtitle": "Big Five personality + work interests + personal values"
+}

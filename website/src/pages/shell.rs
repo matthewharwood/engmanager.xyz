@@ -38,7 +38,7 @@ const DEFAULT_THEME_COLOR: &str = "#e64553";
 
 /// Prerender same-origin links eagerly, but never checkout (order context),
 /// API endpoints, or search result pages (unbounded query space).
-const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/checkout*"}},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/search*"}}]},"eagerness":"moderate"}]}"#;
+const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/checkout*"}},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/search*"}},{"not":{"href_matches":"/personality*"}},{"not":{"href_matches":"/articles/big-personality*"}}]},"eagerness":"moderate"}]}"#;
 
 /// Inline `window.__engNav` bootstrap (ledger #15): the swap-callback
 /// registry that converted bundles register against (`onSwap`) and the

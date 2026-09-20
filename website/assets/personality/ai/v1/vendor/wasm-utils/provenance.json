@@ -1,0 +1,9 @@
+{
+  "package": "@litertjs/wasm-utils",
+  "version": "2.0.0",
+  "license": "Apache-2.0",
+  "source": "https://registry.npmjs.org/@litertjs/wasm-utils/-/wasm-utils-2.0.0.tgz",
+  "npmIntegrity": "sha512-TimssmDKn2zL2qSuJbgjrUIgB6oEXhneQjQyy1W6Hlyw15+dtMfLch5yZ40/MLn5TnE80hY46x3hnjXFF3UKsA==",
+  "verifiedAt": "2026-09-19",
+  "modifications": []
+}
