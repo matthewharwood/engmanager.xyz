@@ -4,6 +4,15 @@ import {AI_ASSETS, AI_RUNTIME_CACHE, AI_MANIFEST_DIGEST} from './assets.mjs';
 export {PINNED_MODEL, LIMITS, validateSections, AI_ASSETS, AI_RUNTIME_CACHE};
 
 const READY_PATH = '/assets/personality/ai/v1/__runtime-ready';
+function publicHeaders(response, fallback = 'application/octet-stream') {
+  const headers = new Headers({'content-type': response.headers.get('content-type') || fallback});
+  // Keep the worker's policy when served offline. Do not copy transport encoding
+  // or content-length: fetch has already decoded the verified response bytes.
+  for (const name of ['content-security-policy', 'referrer-policy', 'x-content-type-options']) {
+    const value = response.headers.get(name); if (value) headers.set(name, value);
+  }
+  return headers;
+}
 export function capabilities(environment = globalThis) {
   return Object.freeze({secureContext: environment.isSecureContext === true,
     webgpu: Boolean(environment.navigator?.gpu), workers: typeof environment.Worker === 'function',
@@ -36,7 +45,7 @@ export async function installRuntime({signal, onProgress, fetcher = globalThis.f
       const data = new Uint8Array(await response.arrayBuffer());
       const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), byte => byte.toString(16).padStart(2, '0')).join('');
       if (data.byteLength !== asset.bytes || hash !== asset.sha256) throw new Error('The optional AI runtime did not match its pinned release.');
-      await staging.put(url.href, new Response(data, {headers: {'content-type': response.headers.get('content-type') || 'application/octet-stream'}}));
+      await staging.put(url.href, new Response(data, {headers: publicHeaders(response)}));
       done += data.byteLength;
       onProgress?.({phase: 'runtime', loaded: done, total});
     }
@@ -47,7 +56,7 @@ export async function installRuntime({signal, onProgress, fetcher = globalThis.f
     const source = await manifest.text();
     const expected = `// Generated from the optional local AI runtime; model weights are excluded.\nexport const AI_ASSETS = Object.freeze(${JSON.stringify(AI_ASSETS)});\nexport const AI_MANIFEST_DIGEST = '${AI_MANIFEST_DIGEST}';\nexport const AI_RUNTIME_CACHE = 'personality-ai-runtime-v1-${AI_MANIFEST_DIGEST}';\n`;
     if (source !== expected) throw new Error('The optional AI manifest changed during installation.');
-    await staging.put(new URL('/assets/personality/ai/v1/assets.mjs', origin).href, new Response(source, {headers: {'content-type': 'text/javascript'}}));
+    await staging.put(new URL('/assets/personality/ai/v1/assets.mjs', origin).href, new Response(source, {headers: publicHeaders(manifest, 'text/javascript')}));
     throwIfAborted(signal);
     // The ready marker is the commit point. The worker must ignore incomplete caches.
     const target = await cacheStorage.open(AI_RUNTIME_CACHE);
@@ -123,8 +132,12 @@ export function createLocalAI({onStatus, WorkerClass = globalThis.Worker,
       await request('load', {model: blob}, {signal, timeout: limits.loadMs});
       ready = true; emit('ready', 'Local AI is ready. Prompts stay in this browser.');
       return {ready: true, model: PINNED_MODEL};
-    } catch (error) {stop(error); emit('error', error.message); throw error;}
-    finally {loading = false;}
+    } catch (error) {
+      // An old cancelled Blob read must not tear down a newer load.
+      if (startingEpoch === epoch) {stop(error); emit('error', error.message);}
+      else if (!loading && !ready) emit('error', error.message);
+      throw error;
+    } finally {if (startingEpoch === epoch) loading = false;}
   }
   async function generate(input, {signal, onChunk} = {}) {
     const {system, prompt} = validatePrompt(input);

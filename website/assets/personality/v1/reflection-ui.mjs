@@ -1,4 +1,4 @@
-import {GOALS,FORMATS,TASKS,validateContext,createEnhancement,buildPrompt,parseGenerated} from './enhancement.mjs';
+import {GOALS,FORMATS,TASKS,validateContext,createEnhancement,buildPrompt,generateReflection} from './enhancement.mjs';
 import {renderEnhancement} from './report.mjs';
 
 function el(tag,text,attributes={}){const n=document.createElement(tag);if(text!==null)n.textContent=text;for(const[k,v]of Object.entries(attributes))n.setAttribute(k,v);return n;}
@@ -54,11 +54,11 @@ export function mountReflection(root,{state,context,enhancement,save,onSaved}){
  }));
  setup.append(setupBody,button('Generate local draft',async()=>{
   if(!ai)throw new Error('Choose “Set up local AI” first.');
-  const c=read(),taskId=task.value,request=buildPrompt(state,c,taskId);controller=new AbortController();
+  const c=read(),taskId=task.value;buildPrompt(state,c,taskId);controller=new AbortController();
   draftRoot.replaceChildren();draft=null;status.textContent='Generating on this device. You can cancel at any time…';
-  const result=await ai.generate({system:request.system,prompt:request.prompt,validate:value=>parseGenerated(value,request.facts)},{signal:controller.signal});
+  const result=await generateReflection(ai,state,c,taskId,{signal:controller.signal,onRetry:()=>{if(!disposed)status.textContent='The draft did not meet the report format. Making one local correction…';}});
   if(disposed)return;
-  draft=createEnhancement(state,c,{kind:'local-ai',task:taskId,model:'gemma-4-E2B-web / litert-lm-0.17.1',sections:result.sections});
+  draft=result;
   draftRoot.append(el('h3','Review this AI draft'),p('Check each statement and its evidence. A local model can still make mistakes. Kept text and its supporting excerpts will appear in your PDF; sharing it requires a separate choice.'));
   const preview=el('div');renderEnhancement(preview,draft);draftRoot.append(preview);
   const editors=draft.sections.map(section=>{const text=el('textarea',null,{rows:'4',maxlength:'700','aria-label':`Edit ${section.title}`});text.value=section.body;draftRoot.append(field(section.title,text));return text;});

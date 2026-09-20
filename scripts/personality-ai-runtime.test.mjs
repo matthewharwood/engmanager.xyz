@@ -144,6 +144,19 @@ test('cancel during model retrieval cannot start a worker after cancellation', a
   await assert.rejects(loading, {name: 'AbortError'});
   assert.equal(TestWorker.instances.length, count);
 });
+test('a stale cancelled model read cannot tear down a newer successful load', async () => {
+  let resolveOld, reads = 0;
+  const ai = createLocalAI({environment, WorkerClass: TestWorker, manager: {...memoryManager,
+    modelBlob: () => ++reads === 1 ? new Promise(resolve => {resolveOld = resolve;}) : Promise.resolve(new Blob([bytes]))}});
+  const oldLoad = ai.load(); ai.cancel();
+  await ai.load();
+  const worker = TestWorker.instances.at(-1);
+  resolveOld(new Blob([bytes]));
+  await assert.rejects(oldLoad, {name: 'AbortError'});
+  assert.equal(ai.isReady(), true);
+  assert.equal(worker.terminated, false);
+  await ai.unload();
+});
 test('optional release pins every shipped byte and never includes model weights', async () => {
   assert.ok(AI_ASSETS.length > 20);
   async function walk(url) {
@@ -171,12 +184,19 @@ test('runtime installation verifies bytes, commits a ready marker, and reuses an
     assert.equal(new URL(url).origin, 'https://example.test');
     assert.equal(options.credentials, 'omit');
     assert.equal(options.referrerPolicy, 'no-referrer');
-    return new Response(await readFile(new URL('../website' + new URL(url).pathname, import.meta.url)), {headers: {'content-type': url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript'}});
+    return new Response(await readFile(new URL('../website' + new URL(url).pathname, import.meta.url)), {headers: {
+      'content-type': url.endsWith('.wasm') ? 'application/wasm' : 'text/javascript',
+      'content-security-policy': "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'",
+      'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff'}});
   };
   const result = await installRuntime({cacheStorage: caches, origin: 'https://example.test', fetcher});
   assert.equal(result.installed, true);
   const cache = await caches.open(AI_RUNTIME_CACHE);
   assert.ok(await cache.match('https://example.test/assets/personality/ai/v1/__runtime-ready'));
+  const cachedWorker = await cache.match('https://example.test/assets/personality/ai/v1/worker.js');
+  assert.equal(cachedWorker.headers.get('content-security-policy'), "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'");
+  assert.equal(cachedWorker.headers.get('referrer-policy'), 'no-referrer');
+  assert.equal(cachedWorker.headers.get('x-content-type-options'), 'nosniff');
   assert.equal((await cache.keys()).length, AI_ASSETS.length + 2);
   const count = calls.length;
   assert.equal((await installRuntime({cacheStorage: caches, origin: 'https://example.test', fetcher})).cached, true);

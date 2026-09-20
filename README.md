@@ -40,7 +40,8 @@ Its route map, architecture, privacy boundaries, release rules, and verification
 record are in [`_docs/big-personality/production-implementation.md`](_docs/big-personality/production-implementation.md).
 Run `npm ci --prefix scripts --ignore-scripts` followed by `npm test --prefix scripts`
 for the scoring, IndexedDB, sharing, PDF, and offline checks. Before publishing a
-new immutable release, run `node scripts/personality-release.mjs` and rerun tests.
+new immutable release, run `node website/assets/personality/ai/v1/generate-manifest.mjs`,
+then `node scripts/personality-release.mjs`, and rerun tests.
 These are exact, versioned asset paths: an unknown filename or invented hash
 returns 404. Publish changed assessment releases under a new version directory
 rather than replacing an immutable release. The Rust shell contains no global
