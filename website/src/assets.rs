@@ -203,7 +203,18 @@ pub(crate) async fn personality_sw_handler() -> Response {
         Some(file) => (
             [
                 (header::CONTENT_TYPE, "application/javascript".to_string()),
-                (header::CACHE_CONTROL, "no-cache, max-age=0".to_string()),
+                (
+                    header::CACHE_CONTROL,
+                    "no-store, no-cache, max-age=0".to_string(),
+                ),
+                (
+                    HeaderName::from_static("cdn-cache-control"),
+                    "no-store".to_string(),
+                ),
+                (
+                    HeaderName::from_static("cloudflare-cdn-cache-control"),
+                    "no-store".to_string(),
+                ),
                 (
                     HeaderName::from_static("service-worker-allowed"),
                     "/personality/".to_string(),

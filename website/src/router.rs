@@ -247,7 +247,10 @@ mod tests {
             let path = format!("/personality/{step}");
             let response = get(&router, SITE_HOST, &path).await;
             assert_eq!(response.status(), StatusCode::OK, "{path}");
-            assert_eq!(header_str(&response, "cache-control"), Some("no-store"));
+            assert_eq!(
+                header_str(&response, "cache-control"),
+                Some("no-store, no-transform")
+            );
             assert_eq!(
                 header_str(&response, "referrer-policy"),
                 Some("no-referrer")
@@ -269,7 +272,10 @@ mod tests {
         for path in ["/personality/unknown", "/personality/unknown/nested"] {
             let response = get(&router, SITE_HOST, path).await;
             assert_eq!(response.status(), StatusCode::NOT_FOUND);
-            assert_eq!(header_str(&response, "cache-control"), Some("no-store"));
+            assert_eq!(
+                header_str(&response, "cache-control"),
+                Some("no-store, no-transform")
+            );
             let body = body_string(response).await;
             assert!(body.contains("data-personality-route=\"not-found\""));
         }
@@ -315,8 +321,18 @@ mod tests {
     #[tokio::test]
     async fn personality_article_is_indexed_but_uses_the_reduced_shell() {
         let router = test_router().await;
+        let cache_control = format!("{HTML_CACHE_CONTROL}, no-transform");
         let response = get(&router, SITE_HOST, "/articles/big-personality").await;
         assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&response, "cache-control"),
+            Some(cache_control.as_str())
+        );
+        assert_eq!(
+            header_str(&response, "cloudflare-cdn-cache-control"),
+            Some("max-age=3600, stale-while-revalidate=86400, stale-if-error=259200")
+        );
+        assert_eq!(header_str(&response, "cache-tag"), Some("html"));
         assert_eq!(
             header_str(&response, "referrer-policy"),
             Some("no-referrer")
@@ -333,8 +349,62 @@ mod tests {
         assert!(search.contains("/articles/big-personality"));
         let encoded = get(&router, SITE_HOST, "/articles/big%2Dpersonality").await;
         assert_eq!(encoded.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&encoded, "cache-control"),
+            Some(cache_control.as_str())
+        );
         assert_eq!(header_str(&encoded, "referrer-policy"), Some("no-referrer"));
         assert!(header_str(&encoded, "content-security-policy").is_some());
+    }
+
+    #[tokio::test]
+    async fn personality_edge_headers_leave_other_articles_unchanged() {
+        let router = test_router().await;
+        let article = content::ARTICLES
+            .iter()
+            .find(|article| article.slug != "big-personality")
+            .expect("the blog has other articles");
+        let response = get(&router, SITE_HOST, &format!("/articles/{}", article.slug)).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&response, "cache-control"),
+            Some(HTML_CACHE_CONTROL)
+        );
+        assert_eq!(
+            header_str(&response, "referrer-policy"),
+            Some("strict-origin-when-cross-origin")
+        );
+        assert!(header_str(&response, "content-security-policy").is_none());
+        assert!(header_str(&response, "content-security-policy-report-only").is_some());
+    }
+
+    #[tokio::test]
+    async fn personality_worker_bypasses_browser_and_edge_caches() {
+        let router = test_router().await;
+        let response = get(&router, SITE_HOST, "/personality/sw.js").await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&response, "service-worker-allowed"),
+            Some("/personality/")
+        );
+        assert_eq!(
+            header_str(&response, "cache-control"),
+            Some("no-store, no-cache, max-age=0")
+        );
+        for name in ["cdn-cache-control", "cloudflare-cdn-cache-control"] {
+            assert_eq!(header_str(&response, name), Some("no-store"));
+        }
+        let worker = body_string(response).await;
+        let pinned = get(&router, SITE_HOST, "/assets/personality/v1/sw.js").await;
+        assert_eq!(
+            header_str(&pinned, "cache-control"),
+            Some(if cfg!(debug_assertions) {
+                "no-cache, max-age=0"
+            } else {
+                "public, max-age=31536000, immutable"
+            })
+        );
+        assert_eq!(body_string(pinned).await, worker);
     }
 
     #[tokio::test]

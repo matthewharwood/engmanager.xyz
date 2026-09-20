@@ -56,8 +56,10 @@ const CACHE_TAG: HeaderName = HeaderName::from_static("cache-tag");
 // - Success HTML where the handler set its own PUBLIC Cache-Control (e.g.
 //   the shop page) keeps that value byte-for-byte and additionally gains the
 //   Cloudflare pair, with the CDN max-age derived from the page's own
-//   s-maxage horizon. `no-store`/`no-cache` responses are never touched.
+//   s-maxage horizon. `no-store`/`no-cache` lifetimes are retained.
+// - Assessment HTML also gains no-transform to prevent edge script injection.
 pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response {
+    let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
     let mut response = next.run(req).await;
     let is_html = response
         .headers()
@@ -70,6 +72,33 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
     }
 
     let is_success = response.status().is_success();
+    if personality_boundary
+        || response
+            .extensions()
+            .get::<crate::pages::personality::PrivateDocument>()
+            .is_some()
+    {
+        // Prevent edge HTML rewriting, including automatic analytics injection.
+        // The public introduction keeps the normal blog cache lifetime; private
+        // documents retain no-store. The response marker covers encoded slugs.
+        let cache_control = response
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or(if is_success {
+                HTML_CACHE_CONTROL
+            } else {
+                "no-store"
+            });
+        if !cache_control
+            .split(',')
+            .any(|directive| directive.trim().eq_ignore_ascii_case("no-transform"))
+        {
+            let value = HeaderValue::from_str(&format!("{cache_control}, no-transform"))
+                .expect("extending a valid cache policy with a static directive stays valid");
+            response.headers_mut().insert(header::CACHE_CONTROL, value);
+        }
+    }
     if !response.headers().contains_key(header::CACHE_CONTROL) {
         let headers = response.headers_mut();
         if is_success {
