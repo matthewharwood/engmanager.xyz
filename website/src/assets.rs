@@ -199,7 +199,7 @@ pub(crate) async fn sw_handler() -> Response {
 
 /// Assessment worker has a narrower scope and a separate cache namespace.
 pub(crate) async fn personality_sw_handler() -> Response {
-    match Assets::get("personality/v2/sw.js") {
+    match Assets::get("personality/v3/sw.js") {
         Some(file) => (
             [
                 (header::CONTENT_TYPE, "application/javascript".to_string()),

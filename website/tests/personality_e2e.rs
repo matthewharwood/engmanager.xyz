@@ -34,7 +34,7 @@ async function pdfDownload(label){
   urlApi.createObjectURL=function(blob){if(blob.type==='application/pdf')blobs.push(blob);return originalCreate.call(this,blob);};
   const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes){if(node.tagName==='A'&&node.download.endsWith('.pdf')&&node.href.startsWith('blob:'))downloads.push(node.download);}});
   observer.observe(doc().body,{childList:true});
-  try{click('Download PDF');await until(()=>blobs.length===1&&downloads.length===1,label);return new Uint8Array(await blobs[0].arrayBuffer());}
+  try{click(doc().querySelector('#report-kit')?'Download scores PDF':'Download PDF');await until(()=>blobs.length===1&&downloads.length===1,label);return new Uint8Array(await blobs[0].arrayBuffer());}
   finally{observer.disconnect();urlApi.createObjectURL=originalCreate;}
 }
 async function kitDownload(label){
@@ -42,7 +42,7 @@ async function kitDownload(label){
   urlApi.createObjectURL=function(blob){if(blob.type.startsWith('text/markdown'))blobs.push(blob);return originalCreate.call(this,blob);};
   const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes){if(node.tagName==='A'&&node.download.endsWith('.md')&&node.href.startsWith('blob:'))downloads.push(node.download);}});
   observer.observe(doc().body,{childList:true});
-  try{click('Download report kit (.md)');await until(()=>blobs.length===1&&downloads.length===1,label);return {text:await blobs[0].text(),filename:downloads[0]};}
+  try{click('Download report kit (.md)');await until(()=>blobs.length===1&&downloads.length===1,label);return {text:await blobs[0].text(),filename:downloads[0],bytes:new Uint8Array(await blobs[0].arrayBuffer())};}
   finally{observer.disconnect();urlApi.createObjectURL=originalCreate;}
 }
 try{
@@ -113,10 +113,13 @@ try{
   doc().querySelector('#kit-name').value='Synthetic Person';doc().querySelector('#kit-name').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
   doc().querySelector('#kit-context').value='A synthetic collaborator should understand my working preferences.';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
   await until(()=>doc().querySelector('.kit-customize [role="status"]').textContent==='Report details saved on this device.','optional kit details saved');
-  const {createReportKit}=await import('/assets/personality/v2/report-kit.mjs');
+  const {createReportKit}=await import('/assets/personality/v3/report-kit.mjs');
   const beforeKit=await store.loadActive(),expectedKit=createReportKit(beforeKit.state,{name:'Synthetic Person',context:'A synthetic collaborator should understand my working preferences.'});
   const downloadedKit=await kitDownload('complete Markdown report kit download');
   assert(downloadedKit.text===expectedKit.text&&downloadedKit.filename===expectedKit.filename,'one actual download contains the complete prompt and exact evidence');
+  assert(downloadedKit.bytes[0]===239&&downloadedKit.bytes[1]===187&&downloadedKit.bytes[2]===191,'download includes UTF-8 BOM for editors that otherwise misread punctuation');
+  assert(downloadedKit.text.includes('Return one real, downloadable PDF')&&!downloadedKit.text.includes('standalone HTML document'),'download requests a real portrait PDF rather than an HTML artifact');
+  assert(doc().querySelector('.kit-steps').textContent.includes('Attaching the file avoids long pasted text being clipped.'),'UI recommends attachment to prevent a clipped evidence packet');
   assert((await store.loadActive()).revision===beforeKit.revision,'downloading the kit never rewrites scored answers');
   const beforeAnchor=frame.contentWindow.location.href;
   doc().querySelector('a[data-report-anchor][href="#your-scores"]').click();
@@ -258,11 +261,11 @@ try{
   await until(()=>doc().querySelector('.privacy-settings').textContent.includes('Ready offline.'),'worker OFFLINE_READY acknowledgement');
   await until(()=>frame.contentWindow.navigator.serviceWorker.controller?.scriptURL.endsWith('/personality/sw.js'),'scoped worker controls assessment');
   assert(true,'explicit UI installation completes and scoped worker takes control');
-  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v2-')&&!name.includes(':staging:'));
+  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v3-')&&!name.includes(':staging:'));
   assert(cacheNames.length===1,'exactly one completed release cache is installed');
   const releaseCache=await caches.open(cacheNames[0]);
   const cacheURLs=(await releaseCache.keys()).map(request=>new URL(request.url));
-  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v2'),'ready marker commits after public files');
+  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v3'),'ready marker commits after public files');
   assert(cacheURLs.every(url=>!url.search&&!url.hash),'offline cache keys contain no answer or share parameters');
   assert(!await caches.match('/__test'),'test fixture is outside the assessment cache');
   await fetch('/__outage',{method:'POST'});
@@ -276,7 +279,7 @@ try{
   }
   await go('/personality/report#r='+encodeSummary(summaryState,['O','C']),()=>doc().querySelector('.summary-scores'),'offline shared summary');
   assert(doc().querySelectorAll('.summary-score').length===2,'shared summary verifies and renders from cached public files during outage');
-  await go('/personality/report',()=>[...doc().querySelectorAll('button')].some(button=>button.textContent==='Download PDF'),'offline own report');
+  await go('/personality/report',()=>[...doc().querySelectorAll('button')].some(button=>button.textContent==='Download scores PDF'),'offline own report');
   const pdfBytes=await pdfDownload('offline PDF blob and download anchor');
   assert(new TextDecoder().decode(pdfBytes.slice(0,5))==='%PDF-'&&pdfBytes.length>1000,'real PDF button builds a PDF blob and download while origin is unavailable');
   assert(doc().querySelector('.report-enhancement').textContent===frozenText,'offline PDF and report preserve saved reflection without generation');
