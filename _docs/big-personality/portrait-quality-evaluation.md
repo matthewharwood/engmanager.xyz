@@ -1,10 +1,10 @@
-# Evaluating the portrait PDF brief
+# Evaluating the workplace PDF brief
 
-This is a manual editorial and document-quality evaluation for `portrait-pdf-v2`. Automated tests protect the prompt contract and ensure that the frozen evidence exporter still supplies the same answers and scores. Those tests cannot establish the quality, truth, or typography of a report written by an external model.
+This is a manual editorial and document-quality evaluation for `workplace-pdf-v1`. Automated tests protect the prompt contract and ensure that the frozen evidence exporter still supplies the same answers and scores. Those tests cannot establish the quality, truth, or typography of a report written by an external model. The requested audience is a manager or team lead learning how to work with one person. The third-person report should have an occupational-psychology style, while clearly identifying itself as an AI-written self-report reflection rather than a psychologist's assessment.
 
 ## Reference and comparison method
 
-The editorial reference is the [Marcus bird's-eye-view report](https://marcus-birds-eye-view.auteu.chatgpt.site/). Compare its directness, connected prose, useful specificity, restrained presentation, and explanation of how tendencies coexist. Do not copy its sentences, personal details, scores, conclusions, or claims about rarity. It is a style reference, not evidence about another reader and not scientific validation of its interpretations.
+The editorial reference is the [Marcus bird's-eye-view report](https://marcus-birds-eye-view.auteu.chatgpt.site/). Compare its directness, connected prose, useful specificity, restrained presentation, and explanation of how tendencies coexist. Apply those qualities to a third-person workplace briefing, rather than copying a second-person voice. Do not copy its sentences, personal details, scores, conclusions, or claims about rarity. It is a style reference, not evidence about another reader and not scientific validation of its interpretations.
 
 For each synthetic case below, attach the entire current kit to a fresh conversation. Use the same external model, file-tool availability, and request for both the frozen previous kit and the revised kit. Record the model/version, date, brief version, case, attachment size, and whether PDF creation is supported. Keep the resulting reports and PDFs with the evaluation record. Do not submit a person's private kit for comparison without their authorization.
 
@@ -18,14 +18,14 @@ Score each dimension from 0 to 4: **0** absent or fundamentally wrong; **1** maj
 
 | Dimension | What a score of 3 or better requires |
 | --- | --- |
-| Direct reader voice | The opening describes the person immediately. The portrait contains no questionnaire-completion recap, evidence codes, instrument names, scoring lesson, or instructions to the model. The reader is addressed directly. |
-| Integrated interpretation | The report selects the most informative supported relationships between tendencies, rather than marching through every scale. It includes a useful side and a possible cost or need where supported. It does not manufacture a contradiction or hidden vulnerability. |
+| Workplace briefing voice | The opening describes the person immediately in third person, for a manager or team lead. It sounds like a clear, candid occupational-psychology briefing without claiming a psychologist wrote or conducted it. A visible first-page line identifies its AI/self-report origin. The main prose contains no questionnaire-completion recap, evidence codes, instrument names, scoring lesson, or instructions to the model. |
+| Integrated workplace interpretation | The report selects three to five informative supported patterns, rather than marching through every scale or workplace topic. It explains possible working conditions, collaboration, feedback, ownership, structure, support, or friction where justified, including useful sides and possible costs. It does not manufacture a contradiction, hidden vulnerability, or employment verdict. |
 | Precision and economy | Each paragraph adds an insight. Language is familiar, specific, and concise. There is no generic praise, repeated summary, parade of hedges, or padding to reach a word count. Thin evidence produces a shorter report. |
-| Human candor | The report can acknowledge friction and needs without sounding clinical, judgmental, or theatrical. The first-person passage is usable, editable, and free of invented experience. It does not offer homework or a development-plan checklist. |
-| Evidence discipline | Interpretations are traceable to supplied results and original answers. Preferences are not treated as ability, population rank, diagnoses, moral worth, or employment suitability. Ties, missing scores, and omitted modules remain honest. Context and previous prose do not become established facts. |
+| Human candor | The report explains possible friction and support needs with balanced, professional candor, without judgment, theatrical diagnosis, or relentless hedging. The secondary first-person passage is usable, editable, and free of invented experience. It does not offer homework or a development-plan checklist. |
+| Evidence discipline | Interpretations are traceable to supplied results and original answers. Preferences are not treated as observed job performance, ability, population rank, diagnoses, moral worth, or employment suitability. There are no recommendations to hire, rank, promote, or assign a role. Ties, missing scores, and omitted modules remain honest. Context and previous prose do not become established facts. |
 | PDF craft | The deliverable is a real, readable PDF with selectable text, restrained typography, appropriate margins, clear hierarchy, sound pagination, correct glyphs, exact score tables, and compact attribution. The opening page contains substantive portrait text. |
 
-Hard failures override the score: another person's facts or distinctive wording are copied; unsupported biography or emotional confession is invented; the model claims professional assessment or unsupported diagnosis/ability/rank/hiring suitability; a missing score becomes zero or is fabricated; a PDF link or validation claim is fabricated; HTML or a hosted site is silently substituted for the PDF; private text is sent to an unrequested service during generation.
+Hard failures override the score: another person's facts or distinctive wording are copied; unsupported biography or emotional confession is invented; the model claims professional authorship or assessment, omits the visible first-page AI/self-report disclosure, or asserts unsupported diagnosis/ability/rank/hiring suitability; a missing score becomes zero or is fabricated; a PDF link or validation claim is fabricated; HTML or a hosted site is silently substituted for the PDF; private text is sent to an unrequested service during generation.
 
 ## Synthetic cases
 
@@ -52,7 +52,9 @@ If the model lacks file tools, the expected response is an explicit limitation f
 
 For each run, retain the synthetic input identifier, prompt version, model/date, actual outputs, six scores with a short reason, hard failures, number of pages, score-audit result, visual-review result, and the next revision to try. Compare changes to the frozen baseline before claiming an improvement. Do not report a manual evaluation as completed merely because the automated contract tests pass.
 
-### Local dry run: 20 September 2026
+### Historical personal-portrait dry run: 20 September 2026
+
+This record applies only to the previous `portrait-pdf-v2` brief. Its second-person voice and rubric predate the workplace-audience revision. It is not a generated-output evaluation of `workplace-pdf-v1`, and its score must not be presented as acceptance of the current version.
 
 One independent Codex sub-agent generated case B from the complete `portrait-pdf-v2` kit in a fresh context. It produced a 731-word portrait, a 118-word first-person passage, and a five-page A4 PDF. The local artifacts are `output/portrait-eval/generated-portrait.md`, `output/pdf/synthetic-portrait-evaluation.pdf`, and `output/portrait-eval/pdf-validation.json`; these are evaluation outputs, not published participant reports.
 

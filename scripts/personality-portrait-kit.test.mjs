@@ -4,7 +4,7 @@ import {BANK} from '../website/assets/personality/v1/bank.mjs';
 import {createState} from '../website/assets/personality/v1/core.mjs';
 import {createContext, createEnhancement} from '../website/assets/personality/v1/enhancement.mjs';
 import {createReportKit as createPublishedKit} from '../website/assets/personality/v2/report-kit.mjs';
-import {createReportKit, REPORT_KIT_VERSION, PORTRAIT_BRIEF, COMPARISON_PROMPT} from '../website/assets/personality/v3/report-kit.mjs';
+import {createReportKit, REPORT_KIT_VERSION, PORTRAIT_BRIEF, COMPARISON_PROMPT} from '../website/assets/personality/v4/report-kit.mjs';
 
 function complete(modules) {
   const state = createState(modules);
@@ -33,7 +33,8 @@ function assertPublishedEvidence(state, options) {
   return revised;
 }
 
-test('portrait revision preserves frozen evidence for selected modules, ties, divergent responses and missingness', () => {
+test('workplace revision preserves frozen evidence for selected modules, ties, divergent responses and missingness', () => {
+  assert.equal(REPORT_KIT_VERSION, 'workplace-pdf-v1');
   for (const modules of [['big5'], ['big5', 'interests'], ['big5', 'values'], ['big5', 'interests', 'values']]) {
     const varied = complete(modules), tied = structuredClone(varied), missing = structuredClone(varied);
     tied.responses.fill(3);
@@ -88,14 +89,14 @@ test('new wrapper retains published validation and deterministic UTF-8 export be
 
 // These assertions protect the brief's contract. They do not evaluate an
 // external model's prose or establish that a generated PDF follows the brief.
-test('portrait brief separates a direct reader narrative from the evidence and exact score appendix', () => {
+test('workplace brief separates a concise company-facing narrative from the evidence and exact score appendix', () => {
   assert.match(PORTRAIT_BRIEF, /700-1,000 words/);
   assert.match(PORTRAIT_BRIEF, /100-160-word first-person passage/);
   assert.match(PORTRAIT_BRIEF, /Begin immediately with an integrated view of the person/);
   assert.match(PORTRAIT_BRIEF, /three to five patterns/);
   assert.match(PORTRAIT_BRIEF, /Do not manufacture a paradox/);
   assert.match(PORTRAIT_BRIEF, /Do not hedge every sentence/);
-  assert.match(PORTRAIT_BRIEF, /MAIN PORTRAIT must contain no questionnaire completion counts, skipped-question commentary, item IDs, evidence anchors, instrument names/);
+  assert.match(PORTRAIT_BRIEF, /MAIN REPORT must contain no questionnaire completion counts, skipped-question commentary, item IDs, evidence anchors, instrument names/);
   assert.match(PORTRAIT_BRIEF, /Do not prescribe experiments, homework/);
   assert.match(PORTRAIT_BRIEF, /Do not include every raw answer in the PDF/);
   assert.match(PORTRAIT_BRIEF, /evidence anchor IDs in the compact back-matter evidence notes only, never inline/);
@@ -106,6 +107,29 @@ test('portrait brief separates a direct reader narrative from the evidence and e
   assert.match(PORTRAIT_BRIEF, /In my own words/);
   assert.match(PORTRAIT_BRIEF, /editable draft the reader should change or reject/);
   assert(!/Marcus|Matthew/.test(PORTRAIT_BRIEF));
+});
+
+test('workplace brief uses third-person occupational-psychology style with explicit AI authorship and employment boundaries', () => {
+  assert.match(PORTRAIT_BRIEF, /for a manager, team lead, or colleague/);
+  assert.match(PORTRAIT_BRIEF, /style of an occupational psychologist briefing a company/);
+  assert.match(PORTRAIT_BRIEF, /Write the MAIN REPORT in third person/);
+  assert.match(PORTRAIT_BRIEF, /Do not address the participant as "you" in the main report/);
+  assert.match(PORTRAIT_BRIEF, /singular "they"/);
+  assert.match(PORTRAIT_BRIEF, /portrait wording is not the participant's pronoun declaration/);
+  assert.match(PORTRAIT_BRIEF, /Use first person only in the separately labeled editable passage/);
+  assert.match(PORTRAIT_BRIEF, /Immediately below the title, include one unobtrusive but legible provenance line/);
+  assert.match(PORTRAIT_BRIEF, /AI-written workplace reflection based on self-report; not a psychologist's assessment\./);
+  assert.match(PORTRAIT_BRIEF, /Do not add a fictitious clinician name, credentials, signature, practice, interview, or professional endorsement/);
+  assert.match(PORTRAIT_BRIEF, /without impersonating its professional author/);
+  assert.match(PORTRAIT_BRIEF, /Do not submit it to an employer or make a hiring, promotion, placement, or performance decision/);
+  assert.match(PORTRAIT_BRIEF, /not jobs someone is qualified for or where a company should place them/);
+  assert.match(PORTRAIT_BRIEF, /not facts about their job performance or validated interventions/);
+  assert.match(PORTRAIT_BRIEF, /Do not invent a company, role, seniority, work history, or observed behavior/);
+  assert.match(PORTRAIT_BRIEF, /Connect each suggestion to a supported pattern and its tradeoff/);
+  for (const topic of ['motivation and autonomy', 'structure and follow-through', 'communication, disagreement, and feedback', 'pressure and recovery']) {
+    assert(PORTRAIT_BRIEF.includes(topic), `the workplace brief should consider ${topic} when supported`);
+  }
+  assert.match(PORTRAIT_BRIEF, /Select what matters for this profile rather than covering every topic/);
 });
 
 test('portrait brief requires a real PDF, honest fallback and reviewable typesetting without an HTML deliverable', () => {
