@@ -5,8 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 
-const BASE = '/assets/personality/v3/';
-const PREVIOUS_BASE = '/assets/personality/v2/';
+const BASE = '/assets/personality/v4/';
 const LEGACY_BASE = '/assets/personality/v1/';
 const PUBLIC_ORIGIN = 'https://engmanager.xyz';
 const STEPS = ['prepare', 'test', 'review', 'report', 'share', 'library'];
@@ -58,13 +57,19 @@ export function parseRegistry(source) {
 
 export function parsePresentationRegistry(source) {
   const data = registryData(source);
-  const latest = data.v === 3;
-  exactKeys(data, ['v', 'presentation', 'legacy', ...(latest ? ['previous'] : []), 'releases', 'ready', 'assets'], 'presentation registry');
-  requireThat(((latest && data.presentation === 'portrait-pdf-v3') || (data.v === 2 && data.presentation === 'prompt-evidence-v2')) && data.ready === true, 'Unsupported or incomplete presentation release.');
-  const currentBase = latest ? BASE : PREVIOUS_BASE;
-  if (latest) {
+  const presentations = {2: 'prompt-evidence-v2', 3: 'portrait-pdf-v3', 4: 'workplace-report-v4'};
+  requireThat(Number.isInteger(data.v) && Object.hasOwn(presentations, data.v) && data.presentation === presentations[data.v] && data.ready === true, 'Unsupported or incomplete presentation release.');
+  exactKeys(data, ['v', 'presentation', 'legacy', ...(data.v === 4 ? ['previousReleases'] : data.v === 3 ? ['previous'] : []), 'releases', 'ready', 'assets'], 'presentation registry');
+  const currentBase = `/assets/personality/v${data.v}/`;
+  if (data.v === 3) {
     exactKeys(data.previous, ['root', 'manifestSha256', 'releaseDigest'], 'previous presentation reference');
-    requireThat(data.previous.root === PREVIOUS_BASE && HASH.test(data.previous.manifestSha256) && HASH.test(data.previous.releaseDigest), 'Invalid previous presentation reference.');
+    requireThat(data.previous.root === '/assets/personality/v2/' && HASH.test(data.previous.manifestSha256) && HASH.test(data.previous.releaseDigest), 'Invalid previous presentation reference.');
+  } else if (data.v === 4) {
+    requireThat(Array.isArray(data.previousReleases) && data.previousReleases.length === 2, 'Invalid retained presentation releases.');
+    for (const [index, release] of data.previousReleases.entries()) {
+      exactKeys(release, ['v', 'root', 'manifestSha256', 'releaseDigest'], 'retained presentation reference');
+      requireThat(release.v === 3 - index && release.root === `/assets/personality/v${release.v}/` && HASH.test(release.manifestSha256) && HASH.test(release.releaseDigest), 'Invalid retained presentation reference.');
+    }
   }
   exactKeys(data.legacy, ['root', 'manifestSha256', 'releaseDigest'], 'legacy release reference');
   requireThat(data.legacy.root === LEGACY_BASE && HASH.test(data.legacy.manifestSha256) && HASH.test(data.legacy.releaseDigest), 'Invalid legacy release reference.');
@@ -72,8 +77,8 @@ export function parsePresentationRegistry(source) {
   const entries = Object.entries(data.assets);
   requireThat(entries.length >= REQUIRED.length && entries.length <= 160, 'Unexpected presentation asset count.');
   for (const [name, hash] of entries) {
-    requireThat(name.length <= 220 && /^\/assets\/personality\/v[123]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
-      !name.split('/').some(part => part === '.' || part === '..') && (latest || !name.startsWith('/assets/personality/v3/')) &&
+    requireThat(name.length <= 220 && /^\/assets\/personality\/v[1234]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
+      !name.split('/').some(part => part === '.' || part === '..') && Number(name.match(/\/v([1-4])\//)?.[1]) <= data.v &&
       typeof hash === 'string' && HASH.test(hash), 'Unsafe presentation asset path or invalid digest.');
   }
   requireThat(['app.mjs', 'bootstrap.mjs', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'style.css', 'offline.mjs', 'sw.js', 'release-format.mjs'].every(name => Object.hasOwn(data.assets, currentBase + name)), 'Missing current presentation assets.');
@@ -199,9 +204,9 @@ export async function smoke({origin, expectLocal = false}) {
     privacy(response);
     requireThat(/javascript/.test(response.headers.get('content-type') || ''), 'Registry MIME type is not JavaScript.');
     release = parsePresentationRegistry(bytes.toString('utf8'));
-    requireThat(release.v === 3, 'Current presentation must be v3.');
+    requireThat(release.v === 4, 'Current presentation must be v4.');
     if (expectLocal) {
-      const local = await readFile(new URL('../website/assets/personality/v3/release.mjs', import.meta.url));
+      const local = await readFile(new URL('../website/assets/personality/v4/release.mjs', import.meta.url));
       requireThat(bytes.equals(local), `Deployed registry differs from local bytes (remote ${digest(bytes)}, local ${digest(local)}).`);
     }
     return `${Object.keys(release.assets).length} assets · sha256 ${digest(bytes)}${expectLocal ? ' · exact local match' : ''}`;
@@ -217,16 +222,18 @@ export async function smoke({origin, expectLocal = false}) {
       for (const [name, hash] of Object.entries(legacy.assets)) requireThat(release.assets[LEGACY_BASE + name] === hash, 'A legacy asset is missing or changed.');
       return 'Original manifest, scientific identities, and all original asset hashes retained';
     });
-    await check('Frozen v2 presentation compatibility', async () => {
-      const {bytes} = await request(origin, PREVIOUS_BASE + 'release.mjs', {limit: 256 * 1024});
-      const previous = parsePresentationRegistry(bytes.toString('utf8'));
-      const lock = JSON.parse(await readFile(new URL('./personality-published-releases.json', import.meta.url), 'utf8'));
-      requireThat(previous.v === 2 && digest(bytes) === lock.roots.v2.manifestSha256 && digest(bytes) === release.previous.manifestSha256, 'Published v2 manifest has changed.');
-      requireThat(digest(JSON.stringify(previous)) === release.previous.releaseDigest, 'Previous installation digest changed.');
-      requireThat(release.assets[PREVIOUS_BASE + 'release.mjs'] === digest(bytes), 'Previous manifest is missing from the offline release.');
-      for (const [name, hash] of Object.entries(previous.assets)) requireThat(release.assets[name] === hash, 'A previous presentation asset is missing or changed.');
-      return 'Original v2 manifest and all its asset hashes retained';
-    });
+    for (const reference of release.previousReleases) {
+      await check(`Frozen v${reference.v} presentation compatibility`, async () => {
+        const {bytes} = await request(origin, reference.root + 'release.mjs', {limit: 256 * 1024});
+        const previous = parsePresentationRegistry(bytes.toString('utf8'));
+        const lock = JSON.parse(await readFile(new URL('./personality-published-releases.json', import.meta.url), 'utf8'));
+        requireThat(previous.v === reference.v && digest(bytes) === lock.roots[`v${reference.v}`].manifestSha256 && digest(bytes) === reference.manifestSha256, `Published v${reference.v} manifest has changed.`);
+        requireThat(digest(JSON.stringify(previous)) === reference.releaseDigest, 'Previous installation digest changed.');
+        requireThat(release.assets[reference.root + 'release.mjs'] === digest(bytes), 'Previous manifest is missing from the offline release.');
+        for (const [name, hash] of Object.entries(previous.assets)) requireThat(release.assets[name] === hash, 'A previous presentation asset is missing or changed.');
+        return `Original v${reference.v} manifest and all its asset hashes retained`;
+      });
+    }
     // Exclude images, audio, fonts and the optional AI model/runtime installation.
     // Verify every small code/style/data file, including the required file list.
     const names = Object.keys(release.assets).filter(name => /\.(?:m?js|css|json)$/.test(name));

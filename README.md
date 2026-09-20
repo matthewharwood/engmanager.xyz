@@ -36,7 +36,7 @@ No database, no env vars required.
 
 The personality experience uses native browser modules, embedded by Rust with
 no separate Node build. The current report workflow lives under
-`website/assets/personality/v3/`; it reuses the frozen scientific and sharing
+`website/assets/personality/v4/`; it reuses the frozen scientific and sharing
 modules under `website/assets/personality/v1/`.
 Its route map, architecture, privacy boundaries, release rules, and verification
 record are in [`_docs/big-personality/production-implementation.md`](_docs/big-personality/production-implementation.md).
@@ -45,8 +45,8 @@ in [`_docs/big-personality/report-kit-workflow.md`](_docs/big-personality/report
 Run `npm ci --prefix scripts --ignore-scripts` followed by `npm test --prefix scripts`
 for the scoring, IndexedDB, sharing, report-kit, PDF, and offline checks. Before
 publishing this new presentation, run `node scripts/personality-release.mjs`
-and rerun tests. The generator verifies all published v1, v2, and optional AI bytes
-against their frozen inventory and writes only the v3 presentation manifest.
+and rerun tests. The generator verifies all published v1, v2, v3, and optional AI bytes
+against their frozen inventory and writes only the v4 presentation manifest.
 These are exact, versioned asset paths: an unknown filename or invented hash
 returns 404. Publish changed assessment releases under a new version directory
 rather than replacing an immutable release. The Rust shell contains no global
