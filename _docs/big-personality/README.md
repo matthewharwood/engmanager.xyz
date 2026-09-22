@@ -53,3 +53,9 @@ To view the design locally, run `python3 -m http.server 8765 --bind 127.0.0.1 --
 The supplied private Big Five report informed structure only. Its scores, proprietary prose, and artwork were not used as public product content; `/_docs/big5.pdf` is explicitly ignored. Generated `output/` files also remain local. The core bank documents an official-key versus paper wording discrepancy in item 58. The implementation retains the complete O*NET administration, instructions, response labels and attribution. Independent code/privacy checks have been performed, but no certification, new participant study, norm calibration, model-benefit evaluation, or public deployment is claimed here. The release PR records the final live network and exact-release verification.
 
 Source evidence is linked beside claims in the three research appendices. Engineering budgets, participant-recruitment suggestions, editorial interpretation rules and the visual design are proposals, not research findings. Media were generated with the built-in image tool and ElevenLabs, saved in this directory, and are independent of respondents' data.
+
+## Optional type, color, and personal story research
+
+The [Your Story research and implementation kit](story-kit-v2/README.md) adds a proposal for type and color interpretations, 48 candidate type questions, 36 optional background questions, birthday symbols, and a 78-card tarot reflection deck. It includes research sources, scoring and consent reference code, tests, an LLM report brief, placeholder artwork, and a fictional sample PDF.
+
+This is an experimental research and reference implementation package prepared 22 September 2026. It does not activate new features in the live questionnaire. Type and color candidates require validation; astrology and tarot are optional creative material, with no contribution to assessment scores.

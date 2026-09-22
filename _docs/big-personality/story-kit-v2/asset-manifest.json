@@ -1,0 +1,1106 @@
+{
+  "version": "your-story-tarot-assets-v1",
+  "assetBaseUrl": null,
+  "publicationStatus": "not_published",
+  "files": [
+    {
+      "path": "assets/tarot/v1/card-back.png",
+      "mimeType": "image/png",
+      "bytes": 2991652,
+      "sha256": "e3d9b2767343f1077c4b16179646c8472fe435370c20f9b9800872e8ed1b7500",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-01.png",
+      "mimeType": "image/png",
+      "bytes": 39240,
+      "sha256": "6fc1fdff30b02f6259e6f0bef2e7434cf40dfa896fd3e2b72f37a816693cd430",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-01.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1691,
+      "sha256": "bed11c6600f1d88d349a653c7198f03097aca11146d718808008ba9c185d86c9",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-02.png",
+      "mimeType": "image/png",
+      "bytes": 39171,
+      "sha256": "a6e2e7a1a318c15daa9d1a68abd406d3c87033cece7ddd33e2f44cf15e652dd2",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-02.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1697,
+      "sha256": "7dac78ccaa5cdf2ecc01a85d8f28a7c50d5912a0ce9f4bcad9b6885828999945",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-03.png",
+      "mimeType": "image/png",
+      "bytes": 39492,
+      "sha256": "b7cace1ebef4e38c14ae5f36d98d6a66c46179a0aec1929e0fcf56c6c46b63ca",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-03.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1697,
+      "sha256": "e4581f4c30dfa8491da3690fc4fba6a107500854a71fa84f3b980a905d3ac15f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-04.png",
+      "mimeType": "image/png",
+      "bytes": 39773,
+      "sha256": "ea441e7532c984083cf2ac621eff16dc046a8747f41846eb28418793d491b637",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-04.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1701,
+      "sha256": "4bb45a1667474bfb1d72622241592f232de49db4e24952c86a4c12135e5a6cad",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-05.png",
+      "mimeType": "image/png",
+      "bytes": 39758,
+      "sha256": "5b68b0c85ee2addea0e0295b59ab38ac5cc4fb0131d733e98d55aec80489d119",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-05.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1705,
+      "sha256": "a9a5eddf2736d00ac9f3f87541b6f59070e68be44b88b6acdb9d90b6cbce7b06",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-06.png",
+      "mimeType": "image/png",
+      "bytes": 38787,
+      "sha256": "0e8ec8775b315c924cbbae0c1d00a68cc4c8608fe16c38f5fea0ed2eb2d07c8e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-06.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1687,
+      "sha256": "0add407ef38cfeb0b796a26f6dc974dd7734b63517bf2998d892e94f5c28a731",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-07.png",
+      "mimeType": "image/png",
+      "bytes": 40143,
+      "sha256": "aba1b8bdb91e233bc548d3c17dad3b1a8e85d3d574f2665677483c96aa3eae91",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-07.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1705,
+      "sha256": "0c04622213cec0f6e21650691e38166465ca6c67ef7876029345d53d92fa86e0",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-08.png",
+      "mimeType": "image/png",
+      "bytes": 39819,
+      "sha256": "0f6a0720942d7b69af23cb54da37a77ad876ef65d8dd70685a1792beda8d446f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-08.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1697,
+      "sha256": "df80a1e989c85763e8b77d423bf571b24338f0fe70be8c28cb0a38824c33c47c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-09.png",
+      "mimeType": "image/png",
+      "bytes": 39791,
+      "sha256": "2715d08eb81cc51c1803804db843bf60bdc905feebf35c04828a3b6318f312da",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-09.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1701,
+      "sha256": "f995a62b33bd3c091afbf1302fc72517d741afa09c8f2862bd58848d9b517615",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-10.png",
+      "mimeType": "image/png",
+      "bytes": 38839,
+      "sha256": "57c0803d889454a62448ec702cdf82d18a9f927c5276121fc582f8afab9829e9",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-10.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1693,
+      "sha256": "ce6a27b10fc8d9eda3f118c77ae6e13c3ef1ca03b1696557efb1fd0268555c80",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-11.png",
+      "mimeType": "image/png",
+      "bytes": 39333,
+      "sha256": "49a7fe434eea58b373ed117421960cd7a20e408531bf59e03b6007beba3f48f8",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-11.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1699,
+      "sha256": "671ce3998b2b173908e62102da9db278d0f3f7cc119301af6704392dd3b5eb79",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-12.png",
+      "mimeType": "image/png",
+      "bytes": 39331,
+      "sha256": "34501f96c2491491616bfe7dc05d0c648af6fe916b9ef814c854d407de600c17",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-12.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1701,
+      "sha256": "e919a9240eec7a8424bc8e924eabbb93bfe3764422cb1368788039814103d23e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-13.png",
+      "mimeType": "image/png",
+      "bytes": 38940,
+      "sha256": "5ba2450c4bc4918b9added60472fa62096431ecee6bbd5655b6b4b9659c9b78d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-13.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1687,
+      "sha256": "112bc12a838ab8ed49e7737e65eb8fc0b305595cd254c090d1aa2eee3b286663",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-14.png",
+      "mimeType": "image/png",
+      "bytes": 41000,
+      "sha256": "d2c2c3e7d811821c88b7a37e57e2ef65f4cf7ec52d727fa8064e1721a0618224",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/cups-14.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1717,
+      "sha256": "3372b63592727c5d228614982dec4247feed350da68c226952f45cee3619654b",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-00.png",
+      "mimeType": "image/png",
+      "bytes": 44519,
+      "sha256": "15381daf56c2c98532bbc3136b58c35facb161b78b9c55b8c9037df73eba68ad",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-00.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1837,
+      "sha256": "9cfcbaf6eef4f16148bc393e10769c8862a725b04b5f4e72580ef3e3a34f7fa3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-01.png",
+      "mimeType": "image/png",
+      "bytes": 47124,
+      "sha256": "b2903cda039fe88815465e028bdf43c04208a3d601c74415c9896546928c6114",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-01.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1857,
+      "sha256": "3efef5186f68387fa9e1214195aa5401854b37c14efe6bccd70f6354a737aa93",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-02.png",
+      "mimeType": "image/png",
+      "bytes": 46726,
+      "sha256": "5874610df6ede9c82cb17e931517390d71e5069d056b1ddf7de02068e1a551c2",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-02.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1859,
+      "sha256": "9150a7027f8dca79847442839009d0304b26dd45b566af01435d441abba04126",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-03.png",
+      "mimeType": "image/png",
+      "bytes": 45157,
+      "sha256": "33b9f1519c015868624a47f3350b81c3c5f6ef3043107f9106b8dacef735252f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-03.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1839,
+      "sha256": "42f78888635039bb02effed5b9f4980a2ecdae027ba81ec1b28f394f7bfcf4d5",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-04.png",
+      "mimeType": "image/png",
+      "bytes": 45442,
+      "sha256": "26425a329c35619f1c8a2fdbd376810ef8b2c0af5a8a8240954488c0441882eb",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-04.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1843,
+      "sha256": "c934b2752b5388ace4c5cd2e57a0396cf16be910d61e58f431c2eaaf91e83484",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-05.png",
+      "mimeType": "image/png",
+      "bytes": 45994,
+      "sha256": "b194b1490d24594103333eb5bddec170d70d75232143c1b427c8dc8bdff3920d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-05.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1849,
+      "sha256": "4f89eb0ac6c260a48071833acc173c38b8b036507eb4c5dead145931a8b3b060",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-06.png",
+      "mimeType": "image/png",
+      "bytes": 45096,
+      "sha256": "fb3641b69fcb9f99dca78261826941bda249365bc1e309102b8d00f18a445a19",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-06.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1841,
+      "sha256": "d73e000b94a0c7d58897541e09e09230c37e8311715b19c39427190974c184d1",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-07.png",
+      "mimeType": "image/png",
+      "bytes": 45333,
+      "sha256": "48cacc487b378a39ac0abaa9bcf37148cebe5f89fdf383787c780de3c659ec7e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-07.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1843,
+      "sha256": "ef430e127c09ab3a090126b6881302b92a61b5bab0aed151f01307ab7cf588b6",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-08.png",
+      "mimeType": "image/png",
+      "bytes": 45433,
+      "sha256": "6746238453efe526d92c6fbf7316a1437ba30d658a9399359b6f3829acdb3ad7",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-08.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1839,
+      "sha256": "14cbfd021065a2ed22943089833bd011151dabdd97d893907c7d52ab2465e150",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-09.png",
+      "mimeType": "image/png",
+      "bytes": 44890,
+      "sha256": "df39037723b035279747e85377d03595551896c6e13cc5414ac3b9923a5ae8fb",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-09.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1845,
+      "sha256": "1540b035bdf6717b0e3374128666e773caf6ae77660c63ccc86bef7068391c85",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-10.png",
+      "mimeType": "image/png",
+      "bytes": 46455,
+      "sha256": "2e9c8c39a3d8f1febd2e20cdb7c6473436e4626313957c29723f967628cf5f5c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-10.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1847,
+      "sha256": "e3cf6f778549d375b320618c017a3f75370c7c0de31444f03c72503d78b0107a",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-11.png",
+      "mimeType": "image/png",
+      "bytes": 44210,
+      "sha256": "c7fa32c659579a9200d50914b44148c44842a22be3a25fc01e7a33a1429e2254",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-11.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1833,
+      "sha256": "45594363896232d32c37eef0a1a8bf5290be1b533936a817a057322eb53aa6df",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-12.png",
+      "mimeType": "image/png",
+      "bytes": 46425,
+      "sha256": "73a51a24b6d1cbc602e16995f14a6bb431d7887d6be0c79e8cdf1ef558b86d68",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-12.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1849,
+      "sha256": "02ab8454a117f1b0785d9ed8cbb70f3c0712fc27a0f56893477a45503a648657",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-13.png",
+      "mimeType": "image/png",
+      "bytes": 44305,
+      "sha256": "da9a0eb20de1b508226f826f104c0027abe61b53dec4ea013852922df69c445e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-13.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1833,
+      "sha256": "23beec304c7a14baf2669f7a324a8992fae6704d494d457050ae7ef30bcff1e8",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-14.png",
+      "mimeType": "image/png",
+      "bytes": 45893,
+      "sha256": "f4cfa7da4ba03cea16b9135b7a8ceea1fb3bcc0495fa4a8d0f313a0b4135f0c9",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-14.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1845,
+      "sha256": "68d1c19285ec60825b227c5285895e6706be801cff4e4954a216949db37937eb",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-15.png",
+      "mimeType": "image/png",
+      "bytes": 44897,
+      "sha256": "07aa5c5f7d48e1c812bfada9840f12f6c75cd80350ed6723e3b25a9eb6c0d497",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-15.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1843,
+      "sha256": "91863b1bb9720f2df7521336d8b267bd774b113e995c91d0875f42f3a4528bf4",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-16.png",
+      "mimeType": "image/png",
+      "bytes": 46395,
+      "sha256": "c4b4da3bb84df9436a07a42772ed3e409ca78215a888a297c1ae408c7806d3d7",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-16.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1851,
+      "sha256": "eb7ec06690656b53930f644ad0cd0b488e35c4339446b22138aaaa9904e7697a",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-17.png",
+      "mimeType": "image/png",
+      "bytes": 44693,
+      "sha256": "7ade1cf70850a5b19e705f9cde27689e75d1a1eca832418fc509bf08ad3c14e4",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-17.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1841,
+      "sha256": "e50ccd7b3e42f44cf19cea5e33edcf43d36830876f9d6f256d00b75a9f790607",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-18.png",
+      "mimeType": "image/png",
+      "bytes": 45091,
+      "sha256": "fbeb8a96ff50c5c92edf97a0387bb60557c9c76b6144a49bef5073f041a375e1",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-18.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1841,
+      "sha256": "f2e016a53214f361be920adb2c3f1f448352b0c9ce7dac19ef341538f893bd7c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-19.png",
+      "mimeType": "image/png",
+      "bytes": 44252,
+      "sha256": "44cd9c11717db056eb041eb7c62d705f2938ef2265f8aa59a9d4e13953b76b77",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-19.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1835,
+      "sha256": "8e5749de9b20109fd0aeb738b117e50c3f5633a036ce32beaef41b98f95c6c02",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-20.png",
+      "mimeType": "image/png",
+      "bytes": 45305,
+      "sha256": "3c09089627fefba08f798b66d5b5e4efbef4a4bbf960b5fe87a614b2e288ac06",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-20.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1833,
+      "sha256": "c6927150e7a1f38d95c499367d752f8c06aaa0a7a16e04e7a0478e7f9b1d3737",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-21.png",
+      "mimeType": "image/png",
+      "bytes": 45491,
+      "sha256": "2e73e64ea0477ec1134f509333e9eaf5642c5deb3482168426cd856506990cd7",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/major-21.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1841,
+      "sha256": "b32a3c6dfa310b5ea42fa6289148af008271f6be75258f26ddf0c3eaea4ab869",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-01.png",
+      "mimeType": "image/png",
+      "bytes": 47481,
+      "sha256": "42cccec2344ecc92445136108f6968567ca870484e8ac6f6b873dc90dcfaf357",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-01.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1706,
+      "sha256": "37ee950b0580bb88b8a45d4273e0bbf023f9830ee063c812c4ae20101cd9dad2",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-02.png",
+      "mimeType": "image/png",
+      "bytes": 46889,
+      "sha256": "f4e2304aaa896771818f10a0cfccb9fdc558129e9000a75bbe24dd23dd6344f0",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-02.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1698,
+      "sha256": "f5b50638cc3ecdde00591004f716d942410f5640d05f7d49ebd24177b131389b",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-03.png",
+      "mimeType": "image/png",
+      "bytes": 48389,
+      "sha256": "c4395e9ee35efdf902ea1c1575bea8231f2767206d53f2f69f91415c4c7d0eb3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-03.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1714,
+      "sha256": "3737b697e47538ee8b9ee6305701a5686787b23f654f640843dfddc495ff345a",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-04.png",
+      "mimeType": "image/png",
+      "bytes": 47251,
+      "sha256": "c86184ab6a4e636da83109534d168e20423dc75bc84166c2836cb3583babf746",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-04.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1706,
+      "sha256": "b866fdcf4b86f480b551a2d49ee76f4e29879413ca08ba8e80988af7cad05b08",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-05.png",
+      "mimeType": "image/png",
+      "bytes": 46957,
+      "sha256": "71e72cf73a57dfca47792df5c77c49dc12f31c9f928b46865aded4dac423e08c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-05.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1700,
+      "sha256": "e513aca8de2a6d81539d43b1666924329e7af50037c3682ca9d063927b58b66d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-06.png",
+      "mimeType": "image/png",
+      "bytes": 47341,
+      "sha256": "b7a52dbe264f7f43b07050bd5178c24df834bf8ee2744a5b0465b962dc24bfb8",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-06.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1706,
+      "sha256": "6b78e1a41b207d49e41f711a494a2b9460e89135b68c2aaae3d1c533194d7b70",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-07.png",
+      "mimeType": "image/png",
+      "bytes": 47330,
+      "sha256": "3caa03562bd352a70d2e66fa613fbe7926ac50c9dc779711e0579c5b0f6ea4d6",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-07.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1704,
+      "sha256": "4f33dc3f6638813da9f0ba5358b46c56cb3f3e62c17f19392605b656e791878c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-08.png",
+      "mimeType": "image/png",
+      "bytes": 47074,
+      "sha256": "119731c862182fc56a405a047be9cb00812092e3cf0a2eb4166cda294f4a4f55",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-08.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1704,
+      "sha256": "5c5b9aefe052e94ede3e74ecf2b1b994aa90c2d6f0602c966faa46ee16e5a052",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-09.png",
+      "mimeType": "image/png",
+      "bytes": 47362,
+      "sha256": "2b7dd9f2bd6c8efe5dd50c8f487e6621aedb7936fc1c7ec58135b8149334ae80",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-09.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1712,
+      "sha256": "33b749b4337566cf5fcf8d8cdb6a1459746ebfd17b0dcdc8c7cd87675927fb29",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-10.png",
+      "mimeType": "image/png",
+      "bytes": 46255,
+      "sha256": "90dd98ad6ffb4ff7b97d389b4b41a11ca68372a8e3f5ca1477777c074fba6dc1",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-10.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1696,
+      "sha256": "8388690eb0d57ecd7b73005ce9c97faf88763113cc746332f7936353f4329666",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-11.png",
+      "mimeType": "image/png",
+      "bytes": 47222,
+      "sha256": "b7b7e448749626cd2cac629d89d146e0b2cc7d0a783c8f9295cca2c7b14ca0d7",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-11.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1702,
+      "sha256": "756a5b1ef9bb68b9d7e59d35afb6a6d387e7ed4fcaa35b2fbf935c5362901518",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-12.png",
+      "mimeType": "image/png",
+      "bytes": 47660,
+      "sha256": "52bf70a94ceec97a1036b5751af85a76a2f32ba1327ed5312faccb936bf623c3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-12.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1712,
+      "sha256": "27a175762779dd8400602d3f88168f5e291c77f4f514f793934cb54c7383a8e1",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-13.png",
+      "mimeType": "image/png",
+      "bytes": 48682,
+      "sha256": "f5fe521737c5506d17e5ce3416b5dbc354c6bec88f51fbca4dd2d38b651e75f4",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-13.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1716,
+      "sha256": "fafdea8a163536ea9711b5625f45d09014bb5b3c47ec789622a0b8f6a7b2523f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-14.png",
+      "mimeType": "image/png",
+      "bytes": 47708,
+      "sha256": "927265a188e4ff207b380e8973d67689554ca360b06c790057860aeb6afa0c50",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/pentacles-14.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1708,
+      "sha256": "f082845f7ee918919ffcff55d031bc0903907d9e848af9cf0127a8cd6732a570",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-01.png",
+      "mimeType": "image/png",
+      "bytes": 40308,
+      "sha256": "074b905a6ce9419954c02c839d31cfc62fea2f1ab9635156efc05414cdeadc4a",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-01.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1692,
+      "sha256": "bf1ad74e7ea549b2b6ab05c8ee9ff1bff6f6bcf16183a64a4b054b810498151f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-02.png",
+      "mimeType": "image/png",
+      "bytes": 40608,
+      "sha256": "290682e6f6ae2d6e201598174de9a7dce0eb410d299fcb957ccba48fb985eaed",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-02.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1696,
+      "sha256": "5c88870b9f40ba27642af56ddc335ccf7cf58792b08015dc3edb758244bdb0e5",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-03.png",
+      "mimeType": "image/png",
+      "bytes": 41541,
+      "sha256": "1c2f79c354616f1bfd48c06cb2719f12bcf95b90fdd1326be904fc1f5fcb20e5",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-03.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1718,
+      "sha256": "b90b04c71d767a1b02790086d3b340b8c97064397510a07f2a237ddea2ffbb08",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-04.png",
+      "mimeType": "image/png",
+      "bytes": 39679,
+      "sha256": "7ba57b71f25fe13e951bd9c31f41a5a3c98aa9086f9738eb0edbd633edae13e9",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-04.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1688,
+      "sha256": "a261609310f7b999d1ca42e4e4af246e151625633a4c5233c36891d78d9aa528",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-05.png",
+      "mimeType": "image/png",
+      "bytes": 40482,
+      "sha256": "f41a74e915a02200eb89e9fb3f243723745820c073b5bf51e419c723c3905fed",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-05.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1696,
+      "sha256": "2332ddfcebbd800e332c6a4e8fcd6432f93d0f53244c51d6194d43092ce5bc89",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-06.png",
+      "mimeType": "image/png",
+      "bytes": 40948,
+      "sha256": "60262d6e17ec2afb3c554a67d774e4a7a7f001c76f8141d9d57a8b36f7b09e8d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-06.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1698,
+      "sha256": "c0d5340cf1b1c6eb41c0ad5313ce55b15af926ae387082476e883c5ef361bea9",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-07.png",
+      "mimeType": "image/png",
+      "bytes": 41458,
+      "sha256": "95eaa15dbc149fc1cb840a67f8056493606bacb9f261f86ac1f007b99e5a00c0",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-07.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1698,
+      "sha256": "1cec1181aedd422646bd64e0b7f2157265d9977493f72957d67ca4d3c04ccce2",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-08.png",
+      "mimeType": "image/png",
+      "bytes": 41609,
+      "sha256": "c0931a001111916bcbebd8bc62dde80782f40666f1e1af736eb7d7cfaedb84d6",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-08.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1714,
+      "sha256": "644cf2e9433077041a4f7b5418a18b0e0ffa799f83b0ee53971fdf4e8e89ed91",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-09.png",
+      "mimeType": "image/png",
+      "bytes": 40697,
+      "sha256": "d9bdcd80695caf307c864da78dfbb6647e0fc924d7ee68f9c5bf3cbf0a7e3d11",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-09.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1690,
+      "sha256": "9c9ba9c83355120569a5ae273a93875bf5560f6f817b45472fd6c5931717c4d3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-10.png",
+      "mimeType": "image/png",
+      "bytes": 40345,
+      "sha256": "0cf51a57360f36a10caae17c2c5e5e2bcbbd4fed47c4a56a739bb7004710c4de",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-10.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1696,
+      "sha256": "e073e8ebc21af243ea8e1afa8699bdfebf89df52e1ec7e635ac1d93fe16bfa06",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-11.png",
+      "mimeType": "image/png",
+      "bytes": 40797,
+      "sha256": "31a40caa0a17c3ce26c4bf23e97034ef3c29fc106e0e107f59b62394f2d28f8a",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-11.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1694,
+      "sha256": "b2e6fb7b977be00a6abf710baa60323fc0409b5a5ec5f48ccd8e5dc9fbb534f6",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-12.png",
+      "mimeType": "image/png",
+      "bytes": 41805,
+      "sha256": "b3eac1a368ec91cceb7174323893f01cbc0a45b2742d05876e5c36f0842ac6e3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-12.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1710,
+      "sha256": "0e9d64e44921203b41b6b890863f60222e6c419cd682096b6108deac01dcf32d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-13.png",
+      "mimeType": "image/png",
+      "bytes": 41945,
+      "sha256": "1d13b4d267a6bb246948e7f000bed91f7e95d03fe4ac3764a1bb1c712ef2363d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-13.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1704,
+      "sha256": "9f4d53e0eac12a3d76fcbf6ffbee3a664a8cb8f5c3def552ce614d5d2b24bc93",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-14.png",
+      "mimeType": "image/png",
+      "bytes": 41196,
+      "sha256": "6a9e3d500b7bd7f247becba917a9a7814d84ec3ab6d11cb7eb3f0af7a981bc86",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/swords-14.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1698,
+      "sha256": "6416bf3f0a79cf23fa84925d477ebb8626b4b8a099c46cefa632021700d30558",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-01.png",
+      "mimeType": "image/png",
+      "bytes": 41230,
+      "sha256": "6754f44baacf5a259e3948e159b623e85ef86e27d19501392a81eace3f16a61b",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-01.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1675,
+      "sha256": "cd519d167579282b806b1e70def1c26fe54dd448eada13837ba911cc92a39438",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-02.png",
+      "mimeType": "image/png",
+      "bytes": 41479,
+      "sha256": "385d6c008b439df045a6e10bcaa46f74ae57920dcf6b59fc0b9623027e066d2e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-02.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1681,
+      "sha256": "53e46ad85632f761569fbc07f1a41765a37344d9b2ce5728bd9dae850d976680",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-03.png",
+      "mimeType": "image/png",
+      "bytes": 42424,
+      "sha256": "1d7eace95a6641caa6ae5b18e5330394180b844690d50c270c5d8616359a7c01",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-03.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1691,
+      "sha256": "3586b1df5bec4e38d5f8a7e3fc291364377ffa03232eefd1176c163afdb2d9fe",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-04.png",
+      "mimeType": "image/png",
+      "bytes": 41228,
+      "sha256": "5bfc055ceb79899df254de7af3d6c41f89b1b1e76c21ff88f7b1fecc4734a3bb",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-04.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1685,
+      "sha256": "0e471421249433ce4d38dc93b820441fd81a6b9ff57a9d49bd70baa5ffdb22a0",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-05.png",
+      "mimeType": "image/png",
+      "bytes": 43241,
+      "sha256": "000d2a3451db73012e0eb1322a7a4e87a594c6577b723c272e3634a9993b55e4",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-05.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1701,
+      "sha256": "5c998ceb0a6fe149a18d83bc2e277b54a50dcd814e8e1bfdb4de1c816e931816",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-06.png",
+      "mimeType": "image/png",
+      "bytes": 42241,
+      "sha256": "a0e23810de1ad7306d7f7e593ca2aeb2ddd0d13494e9b43bd4d5fb2091df1cb5",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-06.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1687,
+      "sha256": "4eff03c313e85fdf7ef85ff71d560dcfb8df5c2fd4ea5c062b6ed59bfff424b6",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-07.png",
+      "mimeType": "image/png",
+      "bytes": 42826,
+      "sha256": "e72830ca4a2291bf31fae9c02d48f5a08b10315d3919f59c4c687ccf799b9b3f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-07.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1689,
+      "sha256": "dca8ae48a01dcdc856809205cc1c1e34cd669d5e3ee63490048856d46ddf15ec",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-08.png",
+      "mimeType": "image/png",
+      "bytes": 41799,
+      "sha256": "061e8add31b19d52dd84e6229c2183643f01d91715527550621925fb61dcee30",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-08.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1685,
+      "sha256": "ed98c647d945f695c4adbf7aa4b017b6c1bf2e7b2cccd1a3d28a57ba74db7d2f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-09.png",
+      "mimeType": "image/png",
+      "bytes": 41881,
+      "sha256": "74d8700225096cd63d640f73ad6bb86a4cfee2aba14f808f9169472ff893d79f",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-09.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1689,
+      "sha256": "33cd5c856d93c39eea8c5956f3c89eab4c72bc0e53ab34aa33f2521bec6eac01",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-10.png",
+      "mimeType": "image/png",
+      "bytes": 41821,
+      "sha256": "eb25f7440d40911988a9a69b789a1a6e24fae8f5d1811901cb334d6469cf3174",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-10.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1681,
+      "sha256": "a6267fc5ec62e92659f28e0c96deaf855f6da40c35b5d523b99c526d9a1ce0bb",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-11.png",
+      "mimeType": "image/png",
+      "bytes": 42039,
+      "sha256": "b7bd299971f9a4ffec42c01123b95469bd748637785a0e7185a646d618f537a3",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-11.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1685,
+      "sha256": "968c02f0863d23a4a92dd24eb1fc3a0c6488c763aab65d032b9fb59a7b89135e",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-12.png",
+      "mimeType": "image/png",
+      "bytes": 41448,
+      "sha256": "929fd45a5ac14289d3db133d6de1c4a0cb161c02554e15bd5ce3de69d35b396c",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-12.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1691,
+      "sha256": "5046f0971b63741bf7eff4da78e3fe2bbb5c9c7718fba86e60a808eee6fbb869",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-13.png",
+      "mimeType": "image/png",
+      "bytes": 42538,
+      "sha256": "d655a1c9bd9e5956041ba5a0e10064fd806a8376d1b10eab614cface78a8817d",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-13.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1689,
+      "sha256": "b9288b92ba8ee6fc7ba5bfe5ff6ca45ca435e66dfea097f88c4450345a565871",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-14.png",
+      "mimeType": "image/png",
+      "bytes": 41585,
+      "sha256": "035fa3b1b34e648bbbd50d9e805fff1378b883f6823f2268bf68106fba433a88",
+      "remoteUrl": null
+    },
+    {
+      "path": "assets/tarot/v1/wands-14.svg",
+      "mimeType": "image/svg+xml",
+      "bytes": 1685,
+      "sha256": "12d8a7fd64cd4689c1e32c5445d6794109b051709ed4abd609f2a6cfa681117f",
+      "remoteUrl": null
+    }
+  ]
+}

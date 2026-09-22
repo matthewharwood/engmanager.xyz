@@ -1,0 +1,3735 @@
+{
+  "warning": "Keys and unit weights are model-specific. Empty lists mean zero weight, not missing specifications. Learned coefficients are unavailable until calibration.",
+  "items": [
+    {
+      "itemId": "ipip-neo-120-001",
+      "wording": "Worry about things.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-002",
+      "wording": "Make friends easily.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-003",
+      "wording": "Have a vivid imagination.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-004",
+      "wording": "Trust others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-005",
+      "wording": "Complete tasks successfully.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-006",
+      "wording": "Get angry easily.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-007",
+      "wording": "Love large parties.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-008",
+      "wording": "Believe in the importance of art.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-009",
+      "wording": "Use others for my own ends.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-010",
+      "wording": "Like to tidy up.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "blue",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-011",
+      "wording": "Often feel blue.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-012",
+      "wording": "Take charge.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-013",
+      "wording": "Experience my emotions intensely.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-014",
+      "wording": "Love to help others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-015",
+      "wording": "Keep my promises.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-016",
+      "wording": "Find it difficult to approach others.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-017",
+      "wording": "Am always busy.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-018",
+      "wording": "Prefer variety to routine.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-019",
+      "wording": "Love a good fight.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-020",
+      "wording": "Work hard.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-021",
+      "wording": "Go on binges.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-022",
+      "wording": "Love excitement.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-023",
+      "wording": "Love to read challenging material.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-024",
+      "wording": "Believe that I am better than others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-025",
+      "wording": "Am always prepared.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-026",
+      "wording": "Panic easily.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-027",
+      "wording": "Radiate joy.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-028",
+      "wording": "Tend to vote for liberal political candidates.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-029",
+      "wording": "Sympathize with the homeless.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-030",
+      "wording": "Jump into things without thinking.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-031",
+      "wording": "Fear for the worst.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-032",
+      "wording": "Feel comfortable around people.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-033",
+      "wording": "Enjoy wild flights of fantasy.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-034",
+      "wording": "Believe that others have good intentions.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-035",
+      "wording": "Excel in what I do.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-036",
+      "wording": "Get irritated easily.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-037",
+      "wording": "Talk to a lot of different people at parties.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-038",
+      "wording": "See beauty in things that others might not notice.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-039",
+      "wording": "Cheat to get ahead.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-040",
+      "wording": "Often forget to put things back in their proper place.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-041",
+      "wording": "Dislike myself.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-042",
+      "wording": "Try to lead others.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-043",
+      "wording": "Feel others' emotions.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-044",
+      "wording": "Am concerned about others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-045",
+      "wording": "Tell the truth.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-046",
+      "wording": "Am afraid to draw attention to myself.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-047",
+      "wording": "Am always on the go.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-048",
+      "wording": "Prefer to stick with things that I know.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-049",
+      "wording": "Yell at people.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-050",
+      "wording": "Do more than what's expected of me.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-051",
+      "wording": "Rarely overindulge.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-052",
+      "wording": "Seek adventure.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-053",
+      "wording": "Avoid philosophical discussions.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-054",
+      "wording": "Think highly of myself.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-055",
+      "wording": "Carry out my plans.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-056",
+      "wording": "Become overwhelmed by events.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-057",
+      "wording": "Have a lot of fun.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-058",
+      "wording": "Believe that there is no absolute right and wrong.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-059",
+      "wording": "Feel sympathy for those who are worse off than myself.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-060",
+      "wording": "Make rash decisions.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-061",
+      "wording": "Am afraid of many things.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-062",
+      "wording": "Avoid contacts with others.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E1",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-063",
+      "wording": "Love to daydream.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-064",
+      "wording": "Trust what people say.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-065",
+      "wording": "Handle tasks smoothly.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-066",
+      "wording": "Lose my temper.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N2",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-067",
+      "wording": "Prefer to be alone.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-068",
+      "wording": "Do not like poetry.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-069",
+      "wording": "Take advantage of others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-070",
+      "wording": "Leave a mess in my room.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-071",
+      "wording": "Am often down in the dumps.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-072",
+      "wording": "Take control of things.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E3",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-073",
+      "wording": "Rarely notice my emotional reactions.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-074",
+      "wording": "Am indifferent to the feelings of others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-075",
+      "wording": "Break rules.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-076",
+      "wording": "Only feel comfortable with friends.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-077",
+      "wording": "Do a lot in my spare time.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E4",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-078",
+      "wording": "Dislike changes.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-079",
+      "wording": "Insult people.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-080",
+      "wording": "Do just enough work to get by.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-081",
+      "wording": "Easily resist temptations.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-082",
+      "wording": "Enjoy being reckless.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-083",
+      "wording": "Have difficulty understanding abstract ideas.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-084",
+      "wording": "Have a high opinion of myself.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-085",
+      "wording": "Waste my time.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-086",
+      "wording": "Feel that I'm unable to deal with things.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-087",
+      "wording": "Love life.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-088",
+      "wording": "Tend to vote for conservative political candidates.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-089",
+      "wording": "Am not interested in other people's problems.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-090",
+      "wording": "Rush into things.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-091",
+      "wording": "Get stressed out easily.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-092",
+      "wording": "Keep others at a distance.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E1",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-093",
+      "wording": "Like to get lost in thought.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-094",
+      "wording": "Distrust people.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A1",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-095",
+      "wording": "Know how to get things done.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C1",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-096",
+      "wording": "Am not easily annoyed.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-097",
+      "wording": "Avoid crowds.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "yellow",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-098",
+      "wording": "Do not enjoy going to art museums.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-099",
+      "wording": "Obstruct others' plans.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-100",
+      "wording": "Leave my belongings around.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C2",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-101",
+      "wording": "Feel comfortable with myself.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-102",
+      "wording": "Wait for others to lead the way.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-103",
+      "wording": "Don't understand people who get emotional.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-104",
+      "wording": "Take no time for others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-105",
+      "wording": "Break my promises.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C3",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-106",
+      "wording": "Am not bothered by difficult social situations.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-107",
+      "wording": "Like to take it easy.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-108",
+      "wording": "Am attached to conventional ways.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-109",
+      "wording": "Get back at others.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-110",
+      "wording": "Put little time and effort into my work.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C4",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "red",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-111",
+      "wording": "Am able to control my cravings.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-112",
+      "wording": "Act wild and crazy.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E5",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-113",
+      "wording": "Am not interested in theoretical discussions.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-114",
+      "wording": "Boast about my virtues.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-115",
+      "wording": "Have difficulty starting tasks.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C5",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-116",
+      "wording": "Remain calm under pressure.",
+      "originalModule": "big5",
+      "originalScale": "N",
+      "originalFacet": "N6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-117",
+      "wording": "Look at the bright side of life.",
+      "originalModule": "big5",
+      "originalScale": "E",
+      "originalFacet": "E6",
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-118",
+      "wording": "Believe that we should be tough on crime.",
+      "originalModule": "big5",
+      "originalScale": "O",
+      "originalFacet": "O6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-119",
+      "wording": "Try not to think about the needy.",
+      "originalModule": "big5",
+      "originalScale": "A",
+      "originalFacet": "A6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "green",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "ipip-neo-120-120",
+      "wording": "Act without thinking.",
+      "originalModule": "big5",
+      "originalScale": "C",
+      "originalFacet": "C6",
+      "originalKey": -1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [
+        {
+          "color": "blue",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.125
+        }
+      ],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP001",
+      "wording": "Build kitchen cabinets",
+      "originalModule": "interests",
+      "originalScale": "R",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP002",
+      "wording": "Develop a new medicine",
+      "originalModule": "interests",
+      "originalScale": "I",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP003",
+      "wording": "Write books or plays",
+      "originalModule": "interests",
+      "originalScale": "A",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP004",
+      "wording": "Help people with personal or emotional problems",
+      "originalModule": "interests",
+      "originalScale": "S",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP005",
+      "wording": "Manage a department within a large company",
+      "originalModule": "interests",
+      "originalScale": "E",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP006",
+      "wording": "Install software across computers on a large network",
+      "originalModule": "interests",
+      "originalScale": "C",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP007",
+      "wording": "Repair household appliances",
+      "originalModule": "interests",
+      "originalScale": "R",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP008",
+      "wording": "Study ways to reduce water pollution",
+      "originalModule": "interests",
+      "originalScale": "I",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP009",
+      "wording": "Compose or arrange music",
+      "originalModule": "interests",
+      "originalScale": "A",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP010",
+      "wording": "Give career guidance to people",
+      "originalModule": "interests",
+      "originalScale": "S",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP011",
+      "wording": "Start your own business",
+      "originalModule": "interests",
+      "originalScale": "E",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP012",
+      "wording": "Operate a calculator",
+      "originalModule": "interests",
+      "originalScale": "C",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP013",
+      "wording": "Assemble electronic parts",
+      "originalModule": "interests",
+      "originalScale": "R",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP014",
+      "wording": "Conduct chemical experiments",
+      "originalModule": "interests",
+      "originalScale": "I",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP015",
+      "wording": "Create special effects for movies",
+      "originalModule": "interests",
+      "originalScale": "A",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP016",
+      "wording": "Perform rehabilitation therapy",
+      "originalModule": "interests",
+      "originalScale": "S",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP017",
+      "wording": "Negotiate business contracts",
+      "originalModule": "interests",
+      "originalScale": "E",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP018",
+      "wording": "Keep shipping and receiving records",
+      "originalModule": "interests",
+      "originalScale": "C",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP019",
+      "wording": "Drive a truck to deliver packages to offices and homes",
+      "originalModule": "interests",
+      "originalScale": "R",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP020",
+      "wording": "Examine blood samples using a microscope",
+      "originalModule": "interests",
+      "originalScale": "I",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP021",
+      "wording": "Paint sets for plays",
+      "originalModule": "interests",
+      "originalScale": "A",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP022",
+      "wording": "Do volunteer work at a non-profit organization",
+      "originalModule": "interests",
+      "originalScale": "S",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP023",
+      "wording": "Market a new line of clothing",
+      "originalModule": "interests",
+      "originalScale": "E",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP024",
+      "wording": "Inventory supplies using a hand-held computer",
+      "originalModule": "interests",
+      "originalScale": "C",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP025",
+      "wording": "Test the quality of parts before shipment",
+      "originalModule": "interests",
+      "originalScale": "R",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP026",
+      "wording": "Develop a way to better predict the weather",
+      "originalModule": "interests",
+      "originalScale": "I",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP027",
+      "wording": "Write scripts for movies or television shows",
+      "originalModule": "interests",
+      "originalScale": "A",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP028",
+      "wording": "Teach a high-school class",
+      "originalModule": "interests",
+      "originalScale": "S",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP029",
+      "wording": "Sell merchandise at a department store",
+      "originalModule": "interests",
+      "originalScale": "E",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "MIP030",
+      "wording": "Stamp, sort, and distribute mail for an organization",
+      "originalModule": "interests",
+      "originalScale": "C",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI001",
+      "wording": "He believes he should always show respect to his parents and to older people. It is important to him to be obedient",
+      "originalModule": "values",
+      "originalScale": "conformity",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI002",
+      "wording": "Religious belief is important to him. He tries hard to do what his religion requires.",
+      "originalModule": "values",
+      "originalScale": "tradition",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI003",
+      "wording": "It's very important to him to help the people around him. He wants to care for their well-being.",
+      "originalModule": "values",
+      "originalScale": "benevolence",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI004",
+      "wording": "He thinks it is important that every person in the world be treated equally. He believes everyone should have equal opportunities in life.",
+      "originalModule": "values",
+      "originalScale": "universalism",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI005",
+      "wording": "He thinks it's important to be interested in things. He likes to be curious and to try to understand all sorts of things.",
+      "originalModule": "values",
+      "originalScale": "self_direction",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI006",
+      "wording": "He likes to take risks. He is always looking for adventures.",
+      "originalModule": "values",
+      "originalScale": "stimulation",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI007",
+      "wording": "He seeks every chance he can to have fun. It is important to him to do things that give him pleasure.",
+      "originalModule": "values",
+      "originalScale": "hedonism",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI008",
+      "wording": "Getting ahead in life is important to him. He strives to do better than others.",
+      "originalModule": "values",
+      "originalScale": "achievement",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI009",
+      "wording": "He always wants to be the one who makes the decisions. He likes to be the leader.",
+      "originalModule": "values",
+      "originalScale": "power",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI010",
+      "wording": "It is important to him that things be organized and clean. He really does not like things to be a mess.",
+      "originalModule": "values",
+      "originalScale": "security",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI011",
+      "wording": "It is important to him to always behave properly. He wants to avoid doing anything people would say is wrong.",
+      "originalModule": "values",
+      "originalScale": "conformity",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI012",
+      "wording": "He thinks it is best to do things in traditional ways. It is important to him to keep up the customs he has learned.",
+      "originalModule": "values",
+      "originalScale": "tradition",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI013",
+      "wording": "It is important to him to respond to the needs of others. He tries to support those he knows.",
+      "originalModule": "values",
+      "originalScale": "benevolence",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI014",
+      "wording": "He believes all the worlds' people should live in harmony. Promoting peace among all groups in the world is important to him.",
+      "originalModule": "values",
+      "originalScale": "universalism",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI015",
+      "wording": "Thinking up new ideas and being creative is important to him. He likes to do things in his own original way.",
+      "originalModule": "values",
+      "originalScale": "self_direction",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI016",
+      "wording": "He thinks it is important to do lots of different things in life. He always looks for new things to try.",
+      "originalModule": "values",
+      "originalScale": "stimulation",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI017",
+      "wording": "He really wants to enjoy life. Having a good time is very important to him.",
+      "originalModule": "values",
+      "originalScale": "hedonism",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI018",
+      "wording": "Being very successful is important to him. He likes to impress other people.",
+      "originalModule": "values",
+      "originalScale": "achievement",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI019",
+      "wording": "It is important to him to be in charge and tell others what to do. He wants people to do what he says.",
+      "originalModule": "values",
+      "originalScale": "power",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "TWIVI020",
+      "wording": "Having a stable government is important to him. He is concerned that the social order be protected.",
+      "originalModule": "values",
+      "originalScale": "security",
+      "originalFacet": null,
+      "originalKey": 1,
+      "typeDirect": [],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-01",
+      "wording": "I work out what I think by talking it through with someone.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-02",
+      "wording": "I prefer to form my thoughts privately before discussing them.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-03",
+      "wording": "After a quiet day, I usually want some interaction with other people.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-04",
+      "wording": "After an enjoyable social event, I usually want time on my own.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-05",
+      "wording": "When I have a free afternoon, spending it with other people usually appeals to me.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-06",
+      "wording": "I look forward to having an activity that I can enjoy on my own.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-07",
+      "wording": "I tend to introduce a topic when a group conversation becomes quiet.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-08",
+      "wording": "In a group conversation, I prefer to listen until I have something specific to add.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-09",
+      "wording": "I like a day that includes frequent conversation.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-10",
+      "wording": "I like long stretches of a day without conversation.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-11",
+      "wording": "When both are available, I prefer discussing an idea live to exchanging written messages.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-ei-12",
+      "wording": "I find it easier to explore an idea when I can pause and reflect alone.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "EI",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-01",
+      "wording": "When I meet an unfamiliar problem, I first look for the broader pattern it might fit.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-02",
+      "wording": "When learning something new, I prefer to begin with a concrete example.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-03",
+      "wording": "An explanation interests me when it connects ideas that initially seem unrelated.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-04",
+      "wording": "I trust an approach more when I can compare it with specific past experience.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-05",
+      "wording": "I enjoy exploring possibilities before knowing whether they will be practical.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-06",
+      "wording": "When someone describes an event, I want a clear account of what actually happened.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-07",
+      "wording": "I tend to ask what a situation could become, beyond what it is now.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-08",
+      "wording": "I prefer instructions that spell out the steps I can follow.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-09",
+      "wording": "I usually want to understand the underlying principle before the details.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-10",
+      "wording": "Specific observations are usually my starting point for making sense of a situation.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-11",
+      "wording": "I find it natural to explain an unfamiliar idea by comparing it with a different subject.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-sn-12",
+      "wording": "I prefer descriptions that use literal examples over figurative comparisons.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "SN",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-01",
+      "wording": "When a decision affects several people, I begin by considering their individual circumstances.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-02",
+      "wording": "When comparing options, I begin by defining criteria that apply equally to each one.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-03",
+      "wording": "The effect a choice may have on a relationship is central to my decision.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-04",
+      "wording": "I prefer to evaluate a proposal separately from my feelings about the person proposing it.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-05",
+      "wording": "When a rule produces a difficult outcome for someone, I first consider whether the person's circumstances justify an exception.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-06",
+      "wording": "When making an exception, I first consider whether I could apply the same reasoning to other cases.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-07",
+      "wording": "When two workable options remain, I tend to favor the one that best reflects the values of the people affected.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-08",
+      "wording": "When two workable options remain, I tend to favor the one that best meets the criteria agreed in advance.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-09",
+      "wording": "When giving advice, I first explore what matters personally to the person asking.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-10",
+      "wording": "When giving advice, I first map the likely consequences of the available options.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-11",
+      "wording": "I find a decision hard to endorse if it conflicts with the personal values I bring to the situation.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-tf-12",
+      "wording": "I find a decision hard to endorse if its reasoning changes between otherwise similar cases.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "TF",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-01",
+      "wording": "For a shared activity, I prefer agreeing on a plan well before it begins.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-02",
+      "wording": "For an open-ended task, I prefer deciding the next step as the work develops.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-03",
+      "wording": "Once I have enough information for a workable choice, I prefer to settle it.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-04",
+      "wording": "When there is time to decide, I prefer to keep several possibilities available.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-05",
+      "wording": "I prefer knowing which tasks I intend to finish before I start the day.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-06",
+      "wording": "I enjoy having room to change the order of my tasks during the day.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-07",
+      "wording": "When arranging a trip, I prefer to settle the main details in advance.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-08",
+      "wording": "On a day off, I prefer choosing activities as opportunities arise.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-09",
+      "wording": "I like agreeing on a stopping point before starting a discussion.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-10",
+      "wording": "I am comfortable leaving a plan unfinished while new information is still arriving.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-11",
+      "wording": "Even when the stakes are low, I prefer having decisions settled.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": 1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    },
+    {
+      "itemId": "type-candidate-jp-12",
+      "wording": "I prefer arrangements that are easy to change when my interests shift.",
+      "originalModule": "type_preferences_candidate",
+      "originalScale": null,
+      "originalFacet": null,
+      "originalKey": null,
+      "typeDirect": [
+        {
+          "axis": "JP",
+          "key": -1,
+          "weight": 1,
+          "normalizedWeight": 0.08333333333333333
+        }
+      ],
+      "typeHybrid": [],
+      "colors": [],
+      "learnedBrandedCoefficients": null,
+      "newModelZeroWeightWhenAbsent": true
+    }
+  ]
+}

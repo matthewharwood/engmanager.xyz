@@ -1,0 +1,304 @@
+{
+  "instrument": "IPIP-IPC",
+  "version": "Markey-and-Markey-2009",
+  "items": [
+    {
+      "id": "ipip-ipc-01",
+      "wording": "Am quiet around strangers",
+      "scale": "FG",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-02",
+      "wording": "Speak softly",
+      "scale": "HI",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-03",
+      "wording": "Tolerate a lot from others",
+      "scale": "JK",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-04",
+      "wording": "Am interested in people",
+      "scale": "LM",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-05",
+      "wording": "Feel comfortable around people",
+      "scale": "NO",
+      "key": 1,
+      "existingCanonicalItemId": "ipip-neo-120-032",
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "same-wording-except-final-period"
+    },
+    {
+      "id": "ipip-ipc-06",
+      "wording": "Demand to be the center of interest",
+      "scale": "PA",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-07",
+      "wording": "Cut others to pieces",
+      "scale": "BC",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-08",
+      "wording": "Believe people should fend for themselves",
+      "scale": "DE",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-09",
+      "wording": "Am a very private person",
+      "scale": "FG",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-10",
+      "wording": "Let others finish what they are saying",
+      "scale": "HI",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-11",
+      "wording": "Take things as they come",
+      "scale": "JK",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-12",
+      "wording": "Reassure others",
+      "scale": "LM",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-13",
+      "wording": "Start conversations",
+      "scale": "NO",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-14",
+      "wording": "Do most of the talking",
+      "scale": "PA",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-15",
+      "wording": "Contradict others",
+      "scale": "BC",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-16",
+      "wording": "Don't fall for sob-stories",
+      "scale": "DE",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-17",
+      "wording": "Don't talk a lot",
+      "scale": "FG",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-18",
+      "wording": "Seldom toot my own horn",
+      "scale": "HI",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-19",
+      "wording": "Think of others first",
+      "scale": "JK",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-20",
+      "wording": "Inquire about others' well-being",
+      "scale": "LM",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-21",
+      "wording": "Talk to a lot of different people at parties",
+      "scale": "NO",
+      "key": 1,
+      "existingCanonicalItemId": "ipip-neo-120-037",
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "same-wording-except-final-period"
+    },
+    {
+      "id": "ipip-ipc-22",
+      "wording": "Speak loudly",
+      "scale": "PA",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-23",
+      "wording": "Snap at people",
+      "scale": "BC",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-24",
+      "wording": "Don't put a lot of thought into things",
+      "scale": "DE",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-25",
+      "wording": "Have little to say",
+      "scale": "FG",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-26",
+      "wording": "Dislike being the center of attention",
+      "scale": "HI",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-27",
+      "wording": "Seldom stretch the truth",
+      "scale": "JK",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-28",
+      "wording": "Get along well with others",
+      "scale": "LM",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-29",
+      "wording": "Love large parties",
+      "scale": "NO",
+      "key": 1,
+      "existingCanonicalItemId": "ipip-neo-120-007",
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "same-wording-except-final-period"
+    },
+    {
+      "id": "ipip-ipc-30",
+      "wording": "Demand attention",
+      "scale": "PA",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-31",
+      "wording": "Have a sharp tongue",
+      "scale": "BC",
+      "key": 1,
+      "existingCanonicalItemId": null,
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "new_item"
+    },
+    {
+      "id": "ipip-ipc-32",
+      "wording": "Am not interested in other people's problems",
+      "scale": "DE",
+      "key": 1,
+      "existingCanonicalItemId": "ipip-neo-120-089",
+      "matchingRule": "Only capitalization, whitespace and final period ignored; no semantic paraphrase matching.",
+      "matchStatus": "same-wording-except-final-period"
+    }
+  ],
+  "numberOfItems": 32,
+  "newItemsAfterWordingDeduplication": 28,
+  "allItemsPositiveWithinOctant": true,
+  "source": "https://ipip.ori.org/newIPIP-IPCScoringKey.htm",
+  "sourceSurvey": "https://ipip.ori.org/newIPIP-IPCSurvey.htm",
+  "permission": "IPIP public domain",
+  "includedInDefaultPilot": false,
+  "interpretation": "Optional measure of eight interpersonal octants; not a DISC or commercial color result.",
+  "administrationCaveat": "Official instructions refer to comparison with people of the same gender and roughly the same age. Existing form instructions do not. Sharing answers is an administration adaptation that needs evaluation; preserve the original form separately for validation.",
+  "warning": "Item 24 may look unusual for its octant but is retained as published. Item 32 uses key +1 here, while the corresponding existing Big Five item uses key -1. Never store a single globally reversed answer."
+}

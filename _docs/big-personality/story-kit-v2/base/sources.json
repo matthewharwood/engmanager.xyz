@@ -1,0 +1,191 @@
+[
+  {
+    "id": "S01",
+    "title": "IPIP official public-domain statement",
+    "url": "https://ipip.ori.org/",
+    "evidence_note": "Instrument steward; reuse permission for IPIP items and scales.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S02",
+    "title": "IPIP-NEO-120 official items and keys",
+    "url": "https://ipip.ori.org/30FacetNEO-PI-RItems.htm",
+    "evidence_note": "Existing instrument source identified in the supplied packet.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S03",
+    "title": "McCrae & Costa (1989), Reinterpreting the MBTI from the perspective of the five-factor model",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/2709300/",
+    "evidence_note": "Primary comparative research; overlap does not establish distinct categories or an individual conversion.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S04",
+    "title": "The Myers-Briggs Company: MBTI Facts",
+    "url": "https://www.themyersbriggs.com/en-US/Support/MBTI-Facts",
+    "evidence_note": "Publisher evidence: seven-study/sample table, older MBTI/NEO forms, correlations corrected for unreliability using manual coefficients; not observed prediction accuracy.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S05",
+    "title": "Myers & Briggs Foundation: The Preferences",
+    "url": "https://www.myersbriggs.org/my-mbti-personality-type/the-mbti-preferences/",
+    "evidence_note": "Official construct descriptions; no protected questionnaire items reproduced.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S06",
+    "title": "The Myers-Briggs Company: MBTI Global Version",
+    "url": "https://www.themyersbriggs.com/en-US/Access-Resources/MBTI-Global-Version",
+    "evidence_note": "Global Step I has 92 items; Step II has 143. Version-specific counts.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S07",
+    "title": "The Myers-Briggs Company: Facts and Common Criticisms",
+    "url": "https://www.themyersbriggs.com/en-us/access-resources/articles/mbti-facts-common-criticisms",
+    "evidence_note": "Publisher reports Global Step I scale test-retest correlations of .81-.86 at 6-15 weeks.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S08",
+    "title": "The Myers-Briggs Company: Copyright and Permissions",
+    "url": "https://www.themyersbriggs.com/en-US/Support/Copyright-and-Permissions",
+    "evidence_note": "Publisher restrictions on reproducing protected material in websites, software, and databases.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S09",
+    "title": "Open-Source Psychometrics Project: OJTS 2.1",
+    "url": "https://openpsychometrics.org/tests/OJTS/",
+    "evidence_note": "48-item online version; expressly developed against internet users who already identify with a type.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S10",
+    "title": "Open-Source Psychometrics Project: development and license",
+    "url": "https://openpsychometrics.org/tests/OJTS/development/",
+    "evidence_note": "Self-identified-type item selection; posted CC BY-NC-SA 4.0 license. No item bank copied into this kit.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S11",
+    "title": "16Personalities: Our Framework",
+    "url": "https://www.16personalities.com/articles/our-theory",
+    "evidence_note": "Provider describes NERIS as reworked Big Five, rather than Jungian cognitive-function measurement.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S12",
+    "title": "Insights Discovery: validating the system factsheet",
+    "url": "https://www.insights.com/media/2728/insights-discovery-validating-the-system-factsheet.pdf",
+    "evidence_note": "Provider methods, 25 frames/100 word pairs, alpha and retest summaries.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S13",
+    "title": "Insights: Discovery model developer documentation",
+    "url": "https://developers.insights.com/discovery-model",
+    "evidence_note": "Official model description and API contact; does not grant questionnaire reuse rights.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S14",
+    "title": "True Colors: four common personality types",
+    "url": "https://www.truecolorsintl.com/tciblog/what-are-the-four-common-personality-types?hs_amp=true",
+    "evidence_note": "Orange, Gold, Green, Blue; different meanings from Insights.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S15",
+    "title": "True Colors: Research Precis",
+    "url": "https://www.truecolorsintl.com/research-precis",
+    "evidence_note": "Provider describes ipsative instrument and commissioned assessment review.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S16",
+    "title": "ASI: True Colors construct-validity report, 2021",
+    "url": "https://info.truecolorsintl.com/hubfs/TC-COLORS-VALIDITY-%20210715.pdf",
+    "evidence_note": "Provider-hosted third-party report; interpretation must account for fixed-sum dependencies.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S17",
+    "title": "Everything DiSC: The Science Behind Everything DiSC",
+    "url": "https://www.everythingdisc.com/the-science-behind-disc",
+    "evidence_note": "Provider scale reliability tables; relates to this instrument, not every DISC-branded test.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S18",
+    "title": "Color Code: About",
+    "url": "https://www.colorcode.com/about/",
+    "evidence_note": "Provider theory of power, intimacy, peace and fun motives.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S19",
+    "title": "Color Code: History of Personality Theory and Assessment",
+    "url": "https://www.colorcode.com/media/whitepaper.pdf",
+    "evidence_note": "Provider theory document; does not validate conversion from this questionnaire.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S20",
+    "title": "Markey & Markey (2009), A brief assessment of the interpersonal circumplex",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/19667139/",
+    "evidence_note": "Primary research on the 32-item IPIP-IPC, across three studies.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S21",
+    "title": "IPIP-IPC official scoring key",
+    "url": "https://ipip.ori.org/newIPIP-IPCScoringKey.htm",
+    "evidence_note": "Public-domain 32-item key, all positive within each octant.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S22",
+    "title": "IPIP-IPC official administration form",
+    "url": "https://ipip.ori.org/newIPIP-IPCSurvey.htm",
+    "evidence_note": "Public-domain wording and original administration instructions.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S23",
+    "title": "Boateng et al. (2018), Best practices for developing and validating scales",
+    "url": "https://www.frontiersin.org/journals/public-health/articles/10.3389/fpubh.2018.00149/full",
+    "evidence_note": "Methodological guidance, not evidence for the candidate questions in this kit.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S24",
+    "title": "Clark & Watson (2019), Constructing validity",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30896212/",
+    "evidence_note": "Construct clarity, inclusive pools, related-construct testing, and dimensionality.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S25",
+    "title": "McNeish (2018), Thanks coefficient alpha, we will take it from here",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/28557467/",
+    "evidence_note": "Reliability estimators and limitations of relying on alpha alone.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S26",
+    "title": "Flake & Fried (2020), Measurement Schmeasurement",
+    "url": "https://doi.org/10.1177/2515245920952393",
+    "evidence_note": "Transparent measurement decisions and avoidance of unreported scoring flexibility.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "S27",
+    "title": "IPIP administration guidance",
+    "url": "https://ipip.ori.org/new_ipip-50-item-scale.htm",
+    "evidence_note": "Permits mixing IPIP items; permission is separate from validating a new form.",
+    "accessed": "2026-09-22"
+  }
+]
