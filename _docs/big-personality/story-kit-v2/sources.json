@@ -1,0 +1,100 @@
+[
+  {
+    "id": "C01",
+    "title": "Talhelm et al. (2014), rice versus wheat and psychological differences",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/24812395/",
+    "note": "Regional interdependence findings; not individual diagnosis.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C02",
+    "title": "Talhelm & English (2020), rice farming and tighter social norms",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/32732432/",
+    "note": "Direct match to the rice/tightness connection; observational population evidence.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C03",
+    "title": "Talhelm & Dong (2024), quasi-random assignment to rice and wheat farms",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/38413584/",
+    "note": "Stronger design for this mechanism in a specific setting; still no ancestry-to-personality rule.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C04",
+    "title": "Gelfand et al. (2011), tight and loose cultures in 33 nations",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/21617077/",
+    "note": "Norm strength and tolerance of departures from norms.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C05",
+    "title": "Michele Gelfand, Rule Makers, Rule Breakers, publisher page",
+    "url": "https://www.simonandschuster.com/books/Rule-Makers-Rule-Breakers/Michele-Gelfand/9781501152931",
+    "note": "Likely book match; identification remains tentative.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C06",
+    "title": "Johnson (2014), development of IPIP-NEO-120",
+    "url": "https://www.sciencedirect.com/science/article/pii/S0092656614000506",
+    "note": "Empirical development and validation of the existing personality instrument.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C07",
+    "title": "Carlson (1985), A double-blind test of astrology",
+    "url": "https://www.nature.com/articles/318419a0",
+    "note": "Historical experimental test; astrology is not used as personality evidence in this design.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C08",
+    "title": "Hong Kong Observatory calendar conversion tables",
+    "url": "https://www.hko.gov.hk/en/gts/time/conversion.htm",
+    "note": "Calendar reference; 1901-2100 tables.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C09",
+    "title": "Hong Kong Observatory 2024 conversion table",
+    "url": "https://www.hko.gov.hk/en/gts/time/calendar/pdf/files/2024e.pdf",
+    "note": "2024 boundary: 10 February, Dragon.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C10",
+    "title": "Hong Kong Observatory 2025 conversion table",
+    "url": "https://www.hko.gov.hk/en/gts/time/calendar/pdf/files/2025e.pdf",
+    "note": "2025 boundary: 29 January, Snake.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C11",
+    "title": "Hong Kong Observatory 2026 conversion table",
+    "url": "https://www.hko.gov.hk/en/gts/time/calendar/pdf/files/2026e.pdf",
+    "note": "2026 boundary: 17 February, Horse.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C12",
+    "title": "The Met, It is in the Cards (Catalog)",
+    "url": "https://www.metmuseum.org/perspectives/tarot",
+    "note": "Tarot as an artistic and reflective medium, including reinterpretations; not predictive validation.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C13",
+    "title": "Cloudflare R2 public buckets",
+    "url": "https://developers.cloudflare.com/r2/buckets/public-buckets/",
+    "note": "Use a custom domain for production public asset delivery.",
+    "accessed": "2026-09-22"
+  },
+  {
+    "id": "C14",
+    "title": "ECMAScript Internationalization API",
+    "url": "https://tc39.es/ecma402/",
+    "note": "Intl Chinese-calendar date parts; runtime support is checked rather than assumed.",
+    "accessed": "2026-09-22"
+  }
+]

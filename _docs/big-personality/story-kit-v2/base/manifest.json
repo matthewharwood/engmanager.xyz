@@ -1,0 +1,15 @@
+{
+  "version": "unified-questionnaire-candidate-2026-09-22-v1",
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "e593d19fbf55d9ce1b3879057c606410903dc1241321a1c7f8f6834180d96daf",
+    "additional-questions.md": "19a9da51c999ebbedf6f01adc8b81ce228cce232270e639e492b9a23a852a76f",
+    "optional-ipip-ipc.json": "39c93cb06b487b1236c66426fa8065dd7a1669c4c3edfaec6479036f3f72072a",
+    "question-weight-map.json": "7cc20b3e4de58b31f61941ceb63cc78e9f2f91ffd1dbacd36f8061ac2de6fd89",
+    "research-and-design.md": "5461acbf4f92c1581fff9646af343c7d6734493285a322f3ca3a358a322f58cd",
+    "scoring.mjs": "0fedd73920fc747015ece24d1e148d07cd8870df82720bdba1d0ab0cefc2313b",
+    "scoring.test.mjs": "8c3457453283e20b2a07605dd4bade4c9f0e4d59b1c965fb339dd0fdc0b2b102",
+    "sources.json": "1cbb8fcac1fc571f87319374e04a6efd6d4d5c642d97b083db47700ca72d4849",
+    "unified-questionnaire-bank.json": "66bd667fe519f9c42286110a30f7e6c4bb7486bcd9952d7bde654314fabbbed4"
+  }
+}

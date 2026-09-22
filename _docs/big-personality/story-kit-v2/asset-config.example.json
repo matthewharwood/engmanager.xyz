@@ -1,0 +1,7 @@
+{
+  "assetBaseUrl": null,
+  "exampleOnly": "https://assets.example.invalid/your-story/",
+  "allowedOrigins": [],
+  "fallback": "Use included local PNGs, then SVGs, then card name/theme text. Never invent a successful fetch.",
+  "publicationStatus": "Not uploaded or deployed to Cloudflare."
+}
