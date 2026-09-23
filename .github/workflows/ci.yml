@@ -45,6 +45,13 @@ jobs:
           node scripts/personality-release.mjs --verify-published
           node scripts/personality-release.mjs
           git diff --exit-code -- website/assets/personality/v4/release.mjs
+          node scripts/personality-studio-release.mjs
+          git diff --exit-code -- website/assets/personality/v5/release.mjs
+
+      - name: Report studio browser checks
+        run: |
+          export CHROME_BIN="$(command -v google-chrome || command -v chromium || true)"
+          node scripts/personality-studio-browser.mjs
 
       - name: Format
         run: cargo fmt --all --check

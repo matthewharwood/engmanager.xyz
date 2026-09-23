@@ -395,7 +395,7 @@ mod tests {
             assert_eq!(header_str(&response, name), Some("no-store"));
         }
         let worker = body_string(response).await;
-        let pinned = get(&router, SITE_HOST, "/assets/personality/v4/sw.js").await;
+        let pinned = get(&router, SITE_HOST, "/assets/personality/v5/sw.js").await;
         assert_eq!(
             header_str(&pinned, "cache-control"),
             Some(if cfg!(debug_assertions) {
@@ -405,7 +405,7 @@ mod tests {
             })
         );
         assert_eq!(body_string(pinned).await, worker);
-        for version in [2, 3] {
+        for version in [2, 3, 4] {
             let path = format!("/assets/personality/v{version}/sw.js");
             let previous = get(&router, SITE_HOST, &path).await;
             assert_eq!(previous.status(), StatusCode::OK);

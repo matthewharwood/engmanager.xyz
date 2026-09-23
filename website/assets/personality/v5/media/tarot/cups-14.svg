@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-labelledby="title desc">
+<title id="title">King of Cups</title><desc id="desc">Named placeholder card, theme Emotional steadiness; original reflective deck.</desc>
+<rect width="600" height="900" rx="26" fill="#101E2D"/>
+<rect x="20" y="20" width="560" height="860" rx="19" stroke="#79B5B0" stroke-width="2" fill="none"/>
+<rect x="34" y="34" width="532" height="832" rx="13" stroke="#79B5B0" stroke-opacity=".35" fill="none"/>
+<text x="300" y="95" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="16" letter-spacing="5" fill="#79B5B0">YOUR STORY</text>
+<text x="300" y="164" text-anchor="middle" font-family="DejaVu Serif,serif" font-size="39" fill="#F3EBDC">King of Cups</text>
+<path d="M195 203 H405" stroke="#79B5B0"/>
+<circle cx="300" cy="440" r="163" fill="none" stroke="#79B5B0" stroke-opacity=".22"/>
+<circle cx="300" cy="440" r="144" fill="none" stroke="#79B5B0" stroke-opacity=".4" stroke-dasharray="2 12"/>
+<g fill="none" stroke="#79B5B0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M240 365 H360 V410 Q355 485 300 485 Q245 485 240 410 Z M300 485 V550 M263 550 H337"/></g>
+<circle cx="300" cy="667" r="3" fill="#79B5B0"/>
+<text x="300" y="737" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="25" fill="#79B5B0">EMOTIONAL STEADINESS</text>
+<text x="300" y="796" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="13" letter-spacing="2" fill="#A6B0B6">REFLECTIVE DECK / PLACEHOLDER</text>
+<text x="300" y="836" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="12" fill="#A6B0B6">CUPS-14</text></svg>

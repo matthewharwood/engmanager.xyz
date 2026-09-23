@@ -1,5 +1,6 @@
 //! Real-browser flow tests through a test-only same-origin proxy. The fixture
-//! drives the actual UI in an iframe; the production router has no test hooks.
+//! drives the frozen v4 UI in an iframe; the production router has no test hooks.
+//! The v5 studio has its own browser suite; this retains legacy workflow coverage.
 
 mod common;
 
@@ -262,11 +263,11 @@ try{
   await until(()=>doc().querySelector('.privacy-settings').textContent.includes('Ready offline.'),'worker OFFLINE_READY acknowledgement');
   await until(()=>frame.contentWindow.navigator.serviceWorker.controller?.scriptURL.endsWith('/personality/sw.js'),'scoped worker controls assessment');
   assert(true,'explicit UI installation completes and scoped worker takes control');
-  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v4-')&&!name.includes(':staging:'));
+  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v5-')&&!name.includes(':staging:'));
   assert(cacheNames.length===1,'exactly one completed release cache is installed');
   const releaseCache=await caches.open(cacheNames[0]);
   const cacheURLs=(await releaseCache.keys()).map(request=>new URL(request.url));
-  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v4'),'ready marker commits after public files');
+  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v5'),'ready marker commits after public files');
   assert(cacheURLs.every(url=>!url.search&&!url.hash),'offline cache keys contain no answer or share parameters');
   assert(!await caches.match('/__test'),'test fixture is outside the assessment cache');
   await fetch('/__outage',{method:'POST'});
@@ -334,7 +335,21 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
         headers.insert(header::CONTENT_SECURITY_POLICY, csp.parse().unwrap());
     }
     match response.bytes().await {
-        Ok(bytes) => (status, headers, bytes).into_response(),
+        Ok(bytes) => {
+            // Exercise the retained v4 workflow against the current v5 worker.
+            // Only public HTML entry points change in this test proxy; the
+            // frozen JS, scores, links, storage and production shell do not.
+            if headers
+                .get(header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .is_some_and(|value| value.contains("text/html"))
+            {
+                let html = String::from_utf8_lossy(&bytes)
+                    .replace("/v5/bootstrap.mjs", "/v4/bootstrap.mjs");
+                return (status, headers, html).into_response();
+            }
+            (status, headers, bytes).into_response()
+        }
         Err(error) => (StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
     }
 }

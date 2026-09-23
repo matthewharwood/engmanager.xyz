@@ -1,0 +1,16 @@
+# Verification record
+
+22 September 2026. All published examples use `scripts/personality-studio-fixture.mjs`; no participant data was used.
+
+- **182 Node tests passed**, zero failures/skips. This includes all 152 prior tests, 12 new model/storage/kit/catalog tests, and 18 v5 worker/client tests.
+- All 16 color-image states and all 16 pilot codes were exercised; neutral/missing axes stay unresolved, including both exact unresolved-band boundaries. Self-selected codes remain separate from pilot scores.
+- All 16 portrait file hashes, biography links, author/license fields and unverified-type flags were checked. Source interpretation remains editorial, not psychometric validation.
+- Export checks cover per-field background approval, exclusive options, omitted sensitive fields, inert hostile strings, name/note consent, exact-birthday exclusion, retained draws, repeated packet stability and unchanged scientific scores.
+- IndexedDB checks cover reload, revision conflicts, fork separation and deletion of owned settings.
+- All v1–v4/AI frozen bytes verified; v5 is an integrity-checked superset. Old link routing, retained worker messages/cache fallback and staged-install failures are covered.
+- **Real Chromium 154 browser checks passed** using the production v5 modules through the local shell harness. Checks include lens navigation, detail dialog/Escape/focus return, chapter position, all 16 gallery entries, all 15 color combinations, 36 background questions with approval revocation, Markdown and verified-image ZIP downloads, 390px mobile width, reload persistence, explicit offline installation, offline report reload/export, and the retained classic route. See [machine-readable result](browser-results.json).
+- The sample media ZIP passed Python `zipfile` CRC verification. Its eight entries are the kit, manifest, cover, selected color image, selected portrait and exact three tarot images.
+- **All seven pages of the sample A4 PDF were rendered with Poppler and visually inspected.** No clipping, blank/orphaned chapter pages, missing photos or replacement glyphs were found. Numeric appendix, instrument attribution and image credits are present. Text extraction confirms no raw birthday. Browser-generated PDF is selectable, unencrypted and contains no JavaScript; it is not a tagged PDF accessibility certification. Other browser/printer engines and every possible response length have not been exhaustively checked.
+- Rust integration paths and regression tests were updated. Rust tooling was unavailable in the authoring environment, so local cargo execution is not claimed. The mandatory CI workflow runs rustfmt, clippy, Rust unit/integration tests and the retained full questionnaire browser test against the actual Rust router. The v5 standalone browser check is an additional mandatory CI step, not a replacement for these gates.
+
+The tested browser report uses deterministic editorial prose. No external LLM/PDF generation, public deployment, new reliability study, population norming, cultural-invariance study, clinical assessment or certified MBTI result is claimed. The pilot, custom colors, editorial parallels and creative keepsakes retain visible evidence labels throughout the report and kit.

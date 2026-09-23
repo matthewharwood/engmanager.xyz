@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "checks": [
+    "real v5 bootstrap + synthetic IndexedDB assessment",
+    "five chapters and resolved pilot",
+    "lens selection",
+    "domain dialog and Escape focus return",
+    "16-figure gallery",
+    "15-combination visual key",
+    "36-question context editor with per-field approval and change revocation",
+    "offline installation, report reload, media export",
+    "retained v4 classic tools route",
+    "Markdown download",
+    "verified media ZIP download",
+    "390px viewport without horizontal overflow",
+    "consent persisted across reload and omitted from exported kit"
+  ],
+  "pageErrors": [],
+  "pdfGenerated": true
+}

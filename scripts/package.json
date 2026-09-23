@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test personality-core.test.mjs personality-report.test.mjs personality-offline.test.mjs personality-enhancement.test.mjs personality-ai-runtime.test.mjs personality-report-kit.test.mjs personality-report-kit-store.test.mjs personality-v2-offline.test.mjs personality-v2-release.test.mjs personality-v3-release.test.mjs personality-v3-offline.test.mjs personality-portrait-kit.test.mjs personality-v4-release.test.mjs personality-v4-offline.test.mjs"
+    "test": "node --test personality-core.test.mjs personality-report.test.mjs personality-offline.test.mjs personality-enhancement.test.mjs personality-ai-runtime.test.mjs personality-report-kit.test.mjs personality-report-kit-store.test.mjs personality-v2-offline.test.mjs personality-v2-release.test.mjs personality-v3-release.test.mjs personality-v3-offline.test.mjs personality-portrait-kit.test.mjs personality-v4-release.test.mjs personality-v4-offline.test.mjs personality-studio.test.mjs personality-v5-offline.test.mjs",
+    "test:studio:browser": "node personality-studio-browser.mjs"
   },
   "devDependencies": {
-    "fake-indexeddb": "6.2.4"
+    "fake-indexeddb": "6.2.4",
+    "playwright": "1.58.2"
   },
   "engines": {
     "node": ">=22"

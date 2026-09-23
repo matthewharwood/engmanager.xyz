@@ -6,6 +6,8 @@ Prepared 19 September 2026 for `engmanager.xyz/articles/big-personality`.
 
 ## Start here
 
+**Current presentation:** the [Report Studio v5 implementation](report-studio/README.md) unifies the report, optional type pilot, 36 background questions, color imagery, biographical parallels and creative keepsakes. It includes the comprehensive pre-implementation plan, real browser screenshots, a printable example and matching LLM/media kit. Earlier implementation records below describe retained layers.
+
 **Production implementation added:** the Rust-integrated application now lives under `website/assets/personality/v1/`, with the article at `/articles/big-personality` and the questionnaire at `/personality/prepare`. It includes 24 reviewed experiment cards selected by explicit editorial rules, ten optional local AI reflection actions, and separate storage/sharing for kept reflection text. The optional LiteRT-LM runtime lives under `website/assets/personality/ai/v1/`; its public model is downloaded separately and imported locally. Read the [implementation and verification record](production-implementation.md) for current behavior and [deployment notes](deployment-notes.md) for the release path. The older preview, requirements and enhancement proposal remain design-history artifacts. The complete local tests, optimized build, and real local-model generation have passed. Release and live verification are tracked in [PR #46](https://github.com/matthewharwood/engmanager.xyz/pull/46).
 
 | Deliverable | What it contains |
