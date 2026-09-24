@@ -1,0 +1,317 @@
+/* V2 reading layer. The published v1 stylesheet remains the foundation. */
+:root {
+  --report-blue: #245a81;
+  --report-blue-soft: #edf4f8;
+  --report-rule: #dce1e4;
+}
+
+body:has(.personality-report-v2),
+body:has(.report-kit) { background: #fff; }
+body:has(.personality-report-v2) .personality-sheet,
+body:has(.report-kit) .personality-sheet { background: #fff; }
+body:has(.personality-report-v2) #personality-app,
+body:has(.report-kit) #personality-app { max-width: 860px; padding-inline: clamp(22px, 4.5vw, 56px); }
+body:has(.personality-report-v2) .page-header,
+.report-hero { max-width: 720px; margin: 0 auto 2.2rem; }
+body:has(.personality-report-v2) .page-header h1,
+.report-hero h1 { max-width: 16ch; font: 450 clamp(2.65rem, 5vw, 4.5rem)/1.06 var(--font-serif); letter-spacing: -.045em; margin-block: .55em .45em; }
+body:has(.personality-report-v2) .page-header .eyebrow,
+.report-hero .eyebrow { color: var(--report-blue); font-size: .72rem; letter-spacing: .13em; }
+body:has(.personality-report-v2) .page-header .lede,
+.report-hero .lede { max-width: 57ch; font-size: clamp(1.03rem, 2vw, 1.2rem); line-height: 1.8; }
+
+.report-kit,
+.personality-report-v2,
+#local-reflection-tools { width: 100%; max-width: 720px; min-width: 0; margin-inline: auto; }
+.personality-report-v2 {
+  --report-ink: #25292d;
+  --report-plum: var(--report-blue);
+  --report-line: var(--report-rule);
+  --report-paper: #f6f8fa;
+  --report-surface: #fff;
+  font-size: 1rem;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+}
+.personality-report-v2 :is(h2, h3), .report-kit :is(h2, h3) { font-family: var(--font-serif); font-weight: 450; letter-spacing: -.03em; }
+.personality-report-v2 h2, .report-kit h2 { font-size: clamp(1.8rem, 3.2vw, 2.45rem); line-height: 1.2; margin-block: .35rem 1rem; }
+.personality-report-v2 h3, .report-kit h3 { font-size: clamp(1.4rem, 2.6vw, 1.8rem); line-height: 1.3; margin-block: .35rem 1rem; }
+.personality-report-v2 h4 { font: 650 1rem/1.5 var(--font-sans); letter-spacing: 0; }
+.personality-report-v2 :is(p, li), .report-kit p { max-width: 68ch; }
+.personality-report-v2 p { margin-block: .75rem 1rem; }
+.personality-report-v2 .report-kicker, .report-kit .eyebrow, .report-kit .report-kicker {
+  color: var(--report-blue); font: 600 .69rem/1.7 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .65rem;
+}
+.personality-report-v2 a, .report-workflow-nav a, .report-kit a { color: var(--report-blue); text-underline-offset: .2em; }
+.personality-report-v2 :is(a, button, summary):focus-visible,
+.report-kit :is(a, button, input, textarea, select, summary):focus-visible,
+#local-reflection-tools summary:focus-visible { outline: 3px solid #367fab; outline-offset: 4px; }
+.personality-report-v2 [id], #report-kit, #your-scores, #score-details { scroll-margin-top: 6.5rem; }
+html:has(.personality-report-v2) { scroll-behavior: smooth; }
+
+.report-workflow-nav { display: flex; flex-wrap: wrap; gap: .5rem 1.7rem; align-items: center; padding-block: 1rem; margin-block: 2rem 2.5rem; border-block: 1px solid var(--report-rule); font: 600 .82rem/1.6 var(--font-sans); }
+.report-workflow-nav a { padding-block: .3rem; text-decoration: none; }
+.report-workflow-nav a:hover { text-decoration: underline; }
+.report-score-overview { margin-block: 0 2.75rem; }
+.personality-report-v2 .report-coverage { color: #626b72; font-size: .85rem; }
+.report-score-list { margin: 1.6rem 0 1.2rem; border-top: 1px solid var(--report-rule); }
+.report-score-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 1.2rem; padding: 1rem 0; border-bottom: 1px solid var(--report-rule); }
+.report-score-row dt { font: 450 1.4rem/1.35 var(--font-serif); letter-spacing: -.02em; }
+.report-score-row dd { display: flex; align-items: baseline; justify-content: flex-end; gap: .55rem; margin: 0; }
+.report-score-value { font: 450 1.35rem/1.45 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.report-score-unit { color: #667078; font: .75rem/1.5 var(--font-sans); white-space: nowrap; }
+.personality-report-v2 .report-context-note { border-left: 3px solid #6c95b1; padding: .9rem 1.1rem; background: var(--report-blue-soft); color: #344d5f; font-size: .94rem; }
+
+.report-profile { margin-block: 2.8rem; padding-top: 1.6rem; border-top: 1px solid var(--report-rule); }
+.report-profile-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-block: 1.35rem; font-size: .9rem; }
+.report-profile-table caption { text-align: left; color: #626b72; font-size: .8rem; line-height: 1.55; padding-bottom: .75rem; }
+.report-profile-table :is(th, td) { padding: .72rem .45rem; border-bottom: 1px solid var(--report-rule); vertical-align: top; }
+.report-profile-table th { text-align: left; font-weight: 500; overflow-wrap: anywhere; }
+.report-profile-table thead th { color: #56626b; font-size: .77rem; font-weight: 600; }
+.report-profile-table td { text-align: right; font: .88rem/1.8 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.report-profile-table :is(th, td):first-child { padding-left: 0; }
+.report-profile-table :is(th, td):last-child { padding-right: 0; }
+.report-profile-table thead th:not(:first-child) { text-align: right; }
+.report-interest-table th:first-child { width: 70%; }
+.report-values-table th:first-child { width: 46%; }
+.personality-report-v2 .report-values-baseline { font-size: .85rem; color: #56626b; }
+.personality-report-v2 .report-small { color: #626b72; font-size: .84rem; line-height: 1.75; }
+.personality-report-v2 .report-incomplete { border-color: #b3c2cc; background: #f7f9fa; font-size: .94rem; }
+
+.personality-report-v2 .report-disclosure { margin-block: 1.5rem; border: 0; border-block: 1px solid var(--report-rule); padding: 0; background: transparent; }
+.personality-report-v2 .report-disclosure > summary { cursor: pointer; padding: 1rem 0; font: 600 .94rem/1.6 var(--font-sans); color: var(--report-blue); }
+.personality-report-v2 .report-disclosure[open] { padding-bottom: 1.15rem; }
+.personality-report-v2 .report-disclosure[open] > summary { margin-bottom: .6rem; }
+.personality-report-v2 .report-profile-notes { margin-bottom: 0; border-bottom: 0; }
+.report-profile-notes h4 { margin-bottom: .5rem; }
+.personality-report-v2 .report-prompt { border: 0; padding-top: 0; color: #626b72; font-size: .91rem; }
+.personality-report-v2 .report-chapters { margin-block: 3rem; }
+.personality-report-v2 .report-domain { padding-block: 0; }
+.personality-report-v2 .report-domain:last-child { border-bottom: 1px solid var(--report-rule); }
+.personality-report-v2 .report-domain > summary { align-items: baseline; padding-block: 1.1rem; gap: .65rem; font: 450 1.35rem/1.4 var(--font-serif); }
+.personality-report-v2 .report-domain > summary .report-number { font: .77rem/1.7 var(--font-mono); }
+.personality-report-v2 .report-domain-body { padding-block: 0 1rem; }
+.report-facet-list { margin-top: 1.7rem; }
+.personality-report-v2 .report-facet { border: 0; border-top: 1px solid var(--report-rule); padding: 1.2rem 0 .6rem; background: transparent; }
+.report-facet-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.personality-report-v2 .report-facet-heading :is(h4, p) { margin: 0 0 .35rem; }
+.personality-report-v2 .report-facet-heading .report-number { font-size: .78rem; white-space: nowrap; }
+.personality-report-v2 .report-facet p { font-size: .94rem; line-height: 1.8; }
+.personality-report-v2 .report-enhancement { border-top: 1px solid var(--report-rule); padding-top: 1.6rem; margin-block: 2.8rem; }
+.personality-report-v2 .report-experiment { padding-block: 1rem; border-color: var(--report-rule); }
+.personality-report-v2 .report-experiment h3 { font-size: 1.4rem; }
+.personality-report-v2 .report-methods ol { margin-top: 1.5rem; padding-left: 1.25rem; }
+.personality-report-v2 .report-methods li { margin-bottom: 1rem; overflow-wrap: anywhere; }
+
+/* Charts remain optional. Their accessible numeric tables are preserved. */
+.personality-report-v2 .report-charts { gap: 1.3rem; margin-top: 1rem; }
+.personality-report-v2 .chart-pair { grid-template-columns: 1fr; }
+.personality-report-v2 .chart-card { border-color: var(--report-rule); background: #fff; }
+.personality-report-v2 .chart-eyebrow { color: var(--report-blue); }
+.personality-report-v2 .chart-readout, .personality-report-v2 .trait-choice[aria-pressed=true] { background: var(--report-blue-soft); }
+.personality-report-v2 .chart-mode button[aria-pressed=true] { color: #fff; }
+.personality-report-v2 .chart-card-head h3 { font-size: 1.55rem; }
+
+/* The report kit is the main workflow; optional local tools follow quietly. */
+.report-kit { padding-block: 1.8rem 2rem; border-top: 1px solid var(--report-rule); background: #fff; line-height: 1.8; }
+.report-kit p { font-size: 1rem; }
+.report-kit .small { color: #626b72; font-size: .84rem; line-height: 1.75; }
+.kit-steps { counter-reset: kit-step; list-style: none; padding: 0; margin: 1.7rem 0; }
+.kit-steps > li { counter-increment: kit-step; position: relative; padding: 0 0 1.45rem 2.55rem; border-bottom: 1px solid var(--report-rule); margin: 0 0 1.45rem; }
+.kit-steps > li::before { content: counter(kit-step, decimal-leading-zero); position: absolute; left: 0; top: .1rem; color: var(--report-blue); font: .77rem/1.8 var(--font-mono); }
+.kit-steps > li:last-child { border-bottom: 0; }
+.kit-steps :is(h3, h4) { margin-block: 0 .4rem; }
+.kit-steps p { margin-block: .35rem .7rem; }
+.kit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-block: 1.2rem; }
+.report-kit .button:not(.secondary), .kit-actions .button:not(.secondary) { background: var(--report-blue); border-color: var(--report-blue); color: #fff; }
+.kit-actions :is(button, a) { max-width: 100%; white-space: normal; text-align: center; }
+.kit-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-block: 1.5rem; }
+.kit-fields .field { min-width: 0; }
+.report-kit .kit-fields :is(input, select, textarea) { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; padding: .75rem .85rem; border: 1px solid #bfc8cf; border-radius: 3px; background: #fff; color: #25292d; font: 1rem/1.55 var(--font-sans); }
+.kit-fields textarea { min-height: 7rem; resize: vertical; }
+.kit-fields label { display: block; margin-bottom: .45rem; font: 600 .84rem/1.6 var(--font-sans); }
+.kit-fields .field:has(textarea), .kit-fields .kit-field-wide { grid-column: 1 / -1; }
+.report-kit :is(.kit-customize, .kit-preview, .kit-comparison, .kit-kept-reflection) { padding-block: 1rem; margin-block: 1rem; border-block: 1px solid var(--report-rule); }
+.report-kit :is(.kit-customize, .kit-preview, .kit-comparison, .kit-kept-reflection) > summary { cursor: pointer; color: var(--report-blue); font: 600 .88rem/1.7 var(--font-sans); }
+.report-kit details[open] > summary { margin-bottom: 1rem; }
+.report-kit :is(.kit-coverage, .kit-disclosure) { font-size: .84rem; line-height: 1.75; color: #626b72; }
+.report-kit .kit-disclosure { border-left: 3px solid #6c95b1; padding-left: 1rem; }
+.kit-preview { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.report-kit :is(.kit-preview, .kit-comparison) textarea { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; max-height: 25rem; resize: vertical; margin-block: 1rem; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; background: #f5f8fa; color: #25292d; border: 1px solid var(--report-rule); border-radius: 3px; font: .85rem/1.8 var(--font-sans); }
+.report-kit .kit-status { color: #4c677a; font-size: .84rem; line-height: 1.7; min-height: 1.7em; overflow-wrap: anywhere; }
+.report-optional-files { width: 100%; max-width: 720px; min-width: 0; margin: 1.5rem auto 0; padding-block: 1rem; border-top: 1px solid var(--report-rule); color: #626b72; font-size: .9rem; }
+.report-optional-files > summary { cursor: pointer; font: 500 .88rem/1.7 var(--font-sans); }
+.report-optional-files > summary:focus-visible { outline: 3px solid #367fab; outline-offset: 4px; }
+body:has(.personality-report-v2) .report-toolbar { max-width: 720px; margin-inline: auto; font-size: .85rem; }
+#local-reflection-tools { border-block: 1px solid var(--report-rule); padding-block: 1rem; margin-top: 3rem; }
+#local-reflection-tools > summary { color: #626b72; cursor: pointer; font: 500 .88rem/1.7 var(--font-sans); }
+#local-reflection-tools > p { font-size: .9rem; color: #626b72; }
+#local-reflection-tools .reflection-workspace { padding: 1.2rem 0; border: 0; background: transparent; }
+#local-reflection-tools .reflection-preferences { grid-template-columns: 1fr; }
+
+@media (max-width: 570px) {
+  body:has(.personality-report-v2) #personality-app, body:has(.report-kit) #personality-app { padding-inline: 20px; }
+  .report-workflow-nav { gap: .35rem 1.15rem; margin-block: 1.5rem 2rem; font-size: .78rem; }
+  .report-score-row { gap: .6rem; padding-block: .9rem; }
+  .report-score-row dt { font-size: 1.13rem; }
+  .report-score-row dd { flex-direction: column; align-items: flex-end; gap: 0; }
+  .report-score-value { font-size: 1.12rem; }
+  .report-score-unit { font-size: .68rem; }
+  .report-profile-table { font-size: .82rem; }
+  .report-profile-table :is(th, td) { padding-inline: .3rem; }
+  .report-profile-table td { font-size: .79rem; }
+  .report-profile-table thead th { font-size: .7rem; }
+  .report-values-table th:first-child { width: 43%; }
+  .personality-report-v2 .report-domain > summary { font-size: 1.15rem; }
+  .personality-report-v2 .report-domain > summary .report-number { font-size: .7rem; }
+  .report-facet-heading { gap: .5rem; }
+  .report-facet-heading h4 { font-size: .94rem; }
+  .personality-report-v2 .report-facet-heading .report-number { white-space: normal; text-align: right; }
+  .kit-fields { grid-template-columns: 1fr; }
+  .kit-steps > li { padding-left: 2.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.personality-report-v2) { scroll-behavior: auto; }
+}
+@media print {
+  .report-workflow-nav, .kit-actions, .kit-fields, .kit-preview, .kit-status,
+  .report-kit button, .report-kit form, .report-kit .check-line, .kit-customize, .kit-comparison, .kit-kept-reflection,
+  .report-optional-files, #local-reflection-tools { display: none !important; }
+  .report-kit, .personality-report-v2 { max-width: none; width: 100%; color: #000; }
+  .report-kit { padding-block: 0 1rem; }
+  .personality-report-v2 .report-score-row, .personality-report-v2 tr { break-inside: avoid; }
+  .personality-report-v2 :is(.report-score-list, .report-profile-table) { display: table; width: 100%; }
+  .personality-report-v2 .report-score-list { display: block; }
+  .personality-report-v2 .report-score-row { display: grid; }
+  .personality-report-v2 .report-profile { break-inside: auto; }
+  .personality-report-v2 .report-chapters { break-before: auto; }
+  .personality-report-v2 :is(.report-disclosure, .report-domain):not([open]) { display: none; }
+  .personality-report-v2 .report-context-note { background: transparent; color: #000; }
+  body:has(.personality-report-v2) #personality-app { max-width: none; padding: 0; }
+}
+
+/* V5 atlas: one reading surface, with progressive detail and a compact dock. */
+body:has(.personality-atlas) #personality-app { max-width: 1240px; }
+.personality-atlas, body:has(.personality-atlas) .report-toolbar { max-width: 1080px; }
+.personality-atlas { padding-bottom: 6.5rem; }
+.personality-atlas .report-workflow-nav { position: sticky; top: 0; z-index: 8; gap: .25rem .75rem; flex-wrap: nowrap; overflow-x: auto; background: #fff; margin: 0 0 2.5rem; padding: .65rem .25rem; box-shadow: 0 6px 18px #10283a0c; scrollbar-width: thin; }
+.personality-atlas .report-workflow-nav a { white-space: nowrap; padding: .45rem .65rem; border-radius: 100px; }
+.personality-atlas .report-workflow-nav a:hover { background: #edf4f8; }
+.personality-atlas [id] { scroll-margin-top: 6rem; }
+.atlas-chapter { padding: 2.3rem 0; border-top: 1px solid var(--report-rule); }
+.atlas-chapter > h2 { max-width: 22ch; }
+.atlas-chapter > p:not(.report-kicker) { color: #52616b; }
+.atlas-hero-art { height: clamp(220px, 28vw, 330px); overflow: hidden; border-radius: 18px; margin: 1.5rem 0; background: #e9e3d8; }
+.atlas-hero-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 52%; }
+.atlas-overview-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .8rem; margin-top: 1.5rem; }
+.personality-atlas .atlas-overview-card { display: flex; flex-direction: column; min-height: 152px; padding: 1.15rem; border: 1px solid #d7e0e5; border-radius: 12px; background: #f9fbfc; color: #233844; text-decoration: none; }
+.atlas-overview-card:hover { border-color: #6f9ab2; background: #f0f7fa; }
+.atlas-overview-card strong { font: 500 1.23rem/1.2 var(--font-serif); }
+.personality-atlas .atlas-overview-card p { color: #566873; font-size: .82rem; line-height: 1.45; margin: .5rem 0; }
+.atlas-overview-card span { margin-top: auto; color: #245a81; font: 600 .75rem var(--font-sans); }
+.atlas-color-figure { display: grid; place-items: center; margin: 1.5rem 0; padding: 1.5rem 1rem; border-radius: 18px; background: #f5f2ed; }
+.atlas-color-mark { position: relative; width: min(100%, 430px); height: 285px; isolation: isolate; }
+.atlas-circle { position: absolute; display: block; width: 225px; height: 225px; border-radius: 50%; mix-blend-mode: multiply; border: 1px solid #35425030; box-shadow: inset 0 0 28px #fff5; transition: opacity .3s ease; }
+.atlas-circle-red { background: #dd6d61; left: 23px; top: 0; }
+.atlas-circle-yellow { background: #efc35c; right: 23px; top: 0; }
+.atlas-circle-green { background: #8eb69b; left: 23px; bottom: 0; }
+.atlas-circle-blue { background: #7199bd; right: 23px; bottom: 0; }
+.atlas-color-figure figcaption { color: #52616b; font-size: .76rem; text-align: center; }
+.atlas-color-legend { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; margin: 1rem 0; }
+.atlas-color-row { padding: .8rem 1rem; border-left: 4px solid #678; background: #fafbfc; }
+.atlas-color-row:nth-child(1){border-color:#dd6d61}.atlas-color-row:nth-child(2){border-color:#efc35c}.atlas-color-row:nth-child(3){border-color:#8eb69b}.atlas-color-row:nth-child(4){border-color:#7199bd}
+.atlas-color-row dt { font-weight: 600; text-transform: capitalize; }
+.atlas-color-row dd { margin: .2rem 0 0; color: #52616b; font: .78rem var(--font-mono); }
+.atlas-help { margin-top: 1rem; border-top: 1px solid var(--report-rule); padding: .6rem 0; }
+.atlas-help summary { color: var(--report-blue); cursor: pointer; font-size: .84rem; }
+.atlas-help p { color: #52616b; font-size: .84rem; }
+.atlas-type-summary { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem 2rem; align-items: start; padding: 1.5rem; background: #f1f5f6; border-radius: 15px; }
+.atlas-type-summary > strong { font: 450 clamp(2.4rem,5vw,4.5rem)/1 var(--font-serif); letter-spacing: -.045em; }
+.atlas-type-summary > p { margin: 0; color: #43545e; }
+.atlas-axis-list { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2,1fr); gap: .5rem; margin: 0; }
+.atlas-axis-list > div { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid #cad5da; padding-top: .55rem; font-size: .8rem; }
+.atlas-axis-list dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.atlas-featured-parallel { margin-top: 2rem; }
+.atlas-person { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 1rem; align-items: start; min-width: 0; margin: 0; border: 1px solid #dce1e4; border-radius: 13px; padding: .75rem; background: #fff; }
+.atlas-person-featured { grid-template-columns: minmax(140px,32%) 1fr; padding: 1rem; background: #f9f6f0; }
+.atlas-person img { width: 100%; aspect-ratio: 1; height: auto; object-fit: cover; object-position: top; border-radius: 8px; filter: grayscale(12%); }
+.atlas-person-fallback { display: grid; place-items: center; aspect-ratio: 1; border-radius: 8px; background: #cbd6d8; font: 2rem var(--font-serif); }
+.atlas-person figcaption { min-width: 0; }
+.atlas-person-code { display: block; color: #52616b; font: 600 .68rem var(--font-mono); letter-spacing: .12em; }
+.atlas-person strong { display: block; font: 500 1.24rem/1.25 var(--font-serif); }
+.atlas-person p { margin: .35rem 0; font-size: .78rem; line-height: 1.5; }
+.atlas-person-featured strong { font-size: 1.8rem; }
+.atlas-person-featured p { font-size: .96rem; }
+.atlas-image-credit { display: block; margin-top: .5rem; font-size: .68rem; }
+.atlas-gallery { margin: 1.5rem 0; }
+.atlas-gallery > summary { cursor: pointer; color: var(--report-blue); font-weight: 600; }
+.atlas-gallery-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; margin: 1rem 0; }
+.atlas-symbol-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .8rem; margin: 1.3rem 0; }
+.atlas-symbol-card { padding: 1.4rem; border: 1px solid #dce1e4; border-radius: 12px; background: #faf7f1; }
+.atlas-symbol-card small,.atlas-tarot-spread small { display: block; color: #52616b; font: 600 .67rem var(--font-mono); text-transform: uppercase; letter-spacing: .1em; }
+.atlas-symbol-card strong { display: block; margin-top: .6rem; font: 450 2rem var(--font-serif); }
+.atlas-symbol-card p { color: #52616b; font-size: .82rem; }
+.atlas-tarot-spread { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem; margin-top: 1.5rem; }
+.atlas-tarot-spread figure { margin: 0; min-width: 0; }
+.atlas-tarot-spread img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 6px 20px #142d3222; }
+.atlas-tarot-spread figcaption { padding: .65rem .25rem; }
+.atlas-tarot-spread strong { display: block; font: 500 1.2rem var(--font-serif); }
+.atlas-tarot-spread p { margin: .25rem 0; color: #52616b; font-size: .78rem; line-height: 1.45; }
+.atlas-empty { border: 1px dashed #aab9bf; border-radius: 10px; padding: 1rem; background: #f8fafb; }
+.atlas-dock { position: fixed; z-index: 20; left: 50%; bottom: max(1rem,env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; max-width: min(94vw,670px); overflow-x: auto; gap: .18rem; padding: .5rem; border-radius: 100px; border: 1px solid #cdd8dd; background: #fffefa; box-shadow: 0 14px 35px #142d3240; }
+.personality-atlas .atlas-dock :is(a,button) { flex: none; padding: .5rem .72rem; color: #274d61; font: 600 .76rem var(--font-sans); border: 0; border-radius: 100px; background: transparent; text-decoration: none; cursor: pointer; }
+.personality-atlas .atlas-dock :is(a,button):hover { background: #eaf1f4; }
+.atlas-studio { max-width: 1080px; margin: 2.5rem auto; padding: 2rem; border: 1px solid #d4dfe3; border-radius: 20px; background: #fbfcfc; }
+.atlas-studio h2 { font: 450 clamp(1.9rem,3vw,2.8rem)/1.2 var(--font-serif); margin: .25rem 0; }
+.atlas-studio > p { max-width: 68ch; }
+.atlas-editor { border-top: 1px solid #d4dfe3; padding: .8rem 0; }
+.atlas-editor > summary,.atlas-question-group > summary { cursor: pointer; color: #245a81; font-weight: 600; padding: .35rem 0; }
+.atlas-question-group { padding: .5rem 1rem; margin: .4rem 0; border: 1px solid #dae3e6; border-radius: 10px; background: #fff; }
+.atlas-question,.atlas-type-question { min-width: 0; border: 0; border-top: 1px solid #e2e7e9; padding: 1rem 0; margin: .5rem 0; }
+.atlas-question legend,.atlas-type-question legend { font-weight: 600; padding-top: .5rem; }
+.atlas-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .35rem .8rem; max-height: 300px; overflow: auto; }
+.atlas-options label,.atlas-symbol-choice label { display: flex; align-items: start; gap: .4rem; font-size: .86rem; cursor: pointer; }
+.atlas-approval { display: flex; align-items: center; gap: .45rem; color: #245a81; font-size: .8rem; margin-top: .65rem; }
+.atlas-type-question label { display: inline-flex; align-items: center; gap: .2rem; padding: .3rem .5rem; }
+.atlas-symbol-choice { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; border-top: 1px solid #dce1e4; padding: .8rem 0; }
+.atlas-mini-spread { display: flex; gap: .6rem; margin: 1rem 0; }
+.atlas-mini-spread figure { width: min(30%,110px); margin: 0; }
+.atlas-mini-spread img { display: block; width: 100%; height: auto; }
+.atlas-mini-spread figcaption { font-size: .7rem; line-height: 1.3; }
+.atlas-status { color: #52616b; font-size: .8rem; }
+@media (max-width:750px){
+  .atlas-overview-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .atlas-gallery-grid { grid-template-columns: 1fr; }
+  .atlas-dock { border-radius: 20px; }
+}
+@media (max-width:520px){
+  .atlas-overview-grid,.atlas-color-legend,.atlas-symbol-grid,.atlas-axis-list { grid-template-columns: 1fr; }
+  .atlas-overview-card { min-height: 110px; }
+  .atlas-color-mark { height: 225px; width: 315px; max-width: 100%; }
+  .atlas-circle { width: 175px; height: 175px; }
+  .atlas-circle-red,.atlas-circle-green { left: 0; }.atlas-circle-yellow,.atlas-circle-blue { right: 0; }
+  .atlas-type-summary { grid-template-columns: 1fr; }
+  .atlas-person-featured { grid-template-columns: 1fr; }
+  .atlas-person-featured img { max-height: 260px; }
+  .atlas-tarot-spread { gap: .3rem; }
+  .atlas-tarot-spread strong { font-size: .9rem; }
+  .atlas-studio { padding: 1rem; }
+  .atlas-options { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion:reduce){.atlas-circle { transition: none; }}
+@media print {
+  body:has(.personality-atlas) #personality-app { max-width: none; padding: 0; }
+  .atlas-dock,.personality-atlas .report-workflow-nav,.atlas-studio,.report-kit,.report-toolbar,.atlas-gallery,.atlas-help { display: none !important; }
+  .personality-atlas { max-width: none; padding: 0; }
+  .atlas-chapter { padding: .9rem 0; break-inside: auto; }
+  .atlas-hero-art { height: 1.7in; }
+  .atlas-overview-grid { grid-template-columns: repeat(4,1fr); }
+  .atlas-overview-card { min-height: 0 !important; padding: .5rem !important; }
+  .atlas-overview-card span { display: none; }
+  .atlas-color-figure { display: block; width: 3.8in; margin: .5rem auto; padding: .2rem; }
+  .atlas-color-mark { transform: scale(.7); transform-origin: top center; margin-bottom: -75px; }
+  .atlas-circle { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .atlas-person-featured,.atlas-symbol-card,.atlas-tarot-spread figure,.atlas-color-row { break-inside: avoid; }
+  .atlas-tarot-spread img { max-height: 2.5in; width: auto; margin: auto; }
+}

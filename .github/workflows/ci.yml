@@ -44,7 +44,7 @@ jobs:
           npm test --prefix scripts
           node scripts/personality-release.mjs --verify-published
           node scripts/personality-release.mjs
-          git diff --exit-code -- website/assets/personality/v4/release.mjs
+          git diff --exit-code -- website/assets/personality/v5/release.mjs
 
       - name: Format
         run: cargo fmt --all --check

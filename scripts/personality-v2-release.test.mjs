@@ -18,7 +18,7 @@ const fixture = JSON.parse(await readFile(new URL('./personality-v1-compatibilit
 test('published v1 and optional AI bytes match their immutable release lock', async () => {
   const lock = await verifyPublishedReleases();
   assert.equal(lock.publishedCommit, 'c5517f5c0613657dfbb76951adeb8deb917bd191');
-  assert.deepEqual(Object.keys(lock.roots), ['v1', 'ai/v1', 'v2', 'v3']);
+  assert.deepEqual(Object.keys(lock.roots), ['v1', 'ai/v1', 'v2', 'v3', 'v4']);
 });
 
 test('published synthetic snapshots and canonical report content survive the presentation upgrade', () => {
