@@ -53,6 +53,14 @@ try{
   await until(()=>frame.contentWindow.navigator.serviceWorker.controller?.scriptURL.endsWith('/personality/sw.js'),'article entry produces controlled app document');
   assert(true,'article to library installs a real worker and controls the current app document');
   click('Start a new assessment');await until(()=>doc().querySelector('#module-big5'),'prepare boot');
+  await until(()=>doc().querySelector('#story-birthday')&&doc().querySelector('#bg04-o01'),'optional preface questions load before the scored questionnaire');
+  assert(doc().querySelector('#prepare-story .atlas-studio')&&doc().querySelector('#prepare-story .atlas-editor[open]')&&doc().querySelector('#prepare-story .atlas-question-group[open]'),'birthday and background choices are available on prepare');
+  assert(doc().querySelector('.two-column').textContent.includes('170 scored items')&&doc().querySelector('.two-column').textContent.includes('84 choices'),'prepare distinguishes the scored questions from optional context and preference items');
+  doc().querySelector('#bg04-o01').click();
+  await until(()=>doc().querySelector('#prepare-story .atlas-studio > .atlas-status')?.textContent==='Story saved on this device.','preface answer saved');
+  await go('/personality/prepare',()=>doc().querySelector('#bg04-o01')?.checked,'preface answer restores after refresh');
+  doc().querySelector('#bg04-o01').click();
+  await until(()=>doc().querySelector('#prepare-story .atlas-studio > .atlas-status')?.textContent==='Story saved on this device.','preface answer cleared');
   click('Begin questionnaire →');await until(()=>doc().querySelector('#question-0'),'first question');
   doc().querySelector('#question-0 input[value="4"]').click();
   await until(()=>doc().querySelector('#save-status').textContent==='Saved on this device','answer saved');
