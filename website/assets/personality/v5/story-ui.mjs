@@ -10,9 +10,9 @@ const el = (tag,text='',attributes={}) => {
   return node;
 };
 
-export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>{},onPending=()=>{}}={}) {
+export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>{},onPending=()=>{},preface=false}={}) {
   const panel=el('section',null,{class:'atlas-studio',id:'story-studio','aria-labelledby':'studio-title'});
-  panel.append(el('p','Make it yours / optional',{class:'report-kicker'}),el('h2','Add the context behind the answers.',{id:'studio-title'}),
+  panel.append(el('p',preface?'Your story / optional preface':'Make it yours / optional',{class:'report-kicker'}),el('h2',preface?'Tell the report what matters to you.':'Add the context behind the answers.',{id:'studio-title'}),
     el('p','Choose only what feels useful. Your background and birthday stay on this device until you explicitly include selected details in a report kit. These answers never change your scores.'));
   const status=el('p','Loading optional story tools…',{class:'atlas-status',role:'status'});
   panel.append(status);root.append(panel);
@@ -77,12 +77,17 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     const chapters=new Map();
     for(const q of sources.bank.questions.filter(item=>item.id!=='bg35')){if(!chapters.has(q.chapter))chapters.set(q.chapter,[]);chapters.get(q.chapter).push(q);}
     const background=el('details',null,{class:'atlas-editor'});
-    background.append(el('summary','Background and life context · 35 optional questions'),el('p','Answer any number. Approval is off for each question until you turn it on. Identity labels and birthplace are used only as your own context, never to infer a trait. Symbol choices are in their own panel below.'));
+    background.open=preface;
+    background.append(el('summary','Background and life context · 35 optional questions'),el('p','Answer any number. Approval is off for each question until you turn it on. Identity labels and birthplace are used only as your own context, never to infer a trait. Birthday symbols have their own panel.'));
+    let firstChapter=true;
     for(const [title,questions] of chapters){
       const group=el('details',null,{class:'atlas-question-group'});group.append(el('summary',`${title} · ${questions.length} questions`));
+      if(preface&&firstChapter)group.open=true;
+      firstChapter=false;
       for(const q of questions)group.append(question(q));background.append(group);
     }
     const symbols=el('details',null,{class:'atlas-editor'});
+    symbols.open=preface;
     symbols.append(el('summary','Birthday symbols and tarot'),el('p','These are creative motifs. They are not personality evidence or predictions. The full birthday never enters the standard kit.'));
     const date=el('input',null,{type:'date',id:'story-birthday',min:'1901-01-01'});date.value=value.birthday;
     date.addEventListener('change',()=>{const before=value.birthday;value.birthday=date.value;try{validateStory(value,sources);persist();}catch(error){value.birthday=before;date.value=before;status.textContent=error.message;}});
@@ -128,7 +133,8 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
       type.append(group);
     }
     updateType();type.insertBefore(typeStatus,type.children[2]);
-    panel.insertBefore(background,status);panel.insertBefore(type,status);panel.insertBefore(symbols,status);
+    if(preface){panel.insertBefore(symbols,status);panel.insertBefore(background,status);panel.insertBefore(type,status);}
+    else {panel.insertBefore(background,status);panel.insertBefore(type,status);panel.insertBefore(symbols,status);}
     status.textContent=canSave&&recordId?'Optional story is saved separately on this device.':'Optional story stays in this tab until you download a kit.';
   }
   const ready=loadStorySources().then(async loaded=>{

@@ -130,9 +130,17 @@ function pageSlots() {
 }
 
 function prepare() {
-  main.append(heading('01 / Before you begin','A field guide. Not a fixed identity.','Explore your patterns, the work that interests you, and what matters when you make a choice. Then turn that reflection into a small, useful experiment.'));
+  main.append(heading('01 / Before you begin','Start with your story.','Add the context you want the final report to know, then explore your measured patterns. Every story question is optional and separate from your scores.'));
+  const storyHost=el('div',null,{id:'prepare-story'});
+  main.append(storyHost);
+  if(!readOnly)run(async()=>{
+    if(!record&&db&&!saveFailure)await persist();
+    if(!storyHost.isConnected)return;
+    const studio=mountStoryStudio(storyHost,{recordId:record?.id??null,canSave:Boolean(db&&!saveFailure),onPending:trackPending,preface:true});
+    disposeStoryStudio=studio.dispose;
+  });
   const columns=el('div',null,{class:'two-column'}), form=el('section',null,{class:'panel'});
-  form.append(el('h2','Choose your profiles'),p('The Big Five is the foundation. The two optional profiles ask different questions. Allow roughly 20–30 minutes for all 170 items; you can return at any point.'));
+  form.append(el('h2','Choose your scored profiles'),p('The Big Five is the foundation. With interests and values selected, this part has 170 scored items and takes roughly 20–30 minutes. The story preface above adds up to 36 optional context and symbol choices and 48 experimental preference items. Those 84 choices never change a scientific score; you can return at any point.'));
   const descriptions={big5:'120 items · five broad traits and 30 narrower facets. Describe yourself across your life, not only at work.',interests:'30 activities · six kinds of work you may enjoy. For career exploration; interest is different from ability.',values:'20 portraits · ten personal priorities. What matters to you when attractive choices compete?'};
   for(const module of MODULES){
     const input=el('input',null,{type:'checkbox',id:`module-${module.id}`,checked:state.modules.includes(module.id),disabled:module.required||readOnly});
