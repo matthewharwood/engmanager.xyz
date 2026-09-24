@@ -23,6 +23,12 @@
       "manifestSha256": "f5587a2ba19333700fb7ff8564e3ecc89075658c2c18ff9981a09915facba827",
       "treeSha256": "4fb838545f5875012b8bc7906ce18548365679bf519870d82ba0317a1807cf24",
       "publishedCommit": "5fc9280dca279234e4d897b757a6ffdf27eac75b"
+    },
+    "v4": {
+      "manifest": "release.mjs",
+      "manifestSha256": "76805bad757654eedc417a5c4fe8739a0352cc340968d1c512eb5b9d8c41f45a",
+      "treeSha256": "601a21a45173bebf413c26b50c5534a354e526479f32ccb90d414a6432ba93ea",
+      "publishedCommit": "beb12de"
     }
   }
 }
