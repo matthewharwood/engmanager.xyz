@@ -58,4 +58,6 @@ Source evidence is linked beside claims in the three research appendices. Engine
 
 The [Your Story research and implementation kit](story-kit-v2/README.md) adds a proposal for type and color interpretations, 48 candidate type questions, 36 optional background questions, birthday symbols, and a 78-card tarot reflection deck. It includes research sources, scoring and consent reference code, tests, an LLM report brief, placeholder artwork, and a fictional sample PDF.
 
-This is an experimental research and reference implementation package prepared 22 September 2026. It does not activate new features in the live questionnaire. Type and color candidates require validation; astrology and tarot are optional creative material, with no contribution to assessment scores.
+This experimental research and reference package was prepared 22 September 2026. PR #51 itself did not activate features in the live questionnaire. Type and color candidates require validation; astrology and tarot are optional creative material, with no contribution to assessment scores.
+
+The later v5 release in PR #52 activated the direct preference pilot and optional story layer. See the [PR #51–#53 implementation map](pr-51-52-implementation-map.md) for exact production paths, tests, and research-only boundaries.

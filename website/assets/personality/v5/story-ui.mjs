@@ -1,6 +1,6 @@
 import {ATLAS_BANK} from './atlas-bank.mjs';
 import {typeProfile} from './atlas-model.mjs';
-import {createTarotDraw, prepareStoryPacket} from './story-core.mjs';
+import {createTarotDraw} from './story-core.mjs';
 import {emptyStory, loadStory, saveStory, loadStorySources, validateStory} from './story-store.mjs';
 
 const el = (tag,text='',attributes={}) => {
@@ -16,7 +16,7 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     el('p','Choose only what feels useful. Your background and birthday stay on this device until you explicitly include selected details in a report kit. These answers never change your scores.'));
   const status=el('p','Loading optional story tools…',{class:'atlas-status',role:'status'});
   panel.append(status);root.append(panel);
-  let sources=null,value=emptyStory(),revision=0,failed=false,disposed=false,queue=Promise.resolve();
+  let sources=null,value=emptyStory(),revision=0,failed=false,disposed=false,saveNumber=0,queue=Promise.resolve();
   const notify=()=>{if(!disposed)onChange({value:structuredClone(value),sources});};
   const persist=()=>{
     if(!sources)return;
@@ -25,9 +25,10 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     if(!canSave||!recordId){status.textContent='Story changes are in this tab only. Download the kit before leaving.';return;}
     status.textContent='Saving story on this device…';
     const snapshot=structuredClone(value);
+    const current=++saveNumber;
     queue=queue.then(async()=>{
       if(failed)return;
-      try{const saved=await saveStory(recordId,revision,snapshot,sources);revision=saved.revision;if(!disposed)status.textContent='Story saved on this device.';}
+      try{const saved=await saveStory(recordId,revision,snapshot,sources);revision=saved.revision;if(!disposed&&current===saveNumber)status.textContent='Story saved on this device.';}
       catch(error){failed=true;if(!disposed)status.textContent=`Story was not saved: ${error.message} Reload before making more changes.`;}
     });
     onPending(queue);
@@ -35,8 +36,9 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
   function question(q) {
     const card=el('fieldset',null,{class:'atlas-question'});
     card.append(el('legend',q.prompt));
-    const selected=value.background[q.id]?.selected??[];
+    const selected=[...(value.background[q.id]?.selected??[])];
     const options=[...q.options,...(q.optionCatalog?sources.countries.options:[])];
+    const selfDescribeIds=new Set(options.filter(option=>/Self-describe/i.test(option.label)).map(option=>option.id));
     const choices=el('div',null,{class:'atlas-options'});
     let search=null;
     if(q.optionCatalog){
@@ -47,18 +49,34 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     approval.checked=value.approvedIds.includes(q.id);
     approval.disabled=!selected.length;
     approval.addEventListener('change',()=>{value.approvedIds=approval.checked?[...value.approvedIds,q.id]:value.approvedIds.filter(id=>id!==q.id);persist();});
+    const answerStatus=el('p',value.background[q.id]?.status==='skipped'?'Skipped for now. You can answer later.':'',{class:'atlas-answer-status',role:'status'});
+    let selfField=null,selfInput=null;
+    if(selfDescribeIds.size){
+      selfInput=el('input',null,{type:'text',id:`${q.id}-self-description`,maxlength:'120',autocomplete:'off'});
+      selfInput.value=value.background[q.id]?.selfDescription??'';
+      const label=el('label',null,{for:selfInput.id});label.append(document.createTextNode('Describe in your own words (optional)'),selfInput);
+      selfField=el('div',null,{class:'atlas-self-description'});selfField.append(label);
+      selfField.hidden=!selected.some(id=>selfDescribeIds.has(id));
+      selfInput.addEventListener('input',()=>{if(value.background[q.id]?.status!=='answered')return;value.background[q.id].selfDescription=selfInput.value;persist();});
+    }
+    const syncChoices=()=>{
+      for(const input of choices.querySelectorAll('input[data-option]'))input.checked=selected.includes(input.value);
+      approval.disabled=!selected.length;
+      selfField&&(selfField.hidden=!selected.some(id=>selfDescribeIds.has(id)));
+    };
     function choose(optionId,checked){
       const option=options.find(item=>item.id===optionId);
       let next=q.type==='single_select'?[optionId]:checked?[...selected,optionId]:selected.filter(id=>id!==optionId);
       if(option?.exclusive)next=[optionId];
       else if(checked)next=next.filter(id=>!options.find(item=>item.id===id)?.exclusive);
-      if(next.length>q.maxSelections){status.textContent=`Choose at most ${q.maxSelections} answers here.`;return;}
-      if(next.length)value.background[q.id]={status:'answered',selected:next};
+      if(next.length>q.maxSelections){status.textContent=`Choose at most ${q.maxSelections} answers here.`;syncChoices();return;}
+      const selfDescription=next.some(id=>selfDescribeIds.has(id))?selfInput?.value??'':'';
+      if(next.length)value.background[q.id]={status:'answered',selected:next,...(selfDescription?{selfDescription}:{})};
       else delete value.background[q.id];
       if(!next.length){value.approvedIds=value.approvedIds.filter(id=>id!==q.id);approval.checked=false;}
-      approval.disabled=!next.length;
       selected.splice(0,selected.length,...next);
-      for(const input of choices.querySelectorAll('input[data-option]'))input.checked=next.includes(input.value);
+      if(!selfDescription&&selfInput)selfInput.value='';
+      answerStatus.textContent='';syncChoices();
       persist();
     }
     for(const option of options){
@@ -69,6 +87,18 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     }
     if(search)search.addEventListener('input',()=>{for(const label of choices.children)label.hidden=!label.textContent.toLowerCase().includes(search.value.trim().toLowerCase());});
     card.append(choices);
+    if(selfField)card.append(selfField);
+    const skip=el('button','Skip for now',{type:'button',class:'text-button'});
+    const clear=el('button','Clear answer',{type:'button',class:'text-button'});
+    const reset=skipped=>{
+      if(skipped)value.background[q.id]={status:'skipped',selected:[]};else delete value.background[q.id];
+      value.approvedIds=value.approvedIds.filter(id=>id!==q.id);approval.checked=false;
+      selected.splice(0);if(selfInput)selfInput.value='';
+      answerStatus.textContent=skipped?'Skipped for now. You can answer later.':'';
+      syncChoices();persist();
+    };
+    skip.addEventListener('click',()=>reset(true));clear.addEventListener('click',()=>reset(false));
+    const questionActions=el('div',null,{class:'atlas-question-actions'});questionActions.append(skip,clear,answerStatus);card.append(questionActions);
     const include=el('label',null,{class:'atlas-approval',for:approval.id});include.append(approval,document.createTextNode('Include this answer in the AI report kit'));
     card.append(include);
     return card;
@@ -76,7 +106,7 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
   function render() {
     const chapters=new Map();
     for(const q of sources.bank.questions.filter(item=>item.id!=='bg35')){if(!chapters.has(q.chapter))chapters.set(q.chapter,[]);chapters.get(q.chapter).push(q);}
-    const background=el('details',null,{class:'atlas-editor'});
+    const background=el('details',null,{class:'atlas-editor',id:'story-background'});
     background.open=preface;
     background.append(el('summary','Background and life context · 35 optional questions'),el('p','Answer any number. Approval is off for each question until you turn it on. Identity labels and birthplace are used only as your own context, never to infer a trait. Birthday symbols have their own panel.'));
     let firstChapter=true;
@@ -86,10 +116,10 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
       firstChapter=false;
       for(const q of questions)group.append(question(q));background.append(group);
     }
-    const symbols=el('details',null,{class:'atlas-editor'});
+    const symbols=el('details',null,{class:'atlas-editor',id:'story-symbols-editor'});
     symbols.open=preface;
     symbols.append(el('summary','Birthday symbols and tarot'),el('p','These are creative motifs. They are not personality evidence or predictions. The full birthday never enters the standard kit.'));
-    const date=el('input',null,{type:'date',id:'story-birthday',min:'1901-01-01'});date.value=value.birthday;
+    const date=el('input',null,{type:'date',id:'story-birthday',min:'1901-01-01',max:new Date().toISOString().slice(0,10)});date.value=value.birthday;
     date.addEventListener('change',()=>{const before=value.birthday;value.birthday=date.value;try{validateStory(value,sources);persist();}catch(error){value.birthday=before;date.value=before;status.textContent=error.message;}});
     const dateLabel=el('label',null,{for:date.id});dateLabel.append(document.createTextNode('Birthday, optional '),date);symbols.append(dateLabel);
     const selected=value.background.bg35?.selected??[];
@@ -108,14 +138,18 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
       a.append(choose,document.createTextNode(title));b.append(share,document.createTextNode('Include in kit'));
       line.append(a,b);symbols.append(line);
     }
-    const drawButton=el('button','Draw three cards',{type:'button',class:'button secondary'});
+    const drawButton=el('button',value.draw?'Draw three new cards':'Draw three cards',{type:'button',class:'button secondary'});
+    const drawStatus=el('p','',{class:'atlas-status',role:'status'});
     const spread=el('div',null,{class:'atlas-mini-spread'});
-    function showDraw(){spread.replaceChildren();if(!value.draw)return;
+    function showDraw(){spread.replaceChildren();if(!value.draw){drawStatus.textContent='No draw saved yet.';return;}
+      drawButton.textContent='Draw three new cards';
+      drawStatus.dataset.drawId=value.draw.id;
+      drawStatus.textContent=`Draw saved ${new Date(value.draw.createdAt).toLocaleString()}. Drawing again replaces this three-card spread.`;
       for(const card of value.draw.cards){const item=sources.deck.cards.find(c=>c.id===card.cardId);
         const figure=el('figure');figure.append(el('img',null,{src:`/assets/personality/v5/tarot/${item.asset.pngPath.split('/').at(-1)}`,alt:item.asset.alt,loading:'lazy'}),el('figcaption',`${item.name} · ${card.orientation}`));spread.append(figure);}
     }
-    drawButton.addEventListener('click',()=>{value.draw=createTarotDraw(sources.deck);showDraw();persist();});showDraw();symbols.append(drawButton,spread);
-    const type=el('details',null,{class:'atlas-editor'});
+    drawButton.addEventListener('click',()=>{value.draw=createTarotDraw(sources.deck);showDraw();persist();});showDraw();symbols.append(drawButton,drawStatus,spread);
+    const type=el('details',null,{class:'atlas-editor',id:'story-type-editor'});
     type.append(el('summary','Explore four preference pairs · 48 draft questions'),el('p','This is an unvalidated research pilot. It does not administer the official Myers–Briggs instrument. You may stop at any point; partial axes remain unclassified.'));
     const typeStatus=el('p','',{class:'atlas-status',role:'status'});
     const updateType=()=>{const profile=typeProfile(value.type);typeStatus.textContent=`${Object.keys(value.type).length}/48 answered${profile.code&&!profile.code.includes('?')?` · exploratory code ${profile.code}`:''}.`;};
@@ -135,7 +169,10 @@ export function mountStoryStudio(root,{recordId=null,canSave=false,onChange=()=>
     updateType();type.insertBefore(typeStatus,type.children[2]);
     if(preface){panel.insertBefore(symbols,status);panel.insertBefore(background,status);panel.insertBefore(type,status);}
     else {panel.insertBefore(background,status);panel.insertBefore(type,status);panel.insertBefore(symbols,status);}
-    status.textContent=canSave&&recordId?'Optional story is saved separately on this device.':'Optional story stays in this tab until you download a kit.';
+    if(preface&&(!canSave||!recordId)){
+      panel.querySelectorAll('input,button').forEach(control=>{control.disabled=true;});
+      status.textContent='Local saving is unavailable. Save a local copy before answering optional story questions.';
+    }else status.textContent=canSave&&recordId?'Optional story is saved separately on this device.':'Optional story stays in this report tab until you download a kit.';
   }
   const ready=loadStorySources().then(async loaded=>{
     sources=loaded;

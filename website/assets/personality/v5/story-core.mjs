@@ -1,4 +1,6 @@
 // Independent optional context/symbol layer. Never modifies assessment scores.
+import {LUNAR_NEW_YEARS} from './lunar-new-years.mjs';
+
 const mod = (n, d) => ((n % d) + d) % d;
 const SYMBOL_OPTIONS = { western: 'o01', chinese: 'o02', tarot: 'o03' };
 
@@ -28,16 +30,15 @@ export function birthdaySymbols(value, today = new Date().toISOString().slice(0,
   const western = { sign: candidates.length === 1 ? sign : null, candidates,
     status: candidates.length === 1 ? 'approximate_date_convention' : 'boundary_sensitive_unresolved',
     convention: 'Common Western tropical sun-sign date ranges; not a natal chart or exact solar longitude.' };
-  let chinese = { animal:null,status:'calendar_unavailable',convention:'Chinese zodiac; year changes at Lunar New Year, not January 1 or Li Chun.' };
-  try {
-    const formatter = new Intl.DateTimeFormat('en-u-ca-chinese',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
-    if (formatter.resolvedOptions().calendar !== 'chinese') throw new Error('Chinese calendar unsupported');
-    const parts = formatter.formatToParts(date);
-    const relatedYear = Number(parts.find(p=>p.type==='relatedYear')?.value);
-    if (!Number.isInteger(relatedYear) || relatedYear < 1900 || relatedYear > 2100) throw new Error('No supported related year');
-    const animals = ['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
-    chinese = { ...chinese, animal:animals[mod(relatedYear-4,12)],status:'calendar_derived',engine:'Intl Chinese calendar; UTC civil-date adapter; runtime-dependent' };
-  } catch { /* Keep explicit unavailability; never fall back to Gregorian-year modulo. */ }
+  const newYear=LUNAR_NEW_YEARS[date.getUTCFullYear()];
+  const chinese={animal:null,status:'calendar_unavailable',convention:'Chinese zodiac; year changes at Lunar New Year, not January 1 or Li Chun.'};
+  if(newYear){
+    const relatedYear=date.toISOString().slice(0,10)<newYear?date.getUTCFullYear()-1:date.getUTCFullYear();
+    const animals=['Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat','Monkey','Rooster','Dog','Pig'];
+    chinese.animal=animals[mod(relatedYear-4,12)];
+    chinese.status='calendar_derived';
+    chinese.engine='Pinned lunar-new-year table, 1900-2100; UTC civil-date adapter';
+  }
   return { western, chinese, evidenceStatus:'symbolic_entertainment_not_personality_evidence' };
 }
 
@@ -108,7 +109,7 @@ export function prepareStoryPacket({bank,countries,deck,answers={},approvedIds=[
   const clean=validateBackground(bank,countries,answers);
   const known=new Map(bank.questions.map(q=>[q.id,q]));
   if (new Set(approvedIds).size!==approvedIds.length || approvedIds.some(id=>!known.has(id))) throw new Error('Invalid approved background IDs');
-  if (typeof displayName!=='string' || displayName.length>60) throw new Error('Use a report name of at most 60 characters');
+  if (typeof displayName!=='string' || displayName.length>80) throw new Error('Use a report name of at most 80 characters');
   if (new Set(approvedSymbols).size!==approvedSymbols.length || approvedSymbols.some(id=>!Object.hasOwn(SYMBOL_OPTIONS,id))) throw new Error('Unknown symbolic feature');
   const chosen=clean.bg35?.selected ?? [];
   const enabled=approvedSymbols.filter(id=>chosen.includes(SYMBOL_OPTIONS[id]));

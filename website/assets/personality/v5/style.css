@@ -263,6 +263,12 @@ body:has(.personality-atlas) #personality-app { max-width: 1240px; }
 .personality-atlas .atlas-dock :is(a,button) { flex: none; padding: .5rem .72rem; color: #274d61; font: 600 .76rem var(--font-sans); border: 0; border-radius: 100px; background: transparent; text-decoration: none; cursor: pointer; }
 .personality-atlas .atlas-dock :is(a,button):hover { background: #eaf1f4; }
 .atlas-studio { max-width: 1080px; margin: 2.5rem auto; padding: 2rem; border: 1px solid #d4dfe3; border-radius: 20px; background: #fbfcfc; }
+.preface-name { max-width: 1080px; margin: 1rem auto 0; }
+.preface-name .field { max-width: 32rem; }
+.preface-map { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.25rem 0; }
+.preface-map a { padding: .55rem .8rem; border: 1px solid #d4dfe3; border-radius: 999px; color: #245a81; font-size: .8rem; text-decoration: none; background: #f8fbfc; }
+.preface-map a:hover { background: #eaf2f6; }
+#prepare-story [id],#scored-profiles { scroll-margin-top: 5rem; }
 .atlas-studio h2 { font: 450 clamp(1.9rem,3vw,2.8rem)/1.2 var(--font-serif); margin: .25rem 0; }
 .atlas-studio > p { max-width: 68ch; }
 .atlas-editor { border-top: 1px solid #d4dfe3; padding: .8rem 0; }
@@ -273,6 +279,11 @@ body:has(.personality-atlas) #personality-app { max-width: 1240px; }
 .atlas-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .35rem .8rem; max-height: 300px; overflow: auto; }
 .atlas-options label,.atlas-symbol-choice label { display: flex; align-items: start; gap: .4rem; font-size: .86rem; cursor: pointer; }
 .atlas-approval { display: flex; align-items: center; gap: .45rem; color: #245a81; font-size: .8rem; margin-top: .65rem; }
+.atlas-self-description { margin-top: .8rem; }
+.atlas-self-description label { display: grid; gap: .4rem; max-width: 34rem; font-size: .84rem; font-weight: 600; }
+.atlas-self-description input { width: 100%; border: 1px solid var(--rule); border-radius: 4px; padding: .65rem; font: inherit; }
+.atlas-question-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
+.atlas-answer-status { margin: 0; font-size: .78rem; color: #52616b; }
 .atlas-type-question label { display: inline-flex; align-items: center; gap: .2rem; padding: .3rem .5rem; }
 .atlas-symbol-choice { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; border-top: 1px solid #dce1e4; padding: .8rem 0; }
 .atlas-mini-spread { display: flex; gap: .6rem; margin: 1rem 0; }
