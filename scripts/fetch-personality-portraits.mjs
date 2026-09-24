@@ -9,7 +9,7 @@ const entries = [
   ['ESTP','Harry Houdini'],['ESFP','Josephine Baker'],['ENFP','Anna May Wong'],['ENTP','Mark Twain'],
   ['ESTJ','Andrew Carnegie'],['ESFJ','Clara Schumann'],['ENFJ','Louis Armstrong'],['ENTJ','Marie Curie'],
 ];
-const root=new URL('../website/assets/personality/v5/',import.meta.url);
+const root=new URL('../website/assets/personality/v6/',import.meta.url);
 const headers={'User-Agent':'engmanager.xyz editorial research (hello@engmanager.xyz)'};
 const strip=value=>(value??'').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
 async function json(url){const response=await fetch(url,{headers});if(!response.ok)throw new Error(`${response.status} ${url}`);return response.json();}

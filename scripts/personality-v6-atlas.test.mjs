@@ -6,20 +6,20 @@ import {createHash} from 'node:crypto';
 import {decodeSnapshot} from '../website/assets/personality/v1/share.mjs';
 import {createReport} from '../website/assets/personality/v1/report.mjs';
 import {score} from '../website/assets/personality/v1/core.mjs';
-import {ATLAS_BANK} from '../website/assets/personality/v5/atlas-bank.mjs';
-import {FIGURES} from '../website/assets/personality/v5/atlas-figures.mjs';
-import {colorProfile,typeProfile} from '../website/assets/personality/v5/atlas-model.mjs';
-import {emptyStory,validateStory,loadStory,saveStory} from '../website/assets/personality/v5/story-store.mjs';
+import {ATLAS_BANK} from '../website/assets/personality/v6/atlas-bank.mjs';
+import {FIGURES} from '../website/assets/personality/v6/atlas-figures.mjs';
+import {colorProfile,typeProfile} from '../website/assets/personality/v6/atlas-model.mjs';
+import {emptyStory,validateStory,loadStory,saveStory} from '../website/assets/personality/v6/story-store.mjs';
 import {openStore} from '../website/assets/personality/v1/store.mjs';
 import {createState} from '../website/assets/personality/v1/core.mjs';
-import {birthdaySymbols,createTarotDraw} from '../website/assets/personality/v5/story-core.mjs';
-import {LUNAR_NEW_YEARS} from '../website/assets/personality/v5/lunar-new-years.mjs';
-import {createReportKit,PORTRAIT_BRIEF} from '../website/assets/personality/v5/report-kit.mjs';
-import {RELEASE as current} from '../website/assets/personality/v5/release.mjs';
-import {RELEASE as previous} from '../website/assets/personality/v4/release.mjs';
-import {presentationForURL} from '../website/assets/personality/v5/bootstrap.mjs';
+import {birthdaySymbols,createTarotDraw} from '../website/assets/personality/v6/story-core.mjs';
+import {LUNAR_NEW_YEARS} from '../website/assets/personality/v6/lunar-new-years.mjs';
+import {createReportKit,PORTRAIT_BRIEF} from '../website/assets/personality/v6/report-kit.mjs';
+import {RELEASE as current} from '../website/assets/personality/v6/release.mjs';
+import {RELEASE as previous} from '../website/assets/personality/v5/release.mjs';
+import {presentationForURL} from '../website/assets/personality/v6/bootstrap.mjs';
 
-const read=async name=>JSON.parse(await readFile(new URL(`../website/assets/personality/v5/data/${name}.json`,import.meta.url),'utf8'));
+const read=async name=>JSON.parse(await readFile(new URL(`../website/assets/personality/v6/data/${name}.json`,import.meta.url),'utf8'));
 const sources={bank:await read('background-questionnaire'),countries:await read('countries'),deck:await read('tarot-deck')};
 const fixture=JSON.parse(await readFile(new URL('./personality-v1-compatibility-fixture.json',import.meta.url),'utf8'));
 const state=decodeSnapshot(fixture.snapshot),model=createReport(state,score(state));
@@ -78,42 +78,39 @@ test('pinned Chinese calendar keeps historical and recent New Year boundaries st
   }
 });
 
-test('only explicitly approved story details and derived symbols enter the kit',()=>{
+test('answered story details and derived symbols enter the kit without per-field toggles',()=>{
   const value=emptyStory();
   value.background.bg04={status:'answered',selected:['o01']};
-  value.background.bg35={status:'answered',selected:['o01','o02','o03']};
   value.birthday='1990-09-10';
   value.draw=createTarotDraw(sources.deck);
-  value.approvedSymbols=['western','chinese','tarot'];
   const positive=Object.fromEntries(ATLAS_BANK.typeItems.map(item=>[item.id,item.key===1?5:1]));
   value.type=positive;
   assert.doesNotThrow(()=>validateStory(value,sources));
   const kit=createReportKit(state,{name:'Alex',story:{value,sources}});
-  assert.equal(kit.data.story.context.length,0);
+  assert.equal(kit.data.story.context.length,1);
+  assert.equal(kit.data.story.context[0].id,'bg04');
   assert.equal(kit.data.story.privacy.fullBirthdayIncluded,false);
   assert(!kit.text.includes('1990-09-10'));
   assert.equal(kit.data.story.symbols.western.sign,'Virgo');
   assert.equal(kit.data.story.symbols.tarot.cards.length,3);
-  assert(kit.data.story.symbols.tarot.cards.every(card=>card.image.url.startsWith('https://engmanager.xyz/assets/personality/v5/tarot/')));
+  assert(kit.data.story.symbols.tarot.cards.every(card=>card.image.url.startsWith('https://engmanager.xyz/assets/personality/v6/tarot/')));
   assert.equal(kit.data.atlas.type.code,'ENFJ');
   assert.equal(kit.data.atlas.reference.name,'Louis Armstrong');
   assert.match(PORTRAIT_BRIEF,/Five-movement score/);
   assert.match(PORTRAIT_BRIEF,/public-life parallel.*metaphor/);
-  assert.match(PORTRAIT_BRIEF,/approved BG02 answer specifies pronouns/);
+  assert.match(PORTRAIT_BRIEF,/BG02 answer specifies pronouns/);
   assert.match(PORTRAIT_BRIEF,/Follow story\.symbolInterpretation/);
-  value.approvedIds=['bg04'];
-  assert.equal(createReportKit(state,{story:{value,sources}}).data.story.context[0].id,'bg04');
   value.background.bg04={status:'answered',selected:['o10'],selfDescription:'My own chosen wording'};
   assert.equal(createReportKit(state,{story:{value,sources}}).data.story.context[0].selfDescription,'My own chosen wording');
-  value.approvedIds=[];
+  delete value.background.bg04;
   assert(!createReportKit(state,{story:{value,sources}}).text.includes('My own chosen wording'));
 });
 
-test('new release retains v4 and uses a hardcoded current presentation',async()=>{
-  assert.equal(current.v,5);
-  assert.equal(current.presentation,'unified-atlas-v5');
+test('new release retains v5 and uses a hardcoded current presentation',async()=>{
+  assert.equal(current.v,6);
+  assert.equal(current.presentation,'unified-atlas-v6');
   assert.equal(current.previousReleases[0].releaseDigest,hash(JSON.stringify(previous)));
-  assert.equal(presentationForURL('https://engmanager.xyz/personality/report'),'v5');
+  assert.equal(presentationForURL('https://engmanager.xyz/personality/report'),'v6');
   assert.equal(presentationForURL('https://engmanager.xyz/personality/report#s=malformed'),'v1');
   for(const [path,digest] of Object.entries(current.assets)){
     const bytes=await readFile(new URL(`../website${path}`,import.meta.url));

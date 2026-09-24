@@ -61,3 +61,5 @@ The [Your Story research and implementation kit](story-kit-v2/README.md) adds a 
 This experimental research and reference package was prepared 22 September 2026. PR #51 itself did not activate features in the live questionnaire. Type and color candidates require validation; astrology and tarot are optional creative material, with no contribution to assessment scores.
 
 The later v5 release in PR #52 activated the direct preference pilot and optional story layer. See the [PR #51–#53 implementation map](pr-51-52-implementation-map.md) for exact production paths, tests, and research-only boundaries.
+
+The [v6 form UX and accessibility audit](form-ux-a11y-audit-v6.md) records the cache fix and the simpler, single-path questionnaire. v5 remains a frozen published release.
