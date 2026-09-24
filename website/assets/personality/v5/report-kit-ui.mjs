@@ -21,6 +21,35 @@ function download(kit) {
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
+export function mountPrefaceName(root,{recordId=null,canSave=false,onPending=()=>{}}={}) {
+  const panel=el('section',null,{class:'panel preface-name','aria-labelledby':'preface-name-title'});
+  panel.append(el('h2','A name for your report',{id:'preface-name-title'}),
+    el('p','Use a first name, nickname, or pseudonym. You can change it in the report kit before downloading. This field is optional and stays off shared answer links.'));
+  const name=el('input',null,{id:'preface-name',type:'text',maxlength:'80',autocomplete:'off',placeholder:'Name or pseudonym'});
+  const status=el('p',canSave&&recordId?'Loading saved report name…':'Local saving is unavailable; add a name when you download the report kit.',{class:'small',role:'status'});
+  panel.append(field('Name in the generated report',name),status);root.append(panel);
+  let disposed=false,failed=false,revision=0,context='',queue=Promise.resolve();
+  name.disabled=Boolean(canSave&&recordId)||!canSave;
+  if(canSave&&recordId){
+    loadKitSettings(recordId).then(saved=>{
+      revision=saved.revision;context=saved.context;
+      if(!disposed){name.value=saved.name;name.disabled=false;status.textContent='Name saved with this assessment on this device.';}
+    }).catch(error=>{failed=true;if(!disposed)status.textContent=`Could not load report name: ${error.message}`;});
+  }
+  name.addEventListener('input',()=>{
+    if(disposed||failed||!canSave||!recordId)return;
+    const nextName=name.value;
+    status.textContent='Saving report name on this device…';
+    queue=queue.then(async()=>{
+      if(failed)return;
+      try{const saved=await saveKitSettings(recordId,revision,{name:nextName,context});revision=saved.revision;if(!disposed)status.textContent='Name saved with this assessment on this device.';}
+      catch(error){failed=true;if(!disposed)status.textContent=`Report name was not saved: ${error.message} Reload before editing it.`;}
+    });
+    onPending(queue);
+  });
+  return ()=>{disposed=true;};
+}
+
 export function mountReportKit(root,{state,enhancement=null,recordId=null,canSave=false,flush=async()=>{},pendingWrites=Promise.resolve(),onPending=()=>{},story=()=>null,storyReady=Promise.resolve()}) {
   let disposed=false,revision=0,ready=!canSave||!recordId,failed=false,queue=Promise.resolve();
   const completion=score(state).completion;

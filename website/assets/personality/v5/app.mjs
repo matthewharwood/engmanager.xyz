@@ -4,7 +4,7 @@ import {openStore, serializeBackup} from '../v1/store.mjs';
 import {encodeSnapshot, encodeSummary, readIngress, verifyPublicAssets} from '../v1/share.mjs';
 import {createReport} from '../v1/report.mjs';
 import {renderReport} from './report.mjs';
-import {mountReportKit} from './report-kit-ui.mjs';
+import {mountReportKit,mountPrefaceName} from './report-kit-ui.mjs';
 import {mountStoryStudio} from './story-ui.mjs';
 import {EXPERIMENTS} from '../v1/report-content.mjs';
 import {createContext,assessmentBasis} from '../v1/enhancement.mjs';
@@ -19,7 +19,7 @@ const viewRoute = {instructions:'prepare', assessment:'test', review:'review', r
 let state = createState(), record = null, db = null, ingress = {kind:'none'}, readOnly = false;
 let pendingKit = Promise.resolve();
 let queue = Promise.resolve(), saveFailure = null, pending = 0, audioEnabled = false, renderId = 0, ingressBlocked = false, bootReady = false, sharedCursor = null;
-let reflectionContext=createContext(),enhancement=null,disposeReflection=null,disposeReportKit=null,disposeStoryStudio=null;
+let reflectionContext=createContext(),enhancement=null,disposeReflection=null,disposeReportKit=null,disposeStoryStudio=null,disposePrefaceName=null;
 const trackPending=promise=>{pendingKit=Promise.all([pendingKit,promise]).then(()=>{});};
 const currentEnhancement=()=>enhancement?.basis===assessmentBasis(state)?enhancement:null;
 const reportModel=()=>createReport(state,score(state),currentEnhancement());
@@ -130,9 +130,24 @@ function pageSlots() {
 }
 
 function prepare() {
-  main.append(heading('01 / Before you begin','A field guide. Not a fixed identity.','Explore your patterns, the work that interests you, and what matters when you make a choice. Then turn that reflection into a small, useful experiment.'));
-  const columns=el('div',null,{class:'two-column'}), form=el('section',null,{class:'panel'});
-  form.append(el('h2','Choose your profiles'),p('The Big Five is the foundation. The two optional profiles ask different questions. Allow roughly 20–30 minutes for all 170 items; you can return at any point.'));
+  main.append(heading('01 / Before you begin','Start with your story.','Add the context you want the final report to know, then explore your measured patterns. Every story question is optional and separate from your scores.'));
+  const map=el('nav',null,{class:'preface-map','aria-label':'Questionnaire sections'});
+  for(const [label,href] of [['Birthday and tarot','#story-symbols-editor'],['35 background questions','#story-background'],['48 draft type questions','#story-type-editor'],['170 scored items with all profiles','#scored-profiles']]){
+    map.append(el('a',label,{href,'data-report-anchor':''}));
+  }
+  main.append(map);
+  main.append(actions(button('Go straight to scored questions →',()=>navigate('test'),true)));
+  const storyHost=el('div',null,{id:'prepare-story'});
+  main.append(storyHost);
+  if(!readOnly)run(async()=>{
+    if(!record&&db&&!saveFailure)await persist();
+    if(!storyHost.isConnected)return;
+    disposePrefaceName=mountPrefaceName(storyHost,{recordId:record?.id??null,canSave:Boolean(db&&!saveFailure),onPending:trackPending});
+    const studio=mountStoryStudio(storyHost,{recordId:record?.id??null,canSave:Boolean(db&&!saveFailure),onPending:trackPending,preface:true});
+    disposeStoryStudio=studio.dispose;
+  });
+  const columns=el('div',null,{class:'two-column'}), form=el('section',null,{class:'panel',id:'scored-profiles'});
+  form.append(el('h2','Choose your scored profiles'),p('The Big Five is the foundation. With interests and values selected, this part has 170 scored items and takes roughly 20–30 minutes. The story preface above adds up to 36 optional context and symbol choices and 48 experimental preference items. Those 84 choices never change a scientific score; you can return at any point.'));
   const descriptions={big5:'120 items · five broad traits and 30 narrower facets. Describe yourself across your life, not only at work.',interests:'30 activities · six kinds of work you may enjoy. For career exploration; interest is different from ability.',values:'20 portraits · ten personal priorities. What matters to you when attractive choices compete?'};
   for(const module of MODULES){
     const input=el('input',null,{type:'checkbox',id:`module-${module.id}`,checked:state.modules.includes(module.id),disabled:module.required||readOnly});
@@ -296,7 +311,7 @@ async function library(token){
 }
 
 function render(){
-  disposeReflection?.();disposeReflection=null;disposeReportKit?.();disposeReportKit=null;disposeStoryStudio?.();disposeStoryStudio=null;
+  disposeReflection?.();disposeReflection=null;disposeReportKit?.();disposeReportKit=null;disposeStoryStudio?.();disposeStoryStudio=null;disposePrefaceName?.();disposePrefaceName=null;
   const token=++renderId,next=route();document.querySelector('#page-crumb').textContent=labels[next]||'Page not found';
   document.querySelectorAll('[data-route]').forEach(a=>{if(a.dataset.route===next)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
   document.title=`${labels[next]||'Page not found'} · The Big Six-Seven`;
