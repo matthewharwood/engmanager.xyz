@@ -72,7 +72,7 @@ Rust format, clippy, unit/integration tests and real Chrome browser tests.
   direct links, aliases, overlays, browser history, repeated mounts, reduced
   motion, mobile dimensions, dismiss/resume, network failure and cancellation.
   Run the complete existing CI checks and visually inspect the experience.
-- [ ] **7. Pull request and CI.** Commit coherent changes, push the feature branch,
+- [x] **7. Pull request and CI.** Commit coherent changes, push the feature branch,
   create and attach a PR with implementation/validation evidence. Inspect check
   results; read failing logs, fix causes, push and repeat until required checks
   are green for the final commit.
@@ -142,8 +142,7 @@ is completed.
   Chrome lifetimes and captures process/stderr diagnostics without retrying or
   suppressing assertions. The complete rerun passed.
 - `cargo fmt --all --check`, `cargo clippy -p website --all-targets -- -D warnings`,
-  JavaScript syntax checks and `git diff --check` passed. PR checks are the final
-  remaining issue; they must pass on the pushed commit before this goal is done.
+  JavaScript syntax checks and `git diff --check` passed.
 - The first PR run found a reduced-motion product-card scale transition. A real
   CDP Tab event made it reproducible locally: the global 0.01ms duration still
   created a running `none` → `scale(1.1)` transition. The storefront now disables
@@ -151,3 +150,9 @@ is completed.
   its keyboard focus outline. The browser regression checks actual visible
   keyboard focus, computed styles, and active animations, with target/keyframe
   diagnostics on failure.
+- Issue 7: [PR #55](https://github.com/matthewharwood/engmanager.xyz/pull/55)
+  contains the complete implementation. GitHub CI
+  [run 36087551168](https://github.com/matthewharwood/engmanager.xyz/actions/runs/36087551168)
+  passed every step for implementation commit `56c796e`: personality tests and
+  immutable-release checks, formatting, clippy, and the complete Rust/browser
+  suite. The reduced-motion fix also passed both local journey variants.
