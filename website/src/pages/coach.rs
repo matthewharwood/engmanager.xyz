@@ -40,7 +40,7 @@ use crate::coaching::{
     intake_preview_url, orp_split,
 };
 use crate::components::quick_actions::theme_picker;
-use crate::components::{Head, script_islands};
+use crate::components::{Head, page_config_island};
 use crate::content::article_by_slug;
 use crate::pages::{SHARE_CARD_SIZE, share_card};
 
@@ -96,18 +96,29 @@ pub async fn index(Query(query): Query<CoachQuery>) -> Response {
     Html(page(BOOKING_PAGE.as_ref(), mode)).into_response()
 }
 
+/// Same-origin entry point for the shared navigation shell, including on the
+/// shop host where `/` intentionally remains the storefront.
+pub async fn alias(Query(query): Query<CoachQuery>) -> Response {
+    let mode = SessionMode::from_query(query.group.as_deref());
+    Html(page_at(BOOKING_PAGE.as_ref(), mode, "/coach")).into_response()
+}
+
 /// `engmanager.xyz/coaching` → the subdomain (308, method-preserving).
 pub async fn redirect() -> Redirect {
     Redirect::permanent(&format!("{COACH_ORIGIN}/"))
 }
 
 pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
+    page_at(booking, mode, "/")
+}
+
+fn page_at(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> String {
     // Canonical always points at the 1:1 URL: `?group=1` is the same page with
     // different framing, not a second page to be indexed separately. The OG
     // tags below still describe the variant actually being served, which is
     // what a scraper reads when someone shares the group link.
     let canonical = format!("{COACH_ORIGIN}/");
-    let data = script_islands(&[("__coach", &island_json(booking, mode))]);
+    let data = page_config_island("__coach", &island_json(booking, mode));
 
     let mut assets = Head::new();
     assets.add_css("css/shop.css");
@@ -120,7 +131,7 @@ pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
 
     let body = view! {
         <header class="shop-topbar coach-topbar" aria-label="Coaching controls">
-            <a class="shop-home-link" href="https://engmanager.xyz/" aria-label="Back to ENGMANAGER.XYZ">
+            <a class="shop-home-link" href="/feed" aria-label="Back to ENGMANAGER.XYZ">
                 { HtmlFragment::new(CHEVRON_SVG.to_string()) }
             </a>
             { theme_picker() }
@@ -135,7 +146,7 @@ pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
             </div>
         </header>
         <main id="main" class="coach-main">
-            { render_reader(booking, mode) }
+            { render_reader(booking, mode, path) }
             <div class="coach-below">
                 { render_testimonials() }
                 { render_reads() }
@@ -179,6 +190,7 @@ pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
         })
         .assets(assets)
         .scripts(scripts)
+        .journey("coach", Some("/feed"))
         .skip_link(Some("Skip to coaching"))
         .render(body)
 }
@@ -190,14 +202,14 @@ pub(crate) fn page(booking: Option<&BookingPage>, mode: SessionMode) -> String {
 /// in full, so the control works with JS off, the back button behaves, and —
 /// the reason it matters here — a shared link carries the mode into the
 /// LinkedIn card.
-fn render_mode_switch(mode: SessionMode) -> HtmlFragment {
+fn render_mode_switch(mode: SessionMode, path: &str) -> HtmlFragment {
     let options: HtmlFragment = [SessionMode::Solo, SessionMode::Group]
         .iter()
         .map(|option| {
             let current = *option == mode;
             view! {
                 <a class="coach-mode-option"
-                   href={ option.href() }
+                   href={ if option.is_group() { format!("{path}?group=1") } else { path.to_string() } }
                    data-active={ if current { "true" } else { "false" } }
                    aria-current={ if current { "page" } else { "false" } }>
                     { option.label() }
@@ -229,7 +241,7 @@ fn render_mode_switch(mode: SessionMode) -> HtmlFragment {
     }
 }
 
-fn render_reader(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragment {
+fn render_reader(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> HtmlFragment {
     let persona = &PERSONAS[default_persona_index()];
     let [problem, help] = persona.paragraphs();
     let title = headline(mode);
@@ -242,9 +254,9 @@ fn render_reader(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragme
         .map(|page| page.href().to_string())
         .unwrap_or_else(|| {
             if mode.is_group() {
-                "/?group=1&book=calendar".to_string()
+                format!("{path}?group=1&book=calendar")
             } else {
-                "/?book=calendar".to_string()
+                format!("{path}?book=calendar")
             }
         });
     let speeds: HtmlFragment = READER_SPEEDS
@@ -282,7 +294,7 @@ fn render_reader(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragme
                     <p>{ help }</p>
                 </div>
                 <div class="coach-reader-actions">
-                    { render_mode_switch(mode) }
+                    { render_mode_switch(mode, path) }
                     <a class="shop-cart-checkout coach-cta"
                        href={ cta_href }
                        data-book-open

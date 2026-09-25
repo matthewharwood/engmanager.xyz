@@ -145,12 +145,15 @@ function syncTitleMetrics(svg, ink) {
 
     const observer =
         "ResizeObserver" in window ? new ResizeObserver(onResize) : null;
+    let generation = 0;
 
     async function fit(root) {
+        const run = ++generation;
         try {
             if (document.fonts && document.fonts.ready) {
                 await document.fonts.ready;
             }
+            if (run !== generation) return;
             for (const svg of measurements.keys()) {
                 if (!svg.isConnected) measurements.delete(svg);
             }
@@ -174,5 +177,10 @@ function syncTitleMetrics(svg, ink) {
     }
 
     fit(document);
+    window.__engNav?.onBeforeSwap?.(() => {
+        generation++;
+        observer?.disconnect();
+        measurements.clear();
+    });
     window.__engNav?.onSwap?.(fit);
 })();

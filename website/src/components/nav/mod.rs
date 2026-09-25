@@ -140,6 +140,23 @@ fn render_articles_link() -> HtmlFragment {
     }
 }
 
+/// The two quiet service entry points also used on the feed.
+pub fn service_links() -> HtmlFragment {
+    view! {
+        <a class="service-nav-link" href="/shop" aria-label="Explore the store" title="Store">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <path d="M12 4 21 20H3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+            </svg>
+        </a>
+        <a class="service-nav-link" href="/coach" aria-label="Discover coaching" title="Coaching">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <circle cx="9" cy="9" r="5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <circle cx="15" cy="15" r="5" fill="none" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+        </a>
+    }
+}
+
 /// Pure render: `Props -> Rendered`. Emits the byte-identical `<nav>` node tree
 /// the article + search pages used to build inline, plus the dist assets the
 /// chosen `Articles` config depends on.
@@ -183,7 +200,7 @@ pub fn render(props: Props) -> Rendered {
     // router swaps it wholesale instead of pinning it.
     rendered.markup = view! {
         <nav class="site-nav" aria-label="Primary" data-swap-region="nav">
-            <a class="site-nav-brand" href="/" aria-label="engmanager.xyz home">
+            <a class="site-nav-brand" href="/feed" aria-label="engmanager.xyz home">
                 <img class="site-nav-mark"
                      src={ brand_icon_url }
                      alt=""
@@ -196,6 +213,7 @@ pub fn render(props: Props) -> Rendered {
             <div class="site-nav-links">
                 { search_toggle }
                 { articles_slot }
+                { service_links() }
                 <a class="site-nav-link" href="https://discord.gg/sTzQBrbnBM" target="_blank" rel="noopener" aria-label="Join the Discord">
                     { icon(ICON_DISCORD) }
                     <span class="site-nav-link-label">"Discord"</span>

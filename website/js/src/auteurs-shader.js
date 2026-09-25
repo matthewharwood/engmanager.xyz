@@ -116,6 +116,8 @@ void main() {
             console.error("Program link error:", gl.getProgramInfoLog(program));
             return null;
         }
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
         return program;
     }
 
@@ -174,7 +176,10 @@ void main() {
 
         instances.set(canvas, () => {
             cancelAnimationFrame(raf);
-            gl.getExtension("WEBGL_lose_context")?.loseContext();
+            // A previous outlet may retain and later restore this canvas.
+            // Free its resources without permanently losing that context.
+            gl.deleteBuffer(buffer);
+            gl.deleteProgram(program);
         });
     }
 
@@ -189,5 +194,9 @@ void main() {
     }
 
     init(document);
+    window.__engNav?.onBeforeSwap?.(() => {
+        for (const dispose of instances.values()) dispose();
+        instances.clear();
+    });
     window.__engNav?.onSwap?.(init);
 })();

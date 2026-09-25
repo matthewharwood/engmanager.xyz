@@ -40,14 +40,14 @@ const DEFAULT_THEME_COLOR: &str = "#e64553";
 /// API endpoints, or search result pages (unbounded query space).
 const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":"/checkout*"}},{"not":{"href_matches":"/api/*"}},{"not":{"href_matches":"/search*"}},{"not":{"href_matches":"/personality*"}},{"not":{"href_matches":"/articles/big-personality*"}}]},"eagerness":"moderate"}]}"#;
 
-/// Inline `window.__engNav` bootstrap (ledger #15): the swap-callback
-/// registry that converted bundles register against (`onSwap`) and the
-/// nav-router fires (`_fire`) after each soft swap. Emitted on EVERY shell
+/// Inline `window.__engNav` bootstrap: the mount/dispose callback registries
+/// that bundles register against (`onSwap` / `onBeforeSwap`) and the router
+/// fires (`_fire` / `_before`) around each soft swap. Emitted on EVERY shell
 /// page, ahead of all deferred scripts, so a bundle can register
 /// unconditionally whether or not the page ships the router. Set-based with
 /// per-callback try/catch — one broken callback never blocks the rest.
-/// Kept under 300 bytes (currently ~160).
-const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set();return{onSwap(c){s.add(c);return()=>s.delete(c)},_fire(m){for(const c of s){try{c(m)}catch{}}}}})();</script>"#;
+/// Kept under 300 bytes.
+const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set(),b=new Set(),a=(s,c)=>(s.add(c),()=>s.delete(c)),f=(s,m)=>{for(const c of s){try{c(m)}catch{}}};return{onSwap:c=>a(s,c),_fire:m=>f(s,m),onBeforeSwap:c=>a(b,c),_before:m=>f(b,m)}})();</script>"#;
 
 /// Escape a string for embedding inside a JSON string literal that itself
 /// lives in a `<script>` element: the JSON specials (`"`, `\`, control chars)
@@ -204,6 +204,7 @@ pub struct PageShell {
     theme_color: &'static str,
     speculation_rules: bool,
     nav_router: bool,
+    journey: Option<(&'static str, Option<&'static str>)>,
     body_class: &'static str,
     /// Extra attribute on `<body>` (checkout's `data-checkout-mode`).
     body_attr: Option<(&'static str, &'static str)>,
@@ -223,6 +224,7 @@ impl PageShell {
             theme_color: DEFAULT_THEME_COLOR,
             speculation_rules: false,
             nav_router: false,
+            journey: None,
             body_class,
             body_attr: None,
             skip_link: Some("Skip to content"),
@@ -262,22 +264,29 @@ impl PageShell {
         self
     }
 
-    /// Emit the speculation-rules prerender island (site-host indexable pages
-    /// only: homepage, articles index, indexed article detail, search).
+    /// Permit the speculation-rules prerender island on indexable pages.
+    /// Router-enabled pages suppress it in favor of one inert staged fetch.
     pub fn speculation_rules(mut self, enabled: bool) -> Self {
         self.speculation_rules = enabled;
         self
     }
 
-    /// Ship the soft-navigation router, `js/nav-router.js` (ledger #16) —
-    /// router-eligible pages only: homepage, articles index, article detail
-    /// (hidden ones included; eligibility is by path shape), search. The tag
+    /// Ship the shared soft-navigation router, `js/nav-router.js`, on eligible
+    /// blog, store and coaching pages. The tag
     /// is appended after every page script through the shared [`Head`]
     /// collector, so it participates in normal first-seen dedup. The router
-    /// stays DORMANT on speculation-rules browsers (Chromium) — see the
-    /// activation policy in `js/src/nav-router.js`.
+    /// progressively enhances ordinary links in supporting browsers.
     pub fn nav_router(mut self, enabled: bool) -> Self {
         self.nav_router = enabled;
+        self
+    }
+
+    /// One complete page outlet, including its navigation and dialog markup.
+    /// The next destination is an ordinary same-origin URL and remains a real
+    /// link when scripting, intersection observers, or motion are unavailable.
+    pub fn journey(mut self, kind: &'static str, next: Option<&'static str>) -> Self {
+        self.nav_router = true;
+        self.journey = Some((kind, next));
         self
     }
 
@@ -304,6 +313,9 @@ impl PageShell {
         let mut head = Head::new();
         head.add_deferred_css(crate::components::api_receipt::STYLE);
         head.add_css(crate::components::quick_actions::STYLE);
+        if self.nav_router {
+            head.add_css("css/journey.css");
+        }
         head.extend(self.assets);
         head.add_blocking_js("js/theme-toggle.js");
         head.add_inline(render_sfx_urls());
@@ -359,7 +371,9 @@ impl PageShell {
             }
             .as_str(),
         );
-        if self.speculation_rules {
+        // The journey router owns its single inert next-page fetch. Native
+        // prerenders would execute page scripts before that page is promoted.
+        if self.speculation_rules && !self.nav_router {
             // ledger #14: `data-server` marks the island as server-owned so
             // experiences.js never injects a duplicate rules script after a
             // soft navigation (its onSoftNav guard queries this attribute).
@@ -387,7 +401,30 @@ impl PageShell {
         if let Some(label) = self.skip_link {
             doc.push_str(view! { <a class="skip-link" href="#main">{ label }</a> }.as_str());
         }
-        doc.push_str(body.as_str());
+        if let Some((kind, next)) = self.journey {
+            let _ = write!(doc, "<div data-eng-page=\"{kind}\"");
+            if let Some(next) = next {
+                let _ = write!(doc, " data-eng-next=\"{next}\"");
+            }
+            doc.push('>');
+            doc.push_str(body.as_str());
+            if let Some(next) = next {
+                let label = match kind {
+                    "article" => "Explore the store",
+                    "shop" => "Discover coaching",
+                    "coach" => "Back to the feed",
+                    _ => "Continue exploring",
+                };
+                doc.push_str(view! {
+                    <footer class="journey-next" data-journey-fallback>
+                        <a class="journey-next-link" href={ next }>{ label }<span aria-hidden="true">" ↗"</span></a>
+                    </footer>
+                }.as_str());
+            }
+            doc.push_str("</div>");
+        } else {
+            doc.push_str(body.as_str());
+        }
         doc.push_str("</body></html>");
         doc
     }
@@ -456,6 +493,7 @@ mod tests {
         scripts.add_js("js/audio.js");
         let html = PageShell::new("Router Page", "homepage")
             .scripts(scripts)
+            .speculation_rules(true)
             .nav_router(true)
             .render(HtmlFragment::empty());
 
@@ -469,6 +507,7 @@ mod tests {
         let bootstrap = html.find("window.__engNav=").expect("engNav bootstrap");
         let audio = html.find("/assets/js/audio.").expect("audio.js");
         assert!(bootstrap < audio && audio < tag);
+        assert!(!html.contains("speculationrules"));
     }
 
     #[test]

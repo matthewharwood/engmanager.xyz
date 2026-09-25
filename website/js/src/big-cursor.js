@@ -223,6 +223,11 @@
 
     init();
 
+    window.__engNav?.onBeforeSwap?.(() => {
+        dispose?.();
+        dispose = null;
+    });
+
     window.__engNav?.onSwap?.(() => {
         if (document.body.classList.contains("homepage")) {
             init();

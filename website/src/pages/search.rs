@@ -217,6 +217,7 @@ fn render_page(
             .scripts(scripts)
             .speculation_rules(true)
             .nav_router(true)
+            .journey("search", None)
             .render(body),
     )
 }

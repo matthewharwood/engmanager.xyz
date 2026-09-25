@@ -91,3 +91,11 @@ window.__engNav?.onSwap?.(() => {
     softNavigated = true;
     install();
 });
+
+// The router does not hold the page inert while optional CDNs load. Prism's
+// core or language autoloader may therefore become available after the mount.
+window.addEventListener("eng:optionalasset", (event) => {
+    if (!String(event.detail?.url || "").includes("prism")) return;
+    softNavigated = true;
+    install();
+});

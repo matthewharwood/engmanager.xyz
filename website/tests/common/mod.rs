@@ -108,12 +108,12 @@ pub fn asset_href(html: &str, prefix: &str) -> String {
     html[start..end].to_string()
 }
 
-/// Parse the `window.__coach=…;` data island out of the page.
+/// Parse the inert coaching configuration out of the page.
 pub fn coach_island(html: &str) -> serde_json::Value {
-    let marker = "window.__coach=";
+    let marker = r#"<script type="application/json" data-eng-config="__coach">"#;
     let start = html.find(marker).expect("coach island present") + marker.len();
     let end = html[start..]
-        .find(";</script>")
+        .find("</script>")
         .map(|offset| start + offset)
         .expect("coach island terminates");
     serde_json::from_str(&html[start..end]).expect("coach island is valid JSON")

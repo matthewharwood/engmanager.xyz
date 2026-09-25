@@ -347,6 +347,22 @@ pub fn json_data_island(id: &str, payload: &str) -> HtmlFragment {
     ))
 }
 
+/// Inert, named page configuration. Soft navigation copies these data nodes
+/// and parses an explicit allowlist; it never executes fetched inline scripts.
+pub fn page_config_island(name: &'static str, payload: &str) -> HtmlFragment {
+    HtmlFragment::new(format!(
+        r#"<script type="application/json" data-eng-config="{name}">{}</script>"#,
+        escape_script_payload(payload)
+    ))
+}
+
+pub fn page_config_islands(islands: &[(&'static str, &str)]) -> HtmlFragment {
+    islands
+        .iter()
+        .map(|(name, payload)| page_config_island(name, payload))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

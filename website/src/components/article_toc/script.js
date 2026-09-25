@@ -64,6 +64,7 @@
 
         const inZone = new Set();
         let activeId = headings[0].id;
+        for (const link of links.values()) link.classList.remove("is-current");
         links.get(activeId)?.classList.add("is-current");
 
         const setActive = (id) => {
@@ -125,6 +126,11 @@
     }
 
     init(document);
+
+    window.__engNav?.onBeforeSwap?.(() => {
+        dispose?.();
+        dispose = null;
+    });
 
     window.__engNav?.onSwap?.((root) => {
         if (dispose) {

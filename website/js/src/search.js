@@ -9,6 +9,14 @@
 (() => {
     // { form, close } entries; detached forms are pruned lazily.
     const outsideClosers = new Set();
+    const formClosers = new WeakMap();
+    const addCloser = (form, close, suspend) => {
+        const entry = { form, close, suspend };
+        const entries = formClosers.get(form) || [];
+        entries.push(entry);
+        formClosers.set(form, entries);
+        outsideClosers.add(entry);
+    };
     document.addEventListener("pointerdown", (event) => {
         for (const entry of outsideClosers) {
             if (!entry.form.isConnected) {
@@ -23,7 +31,12 @@
 
     function bind(root) {
         root.querySelectorAll("[data-search-form]").forEach((form) => {
-            if (form.dataset.searchBound) return;
+            if (form.dataset.searchBound) {
+                // A previous outlet's forms keep their element listeners, but
+                // the outside-click set may have pruned them while detached.
+                for (const entry of formClosers.get(form) || []) outsideClosers.add(entry);
+                return;
+            }
             form.dataset.searchBound = "true";
             const formIndex = formCounter++;
 
@@ -101,14 +114,16 @@
                 }
 
                 controller?.abort();
-                controller = new AbortController();
+                const requestController = new AbortController();
+                controller = requestController;
                 try {
                     const response = await fetch(
                         `/api/search/typeahead?q=${encodeURIComponent(value)}`,
-                        { signal: controller.signal, headers: { Accept: "application/json" } },
+                        { signal: requestController.signal, headers: { Accept: "application/json" } },
                     );
                     if (!response.ok) return;
-                    render(await response.json());
+                    const hits = await response.json();
+                    if (!requestController.signal.aborted && form.isConnected) render(hits);
                 } catch (error) {
                     if (error.name !== "AbortError") close();
                 }
@@ -137,7 +152,10 @@
                 }
             });
 
-            outsideClosers.add({ form, close });
+            addCloser(form, close, () => {
+                clearTimeout(debounce);
+                controller?.abort();
+            });
 
             initHomeKeyboard(form, input, close);
         });
@@ -255,9 +273,16 @@
         input.addEventListener("keydown", (event) => {
             if (event.key === "Escape") hideKeyboard();
         });
-        outsideClosers.add({ form, close: hideKeyboard });
+        addCloser(form, hideKeyboard);
     }
 
     bind(document);
+    window.__engNav?.onBeforeSwap?.(() => {
+        for (const entry of outsideClosers) {
+            entry.suspend?.();
+            entry.close();
+        }
+        outsideClosers.clear();
+    });
     window.__engNav?.onSwap?.(bind);
 })();

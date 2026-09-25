@@ -1,7 +1,99 @@
+// The storefront can be mounted repeatedly by the journey router. Each mount
+// gets fresh config, nodes, and cancellable effects; shared storage keeps the bag.
+(() => {
+let active = null;
+function unmount() {
+    active?.dispose();
+    active = null;
+}
+function mount() {
+    const surface = document.querySelector(".shop-shell");
+    if (!surface || !document.body.classList.contains("shop-page") || document.body.classList.contains("coach-page")) {
+        unmount();
+        return;
+    }
+    if (active?.surface === surface) return;
+    unmount();
+    // Every mounted surface owns its effects. A retained previous-page snapshot
+    // stays inert until the router mounts it again.
+    const lifetime = new AbortController();
+    const timeouts = new Set();
+    const frames = new Set();
+    const idleTasks = new Set();
+    let disposed = false;
+    function listen(target, type, callback, options = {}) {
+        if (!target) return;
+        const settings = typeof options === "boolean" ? { capture: options } : options;
+        target.addEventListener(type, (event) => {
+            if (!disposed) callback(event);
+        }, { ...settings, signal: lifetime.signal });
+    }
+    function later(callback, delay, ...args) {
+        if (disposed) return 0;
+        const id = window.setTimeout(() => {
+            timeouts.delete(id);
+            if (!disposed) callback(...args);
+        }, delay);
+        timeouts.add(id);
+        return id;
+    }
+    function cancelLater(id) {
+        timeouts.delete(id);
+        window.clearTimeout(id);
+    }
+    function frame(callback) {
+        if (disposed) return 0;
+        const id = window.requestAnimationFrame((time) => {
+            frames.delete(id);
+            if (!disposed) callback(time);
+        });
+        frames.add(id);
+        return id;
+    }
+    function idle(callback, options) {
+        if (disposed) return 0;
+        const id = window.requestIdleCallback((deadline) => {
+            idleTasks.delete(id);
+            if (!disposed) callback(deadline);
+        }, options);
+        idleTasks.add(id);
+        return id;
+    }
+    function cancelIdle(id) {
+        idleTasks.delete(id);
+        window.cancelIdleCallback?.(id);
+    }
+    function readConfig(name, fallback = {}) {
+        const island = document.querySelector(`script[type="application/json"][data-eng-config="${name}"]`);
+        if (island) {
+            try {
+                const value = JSON.parse(island.textContent || "{}");
+                window[name] = value;
+                return value;
+            } catch { return fallback; }
+        }
+        return window[name] || fallback;
+    }
+
+    const ownedNodes = new Set();
+    function appendOwned(node) {
+        for (const old of ownedNodes) {
+            if (!old.isConnected) ownedNodes.delete(old);
+        }
+        ownedNodes.add(node);
+        document.body.append(node);
+    }
+    const shopHome = location.pathname === "/shop" ? "/shop"
+        : location.pathname === "/" || location.hostname.startsWith("shop.") ? "/" : "/shop";
+    function notifyOverlay() {
+        window.dispatchEvent(new CustomEvent("eng:overlaychange", {
+            detail: { open: !!(isProductOpen() || isCartOpen()), kind: "shop" },
+        }));
+    }
 const CART_KEY = "engmanager.shop.cart";
 const EMPTY_STATE = "Your cap stack is empty.";
 
-const catalog = window.__shopProducts || { products: [] };
+const catalog = readConfig("__shopProducts", { products: [] });
 const products = Array.isArray(catalog.products) ? catalog.products : [];
 const productBySlug = new Map(products.map((product) => [product.slug, product]));
 const CAMERA_OPEN_DURATION = 390;
@@ -62,7 +154,7 @@ let selectedSize = "ONE SIZE";
 let quantity = 1;
 let cart = readCart();
 // Inline checkout (Stripe Elements in the bag's right pane) — lazily mounted.
-const CHECKOUT = window.__checkout || {};
+const CHECKOUT = readConfig("__checkout");
 let stripe = null;
 let elements = null;
 let paymentElement = null;
@@ -139,7 +231,7 @@ function productUrl(product, imageId) {
 function homeUrl() {
     const url = new URL(window.location.href);
     const bag = currentBagFromUrl();
-    url.pathname = "/";
+    url.pathname = shopHome;
     url.search = "";
     if (bag) url.searchParams.set("bag", bag);
     url.hash = "";
@@ -278,7 +370,7 @@ function clearOverlayScrollGutterIfIdle() {
 
 function hideGridTextForClose() {
     if (gridTextRevealTimer) {
-        window.clearTimeout(gridTextRevealTimer);
+        cancelLater(gridTextRevealTimer);
         gridTextRevealTimer = null;
     }
     document.body.classList.remove("shop-grid-text-revealing");
@@ -306,11 +398,11 @@ function clearGridTextRevealDelays() {
 }
 
 function revealGridTextAfterClose() {
-    if (gridTextRevealTimer) window.clearTimeout(gridTextRevealTimer);
+    if (gridTextRevealTimer) cancelLater(gridTextRevealTimer);
     const maxDelay = prepareGridTextReveal();
     document.body.classList.add("shop-grid-text-revealing");
     document.body.classList.remove("shop-grid-text-hidden");
-    gridTextRevealTimer = window.setTimeout(() => {
+    gridTextRevealTimer = later(() => {
         document.body.classList.remove("shop-grid-text-revealing");
         clearGridTextRevealDelays();
         gridTextRevealTimer = null;
@@ -321,9 +413,9 @@ function waitForImageReady(image) {
     if (!image || (image.complete && image.naturalWidth > 0)) return Promise.resolve();
     return new Promise((resolve) => {
         const finish = () => resolve();
-        image.addEventListener("load", finish, { once: true });
-        image.addEventListener("error", finish, { once: true });
-        window.setTimeout(finish, 180);
+        listen(image, "load", finish, { once: true });
+        listen(image, "error", finish, { once: true });
+        later(finish, 180);
     });
 }
 
@@ -360,9 +452,9 @@ function stopCameraAnimation() {
 function cancelPrepareCloseCameraTask() {
     if (!prepareCloseCameraTask) return;
     if (prepareCloseCameraTask.type === "idle") {
-        window.cancelIdleCallback?.(prepareCloseCameraTask.id);
+        cancelIdle(prepareCloseCameraTask.id);
     } else {
-        window.clearTimeout(prepareCloseCameraTask.id);
+        cancelLater(prepareCloseCameraTask.id);
     }
     prepareCloseCameraTask = null;
 }
@@ -434,7 +526,7 @@ function cloneCameraWorld(focusImage = null) {
     if (backgroundLayer.childElementCount) world.append(backgroundLayer);
     if (focusLayer.childElementCount) world.append(focusLayer);
     stage.append(world);
-    document.body.append(stage);
+    appendOwned(stage);
     return { stage, world, backgroundLayer, focusLayer, focusImages, backgroundImages };
 }
 
@@ -456,7 +548,7 @@ function prepareCloseCamera(slug, camera = null) {
     nextCamera.world.getAnimations().forEach((animation) => animation.cancel());
     nextCamera.world.style.opacity = "";
     nextCamera.world.style.transform = "";
-    document.body.append(nextCamera.stage);
+    appendOwned(nextCamera.stage);
     preparedCloseCamera = nextCamera;
     preparedCloseCameraSlug = slug;
 }
@@ -473,12 +565,12 @@ function schedulePrepareCloseCamera(slug) {
     if ("requestIdleCallback" in window) {
         prepareCloseCameraTask = {
             type: "idle",
-            id: window.requestIdleCallback(run, { timeout: 450 }),
+            id: idle(run, { timeout: 450 }),
         };
     } else {
         prepareCloseCameraTask = {
             type: "timeout",
-            id: window.setTimeout(run, 80),
+            id: later(run, 80),
         };
     }
 }
@@ -497,7 +589,7 @@ function takePreparedCloseCamera(slug) {
     camera.world.getAnimations().forEach((animation) => animation.cancel());
     camera.world.style.opacity = "";
     camera.world.style.transform = "";
-    document.body.append(camera.stage);
+    appendOwned(camera.stage);
     return camera;
 }
 
@@ -536,7 +628,7 @@ function crossfadeProductImageToFront() {
     overlay.style.inlineSize = `${rect.width}px`;
     overlay.style.blockSize = `${rect.height}px`;
     overlay.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    document.body.append(overlay);
+    appendOwned(overlay);
 
     selectImage(frontIndex, { updateUrl: false, resetMotion: false });
 
@@ -566,6 +658,7 @@ async function animateProductCameraOpen(options) {
     setProductSwitchMotion(0, 1, 1);
 
     await waitForImageReady(selectors.productImage);
+    if (disposed) return;
 
     // Ensure the track is centered before measuring the zoom target.
     setCarouselMotion(0, 1, 0, 1);
@@ -732,7 +825,7 @@ function animateProductCameraClose(options = {}) {
         if (cleanedUp) return;
         cleanedUp = true;
         if (handoffTimer) {
-            window.clearTimeout(handoffTimer);
+            cancelLater(handoffTimer);
             handoffTimer = null;
         }
         restoreGridUnderCamera();
@@ -754,7 +847,7 @@ function animateProductCameraClose(options = {}) {
         .then(() => {
             if (cleanedUp) return;
             restoreGridUnderCamera();
-            handoffTimer = window.setTimeout(cleanup, CAMERA_CLOSE_HANDOFF_DELAY);
+            handoffTimer = later(cleanup, CAMERA_CLOSE_HANDOFF_DELAY);
         })
         .catch(() => {});
     activeCameraAnimation = {
@@ -810,7 +903,7 @@ function animateProductSwitchMotion(to, options = {}) {
     };
     const complete = () => {
         activeProductSwitchAnimation = null;
-        options.onComplete?.();
+        if (!disposed) options.onComplete?.();
     };
 
     if (reduceMotion.matches) {
@@ -852,6 +945,7 @@ function animateProductSwitchMotion(to, options = {}) {
     };
     animation.finished
         .then(() => {
+            if (disposed) return;
             setProductSwitchMotion(to.y ?? 0, to.scale ?? 1, to.opacity ?? 1, to.x ?? 0);
             animation.cancel();
             complete();
@@ -913,7 +1007,7 @@ function commitProductSwitch(nextProduct, imageId, enterMotion, enterOptions = {
     const nextImageId = imageIdForProduct(nextProduct, imageId);
     openProduct(nextProduct, nextImageId, { push: false, focus: false });
     window.history.replaceState(
-        { shopProduct: nextProduct.slug, image: nextImageId },
+        { ...(window.history.state || {}), shopProduct: nextProduct.slug, image: nextImageId },
         "",
         productUrl(nextProduct, nextImageId),
     );
@@ -1212,7 +1306,7 @@ function preloadNeighborProducts() {
 }
 
 function openProduct(product, imageId = "front", options = {}) {
-    if (!product || !selectors.panel) return;
+    if (disposed || !product || !selectors.panel) return;
     const { replace = false, push = true, focus = true } = options;
     currentProduct = product;
     currentImageIndex = imageIndex(product, imageId);
@@ -1234,11 +1328,12 @@ function openProduct(product, imageId = "front", options = {}) {
     document.body.classList.add("shop-panel-open");
     showBackdrop();
     if (focus) focusProductDialog();
+    notifyOverlay();
 
-    if (push) {
+    if (push && !disposed) {
         const url = productUrl(product, product.images[currentImageIndex]?.id);
         window.history[replace ? "replaceState" : "pushState"](
-            { shopProduct: product.slug },
+            { ...(window.history.state || {}), shopProduct: product.slug },
             "",
             url,
         );
@@ -1261,10 +1356,11 @@ function closeProduct(options = {}) {
     currentProduct = null;
     maybeHideBackdrop();
     clearOverlayScrollGutterIfIdle();
-    if (push) {
-        window.history.pushState({}, "", homeUrl());
+    if (push && !disposed) {
+        window.history.pushState({ ...(window.history.state || {}), shopProduct: null }, "", homeUrl());
     }
     if (restoreFocus) focusGridCard(returnSlug);
+    notifyOverlay();
 }
 
 function renderProduct(product) {
@@ -1366,7 +1462,7 @@ function selectImage(index, options = {}) {
 
     if (updateUrl) {
         window.history.replaceState(
-            { shopProduct: currentProduct.slug, image: image.id },
+            { ...(window.history.state || {}), shopProduct: currentProduct.slug, image: image.id },
             "",
             productUrl(currentProduct, image.id),
         );
@@ -1401,7 +1497,7 @@ function animateCarouselMotion(to, options = {}) {
     const duration = options.duration ?? 320;
     const complete = () => {
         activeCarouselAnimation = null;
-        options.onComplete?.();
+        if (!disposed) options.onComplete?.();
     };
 
     if (reduceMotion.matches) {
@@ -1443,6 +1539,7 @@ function animateCarouselMotion(to, options = {}) {
     };
     animation.finished
         .then(() => {
+            if (disposed) return;
             setCarouselMotion(to.x ?? 0, to.scale ?? 1, to.rotate ?? 0, to.opacity ?? 1);
             animation.cancel();
             complete();
@@ -1635,7 +1732,7 @@ function onCarouselPointerEnd(event) {
 
     if (!state.dragging) return;
     suppressNextImageAdvance = true;
-    window.setTimeout(() => {
+    later(() => {
         suppressNextImageAdvance = false;
     }, 180);
 
@@ -1751,7 +1848,7 @@ function flyCapToCart(sourceRect, targetEl, colors, onArrive) {
     flyer.classList.add("shop-fly-cap");
     flyer.style.left = `${startX}px`;
     flyer.style.top = `${startY}px`;
-    document.body.append(flyer);
+    appendOwned(flyer);
 
     // Bow the path upward so the cap lobs into the cart instead of sliding flat.
     const lift = Math.min(150, Math.max(54, Math.hypot(dx, dy) * 0.3));
@@ -1772,10 +1869,10 @@ function flyCapToCart(sourceRect, targetEl, colors, onArrive) {
         flyer.remove();
         onArrive?.();
     };
-    animation.addEventListener("finish", settle);
-    animation.addEventListener("cancel", settle);
+    listen(animation, "finish", settle);
+    listen(animation, "cancel", settle);
     // Safety net so the flyer is always cleaned up + the cart still reacts.
-    window.setTimeout(settle, 760);
+    later(settle, 760);
 }
 
 function bumpCartTarget(targetEl) {
@@ -1810,14 +1907,14 @@ function flashAddedPopover(targetEl) {
     pop.setAttribute("role", "status");
     pop.setAttribute("aria-live", "polite");
     pop.textContent = "Added to cart";
-    document.body.append(pop);
+    appendOwned(pop);
     // Anchor just under the cart button, clamped inside the right edge.
     pop.style.top = `${rect.bottom + 10}px`;
     pop.style.right = `${Math.max(10, window.innerWidth - rect.right)}px`;
 
     if (reduceMotion.matches) {
         pop.style.opacity = "1";
-        window.setTimeout(() => pop.remove(), 1400);
+        later(() => pop.remove(), 1400);
         return;
     }
 
@@ -1828,7 +1925,7 @@ function flashAddedPopover(targetEl) {
         ],
         { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" },
     );
-    window.setTimeout(() => {
+    later(() => {
         const out = pop.animate(
             [
                 { opacity: 1, transform: "translateY(0) scale(1)" },
@@ -1836,8 +1933,8 @@ function flashAddedPopover(targetEl) {
             ],
             { duration: 260, easing: "ease", fill: "forwards" },
         );
-        out.addEventListener("finish", () => pop.remove());
-        out.addEventListener("cancel", () => pop.remove());
+        listen(out, "finish", () => pop.remove());
+        listen(out, "cancel", () => pop.remove());
     }, 1250);
 }
 
@@ -1875,6 +1972,7 @@ function applyBag(next) {
         maybeHideBackdrop();
         clearOverlayScrollGutterIfIdle();
         focusPrimaryCartToggle();
+        notifyOverlay();
         return;
     }
 
@@ -1889,6 +1987,7 @@ function applyBag(next) {
     // can't escape into it while the bag is open.
     if (isProductOpen()) selectors.panel.inert = true;
 
+    notifyOverlay();
     const checkout = target === "checkout";
     selectors.bag.dataset.bagState = target;
     document.body.classList.toggle("shop-bag-checkout", checkout);
@@ -1907,7 +2006,7 @@ function applyBag(next) {
     // checkout is instant + shift-free. Entering checkout directly (deep link /
     // fast click) mounts now; otherwise we mount during idle so it never janks
     // the cart-open on weak devices. mountCheckout is idempotent.
-    if (checkout) requestAnimationFrame(mountCheckout);
+    if (checkout) frame(mountCheckout);
     else scheduleEagerCheckoutMount();
 
     if (prev === "closed" && !checkout) {
@@ -1966,7 +2065,7 @@ function cartIconButton(content, ariaLabel, onClick) {
     if (content instanceof Node) btn.append(content);
     else btn.textContent = content;
     btn.setAttribute("aria-label", ariaLabel);
-    btn.addEventListener("click", onClick);
+    listen(btn, "click", onClick);
     return btn;
 }
 
@@ -2126,7 +2225,7 @@ function recommendationCard() {
     add.className = "shop-cart-reco-add";
     add.textContent = "Add to bag";
     add.setAttribute("aria-label", `Add ${product.name} to bag`);
-    add.addEventListener("click", () => addProductToCart(product.slug));
+    listen(add, "click", () => addProductToCart(product.slug));
 
     card.append(kicker, body, add);
     return card;
@@ -2196,6 +2295,7 @@ function handleGridClick(event) {
     }
     const card = event.target.closest("[data-product-card]");
     if (!card) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
     const product = productBySlug.get(card.dataset.slug);
     if (!product) return;
     event.preventDefault();
@@ -2216,10 +2316,10 @@ function handleGridKeydown(event) {
     openProductFromCard(product, "front", card);
 }
 
-selectors.grid?.addEventListener("click", handleGridClick);
-selectors.grid?.addEventListener("keydown", handleGridKeydown);
+listen(selectors.grid, "click", handleGridClick);
+listen(selectors.grid, "keydown", handleGridKeydown);
 
-document.addEventListener("click", (event) => {
+listen(document, "click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
@@ -2304,7 +2404,7 @@ document.addEventListener("click", (event) => {
     }
 });
 
-document.addEventListener("keydown", (event) => {
+listen(document, "keydown", (event) => {
     if (event.key === "Escape") {
         if (isCartOpen()) {
             // Step back one level: checkout → cart → closed.
@@ -2344,7 +2444,10 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-window.addEventListener("popstate", () => {
+listen(window, "popstate", () => {
+    // The router may be fetching another surface after a browser traversal.
+    // Only reconcile history entries that still belong to this storefront.
+    if (location.pathname !== shopHome && !/^\/products\/[^/]+\/?$/.test(location.pathname)) return;
     const match = getProductFromLocation();
     if (match) {
         // Only (re)open if the product actually changed — a bag-only URL change
@@ -2359,7 +2462,7 @@ window.addEventListener("popstate", () => {
     applyBag(currentBagFromUrl());
 });
 
-window.addEventListener("resize", () => {
+listen(window, "resize", () => {
     const slug = currentProduct?.slug;
     if (document.body.classList.contains("shop-panel-open") || document.body.classList.contains("shop-cart-open")) {
         updateOverlayScrollGutter({ force: true });
@@ -2376,21 +2479,21 @@ renderCart();
 // the window guarantees we still observe the move and, above all, the release,
 // so a big desktop swipe can never strand a gesture mid-drag. The move handlers
 // call preventDefault() while dragging, so they must be non-passive.
-selectors.imageStage?.addEventListener("pointerdown", onCarouselPointerDown);
-selectors.productLayout?.addEventListener("pointerdown", onProductPointerDown);
-window.addEventListener("pointermove", onCarouselPointerMove, { passive: false });
-window.addEventListener("pointermove", onProductPointerMove, { passive: false });
-window.addEventListener("pointerup", onCarouselPointerEnd);
-window.addEventListener("pointerup", onProductPointerEnd);
-window.addEventListener("pointercancel", onCarouselPointerEnd);
-window.addEventListener("pointercancel", onProductPointerEnd);
+listen(selectors.imageStage, "pointerdown", onCarouselPointerDown);
+listen(selectors.productLayout, "pointerdown", onProductPointerDown);
+listen(window, "pointermove", onCarouselPointerMove, { passive: false });
+listen(window, "pointermove", onProductPointerMove, { passive: false });
+listen(window, "pointerup", onCarouselPointerEnd);
+listen(window, "pointerup", onProductPointerEnd);
+listen(window, "pointercancel", onCarouselPointerEnd);
+listen(window, "pointercancel", onProductPointerEnd);
 // NOTE: deliberately NOT listening to `lostpointercapture`. Arming a vertical
 // swipe transfers pointer capture from the image stage to the product layout,
 // which fires lostpointercapture mid-gesture — using it as a "drag lost" signal
 // cancelled the swipe the instant it started. pointerup/pointercancel below
 // already terminate every real release; blur/visibilitychange cover the rest.
-window.addEventListener("blur", cancelActiveDrags);
-document.addEventListener("visibilitychange", () => {
+listen(window, "blur", cancelActiveDrags);
+listen(document, "visibilitychange", () => {
     if (document.hidden) cancelActiveDrags();
 });
 
@@ -2480,7 +2583,7 @@ function coProbe() {
     _coProbe.setAttribute("aria-hidden", "true");
     _coProbe.style.cssText =
         "position:absolute;left:-9999px;top:-9999px;width:0;height:0;opacity:0;pointer-events:none;";
-    document.body.appendChild(_coProbe);
+    appendOwned(_coProbe);
     return _coProbe;
 }
 
@@ -2577,17 +2680,16 @@ function buildAppearance() {
 // checkout pane) so checkout is instant + shift-free. Idle so it never competes
 // with the cart-open animation on weak devices; idempotent via checkoutMounted.
 function scheduleEagerCheckoutMount() {
-    if (checkoutMounted) return;
+    if (disposed || checkoutMounted) return;
     if ("requestIdleCallback" in window) {
-        window.requestIdleCallback(() => mountCheckout(), { timeout: 1200 });
+        idle(() => mountCheckout(), { timeout: 1200 });
     } else {
-        window.setTimeout(() => mountCheckout(), 200);
+        later(() => mountCheckout(), 200);
     }
 }
 
 function mountCheckout() {
-    if (checkoutMounted) return;
-    checkoutMounted = true;
+    if (disposed || checkoutMounted) return;
 
     if (!CHECKOUT.enabled || !CHECKOUT.publishableKey || typeof window.Stripe !== "function") {
         const notice = coEl("[data-checkout-disabled]");
@@ -2597,6 +2699,11 @@ function mountCheckout() {
         return;
     }
 
+    checkoutMounted = true;
+    const notice = coEl("[data-checkout-disabled]");
+    if (notice) notice.hidden = true;
+    const checkoutForm = coEl("[data-checkout-form]");
+    if (checkoutForm) checkoutForm.hidden = false;
     stripe = window.Stripe(CHECKOUT.publishableKey);
     checkoutAmount = cartTotalDollars() * 100;
     elements = stripe.elements({
@@ -2609,26 +2716,29 @@ function mountCheckout() {
     addressElement = elements.create("address", { mode: "shipping" });
     const addressHost = coEl("[data-address-element]");
     if (addressHost) addressElement.mount(addressHost);
-    addressElement.on("ready", () => clearCheckoutSkeleton("[data-address-element]"));
+    addressElement.on("ready", () => {
+        if (!disposed) clearCheckoutSkeleton("[data-address-element]");
+    });
 
     paymentElement = elements.create("payment", { layout: { type: "tabs" } });
     const paymentHost = coEl("[data-payment-element]");
     if (paymentHost) paymentElement.mount(paymentHost);
     paymentElement.on("ready", () => {
+        if (disposed) return;
         clearCheckoutSkeleton("[data-payment-element]");
         checkoutReady = true;
         refreshPayButton();
     });
 
     const form = coEl("[data-checkout-form]");
-    if (form) form.addEventListener("submit", payCheckout);
+    if (form) listen(form, "submit", payCheckout);
 }
 
 function scheduleCheckoutAmountUpdate() {
     // Coalesce a burst of stepper clicks into a single Stripe Elements update
     // (each update is a cross-iframe message — not free).
-    if (amountUpdateTimer) clearTimeout(amountUpdateTimer);
-    amountUpdateTimer = setTimeout(() => {
+    if (amountUpdateTimer) cancelLater(amountUpdateTimer);
+    amountUpdateTimer = later(() => {
         amountUpdateTimer = null;
         updateCheckoutAmount();
     }, 120);
@@ -2663,6 +2773,7 @@ async function payCheckout(event) {
     setPayBusy(true);
 
     const submitResult = await elements.submit();
+    if (disposed) return;
     if (submitResult.error) {
         showCheckoutError(submitResult.error.message || "Double-check your details and try again.");
         setPayBusy(false);
@@ -2672,6 +2783,7 @@ async function payCheckout(event) {
     let shipping = null;
     try {
         const addr = await addressElement.getValue();
+        if (disposed) return;
         if (addr && addr.value && addr.value.address) {
             const v = addr.value;
             shipping = {
@@ -2690,6 +2802,7 @@ async function payCheckout(event) {
     try {
         const resp = await fetch("/api/checkout/intent", {
             method: "POST",
+            signal: lifetime.signal,
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
                 items: cart.map((i) => ({ slug: i.slug, quantity: i.quantity })),
@@ -2698,12 +2811,14 @@ async function payCheckout(event) {
             }),
         });
         data = await resp.json().catch(() => ({}));
+        if (disposed) return;
         if (!resp.ok || !data.clientSecret) {
             showCheckoutError(data.error || "We couldn’t start the payment. Please try again.");
             setPayBusy(false);
             return;
         }
     } catch {
+        if (disposed) return;
         showCheckoutError("Network hiccup. Check your connection and try again.");
         setPayBusy(false);
         return;
@@ -2718,6 +2833,7 @@ async function payCheckout(event) {
         redirect: "if_required",
     });
 
+    if (disposed) return;
     if (result.error) {
         showCheckoutError(result.error.message || "Your payment couldn’t be completed.");
         setPayBusy(false);
@@ -2727,6 +2843,7 @@ async function payCheckout(event) {
 }
 
 function onCheckoutPaid(paymentIntent, email) {
+    if (disposed) return;
     cart = [];
     writeCart();
     renderCart();
@@ -2747,22 +2864,26 @@ function onCheckoutPaid(paymentIntent, email) {
     setPayBusy(false);
 }
 
+let checkoutReturnSecret = null;
 async function finalizeCheckoutReturn(clientSecret) {
     if (!clientSecret) return;
     if (typeof window.Stripe !== "function" || !CHECKOUT.publishableKey) return;
+    if (checkoutReturnSecret === clientSecret) return;
+    checkoutReturnSecret = clientSecret;
     if (!stripe) stripe = window.Stripe(CHECKOUT.publishableKey);
     try {
         const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+        if (disposed) return;
         if (
             paymentIntent &&
             (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")
         ) {
             onCheckoutPaid(paymentIntent, paymentIntent.receipt_email || "");
         }
-    } catch {}
+    } catch { checkoutReturnSecret = null; }
 }
 
-window.addEventListener("engmanager:themechange", () => {
+listen(window, "engmanager:themechange", () => {
     if (elements) {
         try {
             elements.update({ appearance: buildAppearance() });
@@ -2777,4 +2898,61 @@ window.addEventListener("engmanager:themechange", () => {
     const bag = currentBagFromUrl();
     if (bag) applyBag(bag);
     if (clientSecret) finalizeCheckoutReturn(clientSecret);
+})();
+
+// Optional CDN assets may arrive after the page is interactive. Resume only
+// this mounted storefront's requested checkout work when Stripe becomes ready.
+listen(window, "eng:optionalasset", () => {
+    if (typeof window.Stripe !== "function") return;
+    if (isCartOpen()) scheduleEagerCheckoutMount();
+    const secret = new URLSearchParams(location.search).get("payment_intent_client_secret");
+    if (secret) finalizeCheckoutReturn(secret);
+});
+
+// Text remains readable while staging. The settling event only adds motion
+// once the incoming storefront has reached its full frame.
+listen(window, "eng:journeysettled", () => {
+    if (!reduceMotion.matches && !isProductOpen()) revealGridTextAfterClose();
+});
+
+active = { surface, dispose() {
+    if (disposed) return;
+    disposed = true;
+    lifetime.abort();
+    stopCameraAnimation();
+    stopCarouselAnimation();
+    stopProductSwitchAnimation();
+    disposePreparedCloseCamera();
+    if (dragState) releaseCarouselPointer(dragState.pointerId);
+    if (productSwipeState?.captured) releaseProductPointer(productSwipeState.pointerId);
+    dragState = productSwipeState = null;
+    for (const id of timeouts) window.clearTimeout(id);
+    for (const id of frames) window.cancelAnimationFrame(id);
+    for (const id of idleTasks) window.cancelIdleCallback?.(id);
+    timeouts.clear(); frames.clear(); idleTasks.clear();
+    for (const node of ownedNodes) {
+        node.getAnimations?.().forEach((animation) => animation.cancel());
+        node.remove();
+    }
+    ownedNodes.clear();
+    try { paymentElement?.destroy(); } catch {}
+    try { addressElement?.destroy(); } catch {}
+    paymentElement = addressElement = elements = stripe = null;
+    setBackgroundInert(false);
+    if (selectors.panel) { selectors.panel.hidden = true; selectors.panel.inert = false; }
+    if (selectors.bag) {
+        selectors.bag.hidden = true;
+        selectors.bag.dataset.bagState = "closed";
+        selectors.bag.setAttribute("aria-hidden", "true");
+    }
+    if (selectors.backdrop) selectors.backdrop.hidden = true;
+    document.body.classList.remove("shop-panel-open", "shop-cart-open", "shop-bag-checkout", "shop-camera-transitioning", "shop-grid-text-hidden", "shop-grid-text-revealing");
+    document.body.style.removeProperty("--shop-scrollbar-gutter");
+    selectors.grid?.style.removeProperty("opacity");
+    clearGridTextRevealDelays();
+} };
+}
+mount();
+window.__engNav?.onBeforeSwap?.(unmount);
+window.__engNav?.onSwap?.(mount);
 })();

@@ -21,6 +21,10 @@ use crate::{assets, http, pages, sitemap};
 /// contract pinned by the router-surface tests below.
 pub mod routes {
     pub const ROOT: &str = "/";
+    pub const FEED: &str = "/feed";
+    pub const SHOP: &str = "/shop";
+    pub const COACH: &str = "/coach";
+    pub const PRODUCT: &str = "/products/{slug}";
     pub const ARTICLES_INDEX: &str = "/articles/";
     pub const ARTICLE_DETAIL: &str = "/articles/{slug}";
     pub const PERSONALITY: &str = "/personality";
@@ -47,6 +51,10 @@ pub mod routes {
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route(routes::ROOT, get(root_handler))
+        .route(routes::FEED, get(pages::homepage::index))
+        .route(routes::SHOP, get(pages::shop::index))
+        .route(routes::COACH, get(pages::coach::alias))
+        .route(routes::PRODUCT, get(pages::shop::index))
         .route(routes::ARTICLES_INDEX, get(pages::articles::index))
         .route(routes::ARTICLE_DETAIL, get(pages::articles::detail))
         .route(routes::PERSONALITY, get(pages::personality::redirect))
@@ -133,7 +141,7 @@ async fn fallback_handler(State(state): State<AppState>, headers: HeaderMap, uri
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
-    if is_shop_host(host) && pages::shop::supports_path(uri.path()) {
+    if pages::shop::supports_path(uri.path()) && (uri.path() != "/" || is_shop_host(host)) {
         pages::shop::index(State(state)).await
     } else {
         pages::not_found::handler().await
@@ -644,13 +652,16 @@ mod tests {
             "CSP must allow the Google Calendar booking embed"
         );
         let body = body_string(response).await;
-        assert!(body.contains("window.__coach="), "coach island missing");
+        assert!(
+            body.contains(r#"data-eng-config="__coach""#),
+            "coach island missing"
+        );
         assert!(body.contains("data-spectrum-input"));
-        assert!(!body.contains("window.__shopProducts"));
+        assert!(!body.contains(r#"data-eng-config="__shopProducts""#));
 
         // The apex homepage is untouched by the coach host.
         let apex = body_string(get(&router, SITE_HOST, "/").await).await;
-        assert!(!apex.contains("window.__coach="));
+        assert!(!apex.contains(r#"data-eng-config="__coach""#));
 
         // Unknown coach paths 404; checkout stays shop-only.
         let missing = get(&router, COACH_HOST, "/nope").await;
@@ -689,12 +700,150 @@ mod tests {
         assert_eq!(header_str(&response, "cache-tag"), Some("html"));
         let body = body_string(response).await;
         assert!(
-            body.contains("window.__shopProducts"),
+            body.contains(r#"data-eng-config="__shopProducts""#),
             "shop markup marker missing from shop-host root"
         );
 
         // Product deep links fall through to the shop SPA shell.
         let product = get(&router, SHOP_HOST, "/products/anything").await;
         assert_eq!(product.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn journey_aliases_render_the_same_surfaces_on_every_host() {
+        let router = test_router().await;
+        for host in [SITE_HOST, SHOP_HOST, COACH_HOST] {
+            for (path, kind, next, title) in [
+                ("/feed", "feed", None, "<title>ENG MANAGER</title>"),
+                (
+                    "/shop",
+                    "shop",
+                    Some("/coach"),
+                    "<title>Store · ENGMANAGER.XYZ</title>",
+                ),
+                (
+                    "/coach",
+                    "coach",
+                    Some("/feed"),
+                    "<title>1:1 Coaching · ENGMANAGER.XYZ</title>",
+                ),
+                (
+                    "/products/engmanager-xyz?image=front",
+                    "shop",
+                    Some("/coach"),
+                    "<title>Store · ENGMANAGER.XYZ</title>",
+                ),
+            ] {
+                let response = get(&router, host, path).await;
+                assert_eq!(response.status(), StatusCode::OK, "{host}{path}");
+                assert!(header_str(&response, "location").is_none());
+                let html = body_string(response).await;
+                assert!(html.contains(&format!(r#"data-eng-page="{kind}""#)));
+                assert!(html.contains(title));
+                assert!(html.contains("/assets/js/nav-router."));
+                assert!(html.contains("/assets/css/journey."));
+                if let Some(next) = next {
+                    assert!(html.contains(&format!(r#"data-eng-next="{next}""#)));
+                    assert!(html.contains("data-journey-fallback"));
+                } else {
+                    assert!(!html.contains("data-eng-next="));
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn journey_configs_are_inert_and_coach_links_stay_on_the_alias() {
+        let router = test_router().await;
+        let shop = body_string(get(&router, SITE_HOST, "/shop").await).await;
+        for name in ["__shopProducts", "__checkout"] {
+            assert!(shop.contains(&format!(
+                r#"type="application/json" data-eng-config="{name}""#
+            )));
+            assert!(!shop.contains(&format!("window.{name}=")));
+        }
+        assert!(shop.contains(r#""returnPath":"/shop""#));
+        assert!(shop.contains(r#"href="/feed""#));
+        let coach = body_string(get(&router, SITE_HOST, "/coach?group=1").await).await;
+        assert!(coach.contains("<title>Group Coaching · ENGMANAGER.XYZ</title>"));
+        assert!(coach.contains(r#"href="/coach?group=1" data-active="true""#));
+        assert!(coach.contains(r#"href="/coach" data-active="false""#));
+        assert!(coach.contains(r#"<link rel="canonical" href="https://coach.engmanager.xyz/">"#));
+        assert!(coach.contains(r#"type="application/json" data-eng-config="__coach""#));
+        assert!(!coach.contains("window.__coach="));
+
+        let article = body_string(get(&router, SITE_HOST, "/articles/auteurs").await).await;
+        assert!(article.contains(r#"data-eng-page="article" data-eng-next="/shop""#));
+        assert!(article.contains(&format!(
+            r#"<script type="module" src="{}"></script>"#,
+            asset_url("js/article-diagrams.js")
+        )));
+        for path in [
+            "/articles/big-personality",
+            "/articles/%62ig-personality",
+            "/personality/test",
+        ] {
+            let response = get(&router, SITE_HOST, path).await;
+            assert!(header_str(&response, "content-security-policy").is_some());
+            let html = body_string(response).await;
+            assert!(!html.contains("data-eng-page"));
+            assert!(!html.contains("data-eng-next"));
+            assert!(!html.contains("nav-router"));
+            assert!(!html.contains("data-eng-config"));
+        }
+    }
+
+    #[tokio::test]
+    async fn stripe_return_query_bypasses_caches_on_every_destination() {
+        let router = test_router().await;
+        for host in [SITE_HOST, SHOP_HOST, COACH_HOST] {
+            for path in [
+                "/",
+                "/shop",
+                "/coach",
+                "/feed",
+                "/checkout",
+                "/health",
+                "/assets/favicon.svg",
+                "/personality/test",
+            ] {
+                let response = get(
+                    &router,
+                    host,
+                    &format!("{path}?payment_intent_client_secret=pi_example_secret_example"),
+                )
+                .await;
+                assert!(
+                    header_str(&response, "cache-control")
+                        .is_some_and(|value| value.contains("no-store")),
+                    "{host}{path}"
+                );
+                assert_eq!(
+                    header_str(&response, "cloudflare-cdn-cache-control"),
+                    Some("no-store")
+                );
+                assert_eq!(header_str(&response, "cdn-cache-control"), Some("no-store"));
+                assert!(header_str(&response, "cache-tag").is_none());
+            }
+        }
+        for query in [
+            "payment_intent=pi_example",
+            "payment_intent_client_secret=",
+            "setup_intent=seti_example",
+            "setup_intent_client_secret=secret_example",
+            "redirect_status=succeeded",
+            "%70ayment_intent_client_secret=encoded_example",
+        ] {
+            let response = get(&router, SITE_HOST, &format!("/shop?{query}")).await;
+            assert_eq!(
+                header_str(&response, "cache-control"),
+                Some("no-store"),
+                "{query}"
+            );
+        }
+        let catalog = get(&router, SITE_HOST, "/shop?image=front").await;
+        assert!(
+            header_str(&catalog, "cache-control").is_some_and(|value| value.starts_with("public"))
+        );
     }
 }

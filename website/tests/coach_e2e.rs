@@ -132,7 +132,13 @@ async fn coach_subdomain_serves_the_booking_flow_end_to_end() {
         .await
         .expect("GET apex /");
     assert_eq!(apex.status(), StatusCode::OK);
-    assert!(!apex.text().await.unwrap().contains("window.__coach="));
+    assert!(
+        !apex
+            .text()
+            .await
+            .unwrap()
+            .contains(r#"data-eng-config="__coach""#)
+    );
 
     let redirect = client
         .get(server.url(SITE_HOST, "/coaching"))

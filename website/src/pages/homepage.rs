@@ -10,7 +10,9 @@ use super::{
     AVATAR_SRC, DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, avatar_srcset, render_experience_urls,
     render_liquid_title_filter, share_card,
 };
-use crate::components::{Head, api_receipt, discovery_toasts, json_data_island, quick_actions};
+use crate::components::{
+    Head, api_receipt, discovery_toasts, json_data_island, nav, quick_actions,
+};
 use crate::config::SITE_ORIGIN;
 use crate::content::{Category, Tag, public_articles};
 
@@ -479,6 +481,9 @@ pub async fn index() -> Html<String> {
     };
 
     let body = view! {
+                <nav class="home-services" aria-label="Explore">
+                    { nav::service_links() }
+                </nav>
                 <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
                     <svg class="dvd-bouncer-mark"
                          viewBox="0 0 160 72"
@@ -608,6 +613,7 @@ pub async fn index() -> Html<String> {
             .scripts(scripts)
             .speculation_rules(true)
             .nav_router(true)
+            .journey("feed", None)
             .render(body),
     )
 }

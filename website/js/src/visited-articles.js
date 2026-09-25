@@ -48,6 +48,7 @@ const saveVisited = (set) => {
     // to the homepage brings a fresh copy (JS_ROUTER_CONSTRAINTS §2.4).
     let articlesData = {};
     let visited = loadVisited();
+    let revealTimer = 0;
 
     const parseIsland = () => {
         try {
@@ -119,10 +120,12 @@ const saveVisited = (set) => {
         // no auto-navigation; they tap "Read →" when ready.
         const data = articlesData[slug];
         const href = link.href;
-        setTimeout(() => openReveal(slug, data, href), REVEAL_DELAY_MS);
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(() => openReveal(slug, data, href), REVEAL_DELAY_MS);
     });
 
     init(document);
+    window.__engNav?.onBeforeSwap?.(() => clearTimeout(revealTimer));
     window.__engNav?.onSwap?.(init);
 
     // Prerendered documents snapshot localStorage early — re-read the
