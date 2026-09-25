@@ -89,7 +89,8 @@
 
 @media (max-width: 42rem) {
     .nav-dropdown {
-        position: static;
+        position: absolute;
+        inset-inline-start: 3rem;
     }
 
     .nav-dropdown-panel {

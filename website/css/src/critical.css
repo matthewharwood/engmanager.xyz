@@ -55,10 +55,13 @@
         position: sticky;
         inset-block-start: 0;
         z-index: 50;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
         align-items: center;
-        justify-content: space-between;
+        justify-content: initial;
         gap: 0.75rem;
+        margin-inline: -1rem;
+        margin-block: -2rem 2.25rem;
         padding-block: 0.75rem;
         padding-inline: 1rem;
         background: color-mix(in oklab, var(--surface-1) 78%, transparent);
@@ -69,6 +72,7 @@
 
     .site-nav-brand {
         display: inline-flex;
+        justify-self: start;
         align-items: center;
         gap: 0.5rem;
         color: var(--text-1);
@@ -79,6 +83,71 @@
         text-decoration: none;
         text-transform: uppercase;
         flex-shrink: 0;
+    }
+
+    .site-nav-brand:hover,
+    .site-nav-brand:focus-visible {
+        color: var(--accent);
+    }
+
+    .site-nav-theme {
+        position: absolute;
+        inset-inline-start: 50%;
+        inset-block-start: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .site-nav-theme .theme-picker {
+        position: static;
+        appearance: none;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        cursor: pointer;
+        color: var(--text-1);
+        inline-size: 2.25rem;
+        block-size: 2.25rem;
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+        box-shadow: none;
+    }
+
+    .site-nav-theme .theme-picker-emoji { display: none; }
+    .site-nav-theme .theme-picker-shapes { display: block; inline-size: 1.25rem; block-size: 1.25rem; }
+    .site-nav-theme .theme-picker-shape {
+        display: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .site-nav-theme .theme-picker[data-theme-shape="auto"] .theme-picker-shape-auto,
+    .site-nav-theme .theme-picker[data-theme-shape="light"] .theme-picker-shape-light,
+    .site-nav-theme .theme-picker[data-theme-shape="dark"] .theme-picker-shape-dark,
+    .site-nav-theme .theme-picker[data-theme-shape="catppuccin"] .theme-picker-shape-catppuccin,
+    .site-nav-theme .theme-picker[data-theme-shape="synthwave"] .theme-picker-shape-synthwave,
+    .site-nav-theme .theme-picker[data-theme-shape="cyberpunk"] .theme-picker-shape-cyberpunk,
+    .site-nav-theme .theme-picker[data-theme-shape="forest"] .theme-picker-shape-forest,
+    .site-nav-theme .theme-picker[data-theme-shape="lofi"] .theme-picker-shape-lofi,
+    .site-nav-theme .theme-picker[data-theme-shape="dracula"] .theme-picker-shape-dracula,
+    .site-nav-theme .theme-picker[data-theme-shape="luxury"] .theme-picker-shape-luxury { display: block; }
+
+    .site-nav-theme .theme-picker:hover,
+    .site-nav-theme .theme-picker:focus-visible {
+        color: var(--accent);
+        background: color-mix(in oklab, var(--surface-2) 72%, transparent);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .site-nav-theme .theme-picker:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
     }
 
     .site-nav-mark {
@@ -97,6 +166,8 @@
         display: flex;
         align-items: center;
         gap: 0.125rem;
+        justify-self: end;
+        grid-column: 3;
     }
 
     .site-nav-link {
@@ -113,6 +184,13 @@
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
+        border-radius: 0.375rem;
+    }
+
+    .site-nav-link:hover,
+    .site-nav-link:focus-visible {
+        color: var(--text-1);
+        background: color-mix(in oklab, var(--surface-2) 55%, transparent);
     }
 
     /* Icons render at the link's currentColor and ride the existing
@@ -124,8 +202,7 @@
         display: none;
     }
 
-    /* Mobile-only magnifier button. Same affordance footprint as the
-     * other nav icons; opens the .site-search form when clicked. */
+    /* Minimal magnifier opens the search overlay on every viewport. */
     .site-search-toggle {
         appearance: none;
         background: transparent;
@@ -135,7 +212,7 @@
         cursor: pointer;
         color: var(--text-2);
         line-height: 0;
-        display: none;
+        display: inline-flex;
     }
 
     .site-search-toggle:focus-visible {
@@ -143,23 +220,102 @@
         outline-offset: 2px;
     }
 
+    .site-search-toggle:hover { color: var(--accent); }
+
+    .site-search-toggle .site-nav-icon { display: block; }
+
+    .site-search-overlay {
+        position: fixed;
+        inset: 0;
+        inline-size: 100vw;
+        block-size: 100dvh;
+        max-inline-size: none;
+        max-block-size: none;
+        margin: 0;
+        padding: 1.25rem;
+        overflow: auto;
+        border: 0;
+        background: transparent;
+        color: var(--text-1);
+        box-sizing: border-box;
+    }
+
+    .site-search-overlay::backdrop {
+        background: color-mix(in oklab, var(--surface-2) 48%, transparent);
+        -webkit-backdrop-filter: blur(10px) saturate(120%);
+        backdrop-filter: blur(10px) saturate(120%);
+    }
+
+    .site-search-panel {
+        position: relative;
+        box-sizing: border-box;
+        inline-size: min(42rem, 100%);
+        margin: clamp(5rem, 18vh, 12rem) auto 0;
+        padding: clamp(1rem, 3vw, 1.5rem);
+        border: 1px solid color-mix(in oklab, var(--text-1) 22%, transparent);
+        border-radius: 1.25rem;
+        background: color-mix(in oklab, var(--surface-1) 78%, transparent);
+        box-shadow: 0 1.5rem 5rem color-mix(in oklab, var(--text-1) 18%, transparent),
+                    0 1px 0 color-mix(in oklab, white 45%, transparent) inset;
+        -webkit-backdrop-filter: blur(28px) saturate(150%);
+        backdrop-filter: blur(28px) saturate(150%);
+    }
+
     .site-search {
         position: relative;
-        flex: 1 1 16rem;
-        max-inline-size: 26rem;
-        min-inline-size: 8rem;
+        inline-size: 100%;
+        min-inline-size: 0;
+    }
+
+    .site-search-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-block-end: 1rem;
+        font: 600 0.8125rem var(--font-mono);
+    }
+
+    .site-search-close {
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        inline-size: 2.5rem;
+        block-size: 2.5rem;
+        padding: 0;
+        border: 1px solid var(--border-subtle);
+        border-radius: 50%;
+        background: transparent;
+        color: var(--text-1);
+        font: 400 1.5rem/1 var(--font-sans);
+        cursor: pointer;
+    }
+
+    .site-search-close:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+
+    .site-search-hint {
+        margin: 0.75rem 0 0;
+        color: var(--text-muted);
+        font: 600 0.7rem var(--font-mono);
+        letter-spacing: 0.04em;
+        text-align: center;
+        text-transform: uppercase;
     }
 
     .site-search-input {
+        box-sizing: border-box;
         inline-size: 100%;
-        min-block-size: 2.25rem;
-        padding: 0.45rem 0.7rem;
+        min-block-size: 3.25rem;
+        padding: 0.75rem 1rem;
         color: var(--text-1);
-        background: var(--surface-1);
-        border: 2px solid var(--text-1);
-        border-radius: var(--radius-xs);
-        box-shadow: 3px 3px 0 var(--text-1);
-        font: 700 0.8125rem var(--font-sans);
+        background: color-mix(in oklab, var(--surface-1) 65%, transparent);
+        border: 1px solid var(--border-subtle);
+        border-radius: 0.75rem;
+        box-shadow: none;
+        font: 500 1rem var(--font-sans);
     }
 
     .site-search-input:focus-visible {
@@ -168,21 +324,18 @@
     }
 
     .site-search-results {
-        position: absolute;
-        inset-block-start: calc(100% + 0.5rem);
-        inset-inline: 0;
-        z-index: 90;
+        position: relative;
         display: grid;
         gap: 0.25rem;
-        max-block-size: min(24rem, calc(100svh - 7rem));
+        max-block-size: min(24rem, 40dvh);
         overflow: auto;
-        margin: 0;
+        margin: 0.75rem 0 0;
         padding: 0.35rem;
         list-style: none;
-        background: var(--surface-1);
-        border: 2px solid var(--text-1);
-        border-radius: var(--radius-xs);
-        box-shadow: 6px 6px 0 var(--text-1);
+        background: transparent;
+        border: 0;
+        border-radius: 0.75rem;
+        box-shadow: none;
     }
 
     .site-search-results[hidden] {
@@ -235,32 +388,26 @@
         }
     }
 
+    @media (max-width: 60rem) {
+        .site-nav-links > .site-nav-link[aria-label="Join the Discord"],
+        .site-nav-links > .site-nav-link[aria-label="View on GitHub"] {
+            display: none;
+        }
+    }
+
     @media (max-width: 42rem) {
         .site-nav {
-            flex-wrap: wrap;
+            grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
         }
 
-        /* Search is hidden until the magnifier opens it. */
-        .site-search {
-            display: none;
-            order: 3;
-            flex-basis: 100%;
-            max-inline-size: none;
-        }
-
-        .site-nav[data-search-open="true"] .site-search {
-            display: block;
-        }
-
-        .site-search-toggle,
         .site-nav-icon {
             display: inline-flex;
         }
 
-        /* When search is open the magnifier becomes a close affordance;
-         * the other nav glyphs collapse out so the input has the row. */
-        .site-nav[data-search-open="true"] .site-search-toggle {
-            color: var(--brand);
+        .site-nav-links > .site-nav-link[aria-label="Articles"],
+        .site-nav-links > .nav-dropdown {
+            position: absolute;
+            inset-inline-start: 3rem;
         }
 
         /* Visually hide the text labels but keep them accessible to AT

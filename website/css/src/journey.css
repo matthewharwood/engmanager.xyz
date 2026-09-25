@@ -88,6 +88,7 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     .site-nav .site-search { min-inline-size: 0; flex-shrink: 1; }
 }
 @media (max-width: 42rem) {
+    .site-nav .service-nav-link { inline-size: 2.25rem; block-size: 2.25rem; }
     .journey-previous { inline-size: 7.5rem; inset-inline-start: .65rem; inset-block-end: max(.65rem, env(safe-area-inset-bottom)); }
     .journey-previous-viewport { aspect-ratio: 3 / 4; }
     .journey-previous-caption { font-size: .58rem; padding: .5rem; }

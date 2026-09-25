@@ -47,6 +47,23 @@ async function promote(path){await click('[data-journey-promote]','continue to '
 async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next page prepared');}
 const article='/articles/the-execution-marketplace';
 try{
+  await ready('/feed?receipt');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'the former receipt URL does not open the easter egg');
+  await until(()=>query('[data-api-receipt-grid]')?.children.length>0,'discovery registry initializes');
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+  win().dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'?',bubbles:true}));
+  await until(()=>query('.discovery-toast-open'),'keyboard discovery presents a toast action');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'a discovery does not open the receipt automatically');
+  const toastErrors=[];win().addEventListener('error',event=>toastErrors.push(event.message));
+  const toastToggles=[];query('#api-receipt-modal').addEventListener('beforetoggle',event=>toastToggles.push(event.newState));
+  const openedToast=query('.discovery-toast');await click('.discovery-toast-open');
+  assert(query('#api-receipt-modal').matches(':popover-open'),'the toast action opens the API receipt: '+JSON.stringify({errors:toastErrors,toggles:toastToggles,connected:openedToast.isConnected,inert:!!openedToast.closest('[inert]')}));
+  await click('.api-receipt-close');
+  await until(()=>query('.discovery-toast')&&query('.discovery-toast')!==openedToast,'another discovery offers its own toast');
+  const expiringToast=query('.discovery-toast');
+  await until(()=>!expiringToast.isConnected,'discovery actions expire with their toasts');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'expired discovery toasts leave the receipt closed');
+
   await ready('/shop');
   assert(!visible(previous()),'opening the storefront directly has no previous-page window');
   assert(query('[data-product-card]'),'the real embedded catalog is available without Stripe credentials');
@@ -102,9 +119,26 @@ try{
   const heading=doc().getElementById(headingId),headingRect=heading.getBoundingClientRect();
   assert(decodeURIComponent(win().location.hash.slice(1))===headingId,'cross-page navigation preserves the article heading fragment');
   assert(headingRect.top>=0&&headingRect.top<win().innerHeight*.5&&doc().activeElement===heading,'cross-page heading navigation scrolls to and focuses its target');
-  frame.style.width='686px';await until(()=>win().innerWidth===686,'compact desktop navigation');
-  const navRect=query('.site-nav').getBoundingClientRect(),brandRect=query('.site-nav-brand').getBoundingClientRect(),searchRect=query('.site-search-input').getBoundingClientRect(),linksRect=query('.site-nav-links').getBoundingClientRect();
-  assert(navRect.left>=0&&navRect.right<=686&&searchRect.width>=120&&brandRect.right<=searchRect.left&&searchRect.right<=linksRect.left,'686px navigation fits the wordmark, usable search, and service icons without overlap');
+  for(const width of [1200,686,375,320]){
+    frame.style.width=width+'px';await until(()=>win().innerWidth===width,'navigation width '+width);
+    await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+    const navRect=query('.site-nav').getBoundingClientRect(),themeRect=query('[data-theme-cycle]').getBoundingClientRect(),searchRect=query('[data-search-toggle]').getBoundingClientRect();
+    const controls=[...doc().querySelectorAll('.site-nav-brand,.nav-dropdown-trigger,.site-nav-links > a,.site-search-toggle,[data-theme-cycle]')].filter(visible).map(node=>node.getBoundingClientRect());
+    assert(navRect.left>=0&&navRect.right<=width&&Math.abs(themeRect.left+themeRect.width/2-(navRect.left+navRect.width/2))<2&&searchRect.width>=30,'centered theme and visible search at '+width+'px: '+JSON.stringify({nav:navRect,theme:themeRect,search:searchRect}));
+    assert(controls.every((rect,index)=>rect.left>=0&&rect.right<=width&&controls.slice(index+1).every(other=>rect.right<=other.left||other.right<=rect.left)),'navigation controls do not overlap at '+width+'px: '+JSON.stringify(controls));
+  }
+  assert(!query('[data-search-overlay]').open&&!query('.hunt-chip,.home-search'),'search starts closed and the old floating controls are absent');
+  await click('[data-search-toggle]');await until(()=>query('[data-search-overlay]').open&&doc().activeElement===query('.site-search-input'),'search opens and focuses its input');
+  const searchInput=query('.site-search-input');
+  assert(query('[data-search-form]').dataset.searchBound==='true','the modal search form is bound after soft navigation');
+  searchInput.value='execution';searchInput.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  await until(()=>visible(query('[data-search-results]'))&&query('.site-search-result a'),'typeahead results inside the search modal');
+  const searchPanel=query('.site-search-panel').getBoundingClientRect();
+  assert(searchPanel.left>=0&&searchPanel.right<=320,'search panel fits a small mobile screen');
+  await click('[data-search-close]');
+  assert(!query('[data-search-overlay]').open&&query('[data-search-toggle]').getAttribute('aria-expanded')==='false','close button dismisses search and resets the trigger');
+  await click('[data-search-toggle]');await click('[data-search-overlay]','search backdrop');
+  assert(!query('[data-search-overlay]').open,'clicking outside the panel dismisses search');
   frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after navigation sizing');
   heading.scrollIntoView({behavior:'instant'});await delay(250);
   const firstHash=win().location.hash,firstHashScroll=win().scrollY;
@@ -129,7 +163,11 @@ try{
     assert(win().location.pathname==='/shop'&&query('[data-journey-current="shop"]'),'Back then Forward during animation leaves the newest history entry active');
   }
 
-  await navigate(article);await reveal();await promote('/shop');
+  await navigate(article);await reveal();
+  await until(()=>!visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='0','table of contents fades during the storefront reveal');
+  win().scrollTo({top:0,behavior:'instant'});
+  await until(()=>visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='1','table of contents returns when scrolling back to the article');
+  await reveal();await promote('/shop');
   await until(()=>visible(previous()),'scroll reveal retains article');
   await reveal();await promote('/coach');
   await until(()=>query('[data-reader]')?.dataset.readerReady==='true','coach reader mounts after shop');
@@ -205,6 +243,13 @@ try{
   await win().__engNav.prepareNext();
   assert(win().location.pathname===article&&query('.article'),'a failed next-page fetch preserves readable article content');
   win().fetch=actualFetch;
+
+  for(const path of ['/','/feed']){
+    await navigate(path);
+    assert(!query('.home-search,.hunt-chip')&&doc().querySelectorAll('[data-theme-cycle]').length===1,'feed chrome uses a single nav theme control without floating search or API buttons: '+path);
+    await click('[data-search-toggle]');await until(()=>query('[data-search-overlay]').open,'feed search opens: '+path);
+    await click('[data-search-close]');
+  }
 
   const publicDocument=doc();await win().__engNav.navigate('/articles/big-personality');
   await until(()=>win().location.pathname==='/articles/big-personality'&&doc().readyState==='complete','private boundary navigation');

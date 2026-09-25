@@ -1,39 +1,16 @@
-// Mobile-only nav: tapping the magnifier toggles the site-search
-// form open + focused (and closes it again). The form lives in the
-// nav always — CSS hides it on narrow viewports unless the nav
-// carries `data-search-open`. On desktop the form is always visible,
-// so the toggle button itself is hidden via CSS and this script
-// effectively no-ops there.
+// The magnifier opens a shared, light-dismiss search overlay on every
+// viewport. The search form stays inside the native dialog so typeahead
+// results and keyboard navigation work the same on mobile and desktop.
 //
 // Soft-nav lifecycle: the nav is a swapped region, so init(root)
 // re-binds the fresh toggle after every swap (data-search-toggle-bound
-// guard). The Escape / outside-click DOCUMENT listeners are module
-// singletons that lazily resolve the CURRENT instance — registered
-// once per real page load, never stacked across re-inits.
+// guard). The dialog contains keyboard focus and handles Escape.
 
 (() => {
-    // Active instance: { nav, toggle, close, isOpen() } — null on pages
+    // Active instance: { nav, toggle, overlay, close, isOpen() } — null on pages
     // without a search toggle.
     let current = null;
     const instances = new WeakMap();
-
-    // --- Singleton document listeners ---
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && current?.isOpen()) {
-            current.close();
-            current.toggle.focus();
-        }
-    });
-
-    // Tap outside the nav to dismiss. The desktop layout shows the
-    // search inline always, so we only collapse on viewports where
-    // the toggle is actually visible.
-    document.addEventListener("click", (e) => {
-        if (!current || !current.isOpen()) return;
-        if (matchMedia("(min-width: 42rem)").matches) return;
-        if (current.nav.contains(e.target)) return;
-        current.close();
-    });
 
     function init(root) {
         const toggle = root.querySelector("[data-search-toggle]");
@@ -51,8 +28,9 @@
             current = null;
             return;
         }
-        const input = nav.querySelector(".site-search-input");
-        if (!input) {
+        const overlay = nav.querySelector("[data-search-overlay]");
+        const input = overlay?.querySelector(".site-search-input");
+        if (!overlay || !input) {
             current = null;
             return;
         }
@@ -61,13 +39,14 @@
 
         const open = () => {
             isOpen = true;
-            nav.setAttribute("data-search-open", "true");
             toggle.setAttribute("aria-expanded", "true");
             toggle.setAttribute("aria-label", "Close search");
             // Mutual exclusion with the Articles dropdown (and any future
             // popover) via the shared registry — opening here dismisses
             // anything else that's currently open.
             window.__engPopovers?.open("nav-search", () => close());
+            if (!overlay.open) overlay.showModal();
+            window.dispatchEvent(new Event("eng:overlaychange"));
             requestAnimationFrame(() => {
                 if (!isOpen || current?.toggle !== toggle || !input.isConnected) return;
                 try {
@@ -80,11 +59,28 @@
 
         const close = () => {
             isOpen = false;
-            nav.removeAttribute("data-search-open");
             toggle.setAttribute("aria-expanded", "false");
             toggle.setAttribute("aria-label", "Open search");
             window.__engPopovers?.close("nav-search");
+            if (overlay.open) overlay.close();
+            window.dispatchEvent(new Event("eng:overlaychange"));
         };
+
+        overlay.addEventListener("close", () => {
+            if (overlay.open) return;
+            if (isOpen) {
+                isOpen = false;
+                toggle.setAttribute("aria-expanded", "false");
+                toggle.setAttribute("aria-label", "Open search");
+                window.__engPopovers?.close("nav-search");
+            }
+            window.dispatchEvent(new Event("eng:overlaychange"));
+        });
+
+        overlay.querySelector("[data-search-close]")?.addEventListener("click", close);
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) close();
+        });
 
         toggle.addEventListener("click", (e) => {
             e.preventDefault();
@@ -96,6 +92,7 @@
         current = {
             nav,
             toggle,
+            overlay,
             close,
             isOpen: () => isOpen,
         };

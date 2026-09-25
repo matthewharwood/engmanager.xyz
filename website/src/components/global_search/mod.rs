@@ -1,9 +1,7 @@
 //! Global search form — co-located component (markup + flat JS deps only).
 //!
-//! The typeahead search form mounted inside the site nav on the article and
-//! search surfaces. The homepage hero search form is DIFFERENT markup (the
-//! fixed-bottom `.home-search` bar) and stays page-level — it shares only the
-//! flat scripts, which `Head` dedup makes safe to double-declare.
+//! The typeahead search form mounted in the site's modal dialog on
+//! the homepage, article, and search surfaces.
 //!
 //! This component owns no co-located `style.css`/`script.js`: the
 //! `.site-search*` styles live in `critical.css`'s nav fp.overlay block
@@ -22,8 +20,7 @@ use eng_markup::view;
 
 use super::Rendered;
 
-/// Shared flat scripts this component depends on but does not own (they are
-/// also consumed by the homepage's hero search). Declared in execution
+/// Shared flat scripts this component depends on but does not own. Declared in execution
 /// order; both are independent listeners, but search.js is the feature.
 const SEARCH: &str = "js/search.js";
 const SEARCH_KEYCLICK: &str = "js/search-keyclick.js";
@@ -35,11 +32,16 @@ pub struct Props {
     pub placeholder: &'static str,
 }
 
-/// Pure render: `Props -> Rendered`. Markup byte-identical to the pre-P4
-/// `render_global_search` in `pages/mod.rs`.
+/// Pure render: `Props -> Rendered`.
 pub fn render(props: Props) -> Rendered {
     let markup = view! {
-        <form class="site-search" action="/search" method="get" role="search" data-search-form>
+        <dialog id="site-search-overlay" class="site-search-overlay" aria-label="Search" data-search-overlay>
+          <div class="site-search-panel">
+            <header class="site-search-heading">
+                <span>"Search articles & caps"</span>
+                <button class="site-search-close" type="button" aria-label="Close search" data-search-close>"×"</button>
+            </header>
+            <form class="site-search" action="/search" method="get" role="search" data-search-form>
             <label class="sr-only" for="site-search-input">"Search articles"</label>
             <input class="site-search-input"
                    id="site-search-input"
@@ -59,7 +61,10 @@ pub fn render(props: Props) -> Rendered {
             <noscript>
                 <button class="site-search-submit" type="submit">"Search"</button>
             </noscript>
-        </form>
+            </form>
+            <p class="site-search-hint">"Type to search · Esc to close"</p>
+          </div>
+        </dialog>
     };
 
     Rendered {

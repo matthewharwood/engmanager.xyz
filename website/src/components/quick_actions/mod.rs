@@ -1,29 +1,24 @@
 //! Quick-actions cluster — co-located overlay component.
 //!
-//! One component for the shared quick-action surface AND its two chips:
+//! One component for the shared quick-action surface and its theme picker:
 //! - `render()` — the full cluster. Desktop CSS treats the wrapper as
-//!   `display: contents`, preserving the two fixed chips; mobile CSS turns
-//!   the same controls into a tucked right-edge FAB rail that expands to
-//!   reveal theme + Web API receipt actions. Mounted by the homepage and the
-//!   article surfaces.
+//!   `display: contents`; mobile CSS turns the theme control into a tucked
+//!   right-edge FAB rail. Kept available for surfaces that opt into the rail.
 //! - [`theme_picker`] — the theme cycler chip alone. It ALSO mounts
 //!   standalone (outside the cluster) on the shop, checkout, and 404 pages,
 //!   so it stays a `pub` markup helper rather than a private fn.
-//! - `hunt_chip` — private: it only ever renders inside the cluster.
 //!
 //! JS contract: the co-located `script.js` (served as `js/c-quick-actions.js`)
 //! drives the mobile FAB rail via the `[data-quick-actions]` /
 //! `[data-quick-actions-toggle]` hooks. The chips themselves are driven by
 //! page-level scripts: `js/theme-toggle.js` (synchronous, shell-owned — it
 //! must set the theme class before first paint, so it is NEVER absorbed into
-//! this component) cycles the theme via `[data-theme-cycle]`, and
-//! `js/experiences.js` updates `[data-hunt-chip-count]` and opens the receipt
-//! modal through the native Popover API (`popovertarget`).
+//! this component) cycles the theme via `[data-theme-cycle]`.
 //!
 //! Styles: the co-located `style.css` wraps its rules in `@layer fp.overlay`
 //! (ledger #8) so they rejoin the cascade layer they occupied inside
-//! `critical.css`. Tier: `critical_css` — the theme-picker and hunt-chip are
-//! VISIBLE at first paint on desktop, so the sheet must stay render-blocking
+//! `critical.css`. Tier: `critical_css` — the theme-picker is VISIBLE at first
+//! paint on desktop, so the sheet must stay render-blocking
 //! (the deferred tier is only for hidden-at-load elements). `PageShell` emits
 //! the sheet on EVERY page, immediately after `critical.css`, because the
 //! rules previously lived in `critical.css` (global) — per-page selector sets
@@ -74,23 +69,6 @@ pub fn theme_picker() -> HtmlFragment {
     }
 }
 
-// Persistent scavenger-hunt chip. On desktop it is positioned directly by
-// CSS; on mobile it lives inside the cluster as one of the expandable FAB
-// actions. Circular emoji button with a shopping-cart-style count badge in
-// the top-right corner. Private: it only renders inside `render()`.
-fn hunt_chip() -> HtmlFragment {
-    view! {
-        <button class="hunt-chip"
-                type="button"
-                popovertarget="api-receipt-modal"
-                aria-label="Open the API hunt log">
-            <span class="hunt-chip-emoji" aria-hidden="true">"🧪"</span>
-            <span class="hunt-chip-badge" data-hunt-chip-count="0">"0"</span>
-            <span class="sr-only">"APIs found"</span>
-        </button>
-    }
-}
-
 /// Pure render of the full quick-action cluster: `() -> Rendered`. The
 /// component owns its node tree and the dist assets that make it behave.
 pub fn render() -> Rendered {
@@ -108,9 +86,8 @@ pub fn render() -> Rendered {
                     aria-expanded="false">
                 <span class="quick-actions-arrow" aria-hidden="true">"←"</span>
             </button>
-            <div class="quick-actions-bubbles" aria-label="Quick actions">
+            <div class="quick-actions-bubbles" aria-label="Theme controls">
                 { theme_picker() }
-                { hunt_chip() }
             </div>
         </div>
     };
@@ -128,18 +105,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn renders_cluster_with_both_chips() {
+    fn renders_theme_cluster_without_receipt_entry_point() {
         let html = render().markup.into_string();
         assert!(html.contains(r#"class="quick-actions""#));
         assert!(html.contains("data-quick-actions"));
         assert!(html.contains(r#"data-state="collapsed""#));
         assert!(html.contains("data-quick-actions-toggle"));
-        // Both chips render inside the bubbles wrapper.
+        // The theme control is the only action in this cluster.
         assert!(html.contains(r#"class="theme-picker""#));
-        assert!(html.contains(r#"class="hunt-chip""#));
-        assert!(html.contains(r#"data-hunt-chip-count="0""#));
-        // Hunt chip opens the receipt modal via the native Popover API.
-        assert!(html.contains(r#"popovertarget="api-receipt-modal""#));
+        assert!(!html.contains("api-receipt-modal"));
     }
 
     #[test]
