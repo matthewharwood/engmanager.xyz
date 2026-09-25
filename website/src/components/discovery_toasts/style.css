@@ -25,8 +25,10 @@
 
     .discovery-toast {
         display: inline-flex;
+        flex-wrap: wrap;
         align-items: center;
         gap: 0.5625rem;
+        max-inline-size: min(36rem, calc(100vw - 2rem));
         padding-block: 0.625rem;
         padding-inline: 0.875rem;
         background: var(--brand);
@@ -58,6 +60,28 @@
         font-weight: 800;
     }
 
-    .discovery-toast-name { font-weight: 700; }
+    .discovery-toast-name { min-inline-size: 0; font-weight: 700; overflow-wrap: anywhere; }
     .discovery-toast-count { opacity: 0.85; font-weight: 500; }
+
+    .discovery-toast-open {
+        flex: 0 0 auto;
+        appearance: none;
+        padding: 0.3rem 0.45rem;
+        color: var(--brand-text);
+        background: color-mix(in oklab, var(--brand-text) 14%, transparent);
+        border: 1px solid color-mix(in oklab, var(--brand-text) 45%, transparent);
+        border-radius: 0.3rem;
+        font: 800 0.58rem/1 var(--font-mono);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    .discovery-toast-open:hover,
+    .discovery-toast-open:focus-visible {
+        color: var(--brand);
+        background: var(--brand-text);
+        outline: none;
+    }
 }

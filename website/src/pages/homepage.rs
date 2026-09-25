@@ -8,10 +8,11 @@ use std::fmt::Write;
 use super::shell::{MetaTags, PageShell, json_ld_island};
 use super::{
     AVATAR_SRC, DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, avatar_srcset, render_experience_urls,
-    render_liquid_title_filter, share_card,
+    render_liquid_title_filter, render_nav_search_toggle, share_card,
 };
+use crate::components::quick_actions::theme_picker;
 use crate::components::{
-    Head, api_receipt, discovery_toasts, json_data_island, nav, quick_actions,
+    Head, api_receipt, discovery_toasts, global_search, json_data_island, nav,
 };
 use crate::config::SITE_ORIGIN;
 use crate::content::{Category, Tag, public_articles};
@@ -430,14 +431,21 @@ pub async fn index() -> Html<String> {
     // critical.css (ledger #8); the add() below is a byte-neutral dep
     // declaration that global dedup collapses into that one.
     let receipt = api_receipt::render();
-    // Quick-actions cluster: PageShell ships its critical sheet (ledger #8);
-    // only the FAB script lands from the add() in the scripts section below.
-    let quick_actions = quick_actions::render();
+    let site_nav = nav::render(nav::Props {
+        brand_icon_url: crate::asset_url("favicon.svg"),
+        global_search: global_search::render(global_search::Props {
+            placeholder: "Search articles",
+        }),
+        search_toggle: render_nav_search_toggle(),
+        theme_picker: theme_picker(),
+        articles: nav::Articles::Link,
+    });
 
     let mut assets = Head::new();
     assets.add_css("css/homepage.css");
     assets.add(&toasts);
     assets.add(&receipt);
+    assets.add(&site_nav);
     if HOME_LIQUID_HEADLINE_ENABLED {
         assets.add_css("css/liquid-title.css");
     }
@@ -457,10 +465,10 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/view-transitions.js");
     scripts.add_js("js/visited-articles.js");
     scripts.add_js("js/trash-drag.js");
-    scripts.add(&quick_actions);
+    scripts.add(&site_nav);
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
-    let quick_actions_markup = quick_actions.markup;
+    let nav_markup = site_nav.markup;
 
     let meta = MetaTags {
         description: Some(HOME_DESCRIPTION.to_string()),
@@ -481,9 +489,7 @@ pub async fn index() -> Html<String> {
     };
 
     let body = view! {
-                <nav class="home-services" aria-label="Explore">
-                    { nav::service_links() }
-                </nav>
+                { nav_markup }
                 <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
                     <svg class="dvd-bouncer-mark"
                          viewBox="0 0 160 72"
@@ -509,38 +515,6 @@ pub async fn index() -> Html<String> {
                 </div>
                 <EngHeadline />
                 { render_topic_marquees() }
-                // Fixed-bottom floating search. Real submit button on the
-                // right (the circle) so the rightmost tap target is
-                // functional, not just decoration. Typeahead is wired up
-                // by js/search.js through the [data-search-form] +
-                // [data-search-results] hooks.
-                <form class="home-search"
-                      action="/search"
-                      method="get"
-                      role="search"
-                      data-search-form>
-                    <label class="sr-only" for="site-search-input">
-                        "Search articles"
-                    </label>
-                    <input class="home-search-input"
-                           id="site-search-input"
-                           type="search"
-                           name="q"
-                           autocomplete="off"
-                           role="combobox"
-                           aria-expanded="false"
-                           aria-controls="site-search-results"
-                           aria-autocomplete="list"
-                           placeholder="e.g. rust, voice, ai" />
-                    <ul class="site-search-results home-search-results"
-                        id="site-search-results"
-                        role="listbox"
-                        hidden
-                        data-search-results></ul>
-                    <button class="home-search-submit" type="submit" aria-label="Search">
-                        <span aria-hidden="true">"🔍"</span>
-                    </button>
-                </form>
                 { article_links }
 
                 // Avatar is a popover trigger via the native HTML Popover API.
@@ -597,7 +571,6 @@ pub async fn index() -> Html<String> {
                 { json_data_island("articles-data", &articles_data_json()) }
                 { render_reveal_card() }
 
-                { quick_actions_markup }
                 { toasts_markup }
 
                 // Brutalist Web API Receipt modal (Popover API) — the

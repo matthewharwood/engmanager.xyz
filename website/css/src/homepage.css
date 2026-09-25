@@ -144,9 +144,9 @@ body[data-dragging="true"] {
  * underneath. `--floating-search-gap` is the lift off the very edge.
  * ===================================================================== */
 .homepage {
-    --floating-search-h: 4rem;
-    --floating-search-gap: 0.5rem;
-    padding-block-end: calc(var(--floating-search-h) + var(--floating-search-gap) + 1.25rem + env(safe-area-inset-bottom, 0px));
+    --floating-search-h: 0rem;
+    --floating-search-gap: 0rem;
+    padding-block-end: 1.5rem;
 }
 
 .home-search {
@@ -355,7 +355,7 @@ body[data-dragging="true"] {
 
 @media (min-width: 48rem) {
     .homepage {
-        --floating-search-h: 4.5rem;
+        --floating-search-h: 0rem;
     }
 
     .home-search {

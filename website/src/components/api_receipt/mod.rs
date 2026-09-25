@@ -5,12 +5,10 @@
 //! verbatim inline copy in `pages/homepage.rs`. It now renders from this one
 //! pure component, byte-identical to both former copies.
 //!
-//! Opens on the `?` key from anywhere on the site OR when `?receipt` is in
-//! the URL on load; toggling pushes/pops that query param so the state is
-//! deep-linkable. Static shell only.
+//! Opens from the explicit action on a discovery toast. Static shell only.
 //!
 //! JS contract: behavior lives in the shared page-level `js/experiences.js`
-//! (which also drives the hunt-chip count + discovery toasts) — it populates
+//! (which also drives discovery toasts) — it populates
 //! the stats + grid from the registry after `runAll()` finishes via the
 //! `data-api-receipt-stats` / `data-api-receipt-grid` hooks, and the native
 //! Popover API handles open/close through the `popovertarget` buttons. This
@@ -39,7 +37,7 @@ pub fn render() -> Rendered {
     // `data-swap-region` (ledger #14): names this body-level island for the
     // soft-navigation router's region reconcile.
     let markup = view! {
-        <aside id="api-receipt-modal" popover="manual" class="api-receipt" data-swap-region="receipt">
+        <aside id="api-receipt-modal" popover="auto" class="api-receipt" data-swap-region="receipt">
             <div class="api-receipt-frame">
                 <header class="api-receipt-head">
                     <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
@@ -55,7 +53,7 @@ pub fn render() -> Rendered {
                 </header>
                 <div class="api-receipt-grid" data-api-receipt-grid></div>
                 <footer class="api-receipt-foot">
-                    <span>"Press "<kbd>"?"</kbd>" to toggle · "<kbd>"Esc"</kbd>" to close · share with "<kbd>"?receipt"</kbd></span>
+                    <span>"Open from a discovery toast · "<kbd>"Esc"</kbd>" to close"</span>
                 </footer>
             </div>
         </aside>
@@ -79,15 +77,14 @@ mod tests {
         // Byte-parity pin updated DELIBERATELY for ledger #14: the modal
         // gained the additive data-swap-region attribute.
         assert!(html.contains(
-            r#"<aside id="api-receipt-modal" popover="manual" class="api-receipt" data-swap-region="receipt">"#
+            r#"<aside id="api-receipt-modal" popover="auto" class="api-receipt" data-swap-region="receipt">"#
         ));
         assert!(html.contains("data-api-receipt-stats"));
         assert!(html.contains("data-api-receipt-grid"));
         assert!(html.contains(r#"popovertargetaction="hide""#));
         assert!(html.contains("Web API Receipt"));
-        // Footer keyboard hints survive verbatim (kbd glyphs included).
-        assert!(html.contains("<kbd>?</kbd>"));
-        assert!(html.contains("?receipt"));
+        assert!(html.contains("Open from a discovery toast"));
+        assert!(html.contains("<kbd>Esc</kbd>"));
     }
 
     #[test]

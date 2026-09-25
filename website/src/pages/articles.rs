@@ -16,9 +16,9 @@ use crate::AppState;
 use crate::asset_url;
 use crate::coaching::{COACH_ORIGIN, OFFER, SessionMode, TESTIMONIALS, cta_label, headline};
 use crate::components::article_toc::{self, Heading};
+use crate::components::quick_actions::theme_picker;
 use crate::components::{
-    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, quick_actions,
-    region_map, to_top,
+    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, region_map, to_top,
 };
 use crate::config::SITE_ORIGIN;
 use crate::content::{
@@ -165,18 +165,18 @@ fn layout(
             placeholder: "Search",
         }),
         search_toggle: render_nav_search_toggle(),
+        theme_picker: theme_picker(),
         articles: nav::Articles::Dropdown(nav_dropdown_items),
     });
 
     // Discovery-toast overlay: container + its async (deferred) styles.
     let toasts = discovery_toasts::render();
     let to_top = to_top::render(Default::default());
-    // Receipt modal (ledger #4 dedup) + quick-actions cluster. Their
+    // Receipt modal (ledger #4 dedup). Its
     // stylesheets are emitted by PageShell right after critical.css (ledger
     // #8); the add()s below are byte-neutral dep declarations that global
-    // dedup collapses into those (the cluster's FAB script still lands here).
+    // dedup collapses into those.
     let receipt = api_receipt::render();
-    let quick_actions = quick_actions::render();
 
     let mut assets = Head::new();
     assets.add_css("css/articles.css");
@@ -224,7 +224,6 @@ fn layout(
     scripts.add(&toasts);
     scripts.add(&receipt);
     scripts.add_js("js/view-transitions.js");
-    scripts.add(&quick_actions);
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
 
@@ -232,12 +231,10 @@ fn layout(
     let toasts_markup = toasts.markup;
     let to_top_markup = to_top.markup;
     let receipt_markup = receipt.markup;
-    let quick_actions_markup = quick_actions.markup;
     let page_body = view! {
         { nav_markup }
         { body }
         { to_top_markup }
-        { quick_actions_markup }
         { toasts_markup }
         { receipt_markup }
     };

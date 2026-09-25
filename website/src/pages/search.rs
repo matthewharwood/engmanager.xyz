@@ -10,6 +10,7 @@ use super::render_nav_search_toggle;
 use super::shell::PageShell;
 use crate::AppState;
 use crate::asset_url;
+use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, global_search, nav};
 use crate::content::{Category, Tag};
 use crate::http::no_store;
@@ -156,6 +157,7 @@ fn render_page(
             placeholder: "Search",
         }),
         search_toggle: render_nav_search_toggle(),
+        theme_picker: theme_picker(),
         articles: nav::Articles::Link,
     });
     let mut assets = Head::new();

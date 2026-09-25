@@ -59,8 +59,8 @@ pub enum Articles {
     Link,
 }
 
-/// Props for the site nav. `brand_icon_url` (the hashed favicon URL) and the
-/// `search_toggle` fragment are hoisted by the caller; `global_search` is the
+/// Props for the site nav. `brand_icon_url` (the hashed favicon URL),
+/// `search_toggle`, and `theme_picker` fragments are hoisted by the caller; `global_search` is the
 /// pre-rendered `components::global_search` child, which the nav absorbs —
 /// markup spliced into the bar, js deps merged after the nav's own
 /// (`Rendered::absorb` keeps execution order: popover-registry stays ahead of
@@ -69,6 +69,7 @@ pub struct Props {
     pub brand_icon_url: String,
     pub global_search: Rendered,
     pub search_toggle: HtmlFragment,
+    pub theme_picker: HtmlFragment,
     pub articles: Articles,
 }
 
@@ -165,6 +166,7 @@ pub fn render(props: Props) -> Rendered {
         brand_icon_url,
         global_search,
         search_toggle,
+        theme_picker,
         articles,
     } = props;
 
@@ -209,6 +211,9 @@ pub fn render(props: Props) -> Rendered {
                      aria-hidden="true" />
                 <span class="site-nav-wordmark">"engmanager.xyz"</span>
             </a>
+            <div class="site-nav-theme" aria-label="Theme">
+                { theme_picker }
+            </div>
             { global_search }
             <div class="site-nav-links">
                 { search_toggle }
@@ -244,6 +249,7 @@ mod tests {
             search_toggle: HtmlFragment::new(
                 "<button class=\"site-search-toggle\"></button>".to_string(),
             ),
+            theme_picker: HtmlFragment::empty(),
             articles: Articles::Dropdown(vec![DropdownItem {
                 display: "Hello World".to_string(),
                 slug: "hello-world".to_string(),

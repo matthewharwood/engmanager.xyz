@@ -144,18 +144,17 @@ pub fn render_dev_meta() -> HtmlFragment {
 // `components/discovery_toasts/` (markup + deferred styles). `experiences.js`
 // still drives it from the page level.
 
-// Inline SVG icon for the mobile search toggle. `class="site-nav-icon"` is the
-// shared sizing hook; visibility is flipped per-viewport in critical.css. (The
+// Inline SVG icon for the search toggle. `class="site-nav-icon"` is the
+// shared sizing hook. (The
 // folder / Discord / GitHub nav glyphs moved into the co-located nav component,
 // `components/nav/`, which is the only place they were used.)
 const ICON_SEARCH: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 10 L13.5 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>"##;
 
-// Mobile-only nav button: tapping it opens the .site-search form
-// (which is display:none on narrow viewports) and focuses the input.
+// Shared nav button: opens the search dialog and focuses the input.
 // js/nav-search-toggle.js wires up the click/Escape handling.
 pub fn render_nav_search_toggle() -> HtmlFragment {
     HtmlFragment::new(format!(
-        r##"<button class="site-search-toggle" type="button" aria-label="Open search" aria-expanded="false" data-search-toggle>{ICON_SEARCH}</button>"##
+        r##"<button class="site-search-toggle" type="button" aria-label="Open search" aria-haspopup="dialog" aria-controls="site-search-overlay" aria-expanded="false" data-search-toggle>{ICON_SEARCH}</button>"##
     ))
 }
 

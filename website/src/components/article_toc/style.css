@@ -28,6 +28,13 @@
  * =========================================================================== */
 .article-toc {
     display: none;
+    transition: opacity 220ms ease-out, visibility 220ms;
+}
+
+.journey-revealing .article-toc {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 @media (min-width: 72rem) {

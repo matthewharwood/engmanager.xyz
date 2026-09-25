@@ -13,8 +13,8 @@
 //   - A single collapsed `console.groupCollapsed` prints the receipt.
 //     The connective tissue: one easter egg, the API receipt that
 //     rewards a reader who opens DevTools.
-//   - The brutalist receipt modal (`#api-receipt-modal`) is opened by
-//     pressing `?` anywhere on the site. Same data, on-screen.
+//   - The brutalist receipt modal is opened by the small action on a
+//     discovery toast. The toast is the only on-page entry point.
 //
 // Hard rule: no `init` invokes a permission-gated API. Anything that
 // would surface a prompt (Bluetooth/USB/HID/MIDI/NFC/Geolocation/
@@ -38,10 +38,10 @@ function register(entry) {
 // =============================================================================
 // SCAVENGER HUNT — `discoveries` is a localStorage-backed Set of API ids
 // the reader has *actively triggered* (clicked Share, dragged the avatar,
-// scrolled past 30%, typed the konami code, etc.). The receipt chip in
-// the corner shows `⌬ N FOUND`, the modal marks each entry DISCOVERED /
-// SUPPORTED / UNSUPPORTED, and a brutalist toast slides in from the
-// bottom-right when a new id is added to the set. Discoveries persist.
+// scrolled past 30%, typed the konami code, etc.). The modal marks each
+// entry DISCOVERED / SUPPORTED / UNSUPPORTED, and a
+// brutalist toast slides in from the bottom-right with an explicit action.
+// Discoveries persist.
 // =============================================================================
 
 const DISCOVERY_KEY = "engmanager.discoveries";
@@ -77,23 +77,36 @@ function showNextToast() {
         `<span class="discovery-toast-glyph" aria-hidden="true">⌬</span>` +
         `<span class="discovery-toast-tag">Found</span>` +
         `<span class="discovery-toast-name">${escape(next.name)}</span>` +
-        `<span class="discovery-toast-count">${discoveries.size}/${registry.items.length}</span>`;
+        `<span class="discovery-toast-count">${discoveries.size}/${registry.items.length}</span>` +
+        `<button class="discovery-toast-open" type="button">Open log</button>`;
     root.appendChild(node);
     // Force layout, then animate in.
     void node.offsetWidth;
     node.classList.add("is-visible");
-    setTimeout(() => {
+    let dismissed = false;
+    let removalFallback = null;
+    const dismissToast = () => {
+        if (dismissed) return;
+        dismissed = true;
         node.classList.remove("is-visible");
-        node.addEventListener(
-            "transitionend",
-            () => {
-                node.remove();
-                toastShowing = false;
-                showNextToast();
-            },
-            { once: true },
-        );
-    }, 2600);
+        const finish = (event) => {
+            if (event && event.target !== node) return;
+            clearTimeout(removalFallback);
+            node.remove();
+            toastShowing = false;
+            showNextToast();
+        };
+        node.addEventListener("transitionend", finish, { once: true });
+        removalFallback = setTimeout(finish, 360);
+    };
+    const timer = setTimeout(() => {
+        dismissToast();
+    }, 5200);
+    node.querySelector(".discovery-toast-open")?.addEventListener("click", () => {
+        clearTimeout(timer);
+        openReceipt();
+        dismissToast();
+    }, { once: true });
 }
 
 function discover(id) {
@@ -102,22 +115,11 @@ function discover(id) {
     persistDiscoveries();
     const entry = registry.byId.get(id);
     if (entry) entry.discovered = true;
-    refreshChip();
     refreshModal();
     if (entry) {
         toastQueue.push({ id, name: entry.name });
         showNextToast();
     }
-}
-
-function refreshChip() {
-    const chipCount = document.querySelector("[data-hunt-chip-count]");
-    if (!chipCount) return;
-    const value = String(discoveries.size);
-    chipCount.textContent = value;
-    // Mirror the count into the attribute value so CSS can dim the
-    // badge when nothing has been discovered yet.
-    chipCount.dataset.huntChipCount = value;
 }
 
 // Background-priority scheduler with rIC fallback.
@@ -250,7 +252,7 @@ function makeCtx(entry) {
 
 async function runAll() {
     // Hydrate previously-discovered ids onto the live entries first
-    // so the receipt + chip reflect persisted state from the very
+    // so the receipt reflects persisted state from the very
     // first paint.
     for (const id of discoveries) {
         const entry = registry.byId.get(id);
@@ -276,7 +278,6 @@ async function runAll() {
     }
     defer(() => printReceipt());
     defer(() => renderReceiptModal());
-    defer(() => refreshChip());
     defer(() => mountScavengerHooks());
 }
 
@@ -298,7 +299,7 @@ function printReceipt() {
         "font-family:ui-monospace,Menlo,monospace;color:#e64553;font-weight:700;font-size:12px;padding:2px 0";
     console.groupCollapsed(header, headStyle);
     console.log(
-        "%cPress ? on the page for the brutalist receipt modal · plan: /_docs/web-api-experiences-plan.md",
+        "%cClick Open log on a discovery toast to view the receipt · plan: /_docs/web-api-experiences-plan.md",
         "color:#6c6f85;font-family:ui-monospace,Menlo,monospace;font-size:11px",
     );
 
@@ -422,8 +423,8 @@ const DISCOVERY_GUIDES = {
         answer: "The Konami route opened the command cabinet.",
     },
     "keyboard": {
-        hint: "Press ? anywhere outside a form field.",
-        answer: "You opened the receipt from the keyboard.",
+        hint: "Use the keyboard to browse, then catch a discovery toast.",
+        answer: "You completed the keyboard discovery.",
     },
     "page-visibility": {
         hint: "Switch away from the tab, then come back.",
@@ -434,7 +435,7 @@ const DISCOVERY_GUIDES = {
         answer: "Three quick clicks woke the pointer stack.",
     },
     "popover": {
-        hint: "Press ? or poke the receipt chip.",
+        hint: "Trigger a discovery and use its toast action before it fades.",
         answer: "This popover receipt is the scene of the crime.",
     },
     "prioritized-task-scheduling": {
@@ -669,37 +670,8 @@ function escape(s) {
         .replace(/"/g, "&quot;");
 }
 
-// Receipt modal lifecycle.
-//
-//   - `?` anywhere on the page toggles the modal (ignored when an
-//     input is focused).
-//   - `?receipt` in the URL on load opens the modal automatically —
-//     deep-linkable.
-//   - Opening/closing the modal pushes/pops the `?receipt` query param
-//     so a shared URL re-opens for the recipient.
-//   - popstate (back/forward) syncs the modal to the URL.
-const RECEIPT_PARAM = "receipt";
-
-function urlHasReceipt() {
-    try {
-        return new URL(location.href).searchParams.has(RECEIPT_PARAM);
-    } catch {
-        return false;
-    }
-}
-
-function setReceiptInUrl(open) {
-    try {
-        const url = new URL(location.href);
-        if (open) url.searchParams.set(RECEIPT_PARAM, "");
-        else url.searchParams.delete(RECEIPT_PARAM);
-        // Use `replaceState` for toggles within the same page so we
-        // don't pile up history entries; `pushState` only when opening
-        // from a fresh URL so back-button closes.
-        if (open && !urlHasReceipt()) history.pushState({ ...(history.state || {}) }, "", url);
-        else history.replaceState({ ...(history.state || {}) }, "", url);
-    } catch {}
-}
+// The receipt has no URL or keyboard entry point. A discovery toast provides
+// the explicit, short-lived action that opens it; native Popover handles Esc.
 
 function openReceipt() {
     const modal = document.getElementById("api-receipt-modal");
@@ -707,81 +679,8 @@ function openReceipt() {
     modal.showPopover();
 }
 
-function closeReceipt() {
-    const modal = document.getElementById("api-receipt-modal");
-    if (!modal || !modal.matches(":popover-open")) return;
-    modal.hidePopover();
-}
-
-window.addEventListener("keydown", (event) => {
-    if (event.key !== "?" && event.key !== "/") return;
-    const tag = document.activeElement?.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-    if (document.activeElement?.isContentEditable) return;
-    const modal = document.getElementById("api-receipt-modal");
-    if (!modal) return;
-    event.preventDefault();
-    if (modal.matches(":popover-open")) closeReceipt();
-    else openReceipt();
-});
-
-window.addEventListener("popstate", () => {
-    const should = urlHasReceipt();
-    const modal = document.getElementById("api-receipt-modal");
-    if (!modal) return;
-    const isOpen = modal.matches(":popover-open");
-    if (should && !isOpen) modal.showPopover();
-    else if (!should && isOpen) modal.hidePopover();
-});
-
-// Bind the URL-sync toggle listener to the CURRENT modal node. The modal
-// lives inside data-swap-region="receipt", so every soft navigation replaces
-// the node and drops its listeners — same lifecycle as the nav cluster.
-// Re-resolved lazily with a data-bound guard (JS_ROUTER_CONSTRAINTS §2.15);
-// the `?` keydown and popstate handlers above already re-resolve by id per
-// event, so only this per-node binding needs the re-bind.
-function bindReceiptModal() {
-    const modal = document.getElementById("api-receipt-modal");
-    if (!modal || modal.dataset.receiptBound) return modal;
-    modal.dataset.receiptBound = "true";
-    // Sync URL ↔ modal whenever the popover toggles itself (close
-    // button, Esc, outside click, our showPopover/hidePopover calls).
-    modal.addEventListener("toggle", (event) => {
-        // hidePopover queues its toggle event. A journey swap may already have
-        // detached this modal by the time it arrives; do not rewrite the new URL.
-        if (!modal.isConnected || document.getElementById("api-receipt-modal") !== modal) return;
-        setReceiptInUrl(event.newState === "open");
-    });
-    return modal;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    const modal = bindReceiptModal();
-    if (!modal) return;
-    // Deep-link entry.
-    if (urlHasReceipt()) {
-        // Wait one frame so renderReceiptModal has had a chance to
-        // populate before we show the dialog.
-        requestAnimationFrame(() => {
-            if (modal.isConnected && document.getElementById("api-receipt-modal") === modal && urlHasReceipt()) modal.showPopover();
-        });
-    }
-});
-
-// Soft navigation: the swapped-in receipt region arrives server-fresh
-// (unbound, unpopulated, closed), or resumes a previously bound live node.
-// Re-bind, re-render receipt + chip from live state, then sync the popover
-// to the URL — a traversal back to a `?receipt` entry must re-open it.
-onSoftNav(() => {
-    const modal = bindReceiptModal();
-    renderReceiptModal();
-    refreshChip();
-    if (!modal) return;
-    const should = urlHasReceipt();
-    const isOpen = modal.matches(":popover-open");
-    if (should && !isOpen) modal.showPopover();
-    else if (!should && isOpen) modal.hidePopover();
-});
+// Refresh the new receipt shell after soft navigation, leaving it closed.
+onSoftNav(renderReceiptModal);
 
 // =============================================================================
 // REGISTRATIONS — alphabetical by name to match the user's source list.
@@ -2943,11 +2842,8 @@ function mountScavengerHooks() {
                 ["keyboard", "trusted-types", "reporting", "invoker-commands"].forEach(
                     discover,
                 );
-                // Flash the receipt chip + open the modal for the
-                // dopamine hit.
-                document
-                    .getElementById("api-receipt-modal")
-                    ?.showPopover();
+                // The easter egg still awards discoveries. The receipt
+                // opens only through the toast's explicit action.
             }
         } else {
             konamiCursor = key === konami[0] ? 1 : 0;
@@ -3057,10 +2953,10 @@ function mountScavengerHooks() {
         discover("speculation-rules");
     });
 
-    // ── `?` already opens the modal (handler above). Doing it
-    // discovers Popover + Keyboard.
+    // ── `?` is still a keyboard discovery, but it does not expose the
+    // receipt modal. The toast action is its only on-page entry point.
     window.addEventListener("keydown", (event) => {
-        if (event.key === "?" || event.key === "/") {
+        if (event.key === "?") {
             const tag = document.activeElement?.tagName;
             if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
             if (document.activeElement?.isContentEditable) return;
