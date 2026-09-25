@@ -155,6 +155,26 @@ const onInteraction = (fn) => interactionHandlers.push(fn);
 const softNavHooks = [];
 const onSoftNav = (fn) => softNavHooks.push(fn);
 
+// Page tools arrive on later soft navigations too. Remember each node's
+// binding so a retained previous outlet can resume without duplicate handlers.
+function bindPageNodes(selector, bind) {
+    const bindings = new WeakMap();
+    const activeCleanups = new Set();
+    const scan = (root) => {
+        root.querySelectorAll(selector).forEach((node) => {
+            if (!bindings.has(node)) bindings.set(node, bind(node));
+            const cleanup = bindings.get(node);
+            if (typeof cleanup === "function") activeCleanups.add(cleanup);
+        });
+    };
+    scan(document);
+    onSoftNav(scan);
+    window.__engNav?.onBeforeSwap?.(() => {
+        for (const cleanup of activeCleanups) cleanup();
+        activeCleanups.clear();
+    });
+}
+
 const receipt = []; // { api, label, value }
 
 function upsertReceipt(api, label, value) {
@@ -676,8 +696,8 @@ function setReceiptInUrl(open) {
         // Use `replaceState` for toggles within the same page so we
         // don't pile up history entries; `pushState` only when opening
         // from a fresh URL so back-button closes.
-        if (open && !urlHasReceipt()) history.pushState({}, "", url);
-        else history.replaceState({}, "", url);
+        if (open && !urlHasReceipt()) history.pushState({ ...(history.state || {}) }, "", url);
+        else history.replaceState({ ...(history.state || {}) }, "", url);
     } catch {}
 }
 
@@ -727,6 +747,9 @@ function bindReceiptModal() {
     // Sync URL ↔ modal whenever the popover toggles itself (close
     // button, Esc, outside click, our showPopover/hidePopover calls).
     modal.addEventListener("toggle", (event) => {
+        // hidePopover queues its toggle event. A journey swap may already have
+        // detached this modal by the time it arrives; do not rewrite the new URL.
+        if (!modal.isConnected || document.getElementById("api-receipt-modal") !== modal) return;
         setReceiptInUrl(event.newState === "open");
     });
     return modal;
@@ -739,13 +762,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (urlHasReceipt()) {
         // Wait one frame so renderReceiptModal has had a chance to
         // populate before we show the dialog.
-        requestAnimationFrame(() => modal.showPopover());
+        requestAnimationFrame(() => {
+            if (modal.isConnected && document.getElementById("api-receipt-modal") === modal && urlHasReceipt()) modal.showPopover();
+        });
     }
 });
 
 // Soft navigation: the swapped-in receipt region arrives server-fresh
-// (unbound, unpopulated, closed; an OPEN modal that gets swapped out is
-// hidden by the platform without firing toggle, so no stray URL write).
+// (unbound, unpopulated, closed), or resumes a previously bound live node.
 // Re-bind, re-render receipt + chip from live state, then sync the popover
 // to the URL — a traversal back to a `?receipt` entry must re-open it.
 onSoftNav(() => {
@@ -1288,8 +1312,7 @@ register({
     isSupported: () => "EyeDropper" in globalThis,
     init: (api) => {
         // Wires to the article-meta toolbar button if present.
-        const button = document.querySelector("[data-eyedropper]");
-        if (button) {
+        bindPageNodes("[data-eyedropper]", (button) => {
             button.hidden = false;
             button.addEventListener("click", async () => {
                 try {
@@ -1306,7 +1329,7 @@ register({
                     api.discover();
                 } catch {}
             });
-        }
+        });
         api.log("status", "ready");
     },
 });
@@ -1378,17 +1401,17 @@ register({
     group: "meta",
     isSupported: () => "requestFullscreen" in Element.prototype,
     init: (api) => {
-        const button = document.querySelector("[data-fullscreen]");
-        const target = document.querySelector(".article");
-        if (button && target) {
+        bindPageNodes("[data-fullscreen]", (button) => {
+            const target = document.querySelector(".article");
+            if (!target) return;
             button.hidden = false;
             button.addEventListener("click", () => {
                 if (document.fullscreenElement) document.exitFullscreen();
                 else target.requestFullscreen?.();
                 api.discover();
             });
-        }
-        api.log("target", target ? "article" : "—");
+        });
+        api.log("target", "article toolbar");
     },
 });
 
@@ -1440,41 +1463,41 @@ register({
     isSupported: () => "draggable" in HTMLElement.prototype,
     init: (api) => {
         // Bottom-right avatar becomes draggable; position persists.
-        const button = document.querySelector(".avatar-button");
-        if (!button) return false;
-        button.draggable = true;
-        const STORAGE = "engmanager.avatar-position";
-        try {
-            const saved = JSON.parse(localStorage.getItem(STORAGE) || "null");
-            if (saved && typeof saved.x === "number") {
+        bindPageNodes(".avatar-button", (button) => {
+            button.draggable = true;
+            const STORAGE = "engmanager.avatar-position";
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE) || "null");
+                if (saved && typeof saved.x === "number") {
+                    button.style.right = "auto";
+                    button.style.bottom = "auto";
+                    button.style.left = `${saved.x}px`;
+                    button.style.top = `${saved.y}px`;
+                }
+            } catch {}
+            let offsetX = 0;
+            let offsetY = 0;
+            button.addEventListener("dragstart", (event) => {
+                const rect = button.getBoundingClientRect();
+                offsetX = event.clientX - rect.left;
+                offsetY = event.clientY - rect.top;
+                try {
+                    event.dataTransfer.setDragImage(new Image(), 0, 0);
+                } catch {}
+            });
+            button.addEventListener("dragend", (event) => {
+                if (!event.clientX && !event.clientY) return;
+                const x = Math.max(8, event.clientX - offsetX);
+                const y = Math.max(8, event.clientY - offsetY);
                 button.style.right = "auto";
                 button.style.bottom = "auto";
-                button.style.left = `${saved.x}px`;
-                button.style.top = `${saved.y}px`;
-            }
-        } catch {}
-        let offsetX = 0;
-        let offsetY = 0;
-        button.addEventListener("dragstart", (event) => {
-            const rect = button.getBoundingClientRect();
-            offsetX = event.clientX - rect.left;
-            offsetY = event.clientY - rect.top;
-            try {
-                event.dataTransfer.setDragImage(new Image(), 0, 0);
-            } catch {}
-        });
-        button.addEventListener("dragend", (event) => {
-            if (!event.clientX && !event.clientY) return;
-            const x = Math.max(8, event.clientX - offsetX);
-            const y = Math.max(8, event.clientY - offsetY);
-            button.style.right = "auto";
-            button.style.bottom = "auto";
-            button.style.left = `${x}px`;
-            button.style.top = `${y}px`;
-            try {
-                localStorage.setItem(STORAGE, JSON.stringify({ x, y }));
-            } catch {}
-            api.discover();
+                button.style.left = `${x}px`;
+                button.style.top = `${y}px`;
+                try {
+                    localStorage.setItem(STORAGE, JSON.stringify({ x, y }));
+                } catch {}
+                api.discover();
+            });
         });
         api.log("target", ".avatar-button");
     },
@@ -2018,40 +2041,50 @@ register({
     group: "meta",
     isSupported: () => "wakeLock" in navigator,
     init: (api) => {
-        // Only acquire on article pages, and only when the user has
-        // scrolled at least 30% — keeps the screen on once we know
-        // the reader has committed.
-        const article = document.querySelector(".article");
-        if (!article) return false;
-        let sentinel = null;
-        const acquire = async () => {
-            if (sentinel || document.visibilityState !== "visible") return;
-            try {
-                sentinel = await navigator.wakeLock.request("screen");
-                sentinel.addEventListener("release", () => {
-                    sentinel = null;
-                });
-                api.discover();
-            } catch {}
+        let dispose = () => {};
+        const bind = (root) => {
+            dispose();
+            const article = root.querySelector(".article");
+            if (!article) return;
+            const lifetime = new AbortController();
+            let sentinel = null;
+            let pending = false;
+            const release = () => {
+                sentinel?.release().catch(() => {});
+                sentinel = null;
+            };
+            const acquire = async () => {
+                if (sentinel || pending || document.visibilityState !== "visible") return;
+                pending = true;
+                try {
+                    const lock = await navigator.wakeLock.request("screen");
+                    if (lifetime.signal.aborted) {
+                        await lock.release();
+                        return;
+                    }
+                    sentinel = lock;
+                    lock.addEventListener("release", () => {
+                        if (sentinel === lock) sentinel = null;
+                    });
+                    api.discover();
+                } catch {} finally { pending = false; }
+            };
+            const onScroll = () => {
+                const ratio = window.scrollY / (article.scrollHeight - window.innerHeight || 1);
+                if (ratio > 0.3) acquire();
+            };
+            window.addEventListener("scroll", onScroll, { passive: true, signal: lifetime.signal });
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "hidden") release();
+            }, { signal: lifetime.signal });
+            dispose = () => {
+                lifetime.abort();
+                release();
+            };
         };
-        const release = async () => {
-            try {
-                await sentinel?.release();
-            } catch {}
-            sentinel = null;
-        };
-        const onScroll = () => {
-            const ratio =
-                window.scrollY / (article.scrollHeight - window.innerHeight || 1);
-            if (ratio > 0.3) {
-                acquire();
-                window.removeEventListener("scroll", onScroll);
-            }
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "hidden") release();
-        });
+        bind(document);
+        onSoftNav(bind);
+        window.__engNav?.onBeforeSwap?.(() => dispose());
         api.log("trigger", "30% scroll");
     },
 });
@@ -2157,6 +2190,13 @@ register({
     isSupported: () =>
         HTMLScriptElement.supports?.("speculationrules") ?? false,
     init: (api) => {
+        // Journey pages own their one upcoming outlet. Do not launch another
+        // document (or duplicate its network work) behind that live surface.
+        if (document.querySelector("[data-eng-page]")) {
+            document.querySelectorAll('script[type="speculationrules"]').forEach((node) => node.remove());
+            api.log("rules", "journey loader");
+            return false;
+        }
         const sameOriginPath = (href) => {
             try {
                 const url = new URL(href, location.href);
@@ -2171,6 +2211,7 @@ register({
         // Returns a summary string, or false when there are no
         // candidates (nothing injected).
         const inject = () => {
+            if (document.querySelector("[data-eng-page]")) return false;
             const articleNavUrls = [
                 ...document.querySelectorAll(
                     'a[rel="next"], a[rel="prev"], .article-related-link',
@@ -2357,30 +2398,31 @@ register({
     isSupported: () => "fragmentDirective" in document,
     init: (api) => {
         // Add a "Share quote" button to every blockquote in articles.
-        document
-            .querySelectorAll(".article blockquote")
-            .forEach((quote) => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "share-quote";
-                button.textContent = "Share quote";
-                button.addEventListener("click", async () => {
-                    const text = quote.textContent.trim().slice(0, 300);
-                    const fragment = encodeURIComponent(text);
-                    const url = `${location.origin}${location.pathname}#:~:text=${fragment}`;
-                    try {
-                        if (navigator.share) {
-                            await navigator.share({ url, text });
-                        } else {
-                            await navigator.clipboard.writeText(url);
-                            button.textContent = "Copied";
-                            setTimeout(() => (button.textContent = "Share quote"), 1500);
-                        }
-                        api.discover();
-                    } catch {}
-                });
-                quote.appendChild(button);
+        bindPageNodes(".article blockquote", (quote) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "share-quote";
+            button.textContent = "Share quote";
+            button.addEventListener("click", async () => {
+                const text = Array.from(quote.childNodes)
+                    .filter((node) => node !== button)
+                    .map((node) => node.textContent)
+                    .join("").trim().slice(0, 300);
+                const fragment = encodeURIComponent(text);
+                const url = `${location.origin}${location.pathname}#:~:text=${fragment}`;
+                try {
+                    if (navigator.share) {
+                        await navigator.share({ url, text });
+                    } else {
+                        await navigator.clipboard.writeText(url);
+                        button.textContent = "Copied";
+                        setTimeout(() => (button.textContent = "Share quote"), 1500);
+                    }
+                    api.discover();
+                } catch {}
             });
+            quote.appendChild(button);
+        });
         api.log("blockquotes", document.querySelectorAll(".article blockquote").length);
     },
 });
@@ -2663,17 +2705,17 @@ register({
     group: "meta",
     isSupported: () => "share" in navigator,
     init: (api) => {
-        const button = document.querySelector("[data-share]");
-        if (!button) return false;
-        button.hidden = false;
-        button.addEventListener("click", async () => {
-            try {
-                await navigator.share({
-                    title: document.title,
-                    url: location.href,
-                });
-                api.discover();
-            } catch {}
+        bindPageNodes("[data-share]", (button) => {
+            button.hidden = false;
+            button.addEventListener("click", async () => {
+                try {
+                    await navigator.share({
+                        title: document.title,
+                        url: location.href,
+                    });
+                    api.discover();
+                } catch {}
+            });
         });
         api.log("target", document.title);
     },
@@ -2686,30 +2728,32 @@ register({
     group: "media",
     isSupported: () => "speechSynthesis" in window,
     init: (api) => {
-        const button = document.querySelector("[data-read-aloud]");
-        const article = document.querySelector(".article");
-        if (!button || !article) return false;
-        button.hidden = false;
-        let speaking = false;
-        let utterance = null;
-        const stop = () => {
-            speechSynthesis.cancel();
-            speaking = false;
-            button.dataset.state = "idle";
-            button.textContent = button.dataset.idleLabel;
-        };
-        button.dataset.idleLabel = button.textContent;
-        button.addEventListener("click", () => {
-            if (speaking) return stop();
-            const text = article.textContent.slice(0, 4000);
-            utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.05;
-            utterance.onend = stop;
-            speechSynthesis.speak(utterance);
-            speaking = true;
-            button.dataset.state = "playing";
-            button.textContent = "Stop";
-            api.discover();
+        bindPageNodes("[data-read-aloud]", (button) => {
+            const article = document.querySelector(".article");
+            if (!article) return;
+            button.hidden = false;
+            let speaking = false;
+            let utterance = null;
+            const stop = () => {
+                speechSynthesis.cancel();
+                speaking = false;
+                button.dataset.state = "idle";
+                button.textContent = button.dataset.idleLabel;
+            };
+            button.dataset.idleLabel = button.textContent;
+            button.addEventListener("click", () => {
+                if (speaking) return stop();
+                const text = article.textContent.slice(0, 4000);
+                utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.05;
+                utterance.onend = stop;
+                speechSynthesis.speak(utterance);
+                speaking = true;
+                button.dataset.state = "playing";
+                button.textContent = "Stop";
+                api.discover();
+            });
+            return stop;
         });
         api.log("voices", speechSynthesis.getVoices().length);
     },

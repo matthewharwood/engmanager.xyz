@@ -229,7 +229,7 @@ async function onUp(event) {
     } catch {
         ghost.remove();
         showOriginal(original);
-        if (type === "dvd") resumeDvdBouncer(origin);
+        if (type === "dvd") resumeDvdBouncer(origin, original);
     }
 }
 
@@ -252,7 +252,7 @@ async function cancelDrag() {
     } catch {
         session.ghost.remove();
         showOriginal(session.original);
-        if (session.type === "dvd") resumeDvdBouncer(session.origin);
+        if (session.type === "dvd") resumeDvdBouncer(session.origin, session.original);
     }
 }
 
@@ -441,7 +441,7 @@ async function flyBack(ghost, origin, original, type) {
     }).finished;
     ghost.remove();
     showOriginal(original);
-    if (type === "dvd") resumeDvdBouncer(origin);
+    if (type === "dvd") resumeDvdBouncer(origin, original);
 }
 
 // Bound once per real page load (singleton guard): re-running
@@ -561,8 +561,8 @@ function pauseDvdBouncer() {
     dvdState.node.removeAttribute("data-caught");
 }
 
-function resumeDvdBouncer(origin) {
-    if (!dvdState) return;
+function resumeDvdBouncer(origin, expectedNode) {
+    if (!dvdState || (expectedNode && dvdState.node !== expectedNode)) return;
     dvdState.x = origin.left;
     dvdState.y = origin.top;
     clampDvdBouncer();
@@ -591,8 +591,28 @@ initDvdBouncer();
 // swapped region — cancel the old node's rAF loop and re-init against
 // whatever the new page has. Drag delegation (pointerdown above) uses
 // live selectors and is untouched (JS_ROUTER_CONSTRAINTS §2.7).
+window.__engNav?.onBeforeSwap?.(() => {
+    if (drag) {
+        const session = drag;
+        drag = null;
+        removeDragListeners();
+        releasePointerCapture(session);
+        showOriginal(session.original);
+        session.ghost.remove();
+    }
+    document.querySelectorAll(".chip-ghost,.article-trash-ghost,.dvd-bouncer-ghost").forEach((ghost) => {
+        ghost.getAnimations().forEach((animation) => animation.cancel());
+        ghost.remove();
+    });
+    delete document.body.dataset.dragging;
+    document.documentElement.style.removeProperty("--trash-glow");
+    suppressNextArticleClick = false;
+    stopDvdBouncer();
+    dvdState = null;
+});
 window.__engNav?.onSwap?.(() => {
     stopDvdBouncer();
+    dvdState = null;
     initDvdBouncer();
 });
 

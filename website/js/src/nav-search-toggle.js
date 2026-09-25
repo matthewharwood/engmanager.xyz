@@ -15,6 +15,7 @@
     // Active instance: { nav, toggle, close, isOpen() } — null on pages
     // without a search toggle.
     let current = null;
+    const instances = new WeakMap();
 
     // --- Singleton document listeners ---
     document.addEventListener("keydown", (e) => {
@@ -40,7 +41,10 @@
             current = null;
             return;
         }
-        if (toggle.dataset.searchToggleBound) return;
+        if (instances.has(toggle)) {
+            current = instances.get(toggle);
+            return;
+        }
         toggle.dataset.searchToggleBound = "true";
         const nav = toggle.closest(".site-nav");
         if (!nav) {
@@ -65,6 +69,7 @@
             // anything else that's currently open.
             window.__engPopovers?.open("nav-search", () => close());
             requestAnimationFrame(() => {
+                if (!isOpen || current?.toggle !== toggle || !input.isConnected) return;
                 try {
                     input.focus({ preventScroll: true });
                 } catch {
@@ -94,8 +99,13 @@
             close,
             isOpen: () => isOpen,
         };
+        instances.set(toggle, current);
     }
 
     init(document);
+    window.__engNav?.onBeforeSwap?.(() => {
+        current?.close();
+        current = null;
+    });
     window.__engNav?.onSwap?.(init);
 })();

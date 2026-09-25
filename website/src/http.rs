@@ -60,7 +60,24 @@ const CACHE_TAG: HeaderName = HeaderName::from_static("cache-tag");
 // - Assessment HTML also gains no-transform to prevent edge script injection.
 pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response {
     let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
+    let stripe_return = req.uri().query().is_some_and(has_stripe_return_params);
     let mut response = next.run(req).await;
+    if stripe_return {
+        // Redirect-based payment methods return to the storefront as well as
+        // standalone checkout. A client secret must never become a cache key,
+        // even if the destination normally serves a public catalog or asset.
+        let headers = response.headers_mut();
+        headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        headers.insert(
+            CLOUDFLARE_CDN_CACHE_CONTROL,
+            HeaderValue::from_static("no-store"),
+        );
+        headers.insert(
+            HeaderName::from_static("cdn-cache-control"),
+            HeaderValue::from_static("no-store"),
+        );
+        headers.remove(CACHE_TAG);
+    }
     let is_html = response
         .headers()
         .get(header::CONTENT_TYPE)
@@ -145,6 +162,19 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
         }
     }
     response
+}
+
+fn has_stripe_return_params(query: &str) -> bool {
+    form_urlencoded::parse(query.as_bytes()).any(|(key, _)| {
+        matches!(
+            key.as_ref(),
+            "payment_intent"
+                | "payment_intent_client_secret"
+                | "setup_intent"
+                | "setup_intent_client_secret"
+                | "redirect_status"
+        )
+    })
 }
 
 // Derives the Cloudflare-CDN-Cache-Control value from a handler-set public

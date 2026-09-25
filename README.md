@@ -21,6 +21,10 @@ cargo run --release
 Visit <http://127.0.0.1:3000>. Routes:
 
 - `GET /` → homepage
+- `GET /feed` → homepage on every host
+- `GET /shop` → storefront on every host
+- `GET /coach` → coaching on every host, including `?group=1`
+- `GET /products/{slug}` → storefront product deep link on every host
 - `GET /articles/` → article index
 - `GET /articles/{slug}` → individual article
 - `GET /articles/big-personality` → The Big Six-Seven introduction, rendered in its private assessment shell
@@ -33,6 +37,16 @@ Visit <http://127.0.0.1:3000>. Routes:
   (see `_docs/coach-subdomain-runbook.md`)
 
 No database, no env vars required.
+
+The blog, store, and coaching share a progressive navigation shell. Near the
+end of an article the store is prepared underneath it; the store leads to
+coaching, and coaching leads back to the feed. Same-origin aliases keep that
+journey in one document. The existing shop/store and coach subdomain roots
+continue to serve their original entry points. A real change of hostname
+requires a document navigation, because browser history cannot change origin.
+The personality assessment and standalone checkout keep their own document
+boundaries. The implementation plan and verification record are in
+[`_docs/cyclic-navigation-plan.md`](_docs/cyclic-navigation-plan.md).
 
 The personality experience uses native browser modules, embedded by Rust with
 no separate Node build. The current report workflow lives under

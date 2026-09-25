@@ -186,38 +186,31 @@ pub fn render_sfx_urls() -> HtmlFragment {
         "dracula",
         "luxury",
     ];
-    let theme_entries = THEMES
-        .iter()
-        .map(|slug| {
-            format!(
-                "{slug}:\"{}\"",
-                crate::asset_url(&format!("themes/{slug}.mp3"))
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(",");
-    crate::components::script_island(
+    let payload = serde_json::json!({
+        "themes": THEMES.iter().map(|slug| (*slug, crate::asset_url(&format!("themes/{slug}.mp3")))).collect::<std::collections::BTreeMap<_, _>>(),
+        "trash": crate::asset_url("trash-drop.mp3"),
+        "keyclick": crate::asset_url("keyclick.mp3"),
+    }).to_string();
+    let mut island = crate::components::script_island("__engSfxUrls", &payload);
+    island.push_fragment(crate::components::page_config_island(
         "__engSfxUrls",
-        &format!(
-            "{{themes:{{{theme_entries}}},trash:\"{}\",keyclick:\"{}\"}}",
-            crate::asset_url("trash-drop.mp3"),
-            crate::asset_url("keyclick.mp3"),
-        ),
-    )
+        &payload,
+    ));
+    island
 }
 
 // Hashed URLs for the lazily-imported experience modules, exposed as
 // `window.__engUrls` for js/experiences.js. Must precede the experiences.js
 // script tag on every page that loads it (homepage + article surfaces).
 pub fn render_experience_urls() -> HtmlFragment {
-    crate::components::script_island(
-        "__engUrls",
-        &format!(
-            "{{paintHatch:\"{}\",cryptoWorker:\"{}\"}}",
-            crate::asset_url("js/paint-brutalist-hatch.js"),
-            crate::asset_url("js/worker-crypto.js"),
-        ),
-    )
+    let payload = serde_json::json!({
+        "paintHatch": crate::asset_url("js/paint-brutalist-hatch.js"),
+        "cryptoWorker": crate::asset_url("js/worker-crypto.js"),
+    })
+    .to_string();
+    let mut island = crate::components::script_island("__engUrls", &payload);
+    island.push_fragment(crate::components::page_config_island("__engUrls", &payload));
+    island
 }
 
 // The global search form moved to the co-located component

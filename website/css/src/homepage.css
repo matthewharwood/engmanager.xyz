@@ -18,7 +18,8 @@
     block-size: auto;
 }
 
-.homepage > :is(.skip-link, .fluid-display-wrap, .marquee-bar, .article-fluid-link) {
+.homepage > :is(.skip-link, .fluid-display-wrap, .marquee-bar, .article-fluid-link),
+.homepage > [data-eng-page] > :is(.fluid-display-wrap, .marquee-bar, .article-fluid-link) {
     position: relative;
     z-index: 1;
 }

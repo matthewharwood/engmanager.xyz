@@ -6,7 +6,69 @@
 // and `?role=<persona id>` deep-links a spectrum stop.
 
 (() => {
-    const COACH = window.__coach || {};
+let active = null;
+const readerSnapshots = new WeakMap();
+function unmount() {
+    active?.dispose();
+    active = null;
+}
+function mount() {
+    const surface = document.querySelector("[data-reader]");
+    if (!surface || !document.body.classList.contains("coach-page")) {
+        unmount();
+        return;
+    }
+    if (active?.surface === surface) return;
+    unmount();
+    const resumedReader = readerSnapshots.get(surface);
+    // Every mounted surface owns its effects. A retained previous-page snapshot
+    // stays inert until the router mounts it again.
+    const lifetime = new AbortController();
+    const timeouts = new Set();
+    const frames = new Set();
+    let disposed = false;
+    function listen(target, type, callback, options = {}) {
+        if (!target) return;
+        const settings = typeof options === "boolean" ? { capture: options } : options;
+        target.addEventListener(type, (event) => {
+            if (!disposed) callback(event);
+        }, { ...settings, signal: lifetime.signal });
+    }
+    function later(callback, delay, ...args) {
+        if (disposed) return 0;
+        const id = window.setTimeout(() => {
+            timeouts.delete(id);
+            if (!disposed) callback(...args);
+        }, delay);
+        timeouts.add(id);
+        return id;
+    }
+    function cancelLater(id) {
+        timeouts.delete(id);
+        window.clearTimeout(id);
+    }
+    function frame(callback) {
+        if (disposed) return 0;
+        const id = window.requestAnimationFrame((time) => {
+            frames.delete(id);
+            if (!disposed) callback(time);
+        });
+        frames.add(id);
+        return id;
+    }
+    function readConfig(name, fallback = {}) {
+        const island = document.querySelector(`script[type="application/json"][data-eng-config="${name}"]`);
+        if (island) {
+            try {
+                const value = JSON.parse(island.textContent || "{}");
+                window[name] = value;
+                return value;
+            } catch { return fallback; }
+        }
+        return window[name] || fallback;
+    }
+    const COACH = readConfig("__coach");
+    const coachHome = location.pathname === "/" ? "/" : "/coach";
     const PERSONAS = Array.isArray(COACH.personas) ? COACH.personas : [];
     const BOOK_STATES = new Set(["calendar", "icebreakers"]);
     const STORAGE = {
@@ -74,7 +136,7 @@
         index: 0,
         wpm: DEFAULT_WPM,
         mode: "speed",
-        wantsPlay: true,
+        wantsPlay: resumedReader?.wantsPlay ?? true,
         // Reasons playback is on hold regardless of intent: "booking",
         // "offscreen", "hidden".
         holds: new Set(),
@@ -153,11 +215,11 @@
     }
 
     function schedule(extraMs = 0) {
-        window.clearTimeout(reader.timer);
+        cancelLater(reader.timer);
         if (!isPlaying()) return;
         const token = reader.tokens[reader.index];
         if (!token) return;
-        reader.timer = window.setTimeout(advance, tokenMs(token, reader.wpm) + extraMs);
+        reader.timer = later(advance, tokenMs(token, reader.wpm) + extraMs);
     }
 
     function advance() {
@@ -165,7 +227,7 @@
             // End of the loop: an empty reticle for a beat, then start over.
             reader.index = 0;
             showBlank();
-            reader.timer = window.setTimeout(
+            reader.timer = later(
                 () => {
                     showToken(0);
                     schedule();
@@ -181,7 +243,7 @@
 
     // Reconcile the timer and the play/pause button with the current state.
     function syncPlayback(extraMs = 0) {
-        window.clearTimeout(reader.timer);
+        cancelLater(reader.timer);
         const playing = isPlaying();
         if (els.reader) els.reader.dataset.readerPlaying = String(playing);
         if (els.toggle) {
@@ -285,7 +347,9 @@
         });
         if (els.current) els.current.textContent = persona.label;
         if (els.recap) els.recap.textContent = recapText(persona);
-        if (els.reader?.dataset.readerPersona === persona.id) return;
+        // A resumed outlet retains its DOM marker, but this mount still needs
+        // to rebuild the speed reader's in-memory token stream.
+        if (els.reader?.dataset.readerPersona === persona.id && reader.tokens.length) return;
         if (els.reader) els.reader.dataset.readerPersona = persona.id;
 
         renderParagraphs(persona, { animate });
@@ -304,7 +368,7 @@
         return Math.max(0, personaIndex(COACH.defaultPersona));
     }
 
-    els.input?.addEventListener("input", () => {
+    listen(els.input, "input", () => {
         const index = Math.round(Number(els.input.value));
         if (!PERSONAS[index]) return;
         applyPersona(index, { animate: true });
@@ -433,6 +497,12 @@
 
     // Idempotent: reconcile the sheet DOM to a desired state (user actions via
     // setBooking, and popstate after the URL already changed).
+    function notifyOverlay() {
+        window.dispatchEvent(new CustomEvent("eng:overlaychange", {
+            detail: { open: bookingState() !== "closed", kind: "coach" },
+        }));
+    }
+
     function applyBooking(next) {
         if (!els.booking) return;
         const prev = bookingState();
@@ -446,6 +516,7 @@
             els.openers.forEach((el) => el.setAttribute("aria-expanded", "false"));
             document.body.classList.remove("shop-cart-open");
             hold("booking", false);
+            notifyOverlay();
             document.querySelector(".coach-book-chip")?.focus({ preventScroll: true });
             return;
         }
@@ -456,6 +527,7 @@
         els.openers.forEach((el) => el.setAttribute("aria-expanded", "true"));
         document.body.classList.add("shop-cart-open");
         hold("booking", true);
+        notifyOverlay();
         els.views.forEach((view) => {
             view.hidden = view.dataset.bookingView !== target;
         });
@@ -464,7 +536,7 @@
             loadFrame();
             if (els.stamp) els.stamp.dataset.show = "false";
         } else if (els.stamp && prev !== "icebreakers") {
-            requestAnimationFrame(() => {
+            frame(() => {
                 els.stamp.dataset.show = "true";
             });
         }
@@ -479,7 +551,7 @@
         }
     }
 
-    document.addEventListener("click", (event) => {
+    listen(document, "click", (event) => {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
@@ -537,7 +609,7 @@
         }
     });
 
-    document.addEventListener("keydown", (event) => {
+    listen(document, "keydown", (event) => {
         if (bookingState() === "closed") {
             // Space pauses and ← rewinds, but only when nothing else wants the key.
             if (reader.mode !== "speed" || reader.holds.has("offscreen")) return;
@@ -572,28 +644,37 @@
         }
     });
 
-    window.addEventListener("popstate", () => applyBooking(bookFromUrl()));
+    listen(window, "popstate", () => {
+        if (location.pathname === coachHome) applyBooking(bookFromUrl());
+    });
 
-    document.addEventListener("visibilitychange", () => hold("hidden", document.hidden));
+    listen(document, "visibilitychange", () => hold("hidden", document.hidden));
 
     // Don't flash words at someone who has scrolled down to read the posts.
+    let readerObserver = null;
     if (els.reader && "IntersectionObserver" in window) {
-        new IntersectionObserver(
+        readerObserver = new IntersectionObserver(
             ([entry]) => hold("offscreen", !entry || entry.intersectionRatio < 0.35),
             { threshold: [0, 0.35, 1] },
-        ).observe(els.reader);
+        );
+        readerObserver.observe(els.reader);
     }
 
     // --- boot ------------------------------------------------------------------
 
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const storedMode = readStored(STORAGE.mode);
+    const storedMode = resumedReader?.mode || readStored(STORAGE.mode);
 
-    applyPersona(initialPersonaIndex());
-    setWpm(readStored(STORAGE.wpm) ?? DEFAULT_WPM, { remember: false });
+    const resumedPersona = personaIndex(resumedReader?.persona);
+    applyPersona(resumedPersona >= 0 ? resumedPersona : initialPersonaIndex());
+    setWpm(resumedReader?.wpm ?? readStored(STORAGE.wpm) ?? DEFAULT_WPM, { remember: false });
     setMode(storedMode === "speed" || storedMode === "read" ? storedMode : reduceMotion ? "read" : "speed", {
         remember: false,
     });
+    if (resumedReader && resumedPersona >= 0) {
+        reader.index = Math.min(resumedReader.index, Math.max(0, reader.tokens.length - 1));
+        showToken(reader.index);
+    }
     // Let the first word land before the loop starts moving.
     syncPlayback(START_DELAY_MS);
     renderLocalWindow();
@@ -601,4 +682,33 @@
     if (initialBook) applyBooking(initialBook);
     if (els.reader) els.reader.dataset.readerReady = "true";
     document.documentElement.dataset.coachReady = "true";
+
+    active = { surface, dispose() {
+        if (disposed) return;
+        readerSnapshots.set(surface, {
+            persona: els.reader?.dataset.readerPersona,
+            index: reader.index,
+            wantsPlay: reader.wantsPlay,
+            wpm: reader.wpm,
+            mode: reader.mode,
+        });
+        disposed = true;
+        lifetime.abort();
+        readerObserver?.disconnect();
+        for (const id of timeouts) window.clearTimeout(id);
+        for (const id of frames) window.cancelAnimationFrame(id);
+        timeouts.clear(); frames.clear();
+        if (els.booking) {
+            els.booking.hidden = true;
+            els.booking.dataset.bookingState = "closed";
+            els.booking.setAttribute("aria-hidden", "true");
+        }
+        els.frame?.removeAttribute("src");
+        document.body.classList.remove("shop-cart-open");
+        delete document.documentElement.dataset.coachReady;
+    } };
+}
+mount();
+window.__engNav?.onBeforeSwap?.(unmount);
+window.__engNav?.onSwap?.(mount);
 })();

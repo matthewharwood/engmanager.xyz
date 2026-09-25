@@ -33,6 +33,7 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
     // Active instance: { dropdown, trigger, close, isOpen() } — null on
     // pages whose nav variant has no dropdown (Link variant / absent).
     let current = null;
+    const instances = new WeakMap();
 
     // --- Singleton document listeners (outside click / Esc) ---
     document.addEventListener("click", (e) => {
@@ -53,7 +54,10 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
             current = null;
             return;
         }
-        if (dropdown.dataset.navBound) return;
+        if (instances.has(dropdown)) {
+            current = instances.get(dropdown);
+            return;
+        }
         dropdown.dataset.navBound = "true";
 
         const trigger = dropdown.querySelector(".nav-dropdown-trigger");
@@ -86,7 +90,7 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
 
             const anime = await loadAnime();
             // The user may have closed before anime finished loading.
-            if (!isOpen) return;
+            if (!isOpen || current?.dropdown !== dropdown) return;
             // CDN failed: the .is-open CSS fallback already shows the panel.
             if (!anime) return;
 
@@ -133,7 +137,7 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
 
             const anime = await loadAnime();
             // CDN failed: removing .is-open above already hid the panel.
-            if (!anime) return;
+            if (!anime || isOpen || current?.dropdown !== dropdown) return;
 
             activeAnimation?.pause();
             // Reversed-stagger fade-out: the items closest to the trigger
@@ -207,9 +211,26 @@ const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
             trigger,
             close,
             isOpen: () => isOpen,
+            suspend() {
+                clearTimeout(hoverTimer);
+                activeAnimation?.pause();
+                activeAnimation = null;
+                setOpenState(false);
+                window.__engPopovers?.close("nav-dropdown");
+                for (const node of [panel, ...items]) {
+                    node.style.removeProperty("opacity");
+                    node.style.removeProperty("transform");
+                    node.style.removeProperty("transform-origin");
+                }
+            },
         };
+        instances.set(dropdown, current);
     }
 
     init(document);
+    window.__engNav?.onBeforeSwap?.(() => {
+        current?.suspend();
+        current = null;
+    });
     window.__engNav?.onSwap?.(init);
 })();

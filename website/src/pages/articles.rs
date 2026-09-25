@@ -193,6 +193,9 @@ fn layout(
         assets.add_css("css/liquid-title.css");
         assets.add_js("js/liquid-title.js");
         assets.add_js("js/article-section-reveal.js");
+        assets.add_inline(view! {
+            <script type="module" src={ asset_url("js/article-diagrams.js") }></script>
+        });
     }
     // Per-slug extras composed by the caller (the region-map head block on
     // project-foottraffic); empty for the index and every other slug.
@@ -255,6 +258,10 @@ fn layout(
         // articles included: router eligibility is by path shape, while
         // `speculation` stays an indexability concern.
         .nav_router(true)
+        .journey(
+            if detail { "article" } else { "articles" },
+            detail.then_some("/shop"),
+        )
         .render(page_body)
 }
 

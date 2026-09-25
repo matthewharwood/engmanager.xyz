@@ -200,8 +200,9 @@ function initRegionMap(root) {
     });
 
     let loaded = false;
+    let disposed = false;
     const markLoaded = () => {
-        if (loaded) {
+        if (loaded || disposed) {
             return;
         }
         loaded = true;
@@ -213,7 +214,7 @@ function initRegionMap(root) {
     tileLayer.on("tileload", markLoaded);
     tileLayer.on("load", markLoaded);
     tileLayer.on("tileerror", () => {
-        if (!loaded) {
+        if (!loaded && !disposed) {
             setStatus(root, "Map tiles failed to load");
         }
     });
@@ -259,12 +260,15 @@ function initRegionMap(root) {
     map.on("click", () => map.scrollWheelZoom.enable());
     map.on("mouseout", () => map.scrollWheelZoom.disable());
 
+    let observer = null;
     if ("ResizeObserver" in window) {
-        const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+        observer = new ResizeObserver(() => {
+            if (!disposed) map.invalidateSize({ pan: false });
+        });
         observer.observe(root);
     }
 
-    setTimeout(() => {
+    const loadingTimer = setTimeout(() => {
         if (!loaded) {
             setStatus(root, "Map tiles are still loading");
         }
@@ -278,6 +282,15 @@ function initRegionMap(root) {
         radiusLayer,
         root,
         tileLayer,
+        dispose() {
+            if (disposed) return;
+            disposed = true;
+            observer?.disconnect();
+            clearTimeout(loadingTimer);
+            map.remove();
+            delete root.regionMap;
+            root.classList.remove("is-loaded");
+        },
     };
 
     // Expose the layer groups for later heat-map or blast-radius controls.
@@ -316,14 +329,13 @@ onReady(() => {
 // Soft navigation (JS_ROUTER_CONSTRAINTS §2.14): drop instances whose
 // roots left with the old page (tearing down their Leaflet maps so the
 // theme refresher stops touching detached nodes), then adopt any
-// swapped-in maps. The router's head-diff injects leaflet.js BEFORE
-// this bundle in document order, so window.L is ready by the time a
-// rescan needs it.
+// swapped-in maps. A pending optional Leaflet download retries below when
+// it becomes available; a slow CDN never blocks the rest of the article.
 window.__engNav?.onSwap?.((root) => {
     instances.forEach((instance) => {
         if (!instance.root.isConnected) {
             try {
-                instance.map.remove();
+                instance.dispose();
             } catch (_error) {
                 // Already torn down — pruning the Set is what matters.
             }
@@ -331,6 +343,17 @@ window.__engNav?.onSwap?.((root) => {
         }
     });
     scanRegionMaps(root);
+});
+
+window.__engNav?.onBeforeSwap?.(() => {
+    instances.forEach((instance) => {
+        try { instance.dispose(); } catch {}
+    });
+    instances.clear();
+});
+
+window.addEventListener("eng:optionalasset", () => {
+    if (window.L && !document.prerendering) scanRegionMaps(document);
 });
 
 window.addEventListener(THEME_EVENT, scheduleMapThemeRefresh);

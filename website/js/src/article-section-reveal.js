@@ -10,6 +10,7 @@ const SELECTOR = ".article-reveal-section[data-article-reveal]";
 const MAX_CHILD_TARGETS = 8;
 const ANIME_TIMEOUT_MS = 700;
 const CLEANUP_DELAY_MS = 1200;
+let disposeReveal = null;
 
 const startArticleSectionReveal = () => {
     if (location.hash) return;
@@ -39,6 +40,17 @@ const startArticleSectionReveal = () => {
     let remaining = sections.length;
     let observer = null;
     let animePromise = null;
+    let disposed = false;
+    const timers = new Set();
+    const animations = new Set();
+    const later = (callback, delay) => {
+        const id = setTimeout(() => {
+            timers.delete(id);
+            if (!disposed) callback();
+        }, delay);
+        timers.add(id);
+        return id;
+    };
     const loadAnime = () => (animePromise ||= import(ANIME_URL));
 
     const revealWithoutMotion = (section) => {
@@ -56,7 +68,7 @@ const startArticleSectionReveal = () => {
             child.style.transform = "";
             child.style.willChange = "";
         });
-        if (remaining <= 0) {
+        if (!disposed && remaining <= 0) {
             root.dataset.articleReveal = "done";
         }
     };
@@ -67,7 +79,7 @@ const startArticleSectionReveal = () => {
     };
 
     const play = async (section) => {
-        if (revealed.has(section)) return;
+        if (disposed || revealed.has(section)) return;
         revealed.add(section);
         observer?.unobserve(section);
         section.dataset.articleRevealState = "active";
@@ -77,12 +89,13 @@ const startArticleSectionReveal = () => {
             anime = await Promise.race([
                 loadAnime(),
                 new Promise((resolve) =>
-                    setTimeout(() => resolve(null), ANIME_TIMEOUT_MS),
+                    later(() => resolve(null), ANIME_TIMEOUT_MS),
                 ),
             ]);
         } catch {
             anime = null;
         }
+        if (disposed) return;
 
         if (!anime || location.hash) {
             revealWithoutMotion(section);
@@ -90,9 +103,13 @@ const startArticleSectionReveal = () => {
         }
 
         const variant = variants[section.dataset.revealVariant] || variants.rise;
-        variant(anime, section, childTargets(section));
+        const animation = variant(anime, section, childTargets(section));
+        animations.add(animation);
 
-        setTimeout(() => revealWithoutMotion(section), CLEANUP_DELAY_MS);
+        later(() => {
+            animations.delete(animation);
+            revealWithoutMotion(section);
+        }, CLEANUP_DELAY_MS);
     };
 
     sections.forEach((section) => {
@@ -131,6 +148,17 @@ const startArticleSectionReveal = () => {
     }
 
     window.addEventListener("hashchange", revealAllWithoutMotion, { once: true });
+    disposeReveal = () => {
+        disposed = true;
+        observer?.disconnect();
+        timers.forEach(clearTimeout);
+        timers.clear();
+        animations.forEach((animation) => animation?.pause());
+        animations.clear();
+        window.removeEventListener("hashchange", revealAllWithoutMotion);
+        sections.forEach(revealWithoutMotion);
+        delete root.dataset.articleReveal;
+    };
 };
 
 const childTargets = (section) =>
@@ -145,7 +173,7 @@ const spring = (anime, stiffness, damping) =>
 
 const variants = {
     rise(anime, section, children) {
-        anime
+        return anime
             .createTimeline()
             .add(section, {
                 opacity: [0, 1],
@@ -167,7 +195,7 @@ const variants = {
     },
 
     drift(anime, section, children) {
-        anime
+        return anime
             .createTimeline()
             .add(section, {
                 opacity: [0, 1],
@@ -190,7 +218,7 @@ const variants = {
     },
 
     hinge(anime, section, children) {
-        anime
+        return anime
             .createTimeline()
             .add(section, {
                 opacity: [0, 1],
@@ -213,7 +241,7 @@ const variants = {
     },
 
     focus(anime, section, children) {
-        anime
+        return anime
             .createTimeline()
             .add(section, {
                 opacity: [0, 1],
@@ -237,7 +265,7 @@ const variants = {
     },
 
     thread(anime, section, children) {
-        anime
+        return anime
             .createTimeline()
             .add(section, {
                 opacity: [0, 1],
@@ -261,3 +289,7 @@ const variants = {
 };
 
 startArticleSectionReveal();
+window.__engNav?.onBeforeSwap?.(() => {
+    disposeReveal?.();
+    disposeReveal = null;
+});

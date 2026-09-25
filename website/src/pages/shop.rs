@@ -9,7 +9,7 @@ use super::shell::PageShell;
 use crate::AppState;
 use crate::catalog::{CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_url};
 use crate::components::quick_actions::theme_picker;
-use crate::components::{Head, script_islands};
+use crate::components::{Head, page_config_islands};
 
 const SHOP_ORIGIN: &str = "https://shop.engmanager.xyz";
 const STORE_ORIGIN: &str = "https://store.engmanager.xyz";
@@ -60,7 +60,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
     let products = render_product_grid();
     // One island for the catalog + the Stripe publishable key, so the inline
     // checkout (in the bag drawer) can mount Elements without a page load.
-    let data = script_islands(&[
+    let data = page_config_islands(&[
         ("__shopProducts", &product_data_json()),
         (
             "__checkout",
@@ -68,7 +68,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
                 "publishableKey": checkout.publishable_key(),
                 "enabled": checkout.is_enabled(),
                 "currency": "usd",
-                "returnPath": "/",
+                "returnPath": "/shop",
             })
             .to_string(),
         ),
@@ -108,7 +108,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
     let body = view! {
         <header class="shop-topbar" aria-label="Store controls">
             <a class="shop-home-link"
-               href="https://engmanager.xyz/"
+               href="/feed"
                aria-label="Back to ENGMANAGER.XYZ">
                 { chevron() }
             </a>
@@ -139,6 +139,7 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
         .raw_meta(preview_meta)
         .assets(assets)
         .scripts(scripts)
+        .journey("shop", Some("/coach"))
         .skip_link(Some("Skip to caps"))
         .render(body)
 }
@@ -459,7 +460,7 @@ mod tests {
         assert!(html.contains("/assets/css/shop."));
         assert!(!html.contains("animejs@4"));
         assert!(html.contains("/assets/js/shop."));
-        assert!(html.contains("window.__shopProducts="));
+        assert!(html.contains(r#"data-eng-config="__shopProducts""#));
         assert!(html.contains("data-shop-grid"));
         assert!(html.contains(".webp"));
         assert!(!html.contains("<style>"));
