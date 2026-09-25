@@ -4,6 +4,32 @@
 
 The product is a local-first self-reflection experience for people in tech. Its battery contains 170 established items: IPIP-NEO-120, the complete 30-item O*NET Mini Interest Profiler, and the 20-item Twenty-Item Values Inventory (TwIVI). “Six-Seven” is the product name. Interests and values are complementary profiles; the app does not assert a validated seven-factor personality model, zero correlation between constructs, an ideal engineer, a clinical diagnosis, or a hiring recommendation.
 
+## Current presentation: v7
+
+The active shell and `/personality/sw.js` now select the v7 presentation. Every
+published v1–v6 and optional AI file remains at its original immutable URL.
+V7 imports the frozen v1 scientific modules and exact-link decoder; links with
+`s`, `r`, or `e` in the query or fragment still open that decoder. The new offline
+manifest retains every prior presentation and reuses v6 portrait and tarot
+images. Installation remains an explicit library action, with an atomic
+`personality-v7-<release digest>` cache and `/personality/.offline-ready-v7`
+marker. Existing offline caches are retained.
+
+Optional story records use the existing IndexedDB notes store under
+`story-atlas-v2:<draft ID>` with their own compare-and-swap revision. On first
+open, a v6 `story-atlas:<draft ID>` note is copied into the new schema without
+changing the original. Background answers, birthday, saved draw, and unchanged
+preference answers carry forward. The reworded `type-candidate-ei-12-v2` needs a
+new answer; its old response remains only in the preserved v6 note. The v7
+background schema permits self-descriptions up to 255 characters. All 170
+scientific responses retain their existing identities and format. Deleting a
+draft removes both generations of its owned notes.
+
+`scripts/personality-release.mjs` verifies the published byte inventory before
+generating only the v7 manifest. V7 remains an unpublished development release
+until its final bytes are explicitly recorded in the published inventory.
+The implementation record below documents the base scientific workflow.
+
 ## Routes and document boundary
 
 The Rust/Axum application serves the public introduction and a dedicated assessment shell. Browser modules handle answers, scores, reports, exports, and local persistence. There is no respondent API, account service, or answer database on the server.

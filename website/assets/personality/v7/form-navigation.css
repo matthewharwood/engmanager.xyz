@@ -1,0 +1,41 @@
+.personality-sheet:has([data-page-progress]) { overflow: visible; }
+.form-progress {
+  position: sticky;
+  top: 67px;
+  z-index: 10;
+  max-width: 900px;
+  margin: 1.5rem auto;
+  padding: .85rem 1rem;
+  border: 1px solid #d4dfe3;
+  border-radius: 12px;
+  background: #fffefa;
+  box-shadow: 0 4px 16px #142d3208;
+}
+.form-progress > div { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; }
+.form-progress strong { font-size: .9rem; font-variant-numeric: tabular-nums; color: #245a81; }
+.form-progress span { font-size: .78rem; color: #52616b; }
+.form-progress progress { display: block; inline-size: 100%; block-size: 4px; appearance: none; border: 0; border-radius: 10px; background: #e8eef0; margin-block-start: .65rem; }
+.form-progress progress::-webkit-progress-bar { background: #e8eef0; border-radius: 10px; }
+.form-progress progress::-webkit-progress-value { background: #245a81; border-radius: 10px; }
+.form-progress progress::-moz-progress-bar { background: #245a81; border-radius: 10px; }
+.form-navigation { position: fixed; z-index: 25; inset-inline-end: max(1rem,env(safe-area-inset-right)); bottom: max(1rem,env(safe-area-inset-bottom),var(--form-toolbar-offset,0px)); display: flex; gap: .5rem; padding: .3rem; }
+.form-navigation button { position: relative; display: grid; place-items: center; inline-size: 46px; block-size: 46px; border: 1px solid #c4d3db; border-radius: 50%; background: #fffefa; color: #245a81; box-shadow: 0 4px 18px #142d3220; font-size: 1.35rem; }
+.form-navigation [data-form-next] { background: #245a81; color: #fff; border-color: #245a81; }
+.form-navigation button:hover { box-shadow: 0 5px 22px #142d3235; }
+.form-navigation button:focus-visible { outline: 3px solid #006787; outline-offset: 3px; }
+.form-navigation-label { position: absolute; inset-inline-end: 0; bottom: calc(100% + .6rem); width: max-content; max-width: 15rem; padding: .35rem .65rem; border-radius: 6px; background: #203d4e; color: #fff; font: .8rem/1.5 var(--font-sans); pointer-events: none; visibility: hidden; }
+.form-navigation button:is(:hover,:focus-visible) .form-navigation-label { visibility: visible; }
+#personality-app [data-question-id] { scroll-margin-top: 5rem; }
+#personality-app [data-question-id]:focus { outline: none; }
+#personality-app [data-question-id]:focus-visible { outline: 2px solid #367fab; outline-offset: 5px; border-radius: 6px; }
+#personality-app:has(.form-navigation) { padding-bottom: 6rem; }
+#personality-app :is(.preface-name,.report-kit) :is(input[type=text],textarea) { width: 100%; min-width: 0; max-width: 100%; font: 1rem/1.5 var(--font-sans); }
+#personality-app :is(.preface-name,.report-kit) :is(input[type=text],textarea)::placeholder { font: inherit; color: #64717a; opacity: 1; }
+#personality-app .report-kit textarea[placeholder] { min-height: 10rem; }
+.preface-name .field { max-width: 32rem; }
+@media(max-width:570px) {
+  .form-progress { top: 61px; padding: .65rem .8rem; }
+  .form-progress > div { display: grid; gap: .15rem; }
+  .form-progress span { font-size: .75rem; }
+}
+@media print { .form-progress,.form-navigation { display: none !important; } }

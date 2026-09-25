@@ -50,7 +50,7 @@ boundaries. The implementation plan and verification record are in
 
 The personality experience uses native browser modules, embedded by Rust with
 no separate Node build. The current report workflow lives under
-`website/assets/personality/v4/`; it reuses the frozen scientific and sharing
+`website/assets/personality/v7/`; it reuses the frozen scientific and sharing
 modules under `website/assets/personality/v1/`.
 Its route map, architecture, privacy boundaries, release rules, and verification
 record are in [`_docs/big-personality/production-implementation.md`](_docs/big-personality/production-implementation.md).
@@ -59,8 +59,8 @@ in [`_docs/big-personality/report-kit-workflow.md`](_docs/big-personality/report
 Run `npm ci --prefix scripts --ignore-scripts` followed by `npm test --prefix scripts`
 for the scoring, IndexedDB, sharing, report-kit, PDF, and offline checks. Before
 publishing this new presentation, run `node scripts/personality-release.mjs`
-and rerun tests. The generator verifies all published v1, v2, v3, and optional AI bytes
-against their frozen inventory and writes only the v4 presentation manifest.
+and rerun tests. The generator verifies all published v1–v6 and optional AI bytes
+against their frozen inventory and writes only the v7 presentation manifest.
 These are exact, versioned asset paths: an unknown filename or invented hash
 returns 404. Publish changed assessment releases under a new version directory
 rather than replacing an immutable release. The Rust shell contains no global
@@ -69,6 +69,14 @@ enforces a same-origin CSP and `Referrer-Policy: no-referrer`. Questionnaire HTM
 is `no-store`; answers and reports are stored only in browser IndexedDB. The
 root blog service worker bypasses the assessment and preserves its separately
 scoped worker and cache namespace. Share parameters never enter the blog cache.
+
+The v7 story editor reads existing optional details into a separate
+`story-atlas-v2` note owned by the same assessment. Background answers, birthday,
+and the saved tarot draw carry forward. The revised preference question has a
+new item ID and needs a fresh answer; its former response and the complete v6
+note remain unchanged. The 170 scientific responses, exact shared links, and
+ordinary backup format keep their frozen v1 identities. V7 reuses the immutable
+v6 portrait and tarot files instead of duplicating them.
 
 ### Live reload (recommended for development)
 

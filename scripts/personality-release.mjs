@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Every shipped personality release is locked, including the current v6.
-// A future edit must create v7 rather than reuse a cacheable v6 URL.
+// Every shipped personality release is locked through v6. The unpublished v7
+// presentation gets its own URLs and retains every previous release unchanged.
 import {readFile, writeFile, readdir} from 'node:fs/promises';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {releaseSource} from '../website/assets/personality/v6/release-format.mjs';
+import {releaseSource} from '../website/assets/personality/v7/release-format.mjs';
 
 const assetsRoot = fileURLToPath(new URL('../website/assets/personality/', import.meta.url));
 const lockURL = new URL('./personality-published-releases.json', import.meta.url);
@@ -37,35 +37,27 @@ export async function verifyPublishedReleases() {
 export async function generatePresentationRelease({allowIncomplete = false} = {}) {
   await verifyPublishedReleases();
   const {RELEASE: base} = await import('../website/assets/personality/v1/release.mjs');
-  const {RELEASE: previous} = await import('../website/assets/personality/v5/release.mjs');
-  const {RELEASE: prior} = await import('../website/assets/personality/v4/release.mjs');
-  const {RELEASE: earlier} = await import('../website/assets/personality/v3/release.mjs');
-  const {RELEASE: oldest} = await import('../website/assets/personality/v2/release.mjs');
-  const root = path.join(assetsRoot, 'v6');
+  const {RELEASE: previous} = await import('../website/assets/personality/v6/release.mjs');
+  const root = path.join(assetsRoot, 'v7');
   const current = await inventory(root);
   delete current['release.mjs'];
-  const required = ['app.mjs', 'bootstrap.mjs', 'style.css', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'offline.mjs', 'sw.js', 'release-format.mjs'];
+  const required = ['app.mjs', 'bootstrap.mjs', 'style.css', 'form-navigation.mjs', 'form-navigation.css', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'offline.mjs', 'sw.js', 'release-format.mjs'];
   const missing = required.filter(file => !Object.hasOwn(current, file));
   if (missing.length && !allowIncomplete) throw new Error(`Presentation release incomplete: ${missing.join(', ')}`);
   const baseManifest = await readFile(path.join(assetsRoot, 'v1/release.mjs'));
-  const previousManifest = await readFile(path.join(assetsRoot, 'v5/release.mjs'));
-  const priorManifest = await readFile(path.join(assetsRoot, 'v4/release.mjs'));
-  const earlierManifest = await readFile(path.join(assetsRoot, 'v3/release.mjs'));
-  const oldestManifest = await readFile(path.join(assetsRoot, 'v2/release.mjs'));
+  const previousManifest = await readFile(path.join(assetsRoot, 'v6/release.mjs'));
   const assets = Object.fromEntries([
     ...Object.entries(previous.assets),
-    ['/assets/personality/v5/release.mjs', digest(previousManifest)],
-    ...Object.entries(current).map(([name, hash]) => [`/assets/personality/v6/${name}`, hash]),
+    ['/assets/personality/v6/release.mjs', digest(previousManifest)],
+    ...Object.entries(current).map(([name, hash]) => [`/assets/personality/v7/${name}`, hash]),
   ].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
   const release = {
-    v: 6,
-    presentation: 'unified-atlas-v6',
+    v: 7,
+    presentation: 'unified-atlas-v7',
     legacy: {root: '/assets/personality/v1/', manifestSha256: digest(baseManifest), releaseDigest: digest(JSON.stringify(base))},
     previousReleases: [
-      {v: 5, root: '/assets/personality/v5/', manifestSha256: digest(previousManifest), releaseDigest: digest(JSON.stringify(previous))},
-      {v: 4, root: '/assets/personality/v4/', manifestSha256: digest(priorManifest), releaseDigest: digest(JSON.stringify(prior))},
-      {v: 3, root: '/assets/personality/v3/', manifestSha256: digest(earlierManifest), releaseDigest: digest(JSON.stringify(earlier))},
-      {v: 2, root: '/assets/personality/v2/', manifestSha256: digest(oldestManifest), releaseDigest: digest(JSON.stringify(oldest))},
+      {v: 6, root: '/assets/personality/v6/', manifestSha256: digest(previousManifest), releaseDigest: digest(JSON.stringify(previous))},
+      ...previous.previousReleases,
     ],
     // State, scoring, exact links and IDB records retain the live v1 identities.
     releases: base.releases,
@@ -84,6 +76,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log('Published v1, ai/v1, v2, v3, v4, v5, and v6 bytes verified unchanged.');
   } else {
     const release = await generatePresentationRelease({allowIncomplete: args.includes('--allow-incomplete')});
-    console.log(`Personality v6 presentation: ${Object.keys(release.assets).length} public assets; ${release.ready ? 'complete' : 'incomplete development manifest'}. Published releases unchanged.`);
+    console.log(`Personality v7 presentation: ${Object.keys(release.assets).length} public assets; ${release.ready ? 'complete' : 'incomplete development manifest'}. Published releases unchanged.`);
   }
 }

@@ -1,5 +1,9 @@
 # One-person workplace report kit
 
+This document records the v4 workplace-kit design. The active v7 atlas
+presentation and its compatible storage/release migration are documented in
+[production implementation](production-implementation.md#current-presentation-v7).
+
 The report now leads with a portable writing workflow: download one Markdown file, attach it to a fresh conversation in an LLM chosen by the reader, and ask it to follow the enclosed brief. Attaching the complete file is recommended because a long paste may be clipped. A copy alternative remains available. The app does not upload a packet or initiate an external model request.
 
 The `workplace-pdf-v1` brief requests a concise third-person workplace report for a manager or team lead, an editable first-person passage, and one actual downloadable PDF. Its voice resembles an occupational psychologist explaining how someone may work within a company: motivation, ownership, structure, follow-through, collaboration, feedback, stress, support, and possible friction, when the evidence supports them. It does not impersonate a psychologist. A visible first-page authorship line identifies an AI-written workplace reflection based on self-report, not a psychologist's assessment.
