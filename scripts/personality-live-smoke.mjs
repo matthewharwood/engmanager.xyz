@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 
-const BASE = '/assets/personality/v6/';
+const BASE = '/assets/personality/v7/';
 const LEGACY_BASE = '/assets/personality/v1/';
 const PUBLIC_ORIGIN = 'https://engmanager.xyz';
 const STEPS = ['prepare', 'test', 'review', 'report', 'share', 'library'];
@@ -57,7 +57,7 @@ export function parseRegistry(source) {
 
 export function parsePresentationRegistry(source) {
   const data = registryData(source);
-  const presentations = {2: 'prompt-evidence-v2', 3: 'portrait-pdf-v3', 4: 'workplace-report-v4', 5: 'unified-atlas-v5', 6: 'unified-atlas-v6'};
+  const presentations = {2: 'prompt-evidence-v2', 3: 'portrait-pdf-v3', 4: 'workplace-report-v4', 5: 'unified-atlas-v5', 6: 'unified-atlas-v6', 7: 'unified-atlas-v7'};
   requireThat(Number.isInteger(data.v) && Object.hasOwn(presentations, data.v) && data.presentation === presentations[data.v] && data.ready === true, 'Unsupported or incomplete presentation release.');
   exactKeys(data, ['v', 'presentation', 'legacy', ...(data.v >= 4 ? ['previousReleases'] : data.v === 3 ? ['previous'] : []), 'releases', 'ready', 'assets'], 'presentation registry');
   const currentBase = `/assets/personality/v${data.v}/`;
@@ -77,11 +77,12 @@ export function parsePresentationRegistry(source) {
   const entries = Object.entries(data.assets);
   requireThat(entries.length >= REQUIRED.length && entries.length <= 500, 'Unexpected presentation asset count.');
   for (const [name, hash] of entries) {
-    requireThat(name.length <= 220 && /^\/assets\/personality\/v[123456]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
-      !name.split('/').some(part => part === '.' || part === '..') && Number(name.match(/\/v([1-6])\//)?.[1]) <= data.v &&
+    requireThat(name.length <= 220 && /^\/assets\/personality\/v[1234567]\/[A-Za-z0-9][A-Za-z0-9._-]*(?:\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(name) &&
+      !name.split('/').some(part => part === '.' || part === '..') && Number(name.match(/\/v([1-7])\//)?.[1]) <= data.v &&
       typeof hash === 'string' && HASH.test(hash), 'Unsafe presentation asset path or invalid digest.');
   }
   requireThat(['app.mjs', 'bootstrap.mjs', 'report.mjs', 'report-kit.mjs', 'report-kit-ui.mjs', 'report-kit-store.mjs', 'style.css', 'offline.mjs', 'sw.js', 'release-format.mjs'].every(name => Object.hasOwn(data.assets, currentBase + name)), 'Missing current presentation assets.');
+  if (data.v >= 7) requireThat(['form-navigation.mjs', 'form-navigation.css'].every(name => Object.hasOwn(data.assets, currentBase + name)), 'Missing questionnaire navigation assets.');
   requireThat(REQUIRED.every(name => Object.hasOwn(data.assets, LEGACY_BASE + name)), 'Missing legacy public assets.');
   return data;
 }
@@ -204,9 +205,9 @@ export async function smoke({origin, expectLocal = false}) {
     privacy(response);
     requireThat(/javascript/.test(response.headers.get('content-type') || ''), 'Registry MIME type is not JavaScript.');
     release = parsePresentationRegistry(bytes.toString('utf8'));
-    requireThat(release.v === 6, 'Current presentation must be v6.');
+    requireThat(release.v === 7, 'Current presentation must be v7.');
     if (expectLocal) {
-      const local = await readFile(new URL('../website/assets/personality/v6/release.mjs', import.meta.url));
+      const local = await readFile(new URL('../website/assets/personality/v7/release.mjs', import.meta.url));
       requireThat(bytes.equals(local), `Deployed registry differs from local bytes (remote ${digest(bytes)}, local ${digest(local)}).`);
     }
     return `${Object.keys(release.assets).length} assets · sha256 ${digest(bytes)}${expectLocal ? ' · exact local match' : ''}`;

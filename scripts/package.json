@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test personality-core.test.mjs personality-report.test.mjs personality-offline.test.mjs personality-enhancement.test.mjs personality-ai-runtime.test.mjs personality-report-kit.test.mjs personality-report-kit-store.test.mjs personality-v2-offline.test.mjs personality-v2-release.test.mjs personality-v3-release.test.mjs personality-v3-offline.test.mjs personality-portrait-kit.test.mjs personality-v4-release.test.mjs personality-v4-offline.test.mjs personality-v6-atlas.test.mjs"
+    "test": "node --test personality-core.test.mjs personality-report.test.mjs personality-offline.test.mjs personality-enhancement.test.mjs personality-ai-runtime.test.mjs personality-report-kit.test.mjs personality-report-kit-store.test.mjs personality-v2-offline.test.mjs personality-v2-release.test.mjs personality-v3-release.test.mjs personality-v3-offline.test.mjs personality-portrait-kit.test.mjs personality-v4-release.test.mjs personality-v4-offline.test.mjs personality-v6-atlas.test.mjs personality-v7-prepare.test.mjs"
   },
   "devDependencies": {
     "fake-indexeddb": "6.2.4"

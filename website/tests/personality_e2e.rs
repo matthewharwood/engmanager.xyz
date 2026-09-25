@@ -21,14 +21,31 @@ use common::TestServer;
 
 const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Personality browser checks</title></head><body>
 <pre id="result">RUNNING</pre><iframe id="app" title="Assessment under test" style="width:1200px;height:1000px"></iframe>
+<script>
+// This separate script also catches syntax errors before the module can run.
+function fixtureError(message){document.querySelector('#result').textContent='FAIL\n'+message;document.body.dataset.testResult='failed';}
+addEventListener('error',event=>fixtureError(`${event.message}\n${event.filename}:${event.lineno}:${event.colno}`));
+addEventListener('unhandledrejection',event=>fixtureError(event.reason?.stack||String(event.reason)));
+</script>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
 const doc=()=>frame.contentDocument;
 const assert=(value,message)=>{if(!value)throw new Error(message);checks.push(message);};
-async function until(predicate,label){for(let i=0;i<400;i++){try{if(predicate())return;}catch{}await new Promise(r=>setTimeout(r,50));}throw new Error('Timed out: '+label);}
-async function load(path){const loaded=new Promise(resolve=>frame.addEventListener('load',resolve,{once:true}));frame.src=path;await loaded;}
+const phase=label=>{window.__personalityPhase={label,started:performance.now()};};
+window.__personalityDiagnostic=()=>JSON.stringify({phase:window.__personalityPhase?.label,phaseElapsedMs:Math.round(performance.now()-(window.__personalityPhase?.started??0)),path:frame.contentWindow.location.pathname,readyState:doc()?.readyState,focused:doc()?.activeElement?.id,save:doc()?.querySelector('#save-status')?.textContent,story:doc()?.querySelector('.atlas-status')?.textContent,checks:checks.length,recent:checks.slice(-6)},null,2);
+async function until(predicate,label){phase(label);for(let i=0;i<400;i++){try{if(predicate())return;}catch{}await new Promise(r=>setTimeout(r,50));}throw new Error('Timed out: '+label+'\n'+window.__personalityDiagnostic());}
+async function load(path){phase('load '+new URL(path,location.href).pathname);let timer;try{await new Promise((resolve,reject)=>{frame.addEventListener('load',resolve,{once:true});timer=setTimeout(()=>reject(new Error('Frame load did not settle\n'+window.__personalityDiagnostic())),15000);frame.src=path;});}finally{clearTimeout(timer);}}
 async function go(path,predicate,label){await load('about:blank');await load(path);await until(()=>doc()?.readyState==='complete'&&predicate(),label);}
 function click(text){const target=[...doc().querySelectorAll('button,a')].find(n=>n.textContent.trim()===text);if(!target)throw new Error('Missing action: '+text);target.click();}
+const inputEvent=control=>control.dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+const changeEvent=control=>control.dispatchEvent(new frame.contentWindow.Event('change',{bubbles:true}));
+const paint=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Animation frames did not settle\n'+window.__personalityDiagnostic())),3000);frame.contentWindow.requestAnimationFrame(()=>frame.contentWindow.requestAnimationFrame(()=>{clearTimeout(timer);resolve();}));});
+function geometry(card){const block=card.closest('.atlas-question-block')??card,rect=block.getBoundingClientRect();return {height:rect.height,next:block.nextElementSibling?.getBoundingClientRect().top+frame.contentWindow.scrollY};}
+function stable(before,card,label){const after=geometry(card);assert(Math.abs(after.height-before.height)<1&&(!Number.isFinite(before.next)||Math.abs(after.next-before.next)<1),label);}
+async function progress(label){await until(()=>{const cards=[...doc().querySelectorAll('[data-question-id]')],answered=cards.filter(card=>card.dataset.questionAnswered==='true').length,meter=doc().querySelector('[data-page-progress] progress');return cards.length&&meter?.max===cards.length&&meter.value===answered&&doc().querySelector('[data-page-count]')?.textContent===`${answered} / ${cards.length} answered`;},label);for(const section of doc().querySelectorAll('#prepare-story details')){const cards=[...section.querySelectorAll('[data-question-id]')],answered=cards.filter(card=>card.dataset.questionAnswered==='true').length;assert(section.querySelector(':scope > summary .atlas-section-count')?.textContent===`${answered} / ${cards.length}`,label+' includes live section count '+section.id);}}
+async function nativeKey(key){window.__personalityKey=key;await until(()=>!window.__personalityKey,'browser keyboard '+key);await paint();}
+async function savedStory(){const {openStore}=await import('/assets/personality/v1/store.mjs'),{loadStory,loadStorySources}=await import('/assets/personality/v7/story-store.mjs'),store=await openStore();try{return (await loadStory((await store.loadActive()).id,await loadStorySources())).value;}finally{store.close();}}
+async function questionLanding(id,label){let lastY=NaN,still=0;await until(()=>{const target=doc().activeElement,y=frame.contentWindow.scrollY,rect=target?.getBoundingClientRect();still=Math.abs(y-lastY)<.5?still+1:0;lastY=y;return target?.dataset.questionId===id&&rect.top>=0&&rect.top<frame.contentWindow.innerHeight*.7&&still>=3;},label+' settles');const top=doc().activeElement.getBoundingClientRect().top,bottom=doc().querySelector('[data-page-progress]').getBoundingClientRect().bottom;assert(top+1>=bottom,`${label} lands below sticky progress (question top ${top}, progress bottom ${bottom})`);}
 async function pdfDownload(label){
   const blobs=[],downloads=[],urlApi=frame.contentWindow.URL,originalCreate=urlApi.createObjectURL;
   urlApi.createObjectURL=function(blob){if(blob.type==='application/pdf')blobs.push(blob);return originalCreate.call(this,blob);};
@@ -54,49 +71,144 @@ try{
   assert(true,'article to library installs a real worker and controls the current app document');
   click('Start a new assessment');await until(()=>doc().querySelector('#scored-profiles'),'prepare boot');
   await until(()=>doc().querySelector('#story-birthday')&&doc().querySelector('#bg04-o01')&&!doc().querySelector('#preface-name')?.disabled,'optional preface questions and name load before the scored questionnaire');
-  assert(doc().querySelector('#prepare-story .atlas-studio')&&doc().querySelector('#prepare-story .atlas-editor[open]')&&doc().querySelector('#prepare-story .atlas-question-group[open]'),'birthday and background choices are available on prepare');
+  assert(doc().querySelector('#prepare-story .atlas-studio')&&[...doc().querySelectorAll('#prepare-story details')].every(section=>section.open),'all preparation sections start expanded');
   assert(doc().querySelector('.two-column').textContent.includes('170 scored items')&&doc().querySelector('.two-column').textContent.includes('48 preference questions'),'prepare distinguishes the scored questions from story and preference items');
-  assert(doc().querySelectorAll('.preface-map a').length===4&&doc().querySelector('.preface-map').textContent.includes('35 background questions'),'prepare offers visible navigation to all optional and scored sections');
+  assert(doc().querySelectorAll('.preface-map a').length===4&&[...doc().querySelectorAll('.preface-map a')].every(link=>doc().querySelector(link.getAttribute('href'))),'prepare offers working navigation to all optional and scored sections');
   const backgroundQuestions=[...doc().querySelectorAll('#story-background .atlas-question')];
   assert(backgroundQuestions.length===35&&backgroundQuestions.every(card=>card.querySelector('legend')),'every background question has a fieldset and legend');
+  const preferenceQuestions=[...doc().querySelectorAll('.atlas-type-question')];
+  assert(preferenceQuestions.length===48&&preferenceQuestions.every(card=>card.querySelector('legend')&&card.dataset.questionId),'all preference questions have labelled completion markers');
+  assert(doc().querySelectorAll('[data-question-id]').length===backgroundQuestions.length+preferenceQuestions.length+2,'preparation tracks each question plus birthday and name once');
+  await progress('initial preparation completion count');
+  assert(doc().querySelector('[data-page-progress] progress').value===0,'blank preparation starts with zero answered questions');
+  assert(!doc().querySelector('#prepare-story .atlas-mini-spread,#prepare-story .atlas-derived')&&!doc().querySelector('#prepare-story').textContent.includes('Draw three new cards'),'tarot and zodiac results stay out of preparation');
   const ids=[...doc().querySelectorAll('[id]')].map(node=>node.id);
   assert(ids.length===new Set(ids).size,'the form has no duplicate control IDs');
-  assert([...doc().querySelectorAll('#prepare-story input')].every(input=>input.labels?.length||input.getAttribute('aria-label')),'every story input has a programmatic label');
+  assert([...doc().querySelectorAll('#prepare-story input,#prepare-story select,#prepare-story textarea')].every(input=>input.labels?.length||input.getAttribute('aria-label')),'every story control has a programmatic label');
   assert(!doc().querySelector('.atlas-approval,#kit-include-reflection')&&!doc().querySelector('.atlas-question-actions'),'repeated opt-in and skip controls are absent');
+  assert(backgroundQuestions.every(card=>card.querySelector('.atlas-clear')?.disabled),'blank questions reserve a disabled Clear answer action');
+  assert([...doc().querySelectorAll('.atlas-multiselect')].every(label=>label.textContent==='Multiselect'),'multiple answer questions use the same concise label');
   const desktopChoices=[...doc().querySelector('#bg03-o01').closest('.atlas-options').querySelectorAll('label')];
   assert(desktopChoices[0].getBoundingClientRect().top===desktopChoices[1].getBoundingClientRect().top&&desktopChoices[1].getBoundingClientRect().right-desktopChoices[0].getBoundingClientRect().left<740,'desktop choices form a compact reading-width grid');
+
+  const age=doc().querySelector('#bg01-range'),ageCard=age.closest('fieldset'),ageGeometry=geometry(ageCard);
+  assert(age.tagName==='SELECT'&&age.value===''&&age.options.length>2,'age uses a native select with an unanswered placeholder');
+  age.value='o03';changeEvent(age);await paint();
+  assert(ageCard.dataset.questionAnswered==='true'&&!ageCard.querySelector('.atlas-clear').disabled,'age selection counts as one answer');
+  stable(ageGeometry,ageCard,'answering age does not shift the following question');
+  ageCard.querySelector('.atlas-clear').click();await paint();
+  assert(age.value===''&&ageCard.dataset.questionAnswered==='false','clearing age restores the unanswered placeholder');
+  stable(ageGeometry,ageCard,'clearing age preserves the question geometry');
+
+  const range=doc().querySelector('#bg34-spectrum'),rangeCard=range.closest('fieldset');
+  assert(range.type==='range'&&range.min==='0'&&range.max==='2'&&range.step==='1'&&range.value==='1'&&range.dataset.answered==='false'&&rangeCard.dataset.questionAnswered==='false','three-point report-style slider starts visibly unanswered');
+  range.value='2';inputEvent(range);
+  assert(range.dataset.answered==='true'&&rangeCard.dataset.questionAnswered==='true'&&rangeCard.querySelector('[data-range-option="o03"]').getAttribute('aria-pressed')==='true','moving the slider commits its matching option');
+  rangeCard.querySelector('.atlas-clear').click();
+  assert(range.value==='1'&&range.dataset.answered==='false'&&range.getAttribute('aria-valuetext').includes('Not answered'),'clearing the slider does not implicitly answer its midpoint');
+  range.dispatchEvent(new frame.contentWindow.PointerEvent('pointerup',{bubbles:true}));
+  assert(range.dataset.answered==='true'&&rangeCard.querySelector('[data-range-option="o02"]').getAttribute('aria-pressed')==='true','an explicit midpoint press commits the middle option');
+  rangeCard.querySelector('.atlas-clear').click();
+
+  const prefaceBirthday=doc().querySelector('#story-birthday');prefaceBirthday.value='1990-09-10';changeEvent(prefaceBirthday);
+  assert(prefaceBirthday.closest('fieldset').dataset.questionAnswered==='true'&&!doc().querySelector('#prepare-story .atlas-mini-spread,#prepare-story .atlas-derived'),'a birthday counts without exposing report-only symbols');
+  prefaceBirthday.closest('fieldset').querySelector('.atlas-clear').click();
+  const exclusive=doc().querySelector('#bg04-o11'),ordinary=doc().querySelector('#bg04-o01');exclusive.click();
+  assert(exclusive.checked&&exclusive.closest('fieldset').dataset.questionAnswered==='true','an exclusive None answer can be selected');
+  exclusive.click();assert(!exclusive.checked&&exclusive.closest('fieldset').dataset.questionAnswered==='false','an exclusive None answer can be toggled off');
+  ordinary.click();assert(ordinary.checked&&!exclusive.checked,'a regular answer can follow an unchecked exclusive answer');
+  ordinary.closest('fieldset').querySelector('.atlas-clear').click();
+  const revised=doc().querySelector('#story-question-type-candidate-ei-12-v2'),revisedGeometry=geometry(revised);
+  assert(revised&&!doc().querySelector('#story-question-type-candidate-ei-12')&&revised.querySelector('[aria-describedby]'),'the revised reflection has a new question identity and explanation');
+  revised.querySelector('input[value="4"]').click();await paint();
+  assert(revised.dataset.questionAnswered==='true','preference selections update completion');
+  stable(revisedGeometry,revised,'answering a preference preserves card geometry');
+  revised.querySelector('.atlas-clear').click();await paint();
+  stable(revisedGeometry,revised,'clearing a preference preserves card geometry');
+
+  const placeSearch=doc().querySelector('#atlas-find-bg05'),placeResults=doc().querySelector('#bg05-results'),placeCard=placeSearch.closest('fieldset'),placeGeometry=geometry(placeCard);
+  assert(placeSearch.placeholder==='Search places'&&placeSearch.autocomplete==='off'&&placeSearch.getAttribute('aria-controls')===placeResults.id,'place search has a short placeholder and disables browser autocomplete');
+  assert(Boolean(placeResults.compareDocumentPosition(placeSearch)&Node.DOCUMENT_POSITION_FOLLOWING),'place results precede their search field');
+  placeSearch.value='un';inputEvent(placeSearch);await paint();
+  assert(placeResults.querySelectorAll('label:not([hidden])').length>1,'country filtering displays matching options');
+  stable(placeGeometry,placeCard,'filtering country results keeps the next question stationary');
+  placeResults.querySelector('label:not([hidden]) input').focus();await nativeKey('ArrowDown');
+  assert(placeResults.contains(doc().activeElement)&&doc().activeElement.matches('input[type="radio"]'),'native keyboard navigation reaches a matching country result');
+  const focusedPlace=doc().activeElement,focusedLabel=focusedPlace.closest('label'),focusedRect=focusedLabel.getBoundingClientRect(),resultsRect=placeResults.getBoundingClientRect(),focusStyle=frame.contentWindow.getComputedStyle(focusedLabel),focusRing=parseFloat(focusStyle.outlineWidth)+parseFloat(focusStyle.outlineOffset);
+  assert(focusedPlace.matches(':focus-visible')&&parseFloat(focusStyle.outlineWidth)>=2,'keyboard focus is shown on the complete country card');
+  assert(focusedRect.top-focusRing>=resultsRect.top-1&&focusedRect.bottom+focusRing<=resultsRect.bottom+1&&focusedRect.left-focusRing>=resultsRect.left-1&&focusedRect.right+focusRing<=resultsRect.right+1,'keyboard-focused country cards and their rings remain inside scrolling results');
+  await nativeKey('ArrowDown');
+  assert(placeResults.contains(doc().activeElement)&&doc().activeElement.checked&&placeCard.dataset.questionAnswered==='true','native arrow navigation selects and saves a country answer');
+  const selectedPlace=doc().activeElement;placeSearch.value='zzzzzz';inputEvent(placeSearch);
+  assert(!selectedPlace.closest('label').hidden,'selected places stay visible when a later search has no matches');
+  placeCard.querySelector('.atlas-clear').click();placeSearch.value='';inputEvent(placeSearch);await paint();
+  stable(placeGeometry,placeCard,'clearing a country preserves reserved results geometry');
+
   frame.style.width='390px';await until(()=>frame.contentWindow.innerWidth===390,'mobile viewport');
   assert(desktopChoices[1].getBoundingClientRect().top>desktopChoices[0].getBoundingClientRect().top,'mobile choices stack in reading order');
   assert(doc().documentElement.scrollWidth<=frame.contentWindow.innerWidth,'mobile form has no horizontal overflow');
   assert(desktopChoices.every(label=>label.getBoundingClientRect().height>=44),'mobile option targets meet the 44-pixel target used by the form');
+  await progress('mobile completion count settles after clears');
+  frame.contentWindow.scrollTo({top:2000,behavior:'instant'});
+  await until(()=>!doc().querySelector('[data-form-next]').hidden&&!doc().querySelector('[data-form-top]').hidden,'floating navigation appears beyond first questions');
+  for(const button of doc().querySelectorAll('.form-navigation button')){const rect=button.getBoundingClientRect();assert(rect.left>=0&&rect.right<=390&&rect.top>=0&&rect.bottom<=frame.contentWindow.innerHeight&&rect.width>=44&&rect.height>=44,'mobile floating action fits the viewport and touch target');}
+  doc().querySelector('[data-form-next]').click();
+  await questionLanding('report-name','next unanswered focuses the first gap');
+  const prefaceName=doc().querySelector('#preface-name');prefaceName.value='Synthetic Person';inputEvent(prefaceName);
+  await until(()=>doc().querySelector('.preface-name [role="status"]')?.textContent==='Name saved with this assessment on this device.','preface report name saved');
+  await progress('name counts as one answered preparation question');
+  assert(doc().querySelector('[data-page-progress] progress').value===1,'name is counted exactly once');
+  frame.contentWindow.scrollTo({top:2000,behavior:'instant'});
+  await until(()=>!doc().querySelector('[data-form-next]').hidden,'next unanswered updates after name');
+  doc().querySelector('[data-form-next]').click();
+  await questionLanding('birthday','next unanswered advances beyond the saved name');
+  frame.contentWindow.scrollTo({top:2000,behavior:'instant'});
+  await until(()=>!doc().querySelector('[data-form-top]').hidden,'back to top appears after scrolling');
+  doc().querySelector('[data-form-top]').click();await until(()=>frame.contentWindow.scrollY<2,'back to top returns to page start');
+  await until(()=>doc().querySelector('[data-form-top]').hidden,'back to top hides again at page start');
   frame.style.width='320px';await until(()=>frame.contentWindow.innerWidth===320,'small mobile viewport');
   assert(doc().documentElement.scrollWidth<=frame.contentWindow.innerWidth,'small mobile form has no horizontal overflow');
+  assert([...doc().querySelectorAll('#prepare-story input[placeholder],#prepare-story textarea,#prepare-story select')].every(control=>{const rect=control.getBoundingClientRect();return rect.left>=0&&rect.right<=320;}),'all preparation text fields and selects stay inside the smallest mobile width');
   frame.style.width='1200px';await until(()=>frame.contentWindow.innerWidth===1200,'desktop viewport restored');
-  const prefaceName=doc().querySelector('#preface-name');prefaceName.value='Synthetic Person';prefaceName.dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
-  await until(()=>doc().querySelector('.preface-name [role="status"]')?.textContent==='Name saved with this assessment on this device.','preface report name saved');
+  const selfDescription=doc().querySelector('#bg04-self-description'),selfCard=selfDescription.closest('fieldset'),selfGeometry=geometry(selfCard);
+  assert(selfDescription.tagName==='TEXTAREA'&&selfDescription.maxLength===255&&selfDescription.disabled&&!selfDescription.closest('.atlas-self-description').hidden,'self-description reserves a visible 255-character textarea before selection');
   doc().querySelector('#bg04-o10').click();
-  const selfDescription=doc().querySelector('#bg04-self-description');
-  assert(!selfDescription.closest('.atlas-self-description').hidden,'self-description opens for the selected response');
-  selfDescription.value='A fictional self-description';selfDescription.dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+  await paint();assert(!selfDescription.disabled&&selfCard.dataset.questionAnswered==='false','choosing Self-describe enables typing while a blank description stays unanswered');
+  stable(selfGeometry,selfCard,'enabling self-description does not shift the following question');
+  const fictionalDescription='A fictional self-description. '.padEnd(255,'x');selfDescription.value=fictionalDescription;inputEvent(selfDescription);await paint();
+  assert(selfCard.dataset.questionAnswered==='true'&&doc().querySelector('#bg04-description-count').textContent==='255 / 255','full-length self-description updates its counter and completion');
+  stable(selfGeometry,selfCard,'typing a full-length self-description keeps the card geometry stable');
+  age.value='o03';changeEvent(age);
   await until(()=>doc().querySelector('#prepare-story .atlas-studio > .atlas-status')?.textContent==='Story saved on this device.','preface answer saved');
+  const hiddenDraw=(await savedStory()).draw;
+  assert(hiddenDraw?.id&&hiddenDraw.cards.length===3&&!doc().querySelector('#prepare-story [data-draw-id]'),'preparation silently saves a complete tarot draw without revealing its cards');
   await go('/personality/prepare',()=>doc().querySelector('#bg04-o10')?.checked&&doc().querySelector('#preface-name')?.value==='Synthetic Person','preface answer and report name restore after refresh');
-  assert(doc().querySelector('#bg04-self-description').value==='A fictional self-description'&&!doc().querySelector('#approve-bg04'),'self-description restores without export toggles');
+  assert(JSON.stringify((await savedStory()).draw)===JSON.stringify(hiddenDraw),'the same hidden tarot draw survives preparation reload');
+  assert(doc().querySelector('#bg04-self-description').value===fictionalDescription&&doc().querySelector('#bg01-range').value==='o03'&&!doc().querySelector('#approve-bg04'),'all 255 self-description characters and age restore without export toggles');
+  await progress('restored preparation progress');
+  assert(doc().querySelector('[data-page-progress] progress').value===3,'restored name, age and self-description are counted exactly once');
+  const restoredSelfCard=doc().querySelector('#bg04-self-description').closest('fieldset'),restoredSelfGeometry=geometry(restoredSelfCard);
   doc().querySelector('#bg04-o10').closest('fieldset').querySelector('.atlas-clear').click();
-  assert(doc().querySelector('#bg04-self-description').closest('.atlas-self-description').hidden,'clearing an answer also hides self-description');
-  doc().querySelector('#bg01-o01').click();
-  doc().querySelector('#bg01-o01').closest('fieldset').querySelector('.atlas-clear').click();
-  assert(!doc().querySelector('#bg01-o01').checked,'clearing leaves the question unanswered');
+  await paint();
+  assert(doc().querySelector('#bg04-self-description').disabled&&doc().querySelector('#bg04-self-description').value===''&&doc().querySelector('#bg04-description-count').textContent==='0 / 255','clearing an answer also clears and disables its reserved self-description');
+  stable(restoredSelfGeometry,restoredSelfCard,'clearing self-description keeps the next question in place');
+  doc().querySelector('#bg01-range').closest('fieldset').querySelector('.atlas-clear').click();
+  assert(doc().querySelector('#bg01-range').value==='','clearing leaves the age question unanswered');
+  await progress('cleared preparation progress');
+  assert(doc().querySelector('[data-page-progress] progress').value===1,'clearing optional answers preserves only the saved name count');
   await until(()=>doc().querySelector('#prepare-story .atlas-studio > .atlas-status')?.textContent==='Story saved on this device.','preface answer cleared');
   click('Begin questionnaire →');await until(()=>doc().querySelector('#question-0'),'first question');
   doc().querySelector('#question-0 input[value="4"]').click();
   await until(()=>doc().querySelector('#save-status').textContent==='Saved on this device','answer saved');
+  await progress('first scored answer updates page progress');
+  assert(doc().querySelector('[data-page-progress] progress').value===1&&doc().querySelector('[data-page-progress] progress').max===5,'scored page progress counts just the five visible questions');
   click('Next five →');await until(()=>doc().querySelector('#question-5'),'next page');
   const {openStore}=await import('/assets/personality/v1/store.mjs');
   const {encodeSnapshot,encodeSummary,decodeSnapshot,decodeSummary}=await import('/assets/personality/v1/share.mjs');
   const {decodeEnhancedSnapshot}=await import('/assets/personality/v1/enhancement-share.mjs');
   const {createState}=await import('/assets/personality/v1/core.mjs');
   const store=await openStore();
-  const {loadStory,loadStorySources}=await import('/assets/personality/v6/story-store.mjs');
+  const {loadStory,loadStorySources}=await import('/assets/personality/v7/story-store.mjs');
   const storySources=await loadStorySources();
   const currentStory=async()=>({value:(await loadStory((await store.loadActive()).id,storySources)).value,sources:storySources});
   const before=await store.loadActive();
@@ -108,6 +220,7 @@ try{
   await go('/personality/test#s='+encodeSnapshot(shared),()=>doc().querySelector('#question-0[disabled]'),'shared snapshot');
   assert(doc().querySelector('#question-0 input[value="1"]').checked,'shared answer takes precedence over local answer');
   assert(doc().querySelector('#save-status').textContent==='Shared view · read only','shared view stays read only');
+  assert(!doc().querySelector('[data-page-progress],.form-navigation'),'frozen read-only shares do not expose editing navigation');
   const afterShared=await store.loadActive();
   assert(afterShared.id===before.id&&afterShared.revision===before.revision&&afterShared.state.responses[0]===4,'opening snapshot leaves local draft untouched');
   await go('/personality/report#s=malformed',()=>doc().querySelector('#save-status')?.textContent==='Invalid shared link','invalid link rejection');
@@ -129,13 +242,16 @@ try{
       fieldset.querySelector('input[value="'+expected[slot]+'"]').click();
     }
     await until(()=>doc().querySelector('#save-status').textContent==='Saved on this device','page '+start+' saved');
+    await progress('completed scored page '+start);
+    assert(doc().querySelector('[data-page-progress] progress').value===5&&doc().querySelectorAll('.form-navigation').length===1,'completed page '+start+' has exact progress and one navigation dock');
     if(start===60){
       const checkpoint=await store.loadActive();
       await go('/personality/test',()=>doc().querySelector('#question-60'),'midpoint refresh');
       assert((await store.loadActive()).revision===checkpoint.revision,'midpoint refresh does not mutate committed revision');
       for(let slot=60;slot<65;slot++)assert(doc().querySelector('#question-'+slot+' input[value="'+expected[slot]+'"]').checked,'midpoint UI response restored '+slot);
     }
-    click(start===165?'Review answers →':'Next five →');
+    if(start===0){await until(()=>!doc().querySelector('[data-form-next]').hidden,'completed page can continue to remaining questions');doc().querySelector('[data-form-next]').click();}
+    else click(start===165?'Review answers →':'Next five →');
     await until(()=>start===165?doc().querySelector('.review-list'):doc().querySelector('#question-'+(start+5)),'advance after '+start);
   }
   const completed=await store.loadActive();
@@ -150,7 +266,7 @@ try{
   doc().querySelector('#kit-name').value='Synthetic Person';doc().querySelector('#kit-name').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
   doc().querySelector('#kit-context').value='A synthetic collaborator should understand my working preferences.';doc().querySelector('#kit-context').dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
   await until(()=>doc().querySelector('.kit-customize [role="status"]').textContent==='Report details saved on this device.','optional kit details saved');
-  const {createReportKit}=await import('/assets/personality/v6/report-kit.mjs');
+  const {createReportKit}=await import('/assets/personality/v7/report-kit.mjs');
   const beforeKit=await store.loadActive(),expectedKit=createReportKit(beforeKit.state,{name:'Synthetic Person',context:'A synthetic collaborator should understand my working preferences.',story:await currentStory()});
   const downloadedKit=await kitDownload('complete Markdown report kit download');
   assert(downloadedKit.text===expectedKit.text&&downloadedKit.filename===expectedKit.filename,'one actual download contains the complete prompt and exact evidence');
@@ -296,11 +412,11 @@ try{
   await until(()=>doc().querySelector('.privacy-settings').textContent.includes('Ready offline.'),'worker OFFLINE_READY acknowledgement');
   await until(()=>frame.contentWindow.navigator.serviceWorker.controller?.scriptURL.endsWith('/personality/sw.js'),'scoped worker controls assessment');
   assert(true,'explicit UI installation completes and scoped worker takes control');
-  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v6-')&&!name.includes(':staging:'));
+  const cacheNames=(await caches.keys()).filter(name=>name.startsWith('personality-v7-')&&!name.includes(':staging:'));
   assert(cacheNames.length===1,'exactly one completed release cache is installed');
   const releaseCache=await caches.open(cacheNames[0]);
   const cacheURLs=(await releaseCache.keys()).map(request=>new URL(request.url));
-  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v6'),'ready marker commits after public files');
+  assert(cacheURLs.some(url=>url.pathname==='/personality/.offline-ready-v7'),'ready marker commits after public files');
   assert(cacheURLs.every(url=>!url.search&&!url.hash),'offline cache keys contain no answer or share parameters');
   assert(!await caches.match('/__test'),'test fixture is outside the assessment cache');
   await fetch('/__outage',{method:'POST'});
@@ -490,6 +606,31 @@ fn receive_message(socket: &mut BufReader<TcpStream>) -> Vec<u8> {
     }
 }
 
+fn cdp_command(
+    socket: &mut BufReader<TcpStream>,
+    id: &mut u32,
+    nonce: u32,
+    method: &str,
+    params: serde_json::Value,
+) -> serde_json::Value {
+    *id += 1;
+    let request = serde_json::json!({"id":*id,"method":method,"params":params});
+    send_frame(
+        socket.get_mut(),
+        1,
+        request.to_string().as_bytes(),
+        nonce.wrapping_add(*id),
+    );
+    loop {
+        let response: serde_json::Value =
+            serde_json::from_slice(&receive_message(socket)).expect("CDP JSON");
+        if response["id"] == *id {
+            assert!(response.get("error").is_none(), "CDP {method}: {response}");
+            return response;
+        }
+    }
+}
+
 async fn dump_dom(chrome: PathBuf, url: &str) -> String {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -575,26 +716,37 @@ async fn dump_dom(chrome: PathBuf, url: &str) -> String {
     }
     let mut id = 0u32;
     loop {
-        id += 1;
         let expression = if Instant::now() < deadline {
-            "document.body?.dataset.testResult ? document.documentElement.outerHTML : null"
+            "document.body?.dataset.testResult ? document.documentElement.outerHTML : window.__personalityKey ? {requestedKey:window.__personalityKey} : null"
         } else {
-            "document.documentElement.outerHTML"
+            "document.querySelector('#result').textContent='TIMEOUT\\n'+(window.__personalityDiagnostic?.()||'Fixture module did not start');document.documentElement.outerHTML"
         };
-        let request = serde_json::json!({"id":id,"method":"Runtime.evaluate","params":{"expression":expression,"returnByValue":true}});
-        send_frame(
-            socket.get_mut(),
-            1,
-            request.to_string().as_bytes(),
-            (nonce as u32).wrapping_add(id),
+        let response = cdp_command(
+            &mut socket,
+            &mut id,
+            nonce as u32,
+            "Runtime.evaluate",
+            serde_json::json!({"expression":expression,"returnByValue":true}),
         );
-        let response: serde_json::Value = loop {
-            let value: serde_json::Value =
-                serde_json::from_slice(&receive_message(&mut socket)).expect("CDP JSON");
-            if value["id"] == id {
-                break value;
+        if let Some(key) = response["result"]["result"]["value"]["requestedKey"].as_str() {
+            assert_eq!(key, "ArrowDown", "unsupported browser fixture key");
+            for event_type in ["keyDown", "keyUp"] {
+                cdp_command(
+                    &mut socket,
+                    &mut id,
+                    nonce as u32,
+                    "Input.dispatchKeyEvent",
+                    serde_json::json!({"type":event_type,"key":"ArrowDown","code":"ArrowDown","windowsVirtualKeyCode":40,"nativeVirtualKeyCode":40}),
+                );
             }
-        };
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Runtime.evaluate",
+                serde_json::json!({"expression":"delete window.__personalityKey","returnByValue":true}),
+            );
+        }
         if let Some(dom) = response["result"]["result"]["value"].as_str() {
             return dom.to_string();
         }
