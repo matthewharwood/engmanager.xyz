@@ -251,6 +251,9 @@ function makeCtx(entry) {
 }
 
 async function runAll() {
+    // Bind gestures immediately; asynchronous capability probes must not make
+    // the first discovery interaction disappear during page startup.
+    mountScavengerHooks();
     // Hydrate previously-discovered ids onto the live entries first
     // so the receipt reflects persisted state from the very
     // first paint.
@@ -278,7 +281,6 @@ async function runAll() {
     }
     defer(() => printReceipt());
     defer(() => renderReceiptModal());
-    defer(() => mountScavengerHooks());
 }
 
 function refreshModal() {

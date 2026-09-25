@@ -47,6 +47,23 @@ async function promote(path){await click('[data-journey-promote]','continue to '
 async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next page prepared');}
 const article='/articles/the-execution-marketplace';
 try{
+  await ready('/feed?receipt');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'the former receipt URL does not open the easter egg');
+  await until(()=>query('[data-api-receipt-grid]')?.children.length>0,'discovery registry initializes');
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+  win().dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'?',bubbles:true}));
+  await until(()=>query('.discovery-toast-open'),'keyboard discovery presents a toast action');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'a discovery does not open the receipt automatically');
+  const toastErrors=[];win().addEventListener('error',event=>toastErrors.push(event.message));
+  const toastToggles=[];query('#api-receipt-modal').addEventListener('beforetoggle',event=>toastToggles.push(event.newState));
+  const openedToast=query('.discovery-toast');await click('.discovery-toast-open');
+  assert(query('#api-receipt-modal').matches(':popover-open'),'the toast action opens the API receipt: '+JSON.stringify({errors:toastErrors,toggles:toastToggles,connected:openedToast.isConnected,inert:!!openedToast.closest('[inert]')}));
+  await click('.api-receipt-close');
+  await until(()=>query('.discovery-toast')&&query('.discovery-toast')!==openedToast,'another discovery offers its own toast');
+  const expiringToast=query('.discovery-toast');
+  await until(()=>!expiringToast.isConnected,'discovery actions expire with their toasts');
+  assert(!query('#api-receipt-modal').matches(':popover-open'),'expired discovery toasts leave the receipt closed');
+
   await ready('/shop');
   assert(!visible(previous()),'opening the storefront directly has no previous-page window');
   assert(query('[data-product-card]'),'the real embedded catalog is available without Stripe credentials');
@@ -233,21 +250,6 @@ try{
     await click('[data-search-toggle]');await until(()=>query('[data-search-overlay]').open,'feed search opens: '+path);
     await click('[data-search-close]');
   }
-  win().localStorage.removeItem('engmanager.discoveries');
-  await ready('/feed?receipt');
-  assert(!query('#api-receipt-modal').matches(':popover-open'),'the former receipt URL does not open the easter egg');
-  await until(()=>query('[data-api-receipt-grid]')?.children.length>0,'discovery registry initializes');
-  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
-  win().dispatchEvent(new (win().KeyboardEvent)('keydown',{key:'?',bubbles:true}));
-  await until(()=>query('.discovery-toast-open'),'keyboard discovery presents a toast action');
-  assert(!query('#api-receipt-modal').matches(':popover-open'),'a discovery does not open the receipt automatically');
-  const openedToast=query('.discovery-toast');await click('.discovery-toast-open');
-  assert(query('#api-receipt-modal').matches(':popover-open'),'the toast action opens the API receipt');
-  await click('.api-receipt-close');
-  await until(()=>query('.discovery-toast')&&query('.discovery-toast')!==openedToast,'another discovery offers its own toast');
-  const expiringToast=query('.discovery-toast');
-  await until(()=>!expiringToast.isConnected,'discovery actions expire with their toasts');
-  assert(!query('#api-receipt-modal').matches(':popover-open'),'expired discovery toasts leave the receipt closed');
 
   const publicDocument=doc();await win().__engNav.navigate('/articles/big-personality');
   await until(()=>win().location.pathname==='/articles/big-personality'&&doc().readyState==='complete','private boundary navigation');
