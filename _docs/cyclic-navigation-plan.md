@@ -144,3 +144,10 @@ is completed.
 - `cargo fmt --all --check`, `cargo clippy -p website --all-targets -- -D warnings`,
   JavaScript syntax checks and `git diff --check` passed. PR checks are the final
   remaining issue; they must pass on the pushed commit before this goal is done.
+- The first PR run found a reduced-motion product-card scale transition. A real
+  CDP Tab event made it reproducible locally: the global 0.01ms duration still
+  created a running `none` → `scale(1.1)` transition. The storefront now disables
+  card transitions and hover/focus scaling under reduced motion while preserving
+  its keyboard focus outline. The browser regression checks actual visible
+  keyboard focus, computed styles, and active animations, with target/keyframe
+  diagnostics on failure.

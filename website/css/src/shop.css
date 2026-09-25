@@ -1317,8 +1317,14 @@ body.shop-cart-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .shop-card,
     .shop-card-figure img {
         transition: none;
+    }
+
+    .shop-card:hover,
+    .shop-card:focus-visible {
+        transform: none;
     }
 }
 

@@ -166,7 +166,15 @@ try{
   assert(doc().documentElement.dataset.theme==='dark','theme survives a journey promotion');
   const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
   assert(reduced===new URL(location.href).searchParams.has('reduced'),'the test exercises its actual browser motion preference');
-  if(reduced)assert(!doc().getAnimations().some(animation=>animation.effect?.getKeyframes().some(key=>String(key.transform||'').includes('scale'))&&animation.playState==='running'),'reduced motion leaves no running scale transition');
+  if(reduced){
+    window.__journeyKey='Tab';await until(()=>!window.__journeyKey,'real keyboard input enables focus visibility');
+    query('[data-product-card]').focus({preventScroll:true});
+    assert(query('[data-product-card]').matches(':focus-visible'),'the reduced-motion check exercises visible keyboard focus');
+    const scaling=doc().getAnimations().filter(animation=>animation.effect?.getKeyframes().some(key=>String(key.transform||'').includes('scale'))&&animation.playState==='running');
+    assert(!scaling.length,'reduced motion leaves no running scale transition: '+JSON.stringify(scaling.map(animation=>({target:animation.effect.target?.outerHTML.slice(0,240),name:animation.animationName,keyframes:animation.effect.getKeyframes(),timing:animation.effect.getComputedTiming()}))));
+    assert(win().getComputedStyle(query('[data-product-card]')).transform==='none','reduced-motion keyboard focus does not scale a product card');
+    assert(win().getComputedStyle(query('[data-product-card]')).transitionProperty==='none','reduced-motion cards do not create a transform transition');
+  }
   frame.style.width='390px';await until(()=>win().innerWidth===390,'mobile viewport');
   await until(()=>visible(previous()),'mobile previous window');
   const mobile=previous().getBoundingClientRect();

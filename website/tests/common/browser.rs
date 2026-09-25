@@ -254,7 +254,7 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
     let mut id = 0u32;
     loop {
         let expression = if Instant::now() < deadline {
-            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyGesture ? {gesture:window.__journeyGesture} : null"
+            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyGesture ? {gesture:window.__journeyGesture} : window.__journeyKey ? {key:window.__journeyKey} : null"
         } else {
             "({html:document.documentElement.outerHTML})"
         };
@@ -294,6 +294,25 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
                     serde_json::json!({"type":kind,"x":x+offset,"y":y,"button":button,"clickCount":1}),
                 );
             }
+        }
+        if let Some(key) = value["key"].as_str() {
+            assert_eq!(key, "Tab", "unsupported fixture keyboard request");
+            for kind in ["keyDown", "keyUp"] {
+                cdp_command(
+                    &mut socket,
+                    &mut id,
+                    nonce as u32,
+                    "Input.dispatchKeyEvent",
+                    serde_json::json!({"type":kind,"key":"Tab","code":"Tab","windowsVirtualKeyCode":9,"nativeVirtualKeyCode":9}),
+                );
+            }
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Runtime.evaluate",
+                serde_json::json!({"expression":"delete window.__journeyKey"}),
+            );
         }
         assert!(
             Instant::now() < deadline,
