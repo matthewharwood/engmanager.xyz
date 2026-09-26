@@ -9,7 +9,7 @@ use super::shell::{MetaTags, PageShell};
 use super::{DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, share_card};
 use crate::asset_url;
 use crate::components::quick_actions::theme_picker;
-use crate::components::{Head, global_search, nav, sigil};
+use crate::components::{Head, armillary, global_search, nav, sigil};
 use crate::http::no_store;
 
 const TITLE: &str = "The newsletter · ENGMANAGER.XYZ";
@@ -40,12 +40,16 @@ pub fn page(status: Option<&str>) -> String {
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
     });
+    let sculpture = armillary::render(asset_url("newsletter/sunburst.webp"));
     let mut assets = Head::new();
+    assets.add(&sculpture);
     assets.add_css("css/newsletter.css");
     assets.add(&site_nav);
     let mut scripts = Head::new();
     scripts.add_js("js/audio.js");
     scripts.add(&site_nav);
+    scripts.add(&sculpture);
+    let sculpture_markup = sculpture.markup;
     let nav_markup = site_nav.markup;
     let signup = match status {
         Some("check-email") => confirmation(),
@@ -56,6 +60,7 @@ pub fn page(status: Option<&str>) -> String {
     let body = view! {
         { nav_markup }
         <main id="main" class="newsletter-shell" tabindex="-1">
+            <div class="newsletter-cosmos">{ sculpture_markup }</div>
             <div class="newsletter-intro">
                 <p class="newsletter-eyebrow">
                     <span class="newsletter-pip" aria-hidden="true"></span>
