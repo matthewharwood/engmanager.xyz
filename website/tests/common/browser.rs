@@ -151,7 +151,21 @@ fn cdp_command(
     }
 }
 
+#[allow(dead_code)] // The quote-card suite uses the explicit-feature entry point.
 pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> String {
+    dump_dom_with_blink_features(chrome, url, reduced_motion, &[], &[]).await
+}
+
+/// Exercise experimental browser APIs without changing the default journey
+/// browser configuration. Feature names are explicit for each test case.
+pub async fn dump_dom_with_blink_features(
+    chrome: PathBuf,
+    url: &str,
+    reduced_motion: bool,
+    enabled: &[&str],
+    disabled: &[&str],
+) -> String {
+    let experimental = !enabled.is_empty() || !disabled.is_empty();
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -173,6 +187,21 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
     ]);
     if reduced_motion {
         command.arg("--force-prefers-reduced-motion=reduce");
+    }
+    if experimental {
+        command.args([
+            "--disable-extensions",
+            "--disable-component-extensions-with-background-pages",
+            "--disable-background-timer-throttling",
+            "--disable-renderer-backgrounding",
+            "--disable-backgrounding-occluded-windows",
+        ]);
+    }
+    if !enabled.is_empty() {
+        command.arg(format!("--enable-blink-features={}", enabled.join(",")));
+    }
+    if !disabled.is_empty() {
+        command.arg(format!("--disable-blink-features={}", disabled.join(",")));
     }
     let child = command
         .arg(format!("--user-data-dir={}", profile.display()))
@@ -253,8 +282,19 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
     }
     let mut id = 0u32;
     loop {
+        // Native dialog focus changes can occlude a headless tab on macOS.
+        // Keep its rendering/timer scheduler active while the fixture runs.
+        if experimental {
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Page.bringToFront",
+                serde_json::json!({}),
+            );
+        }
         let expression = if Instant::now() < deadline {
-            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyGesture ? {gesture:window.__journeyGesture} : window.__journeyKey ? {key:window.__journeyKey} : null"
+            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyViewport ? {viewport:window.__journeyViewport} : window.__journeyGesture ? {gesture:window.__journeyGesture} : window.__journeyKey ? {key:window.__journeyKey} : null"
         } else {
             "({html:document.documentElement.outerHTML})"
         };
@@ -268,6 +308,22 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
         let value = &response["result"]["result"]["value"];
         if let Some(dom) = value["html"].as_str() {
             return dom.to_string();
+        }
+        if let Some(width) = value["viewport"].as_u64() {
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Emulation.setDeviceMetricsOverride",
+                serde_json::json!({"width":width,"height":1000,"deviceScaleFactor":1,"mobile":false}),
+            );
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Runtime.evaluate",
+                serde_json::json!({"expression":"delete window.__journeyViewport"}),
+            );
         }
         if let Some(gesture) = value.get("gesture") {
             let x = gesture["x"].as_f64().expect("gesture x");
@@ -296,14 +352,18 @@ pub async fn dump_dom(chrome: PathBuf, url: &str, reduced_motion: bool) -> Strin
             }
         }
         if let Some(key) = value["key"].as_str() {
-            assert_eq!(key, "Tab", "unsupported fixture keyboard request");
+            let key_code = match key {
+                "Tab" => 9,
+                "Escape" => 27,
+                _ => panic!("unsupported fixture keyboard request: {key}"),
+            };
             for kind in ["keyDown", "keyUp"] {
                 cdp_command(
                     &mut socket,
                     &mut id,
                     nonce as u32,
                     "Input.dispatchKeyEvent",
-                    serde_json::json!({"type":kind,"key":"Tab","code":"Tab","windowsVirtualKeyCode":9,"nativeVirtualKeyCode":9}),
+                    serde_json::json!({"type":kind,"key":key,"code":key,"windowsVirtualKeyCode":key_code,"nativeVirtualKeyCode":key_code}),
                 );
             }
             cdp_command(

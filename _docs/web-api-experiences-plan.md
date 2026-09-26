@@ -290,6 +290,7 @@ elastic — categories aren't fixed counts.)
 
 | Status | API | Treatment |
 |---|---|---|
+| 🟢 used | HTML-in-Canvas API (experimental) | Attributed article quote-card PNG export; semantic HTML preview and copy fallback. Discovery is awarded only after successful native export. See [use-case decision, implementation, and availability notes](html-in-canvas-quote-cards.md). |
 | 🟢 used | Web Animations API | anime.js v4 uses WAAPI under the hood |
 | 🟢 used | View Transition API | `view-transitions.js` + cross-doc VT |
 | 🟢 used | Resize Observer API | `fit-text.js` |

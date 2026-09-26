@@ -104,6 +104,11 @@ name = "Canvas API"
 group = "media"
 
 [[api]]
+id = "html-in-canvas"
+name = "HTML-in-Canvas API"
+group = "graphics"
+
+[[api]]
 id = "channel-messaging"
 name = "Channel Messaging API"
 group = "meta"

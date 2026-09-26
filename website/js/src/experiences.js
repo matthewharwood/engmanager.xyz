@@ -368,6 +368,10 @@ function printReceipt() {
 }
 
 const DISCOVERY_GUIDES = {
+    "html-in-canvas": {
+        hint: "On an article, make a quote card and download its PNG. Requires a browser with the experimental HTML-in-Canvas API enabled.",
+        answer: "You exported an attributed quote card using the browser’s HTML layout inside a canvas.",
+    },
     "background-tasks": {
         hint: "Move once, then let the tab sit still for 30 seconds.",
         answer: "You idled after interacting; the background chore clocked in.",
@@ -999,6 +1003,36 @@ register({
         const ctx = document.createElement("canvas").getContext("2d");
         api.log("ctx", ctx ? "2d" : "none");
     },
+});
+
+// --- HTML-in-Canvas: on-demand article quote export ---
+let quoteCardExported = false;
+register({
+    id: "html-in-canvas",
+    name: "HTML-in-Canvas API",
+    group: "graphics",
+    isSupported: () => typeof CanvasRenderingContext2D !== "undefined"
+        && typeof CanvasRenderingContext2D.prototype.drawElementImage === "function"
+        && typeof HTMLCanvasElement.prototype.requestPaint === "function",
+    init: (api) => {
+        api.log("use", "Article quote cards → attributed PNG; HTML + copy fallback");
+        api.log("availability", "Experimental; requires enabled browser support");
+        // An export may have finished while an earlier capability probe was
+        // pending. Preserve its active state when the runner reaches us.
+        return quoteCardExported; // Capable alone is not the same as used.
+    },
+});
+
+// Bind synchronously, before runAll awaits any capability probes. The article
+// tool is usable independently of that asynchronous registry initialization.
+document.addEventListener("engmanager:quote-card-export", () => {
+    const entry = registry.byId.get("html-in-canvas");
+    if (!entry.isSupported()) return;
+    quoteCardExported = true;
+    entry.status = STATUS.ACTIVE;
+    upsertReceipt(entry.name, "export", "HTML/CSS quote card rendered to PNG");
+    discover(entry.id);
+    refreshModal();
 });
 
 // --- Channel Messaging ---
@@ -2306,7 +2340,7 @@ register({
             button.textContent = "Share quote";
             button.addEventListener("click", async () => {
                 const text = Array.from(quote.childNodes)
-                    .filter((node) => node !== button)
+                    .filter((node) => node.nodeName !== "BUTTON")
                     .map((node) => node.textContent)
                     .join("").trim().slice(0, 300);
                 const fragment = encodeURIComponent(text);
