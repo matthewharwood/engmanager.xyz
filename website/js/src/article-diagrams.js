@@ -63,6 +63,38 @@
         const scratchNodes = new Set();
         let disposed = false;
         let revision = 0;
+        const compact = matchMedia("(max-width: 42rem)");
+        const viewer = document.createElement("dialog");
+        viewer.className = "diagram-viewer";
+        viewer.setAttribute("aria-label", "Expanded diagram");
+        viewer.innerHTML = `<div class="diagram-viewer-bar"><span>Diagram</span><div class="diagram-zoom" aria-label="Diagram zoom"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><output>100%</output><button type="button" data-zoom="in" aria-label="Zoom in">+</button></div><button type="button" class="diagram-close" aria-label="Close diagram">✕</button></div><div class="diagram-viewport"><div class="diagram-canvas"></div></div>`;
+        document.body.append(viewer);
+        const viewport = viewer.querySelector(".diagram-viewport");
+        const canvas = viewer.querySelector(".diagram-canvas");
+        const zoomLevels = [1, 1.5, 2, 3, 4];
+        let zoomIndex = 0;
+        let opener = null;
+        let selectedNode = null;
+        function setZoom(index) {
+            const center = (viewport.scrollLeft + viewport.clientWidth / 2) / zoomLevels[zoomIndex];
+            zoomIndex = Math.max(0, Math.min(index, zoomLevels.length - 1));
+            canvas.style.setProperty("--diagram-zoom", zoomLevels[zoomIndex]);
+            viewport.scrollLeft = center * zoomLevels[zoomIndex] - viewport.clientWidth / 2;
+            viewer.querySelector("output").textContent = `${Math.round(zoomLevels[zoomIndex] * 100)}%`;
+            viewer.querySelector('[data-zoom="out"]').disabled = zoomIndex === 0;
+            viewer.querySelector('[data-zoom="in"]').disabled = zoomIndex === zoomLevels.length - 1;
+        }
+        viewer.querySelector(".diagram-zoom").addEventListener("click", (event) => {
+            const direction = event.target.closest("button")?.dataset.zoom;
+            if (direction) setZoom(zoomIndex + (direction === "in" ? 1 : -1));
+        });
+        viewer.querySelector(".diagram-close").addEventListener("click", () => viewer.close());
+        viewer.addEventListener("close", () => {
+            canvas.replaceChildren();
+            selectedNode = null;
+            opener?.focus();
+            opener = null;
+        });
         nodes.forEach((node) => {
             if (!sources.has(node)) sources.set(node, node.textContent);
         });
@@ -100,11 +132,35 @@
                     node.parentElement.append(scratch);
                     scratchNodes.add(scratch);
                     try {
-                        const { svg } = await mermaid.render(`article-diagram-${++diagramId}`, sources.get(node), scratch);
+                        const source = sources.get(node).replace(/^\s*(flowchart|graph)\s+LR\b/m, (match, kind) => compact.matches ? `${kind} TD` : match);
+                        const { svg } = await mermaid.render(`article-diagram-${++diagramId}`, source, scratch);
                         if (disposed || version !== revision || !node.isConnected) return;
                         node.innerHTML = svg;
                         node.dataset.processed = "true";
                         node.style.visibility = "";
+                        let expand = node.parentElement.querySelector(".diagram-expand");
+                        if (!expand) {
+                            expand = document.createElement("button");
+                            expand.type = "button";
+                            expand.className = "diagram-expand";
+                            expand.textContent = "Expand diagram ↗";
+                            node.after(expand);
+                            expand.addEventListener("click", () => {
+                                const diagram = node.querySelector("svg");
+                                if (!diagram) return;
+                                opener = expand;
+                                selectedNode = node;
+                                canvas.replaceChildren(diagram.cloneNode(true));
+                                zoomIndex = 0;
+                                canvas.style.removeProperty("--diagram-zoom");
+                                viewport.scrollTo(0, 0);
+                                viewer.showModal();
+                                setZoom(0);
+                            }, { signal: lifetime.signal });
+                        }
+                        if (viewer.open && selectedNode === node) {
+                            canvas.replaceChildren(node.querySelector("svg").cloneNode(true));
+                        }
                     } catch {
                         if (!disposed && version === revision && !node.querySelector("svg")) {
                             node.textContent = sources.get(node);
@@ -128,10 +184,13 @@
         };
         window.addEventListener("engmanager:themechange", schedule, { signal: lifetime.signal });
         matchMedia("(prefers-color-scheme: dark)").addEventListener("change", schedule, { signal: lifetime.signal });
+        compact.addEventListener("change", schedule, { signal: lifetime.signal });
         active = { surface, dispose() {
             disposed = true;
             lifetime.abort();
             clearTimeout(fallbackTimer);
+            viewer.remove();
+            nodes.forEach((node) => node.parentElement?.querySelector(".diagram-expand")?.remove());
             scratchNodes.forEach((node) => node.remove());
             scratchNodes.clear();
         } };
