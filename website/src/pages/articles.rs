@@ -105,10 +105,6 @@ fn article_meta_tools() -> HtmlFragment {
 // `components/api_receipt/` (ledger #4: one pure render for the copy that
 // lived here and the verbatim twin in pages/homepage.rs).
 
-// The "Articles" nav dropdown moved into the co-located nav component
-// (`components/nav/`). `layout()` hoists the latest-three article rows into
-// `nav::Articles::Dropdown` so the component's render stays pure.
-
 // ArticlePageAssets (the per-page asset flag struct) was retired in P4:
 // `layout` now owns the detail-surface page assets (liquid-title +
 // section-reveal — page-level flat assets for now) and `detail()` composes
@@ -154,17 +150,6 @@ fn layout(
 ) -> String {
     let detail = surface == Surface::Detail;
 
-    // Hoist the latest-three article rows out of the (pure) nav component so it
-    // never touches `public_articles()`/`asset_url` itself. Article pages always
-    // render the dropdown config.
-    let nav_dropdown_items: Vec<nav::DropdownItem> = public_articles()
-        .take(3)
-        .map(|a| nav::DropdownItem {
-            display: a.title_alias.unwrap_or(a.title).to_string(),
-            slug: a.slug.to_string(),
-            date_label: a.date.label().to_string(),
-        })
-        .collect();
     let nav = nav::render(nav::Props {
         brand_icon_url: asset_url("favicon.svg"),
         global_search: global_search::render(global_search::Props {
@@ -172,7 +157,6 @@ fn layout(
         }),
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
-        articles: nav::Articles::Dropdown(nav_dropdown_items),
     });
 
     // Discovery-toast overlay: container + its async (deferred) styles.

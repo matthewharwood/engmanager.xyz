@@ -65,12 +65,12 @@ pub mod to_top;
 /// - `critical_css`: styles for content visible at first paint. Emitted as a
 ///   render-blocking `<link>` in `<head>`, exactly like today's behavior.
 /// - `deferred_css`: interaction-only / below-the-fold styles (modal, toast,
-///   dropdown-panel internals). Emitted async (non-render-blocking) so it never
+///   overlay internals). Emitted async (non-render-blocking) so it never
 ///   delays first paint, with a `<noscript>` fallback for no-JS clients. Only
 ///   mark CSS deferred when the styled element is hidden at load (no FOUC).
 ///
 /// All three dep lists are `asset_url`-style dist paths (e.g. `"css/c-nav.css"`,
-/// `"js/popover-registry.js"`). They may name co-located `c-<feature>` assets
+/// `"js/search.js"`). They may name co-located `c-<feature>` assets
 /// emitted by `build.rs` OR existing flat assets — the component decides per
 /// render (deps can legitimately differ by `Props`).
 pub struct Rendered {
@@ -102,8 +102,8 @@ impl Rendered {
     ///
     /// `js_deps` order is EXECUTION order: a parent absorbing a child keeps
     /// its own deps first, then appends the child's unseen deps in the
-    /// child's order (e.g. `popover-registry.js` must stay ahead of
-    /// `c-nav.js` — callers encode that by listing the registry first).
+    /// child's order (e.g. dependencies preserve the order
+    /// declared by their components).
     pub fn absorb(&mut self, child: Rendered) -> HtmlFragment {
         fn merge(parent: &mut Vec<&'static str>, child: Vec<&'static str>) {
             for dep in child {
@@ -170,7 +170,7 @@ impl Tier {
 /// a document `<head>`: component assets ([`Head::add`]), page assets
 /// (`add_css`/`add_js`/`add_blocking_js`), and positioned raw fragments
 /// (`add_inline`). Dep entries are deduplicated by dist-path string,
-/// first-seen wins (two components sharing `js/popover-registry.js` emit one
+/// first-seen wins (two components sharing `js/search.js` emit one
 /// tag, at the first requester's position); `render` routes every dep through
 /// `asset_url` and emits exactly the tag shapes [`Rendered::head`] emits.
 ///
@@ -398,12 +398,12 @@ mod tests {
 
     #[test]
     fn head_dedups_shared_deps_and_preserves_insertion_order() {
-        // Two components sharing js/popover-registry.js → exactly one tag, at
+        // Two components sharing js/search.js → exactly one tag, at
         // the first requester's position; everything else keeps source order.
-        let first = rendered(vec!["css/c-nav.css"], vec!["js/popover-registry.js"]);
+        let first = rendered(vec!["css/c-nav.css"], vec!["js/search.js"]);
         let second = rendered(
             vec!["css/c-nav.css"],
-            vec!["js/popover-registry.js", "js/c-nav.js"],
+            vec!["js/search.js", "js/nav-search-toggle.js"],
         );
 
         let mut head = Head::new();
@@ -413,13 +413,13 @@ mod tests {
         head.add_js("js/view-transitions.js");
         let html = head.render().into_string();
 
-        assert_eq!(html.matches("popover-registry").count(), 1);
+        assert_eq!(html.matches("/assets/js/search.").count(), 1);
         assert_eq!(html.matches("/assets/css/c-nav.").count(), 1);
         let homepage = html.find("homepage").expect("homepage css");
         let nav = html.find("c-nav").expect("nav css");
-        let registry = html.find("popover-registry").expect("registry js");
+        let search = html.find("/assets/js/search.").expect("search js");
         let vt = html.find("view-transitions").expect("view transitions js");
-        assert!(homepage < nav && nav < registry && registry < vt);
+        assert!(homepage < nav && nav < search && search < vt);
     }
 
     #[test]
@@ -439,12 +439,12 @@ mod tests {
 
     #[test]
     fn absorb_merges_dep_lists_and_returns_child_markup() {
-        let mut parent = rendered(vec!["css/c-nav.css"], vec!["js/popover-registry.js"]);
+        let mut parent = rendered(vec!["css/c-nav.css"], vec!["js/search.js"]);
         let child = Rendered {
             markup: HtmlFragment::new("<span>child</span>".to_string()),
             critical_css: vec!["css/c-nav.css", "css/c-child.css"],
             deferred_css: vec!["css/c-child-overlay.css"],
-            js_deps: vec!["js/popover-registry.js", "js/c-child.js"],
+            js_deps: vec!["js/search.js", "js/c-child.js"],
         };
         let markup = parent.absorb(child);
         assert_eq!(markup.as_str(), "<span>child</span>");
@@ -453,10 +453,7 @@ mod tests {
             vec!["css/c-nav.css", "css/c-child.css"]
         );
         assert_eq!(parent.deferred_css, vec!["css/c-child-overlay.css"]);
-        // Execution order: parent's registry stays first, child's script appends.
-        assert_eq!(
-            parent.js_deps,
-            vec!["js/popover-registry.js", "js/c-child.js"]
-        );
+        // Execution order: parent's script stays first, child's script appends.
+        assert_eq!(parent.js_deps, vec!["js/search.js", "js/c-child.js"]);
     }
 }

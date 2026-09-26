@@ -150,7 +150,7 @@ try{
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'navigation width '+width);
     await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
     const navRect=query('.site-nav').getBoundingClientRect(),themeRect=query('[data-theme-cycle]').getBoundingClientRect(),searchRect=query('[data-search-toggle]').getBoundingClientRect();
-    const controls=[...doc().querySelectorAll('.site-nav-brand,.nav-dropdown-trigger,.site-nav-links > a,.site-search-toggle,[data-theme-cycle]')].filter(visible).map(node=>node.getBoundingClientRect());
+    const controls=[...doc().querySelectorAll('.site-nav-brand,.site-nav-links > a,.site-search-toggle,[data-theme-cycle]')].filter(visible).map(node=>node.getBoundingClientRect());
     assert(navRect.left>=0&&navRect.right<=width&&Math.abs(themeRect.left+themeRect.width/2-(navRect.left+navRect.width/2))<2&&searchRect.width>=30,'centered theme and visible search at '+width+'px: '+JSON.stringify({nav:navRect,theme:themeRect,search:searchRect}));
     assert(controls.every((rect,index)=>rect.left>=0&&rect.right<=width&&controls.slice(index+1).every(other=>rect.right<=other.left||other.right<=rect.left)),'navigation controls do not overlap at '+width+'px: '+JSON.stringify(controls));
   }

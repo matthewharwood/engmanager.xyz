@@ -2,8 +2,7 @@
 //!
 //! Renders the fixed sidebar navigation for an article's h2/h3 headings. The
 //! heading list is hoisted data ([`Heading`], extracted from the Markdown by
-//! the article pipeline), so `render` stays pure — same shape as
-//! `nav::DropdownItem`.
+//! the article pipeline), so `render` stays pure.
 //!
 //! JS contract: the co-located `script.js` (served as `js/c-article-toc.js`,
 //! formerly the flat `js/toc-waypoints.js`) is the scrollspy — it toggles

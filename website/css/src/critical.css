@@ -389,22 +389,16 @@
             inline-size: 1.75rem;
         }
 
-        /* The folder and social icons fit beside the brand, leaving the
-         * center theme control and right-hand search/services clear on mobile. */
-        .site-nav-links > .site-nav-link[aria-label="Articles"],
-        .site-nav-links > .nav-dropdown {
+        /* Social icons fit beside the brand, leaving the center theme
+         * control and right-hand search/services clear on mobile. */
+        .site-nav-links > .site-nav-link[aria-label="Join the Discord"] {
             position: absolute;
             inset-inline-start: 1.75rem;
         }
 
-        .site-nav-links > .site-nav-link[aria-label="Join the Discord"] {
-            position: absolute;
-            inset-inline-start: 3.5rem;
-        }
-
         .site-nav-links > .site-nav-link[aria-label="View on GitHub"] {
             position: absolute;
-            inset-inline-start: 5.25rem;
+            inset-inline-start: 3.5rem;
         }
     }
 }
