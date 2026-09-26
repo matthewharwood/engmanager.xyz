@@ -21,11 +21,23 @@ impl Drop for ProxyTask {
     }
 }
 
-// Hold an earlier registry probe pending before the page's deferred scripts
-// execute. Releasing it rejects that optional probe; canvas rendering remains
-// entirely native, including its paint event and PNG encoding.
+// Hold an earlier registry probe and the cold theme-font fetch before production
+// scripts execute. The font response still passes through the real FontFace
+// decoder; canvas drawing, paint events, and successful PNG encoding are native.
 const STARTUP_PROBE: &str = r##"<script>
 if(new URLSearchParams(location.search).has('enabled')){
+  localStorage.setItem('engmanager.theme','light');
+  const realFetch=window.fetch.bind(window);
+  const fontGate=new Promise(resolve=>{window.__quoteCardReleaseFont=()=>{
+    window.__quoteCardFontPending=false;resolve();
+  };});
+  window.fetch=async(url,options={})=>{
+    if(String(url).includes('.woff2')&&options.cache!=='only-if-cached'){
+      window.__quoteCardFontPending=true;
+      await fontGate;
+    }
+    return realFetch(url,options);
+  };
   const descriptor=Object.getOwnPropertyDescriptor(navigator,'getBattery');
   Object.defineProperty(navigator,'getBattery',{configurable:true,value:()=>new Promise((resolve,reject)=>{
     window.__quoteCardProbePending=true;
@@ -67,12 +79,27 @@ try{
   assert(!discovered()&&!receipt()?.classList.contains('api-cell-discovered'),'HTML preview does not award receipt discovery');
   if(enabled){
     await until(()=>window.__quoteCardProbePending,'earlier capability probe remains pending');
-    let blob,filename;const create=URL.createObjectURL,anchorClick=HTMLAnchorElement.prototype.click;
+    await until(()=>window.__quoteCardFontPending&&document.documentElement.dataset.fontState==='loading','cold theme font enters its real loading state');
+    assert(getComputedStyle(query('[data-quote-card-quote]')).fontFamily.includes('Redacted'),'cold theme preview uses the temporary Redacted face');
+    let blob,filename,fontAtEncoding;const create=URL.createObjectURL,anchorClick=HTMLAnchorElement.prototype.click,nativeToBlob=HTMLCanvasElement.prototype.toBlob;
     URL.createObjectURL=function(value){if(value?.type==='image/png')blob=value;return create.call(this,value);};
     HTMLAnchorElement.prototype.click=function(){if(this.download&&this.href.startsWith('blob:')){filename=this.download;return;}return anchorClick.call(this);};
+    HTMLCanvasElement.prototype.toBlob=function(...args){
+      if(this.hasAttribute('data-quote-card-canvas'))fontAtEncoding={
+        state:document.documentElement.dataset.fontState,theme:document.documentElement.dataset.fontTheme,
+        family:getComputedStyle(query('[data-quote-card-quote]')).fontFamily,
+        decoded:[...document.fonts].some(face=>face.family==='PP Neue Montreal'&&face.status==='loaded'),
+      };
+      return nativeToBlob.apply(this,args);
+    };
     try{
       download.click();
+      await delay(300);
+      assert(window.__quoteCardFontPending&&document.documentElement.dataset.fontState==='loading','real theme-font fetch is still held during export');
+      assert(download.disabled&&!blob&&exports===0&&!query('[data-quote-card-canvas]'),'export waits for the selected font without encoding Redacted content or claiming discovery');
+      window.__quoteCardReleaseFont();
       await until(()=>blob&&exports===1,'native PNG export');
+      assert(fontAtEncoding?.state==='ready'&&fontAtEncoding.theme==='light'&&fontAtEncoding.decoded&&fontAtEncoding.family.includes('PP Neue Montreal')&&!fontAtEncoding.family.includes('Redacted'),'native encoding uses the selected decoded font after the loading state ends');
       assert(window.__quoteCardProbePending,'native export completes before registry initialization reaches HTML-in-Canvas');
       assert(receipt()?.classList.contains('api-cell-active')&&receipt().classList.contains('api-cell-discovered')&&discovered(),'early native export marks the actual receipt active and persists discovery');
       assert(receipt().textContent.includes('HTML/CSS quote card rendered to PNG'),'receipt records the successful native export');
@@ -103,7 +130,7 @@ try{
         query('[data-quote-card-close]').click();await until(()=>!dialog.open&&!download.disabled,'close cancels font wait');
         assert(!query('[data-quote-card-canvas]')&&exports===1,'closing a pending export leaves no temporary canvas');
       }finally{if(descriptor)Object.defineProperty(fonts,'ready',descriptor);else delete fonts.ready;}
-    }finally{URL.createObjectURL=create;HTMLAnchorElement.prototype.click=anchorClick;}
+    }finally{URL.createObjectURL=create;HTMLAnchorElement.prototype.click=anchorClick;HTMLCanvasElement.prototype.toBlob=nativeToBlob;}
   }else{
     const clipboard=navigator.clipboard,write=clipboard.writeText;clipboard.writeText=()=>Promise.reject(new DOMException('Denied by test','NotAllowedError'));
     try{

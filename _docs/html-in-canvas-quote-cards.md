@@ -46,7 +46,8 @@ focus return to the action that opened it.
 - Capability checks require `CanvasRenderingContext2D.prototype.drawElementImage`
   and `HTMLCanvasElement.prototype.requestPaint`; browser branding is not
   used to infer support.
-- Export waits for fonts, measures the real preview, and temporarily moves
+- Export waits for the selected theme's decoded fonts and loading transition,
+  then the document font set, measures the real preview, and temporarily moves
   that same artwork node inside a laid-out canvas. It does not hide the
   source using `display: none` or manually dispatch a synthetic paint event.
   Font loading and painting each have a five-second timeout; closing the
@@ -111,10 +112,10 @@ The browser suite launches an isolated Chrome profile with the feature
 explicitly disabled for fallback checks and enabled for native PNG checks.
 It does not change the reader's browser settings.
 
-Verified locally: 117 Rust unit tests and both quote-card browser cases pass.
+Verified locally: 119 Rust unit tests and both quote-card browser cases pass.
 The native PNG was also visually inspected for text, wrapping, and source
 attribution. Browser checks cover real PNG pixels, null-encoder recovery,
-font timeout/cancellation, the 320px fallback, clipboard denial, and modal
+delayed theme fonts, font timeout/cancellation, the 320px fallback, clipboard denial, and modal
 Escape/focus restoration. The journey suite checks normal and reduced-motion
 navigation. Its mobile coaching assertion measures the slider within its
 component, since changing read-mode paragraphs legitimately moves the whole

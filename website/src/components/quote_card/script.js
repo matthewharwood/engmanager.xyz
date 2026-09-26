@@ -27,7 +27,18 @@
             const abort = () => finish(new DOMException('Export cancelled', 'AbortError'));
             const timer = setTimeout(() => finish(new Error('Font loading timed out')), 5000);
             signal.addEventListener('abort', abort, { once: true });
-            document.fonts.ready.then(() => finish(), finish);
+            (async () => {
+                let current;
+                do {
+                    // Theme faces load outside FontFaceSet until decoded, and
+                    // its transition can temporarily substitute Redacted bars.
+                    current = window.__engTypography?.ready;
+                    await current;
+                    await window.__engTypography?.displayReady;
+                    await document.fonts.ready;
+                    signal.throwIfAborted();
+                } while (current !== window.__engTypography?.ready);
+            })().then(() => finish(), finish);
         });
         signal.throwIfAborted();
         return new Promise((resolve, reject) => {
