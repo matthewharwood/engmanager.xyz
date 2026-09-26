@@ -1,6 +1,5 @@
 use axum::Json;
 use axum::extract::{Query, RawQuery, State};
-use axum::http::StatusCode;
 use axum::response::{Html, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
@@ -52,7 +51,7 @@ pub async fn page(State(state): State<AppState>, RawQuery(raw_query): RawQuery) 
         Ok(results) => no_store(render_page(&params, &search_query, &results)),
         Err(error) => {
             tracing::error!(q = %params.q, err = ?error, "search page failed");
-            no_store((StatusCode::INTERNAL_SERVER_ERROR, "Search is unavailable"))
+            super::server_error::response()
         }
     }
 }

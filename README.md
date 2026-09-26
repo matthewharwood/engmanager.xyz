@@ -37,12 +37,30 @@ Visit <http://127.0.0.1:3000>. Routes:
 - `GET /personality/{prepare,test,review,report,share,library}` → allowlisted local-first assessment screens; unknown steps return 404
 - `GET /personality/sw.js` → the assessment service worker, scoped to `/personality/`
 - `GET /health` → `OK`
+- `GET /500` → the standalone server error page, with HTTP 500 (visual preview, not a health check)
 - `GET /coaching` → 308 to `https://coach.engmanager.xyz/`
 - `GET /` on `coach.localhost:3000` → 1:1 coaching booking page
   (see `_docs/coach-subdomain-runbook.md`)
 
 No database is required. The site runs without environment configuration;
 newsletter submissions require the Kit settings below.
+
+### Server error page
+
+The 500 document embeds a static fractured octahedron SVG and its CSS directly
+in the HTML. It uses system fonts with no JavaScript, animation, image downloads,
+shared page shell, or external assets. Facet gradients, offset geometry, and
+fine edge highlights supply depth without a runtime renderer. Light and dark
+appearance follow the system preference. Retry is a normal link to the current
+document; home and email contact also work without JavaScript.
+
+The search page uses this document on failure. Handler panics are caught and
+serve it to browser document requests; API and non-document requests retain
+a generic JSON error. Expected handler responses are left intact. The HTML
+keeps HTTP 500, blocks scripts, and uses `no-store, no-transform` plus CDN
+no-store headers. `/500` exposes the same document for visual verification.
+The app must be running to return this page: startup failures, an unavailable
+origin, and failures after response streaming begins remain separate cases.
 
 ### Newsletter (Kit)
 
