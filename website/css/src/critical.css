@@ -1075,7 +1075,10 @@
         *, *::before, *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
+            /* A nonzero duration creates transitions even on elements whose
+             * default transition-property is all, including responsive sizing. */
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
             scroll-behavior: auto !important;
         }
     }
