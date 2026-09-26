@@ -1,3 +1,4 @@
+pub mod article_hero;
 pub mod articles;
 pub mod checkout;
 pub mod coach;

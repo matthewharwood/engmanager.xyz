@@ -8,6 +8,7 @@ use eng_markup::view;
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 
 use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
+use super::article_hero;
 use super::{
     AVATAR_SRC, SHARE_CARD_SIZE, article_share_card, avatar_srcset, render_experience_urls,
     render_liquid_title_filter, render_nav_search_toggle, share_card,
@@ -131,7 +132,7 @@ fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
 
 /// Which article surface is being laid out. The index drops every
 /// detail-only asset (ledger #5): the Prism CDN pair, copy-code.js,
-/// toc-waypoints.js, and auteurs-shader.js.
+/// toc-waypoints.js, and article-heroes.js.
 #[derive(Clone, Copy, PartialEq)]
 enum Surface {
     Index,
@@ -187,6 +188,7 @@ fn layout(
     assets.add_css(discord_widget::STYLE);
     assets.add_css(article_toc::STYLE);
     if detail {
+        assets.add_css("css/article-heroes.css");
         // Detail-surface page assets (formerly ArticlePageAssets flags —
         // every detail page sets both): the liquid-title effect and the
         // one-time section reveal. Page-level flat assets for now.
@@ -213,7 +215,7 @@ fn layout(
     scripts.add_js("js/search-keyclick.js");
     if detail {
         scripts.add_js("js/copy-code.js");
-        scripts.add_js("js/auteurs-shader.js");
+        scripts.add_js("js/article-heroes.js");
         // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
         // exact head position; its stylesheet is pinned after articles.css
         // in the assets section above, so only the script lands here.
@@ -529,6 +531,7 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                          tabindex="-1"
                          data-article-slug={ slug.clone() }>
                     { title }
+                    { article_hero::render(&slug) }
                     <header class="article-meta">
                         <img class="article-meta-avatar"
                              src=AVATAR_SRC

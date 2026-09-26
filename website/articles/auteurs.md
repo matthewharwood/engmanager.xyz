@@ -1,5 +1,3 @@
-<canvas class="auteurs-shader" aria-hidden="true"></canvas>
-
 **People, Process & Product.** A global group of engineers, designers, and product managers who plan, build, and ship things that matter.
 
 ## People
