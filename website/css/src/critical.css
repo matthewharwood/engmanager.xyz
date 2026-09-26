@@ -168,8 +168,10 @@
         font-weight: 700;
         letter-spacing: 0.06em;
         line-height: 1;
-        padding-block: 0.5rem;
-        padding-inline: 0.5rem;
+        inline-size: 2.25rem;
+        block-size: 2.25rem;
+        padding: 0;
+        justify-content: center;
         text-decoration: none;
         text-transform: uppercase;
         display: inline-flex;
@@ -190,7 +192,7 @@
         inline-size: 1.15rem;
         block-size: 1.15rem;
         flex-shrink: 0;
-        display: none;
+        display: block;
     }
 
     /* Minimal magnifier opens the search overlay on every viewport. */
@@ -372,53 +374,37 @@
         .site-nav-wordmark {
             display: inline;
         }
-
-        .site-nav-link {
-            font-size: 0.75rem;
-            padding-inline: 0.75rem;
-        }
-    }
-
-    @media (max-width: 60rem) {
-        .site-nav-links > .site-nav-link[aria-label="Join the Discord"],
-        .site-nav-links > .site-nav-link[aria-label="View on GitHub"] {
-            display: none;
-        }
     }
 
     @media (max-width: 42rem) {
         .site-nav {
-            grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
+            padding-inline: 0.5rem;
         }
 
-        .site-nav-icon {
-            display: inline-flex;
+        .site-nav-wordmark {
+            display: none;
         }
 
+        .site-nav-link {
+            inline-size: 1.75rem;
+        }
+
+        /* The folder and social icons fit beside the brand, leaving the
+         * center theme control and right-hand search/services clear on mobile. */
         .site-nav-links > .site-nav-link[aria-label="Articles"],
         .site-nav-links > .nav-dropdown {
             position: absolute;
-            inset-inline-start: 3rem;
+            inset-inline-start: 1.75rem;
         }
 
-        /* Visually hide the text labels but keep them accessible to AT
-         * (link names still announce as "Articles", "Discord", etc.). */
-        .site-nav-link-label {
+        .site-nav-links > .site-nav-link[aria-label="Join the Discord"] {
             position: absolute;
-            inline-size: 1px;
-            block-size: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+            inset-inline-start: 3.5rem;
         }
 
-        /* Hide the chevron on the Articles dropdown trigger on mobile —
-         * the folder icon is enough; tap still opens the menu. */
-        .nav-dropdown-chevron {
-            display: none;
+        .site-nav-links > .site-nav-link[aria-label="View on GitHub"] {
+            position: absolute;
+            inset-inline-start: 5.25rem;
         }
     }
 }
@@ -1089,7 +1075,10 @@
         *, *::before, *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
+            /* A nonzero duration creates transitions even on elements whose
+             * default transition-property is all, including responsive sizing. */
+            transition-duration: 0s !important;
+            transition-delay: 0s !important;
             scroll-behavior: auto !important;
         }
     }
