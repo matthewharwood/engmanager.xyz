@@ -1,0 +1,230 @@
+/* The preview and its exported DOM share these rules. No fixed card height:
+ * long passages, titles, and source URLs wrap without cutting off text. */
+[data-quote-card-open][hidden] {
+    display: none;
+}
+
+.quote-card-dialog {
+    box-sizing: border-box;
+    inline-size: min(44rem, calc(100% - 2rem));
+    max-inline-size: calc(100% - 2rem);
+    max-block-size: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.5rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font-family: var(--font-sans);
+    box-shadow: 0 1.5rem 6rem rgb(0 0 0 / 0.35);
+}
+
+.quote-card-dialog::backdrop {
+    background: rgb(0 0 0 / 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.quote-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-block-end: 1px solid var(--ctp-surface0);
+}
+
+.quote-card-heading {
+    margin: 0;
+    color: var(--ctp-text);
+    font: 700 1rem/1.4 var(--font-sans);
+    letter-spacing: -0.01em;
+}
+
+.quote-card-close {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--ctp-surface0);
+    border-radius: 0.25rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font: 400 1rem/1 var(--font-sans);
+    cursor: pointer;
+}
+
+.quote-card-body {
+    padding: 1.25rem;
+}
+
+.quote-card-intro {
+    margin: 0 0 1.25rem;
+    color: var(--ctp-subtext1);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.quote-card-label {
+    display: block;
+    margin-block-end: 0.5rem;
+    color: var(--ctp-text);
+    font: 600 0.75rem/1.5 var(--font-mono);
+}
+
+.quote-card-text {
+    box-sizing: border-box;
+    display: block;
+    inline-size: 100%;
+    min-block-size: 6rem;
+    padding: 0.75rem;
+    resize: vertical;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.25rem;
+    background: var(--ctp-mantle);
+    color: var(--ctp-text);
+    font: 400 0.875rem/1.55 var(--font-sans);
+}
+
+.quote-card-preview {
+    margin-block-start: 1.25rem;
+    min-inline-size: 0;
+}
+
+.quote-card-artwork {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    border: 1px solid var(--ctp-surface1);
+    border-block-start: 4px solid var(--accent);
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font-family: var(--font-sans);
+    overflow-wrap: anywhere;
+    text-align: start;
+}
+
+.quote-card-artwork > .quote-card-wordmark {
+    margin: 0 0 1.75rem;
+    color: var(--ctp-text);
+    font: 900 0.6875rem/1.5 var(--font-display);
+    letter-spacing: 0.08em;
+}
+
+.quote-card-artwork > .quote-card-quote {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ctp-text);
+    font: 600 clamp(1.25rem, 2.75vw, 1.875rem)/1.4 var(--font-sans);
+    letter-spacing: -0.025em;
+    white-space: pre-wrap;
+}
+
+.quote-card-credit {
+    margin-block-start: 2rem;
+    padding-block-start: 1rem;
+    border-block-start: 1px solid var(--ctp-surface1);
+}
+
+.quote-card-credit > .quote-card-author {
+    margin: 0 0 0.25rem;
+    color: var(--ctp-text);
+    font: 700 0.8125rem/1.5 var(--font-sans);
+}
+
+.quote-card-credit > .quote-card-article {
+    margin: 0;
+    color: var(--ctp-text);
+    font: 400 0.8125rem/1.5 var(--font-sans);
+}
+
+.quote-card-credit > .quote-card-source {
+    display: block;
+    margin-block-start: 0.625rem;
+    color: var(--ctp-subtext1);
+    font: 400 0.625rem/1.6 var(--font-mono);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
+.quote-card-footer {
+    padding: 0 1.25rem 1.25rem;
+}
+
+.quote-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+}
+
+.quote-card-button {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.25rem;
+    background: var(--ctp-mantle);
+    color: var(--ctp-text);
+    font: 600 0.75rem/1.5 var(--font-mono);
+    cursor: pointer;
+}
+
+.quote-card-button-primary {
+    background: var(--ctp-text);
+    color: var(--ctp-base);
+    border-color: var(--ctp-text);
+}
+
+.quote-card-button[hidden] {
+    display: none;
+}
+
+.quote-card-button:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.quote-card-button:hover:not(:disabled),
+.quote-card-close:hover {
+    border-color: var(--ctp-text);
+}
+
+.quote-card-close:focus-visible,
+.quote-card-button:focus-visible,
+.quote-card-text:focus-visible,
+.quote-card-source:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.quote-card-status {
+    margin: 0.75rem 0 0;
+    color: var(--ctp-subtext1);
+    font: 400 0.75rem/1.6 var(--font-sans);
+}
+
+@media (max-width: 30rem) {
+    .quote-card-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .quote-card-body {
+        padding: 1rem;
+    }
+
+    .quote-card-footer {
+        padding: 0 1rem 1rem;
+    }
+
+    .quote-card-button {
+        flex: 1 1 auto;
+    }
+}

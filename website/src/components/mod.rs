@@ -47,6 +47,7 @@ pub mod discovery_toasts;
 pub mod global_search;
 pub mod nav;
 pub mod quick_actions;
+pub mod quote_card;
 pub mod region_map;
 pub mod to_top;
 

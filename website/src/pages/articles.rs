@@ -19,7 +19,8 @@ use crate::coaching::{COACH_ORIGIN, OFFER, SessionMode, TESTIMONIALS, cta_label,
 use crate::components::article_toc::{self, Heading};
 use crate::components::quick_actions::theme_picker;
 use crate::components::{
-    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, region_map, to_top,
+    Head, api_receipt, discord_widget, discovery_toasts, global_search, nav, quote_card,
+    region_map, to_top,
 };
 use crate::config::SITE_ORIGIN;
 use crate::content::{
@@ -76,6 +77,10 @@ fn render_taxonomy(category: Category, tags: &[Tag]) -> HtmlFragment {
 fn article_meta_tools() -> HtmlFragment {
     view! {
         <div class="article-meta-tools" aria-label="Article tools">
+            <button class="article-meta-tool" type="button" data-quote-card-open hidden>
+                <span aria-hidden="true">"❝"</span>
+                <span>"Make quote card"</span>
+            </button>
             <button class="article-meta-tool" type="button" data-share hidden>
                 <span aria-hidden="true">"↗"</span>
                 <span>"Share"</span>
@@ -189,6 +194,7 @@ fn layout(
     assets.add_css(article_toc::STYLE);
     if detail {
         assets.add_css("css/article-heroes.css");
+        assets.add_deferred_css(quote_card::STYLE);
         // Detail-surface page assets (formerly ArticlePageAssets flags —
         // every detail page sets both): the liquid-title effect and the
         // one-time section reveal. Page-level flat assets for now.
@@ -228,6 +234,9 @@ fn layout(
     scripts.add_js("js/view-transitions.js");
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
+    if detail {
+        scripts.add_js(quote_card::SCRIPT);
+    }
 
     let nav_markup = nav.markup;
     let toasts_markup = toasts.markup;
@@ -525,6 +534,8 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
             let article_navigation = render_article_navigation(article_index);
             let extra_assets = foottraffic_map_assets(&slug);
             let title = render_article_title(page_title, &vt_name);
+            let quote_card =
+                quote_card::render(page_title, &format!("{SITE_ORIGIN}/articles/{slug}")).markup;
             let body = view! {
                 <article id="main"
                          class="article"
@@ -560,6 +571,7 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                     { render_coaching_cta() }
                 </article>
                 { toc }
+                { quote_card }
             };
             // Hidden articles keep robots noindex,nofollow and gain NO
             // canonical/og/JSON-LD (ledger #3 is additive for indexed pages
