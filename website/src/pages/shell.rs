@@ -2,7 +2,7 @@
 //!
 //! Owns exactly what never varies (or varies only by a typed prop): doctype,
 //! `<html lang>`, charset/viewport, `<title>`, favicon, sitemap link, resource
-//! hints, the open-props → Google-fonts → critical.css stylesheet trio, the
+//! hints, the open-props → critical.css stylesheets, the
 //! synchronous theme runtime (theme-toggle.js + the `__engSfxUrls` island),
 //! manifest link, theme-color, dev-mode marker, and the body scaffold
 //! (skip-link + `<body class>`). Everything page/component-specific flows
@@ -14,10 +14,10 @@
 //!   runtime (deferred scripts, data islands, component heads).
 //!
 //! CRITICAL sequencing invariants (refactor-plan hard invariants): per-page
-//! head order stays EXACTLY open-props → fonts → critical.css → page assets →
+//! head order stays open-props → critical.css → page assets → typography →
 //! theme-toggle.js (synchronous, never deferred) → `__engSfxUrls` island
 //! (before any `audio.js` consumer) → page scripts; both collectors preserve
-//! insertion order so each page reproduces its pre-shell head byte-for-byte.
+//! insertion order so shared assets initialize consistently on every page.
 //! (Patterns: rust-core-patterns "builders"; maud-components-patterns layout
 //! composition, ported to eng-markup.)
 
@@ -27,8 +27,7 @@ use eng_domain::HtmlFragment;
 use eng_markup::view;
 
 use super::{
-    GOOGLE_FONTS_HREF, OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls,
-    render_sitemap_link,
+    OPEN_PROPS_HREF, render_dev_meta, render_resource_hints, render_sfx_urls, render_sitemap_link,
 };
 use crate::asset_url;
 use crate::components::Head;
@@ -317,6 +316,8 @@ impl PageShell {
             head.add_css("css/journey.css");
         }
         head.extend(self.assets);
+        head.add_inline(super::typography::config());
+        head.add_blocking_js("js/theme-fonts.js");
         head.add_blocking_js("js/theme-toggle.js");
         head.add_inline(render_sfx_urls());
         head.extend(self.scripts);
@@ -354,7 +355,6 @@ impl PageShell {
         doc.push_str(
             view! {
                 <link rel="stylesheet" href=OPEN_PROPS_HREF />
-                <link rel="stylesheet" href=GOOGLE_FONTS_HREF />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
             }
             .as_str(),

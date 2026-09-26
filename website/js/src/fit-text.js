@@ -151,6 +151,7 @@ function syncTitleMetrics(svg, ink) {
         const run = ++generation;
         try {
             if (document.fonts && document.fonts.ready) {
+                await window.__engTypography?.displayReady;
                 await document.fonts.ready;
             }
             if (run !== generation) return;

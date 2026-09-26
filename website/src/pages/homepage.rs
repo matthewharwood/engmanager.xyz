@@ -238,7 +238,7 @@ impl Component for EngHeadline {
                 <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-a"
                       x="0"
                       y="160"
-                      font-family="Monument Extended, sans-serif"
+                      font-family="PP Monument Extended, sans-serif"
                       font-weight="900"
                       font-size="144"
                       aria-hidden="true">
@@ -247,7 +247,7 @@ impl Component for EngHeadline {
                 <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-b"
                       x="0"
                       y="160"
-                      font-family="Monument Extended, sans-serif"
+                      font-family="PP Monument Extended, sans-serif"
                       font-weight="900"
                       font-size="144"
                       aria-hidden="true">
@@ -274,7 +274,7 @@ impl Component for EngHeadline {
                         <text class={ text_class }
                               x="0"
                               y="160"
-                              font-family="Monument Extended, sans-serif"
+                              font-family="PP Monument Extended, sans-serif"
                               font-weight="900"
                               font-size="144"
                               fill="currentColor">
@@ -350,7 +350,7 @@ impl Component for EngResume {
 }
 
 pub async fn index() -> Html<String> {
-    // Each article rendered as its own fluid SVG title, Archivo Black, linked
+    // Each article rendered as its own fluid SVG title, PP Monument Extended Black, linked
     // to the article detail page. Stacked under <EngHeadline />. Titles auto-fit
     // their container width via assets/scripts/fit-text.js.
     let article_links: HtmlFragment = public_articles()
@@ -403,7 +403,7 @@ pub async fn index() -> Html<String> {
                              aria-label={ a.title }>
                             <text x="0"
                                   y="160"
-                                  font-family="Archivo, sans-serif"
+                                  font-family="PP Monument Extended, sans-serif"
                                   font-weight="900"
                                   font-size="144"
                                   fill="currentColor">
@@ -460,6 +460,7 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/search.js");
     scripts.add_js("js/search-keyclick.js");
     scripts.add_js("js/fit-text.js");
+    scripts.add_js("js/cursor-renderer.js");
     scripts.add_js("js/big-cursor.js");
     scripts.add_js("js/keyboard-nav.js");
     scripts.add_js("js/view-transitions.js");
@@ -489,6 +490,9 @@ pub async fn index() -> Html<String> {
     };
 
     let body = view! {
+                <span hidden data-cursor-models
+                      data-pointer-url={ crate::asset_url("cursors/v1/pointer.glb") }
+                      data-hand-url={ crate::asset_url("cursors/v1/hand.glb") }></span>
                 { nav_markup }
                 <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
                     <svg class="dvd-bouncer-mark"
@@ -504,7 +508,7 @@ pub async fn index() -> Html<String> {
                         <text x="80"
                               y="42"
                               text-anchor="middle"
-                              font-family="Arial Black, Archivo, sans-serif"
+                              font-family="PP Monument Extended, sans-serif"
                               font-size="34"
                               font-weight="900"
                               letter-spacing="2">

@@ -77,7 +77,7 @@
 
     function overlayOpen() {
         return document.body.matches('.shop-panel-open,.shop-cart-open')
-            || !!document.querySelector('dialog[open],[popover]:popover-open');
+            || !!document.querySelector('dialog[open],[popover]:popover-open:not([data-cursor-overlay])');
     }
 
     function syncOverlay() {
@@ -217,6 +217,7 @@
         iframe.title = `Preview of ${rec.title}`;
         iframe.addEventListener('load', () => {
             try {
+                window.__engTypography?.syncDocument(iframe.contentDocument);
                 iframe.contentWindow.scrollTo(0, scroll);
                 iframe.contentDocument.fonts?.ready.then(() => {
                     if (iframe.isConnected) iframe.contentWindow.scrollTo(0, scroll);
@@ -496,7 +497,7 @@
                 stage = null;
             }
             nav._before?.(document.body);
-            document.querySelectorAll('[popover]:popover-open').forEach((node) => node.hidePopover());
+            document.querySelectorAll('[popover]:popover-open:not([data-cursor-overlay])').forEach((node) => node.hidePopover());
             clearNext();
             previousCard?._resize?.disconnect();
             previousCard?.remove(); previousCard = null;
@@ -659,6 +660,11 @@
                 const html = iframe.contentDocument?.documentElement;
                 if (theme) html?.setAttribute('data-theme', theme); else html?.removeAttribute('data-theme');
             } catch {}
+        });
+    });
+    window.addEventListener('engmanager:fontchange', () => {
+        runtime.querySelectorAll('iframe').forEach((iframe) => {
+            try { window.__engTypography?.syncDocument(iframe.contentDocument); } catch {}
         });
     });
     window.addEventListener('pagehide', () => { if (!nav.busy) remember(); });

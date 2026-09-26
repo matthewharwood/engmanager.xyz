@@ -525,6 +525,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn feed_aliases_share_versioned_cursor_assets() {
+        let router = test_router().await;
+        let renderer = asset_url("js/cursor-renderer.js");
+        let controller = asset_url("js/big-cursor.js");
+        let pointer = asset_url("cursors/v1/pointer.glb");
+        let hand = asset_url("cursors/v1/hand.glb");
+        for path in ["/", "/feed"] {
+            let html = body_string(get(&router, SITE_HOST, path).await).await;
+            assert!(html.contains(&format!("data-pointer-url=\"{pointer}\"")));
+            assert!(html.contains(&format!("data-hand-url=\"{hand}\"")));
+            assert!(html.find(&renderer).unwrap() < html.find(&controller).unwrap());
+        }
+        for path in [pointer, hand] {
+            assert_ne!(path, "/assets/cursors/v1/pointer.glb");
+            assert_ne!(path, "/assets/cursors/v1/hand.glb");
+            let response = get(&router, SITE_HOST, &path).await;
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(
+                header_str(&response, "content-type"),
+                Some("model/gltf-binary")
+            );
+            let bytes = response.into_body().collect().await.unwrap().to_bytes();
+            assert_eq!(&bytes[..4], b"glTF");
+        }
+    }
+
+    #[tokio::test]
     async fn security_headers_present_on_success_and_404() {
         let router = test_router().await;
         for path in ["/", "/definitely-not-a-page"] {

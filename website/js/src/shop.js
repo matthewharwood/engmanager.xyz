@@ -2645,7 +2645,7 @@ function buildAppearance() {
             colorTextPlaceholder: muted,
             colorDanger: danger,
             colorIconTabSelected: primary,
-            fontFamily: '"Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
             fontSizeBase: "16px",
             borderRadius: radius,
             spacingUnit: "4px",

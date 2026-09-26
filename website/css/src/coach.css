@@ -480,6 +480,8 @@
     inline-size: min(100%, 60rem);
     display: none;
     justify-self: center;
+    /* Keep control rows intrinsic when a changed story grows the parent grid. */
+    align-content: start;
     gap: 0.55rem;
 }
 
@@ -651,6 +653,9 @@
         display: grid;
         grid-template-columns: max-content minmax(0, 1fr);
         grid-template-rows: 1.5rem 1rem;
+        /* Match the two rows + gap; prevent intrinsic grid sizing from
+         * retaining the taller desktop label after a viewport change. */
+        block-size: 2.7rem;
         align-items: center;
         gap: 0.2rem 0.65rem;
     }

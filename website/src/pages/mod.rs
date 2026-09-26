@@ -8,13 +8,12 @@ pub mod personality;
 pub mod search;
 pub mod shell;
 pub mod shop;
+pub mod typography;
 
 use eng_domain::HtmlFragment;
 use eng_markup::view;
 
 pub const OPEN_PROPS_HREF: &str = "https://unpkg.com/open-props@1.7.23/open-props.min.css";
-pub const GOOGLE_FONTS_HREF: &str =
-    "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap";
 
 // Cloudflare Images proxy for the author avatar. Reused by the homepage
 // (bottom-right popover trigger) and the article-page meta block.
@@ -68,10 +67,7 @@ pub fn article_share_card(slug: &str) -> String {
 }
 
 pub fn render_resource_hints() -> HtmlFragment {
-    HtmlFragment::new(
-        r#"<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preload" href="/assets/fonts/monumentextended-black-webfont.woff2" as="font" type="font/woff2" crossorigin>"#
-            .to_string(),
-    )
+    typography::resource_hints()
 }
 
 pub fn render_sitemap_link() -> HtmlFragment {

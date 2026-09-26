@@ -54,6 +54,7 @@ function apply(theme) {
     } else {
         root.setAttribute("data-theme", theme);
     }
+    window.__engTypography?.apply(theme);
     syncLabel(theme);
     window.dispatchEvent(
         new CustomEvent("engmanager:themechange", {
