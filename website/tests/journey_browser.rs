@@ -77,6 +77,15 @@ try{
   await click('[data-close-product]');await until(()=>win().location.pathname==='/shop'&&query('[data-product-panel]')?.getAttribute('aria-hidden')==='true','hard-loaded product returns to shop');
 
   await navigate(article);
+  for(const width of [320,390]){
+    frame.style.width=width+'px';await until(()=>win().innerWidth===width,'diagram viewport '+width);
+    for(const figure of doc().querySelectorAll('.model-figure')){
+      const diagram=figure.querySelector('.mermaid'),bounds=figure.getBoundingClientRect();
+      assert(bounds.left>=0&&bounds.right<=width&&diagram.clientWidth<=figure.clientWidth,'diagrams stay inside the mobile article at '+width+'px');
+      if(diagram.querySelector('svg'))assert(diagram.querySelector('svg').getBoundingClientRect().width<=diagram.clientWidth+1,'rendered diagram fits its frame at '+width+'px');
+    }
+  }
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after diagram sizing');
   assert(!visible(previous()),'ordinary navigation to an article creates no previous-page window');
   const identity=doc();
   win().scrollTo({top:600,behavior:'instant'});await delay(80);const articleScroll=win().scrollY;

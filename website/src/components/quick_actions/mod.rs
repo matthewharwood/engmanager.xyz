@@ -53,7 +53,7 @@ pub fn theme_picker() -> HtmlFragment {
                  viewBox="0 0 32 32"
                  focusable="false">
                 <circle class="theme-picker-shape theme-picker-shape-auto" cx="16" cy="16" r="10" />
-                <path class="theme-picker-shape theme-picker-shape-light" d="M16 5 L27 25 H5 Z" />
+                <path class="theme-picker-shape theme-picker-shape-light" d="M16 10 A6 6 0 1 0 16 22 A6 6 0 1 0 16 10 M16 3 V7 M16 25 V29 M3 16 H7 M25 16 H29 M6.8 6.8 L9.6 9.6 M22.4 22.4 L25.2 25.2 M25.2 6.8 L22.4 9.6 M9.6 22.4 L6.8 25.2" />
                 <rect class="theme-picker-shape theme-picker-shape-dark" x="7" y="7" width="18" height="18" />
                 <path class="theme-picker-shape theme-picker-shape-catppuccin" d="M16 5 L25.5 10.5 V21.5 L16 27 L6.5 21.5 V10.5 Z" />
                 <path class="theme-picker-shape theme-picker-shape-synthwave" d="M16 5 L19.3 12.2 L27 13 L21.2 18.1 L22.9 25.7 L16 21.8 L9.1 25.7 L10.8 18.1 L5 13 L12.7 12.2 Z" />

@@ -1027,6 +1027,9 @@ html[data-article-reveal="running"]
 .article figure {
     margin: 2rem 0;
     padding: 1.25rem;
+    box-sizing: border-box;
+    max-inline-size: 100%;
+    min-inline-size: 0;
     background: var(--ctp-mantle);
     border: 1px solid var(--ctp-surface0);
     border-radius: 0.75rem;
@@ -1506,12 +1509,15 @@ html[data-article-reveal="running"]
  * =========================================================================== */
 .model-figure {
     inline-size: 100%;
+    overflow: hidden;
 }
 
 .article .mermaid {
     inline-size: 100%;
+    min-inline-size: 0;
     display: flex;
     justify-content: center;
+    overflow: hidden;
     min-block-size: 2rem;
     margin: 0;
 }
@@ -1521,10 +1527,72 @@ html[data-article-reveal="running"]
 }
 
 .article .mermaid svg {
+    display: block;
+    inline-size: 100%;
     max-inline-size: 100%;
+    min-inline-size: 0;
     block-size: auto;
     font-family: var(--font-mono);
 }
+
+.diagram-expand,
+.diagram-close,
+.diagram-zoom button {
+    border: 1px solid var(--ctp-surface1);
+    border-radius: 0.4rem;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+    font: 700 0.75rem var(--font-mono);
+    cursor: pointer;
+}
+
+.diagram-expand { padding: 0.55rem 0.8rem; }
+.diagram-expand:focus-visible,
+.diagram-close:focus-visible,
+.diagram-zoom button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.diagram-viewer {
+    box-sizing: border-box;
+    inline-size: 100vw;
+    block-size: 100dvh;
+    max-inline-size: none;
+    max-block-size: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--ctp-base);
+    color: var(--ctp-text);
+}
+
+.diagram-viewer[open] { display: flex; flex-direction: column; }
+.diagram-viewer::backdrop { background: rgb(0 0 0 / 0.7); }
+.diagram-viewer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem max(1rem, env(safe-area-inset-right)) 0.75rem max(1rem, env(safe-area-inset-left));
+    border-block-end: 1px solid var(--ctp-surface1);
+    font: 700 0.8rem var(--font-mono);
+}
+.diagram-zoom { display: flex; align-items: center; gap: 0.4rem; margin-inline-start: auto; }
+.diagram-zoom button,
+.diagram-close { min-inline-size: 2.5rem; min-block-size: 2.5rem; }
+.diagram-viewport {
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+.diagram-canvas {
+    box-sizing: border-box;
+    inline-size: calc(100% * var(--diagram-zoom, 1));
+    min-inline-size: 100%;
+    padding: 1rem;
+}
+.diagram-canvas svg { display: block; inline-size: 100% !important; max-inline-size: none !important; block-size: auto; }
 
 /* Product wireframes — a faux browser window framing a low-fidelity mock
  * of the owner console and the open job board. Mono labels, ghost tiles,
