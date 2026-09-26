@@ -5,9 +5,9 @@
 use std::time::Duration;
 
 use axum::Router;
-use axum::extract::{Query, State};
+use axum::extract::{DefaultBodyLimit, Query, State};
 use axum::http::{HeaderMap, StatusCode, Uri, header};
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
@@ -15,13 +15,16 @@ use tower_http::trace::TraceLayer;
 
 use crate::config::{is_coach_host, is_shop_host};
 use crate::state::AppState;
-use crate::{assets, http, pages, sitemap};
+use crate::{assets, http, newsletter, pages, sitemap};
 
 /// Every route path the server exposes, in one place. The strings are the
 /// contract pinned by the router-surface tests below.
 pub mod routes {
     pub const ROOT: &str = "/";
     pub const FEED: &str = "/feed";
+    pub const SUBSCRIBE: &str = "/subscribe";
+    pub const NEWSLETTER: &str = "/newsletter";
+    pub const NEWSLETTER_SUBSCRIBE: &str = "/api/newsletter/subscribe";
     pub const SHOP: &str = "/shop";
     pub const COACH: &str = "/coach";
     pub const PRODUCT: &str = "/products/{slug}";
@@ -52,6 +55,15 @@ pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route(routes::ROOT, get(root_handler))
         .route(routes::FEED, get(pages::homepage::index))
+        .route(routes::SUBSCRIBE, get(pages::newsletter::index))
+        .route(
+            routes::NEWSLETTER,
+            get(|| async { Redirect::permanent(routes::SUBSCRIBE) }),
+        )
+        .route(
+            routes::NEWSLETTER_SUBSCRIBE,
+            post(newsletter::subscribe).layer(DefaultBodyLimit::max(4096)),
+        )
         .route(routes::SHOP, get(pages::shop::index))
         .route(routes::COACH, get(pages::coach::alias))
         .route(routes::PRODUCT, get(pages::shop::index))
@@ -182,6 +194,7 @@ mod tests {
         build_router(AppState {
             search,
             stripe,
+            newsletter: Arc::new(crate::newsletter::Newsletter::disabled()),
             // Cold snapshot (None) — exactly how production boots before the
             // first Discord poll completes.
             discord: watch::channel(None).1,
@@ -223,6 +236,7 @@ mod tests {
         let ok_paths = [
             "/",
             "/articles/",
+            "/subscribe",
             article_path.as_str(),
             "/search",
             "/search?q=rust",

@@ -9,12 +9,13 @@ use axum::extract::FromRef;
 use tokio::sync::watch;
 
 use crate::discord::DiscordSnapshot;
-use crate::{search, stripe};
+use crate::{newsletter, search, stripe};
 
 #[derive(Clone)]
 pub struct AppState {
     pub search: Arc<search::SearchEngine>,
     pub stripe: Arc<stripe::Checkout>,
+    pub newsletter: Arc<newsletter::Newsletter>,
     /// Latest Discord widget snapshot, published by the refresh loop through
     /// a watch channel (rust-async-runtime "watch"); handlers `borrow()` the
     /// last good value — zero I/O on the hot path.
@@ -30,6 +31,12 @@ impl FromRef<AppState> for Arc<search::SearchEngine> {
 impl FromRef<AppState> for Arc<stripe::Checkout> {
     fn from_ref(state: &AppState) -> Self {
         state.stripe.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<newsletter::Newsletter> {
+    fn from_ref(state: &AppState) -> Self {
+        state.newsletter.clone()
     }
 }
 

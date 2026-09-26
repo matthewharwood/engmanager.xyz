@@ -23,8 +23,8 @@ use super::Rendered;
 
 /// Dist assets emitted by `build.rs` from this folder's `style.css` /
 /// `script.js` — generated consts, so a renamed folder fails compilation
-/// instead of 404ing. The dropdown config depends on both; the plain-link
-/// config on neither.
+/// instead of 404ing. Both configs use the shared control styles; only the
+/// dropdown config depends on the dropdown script.
 pub use super::asset_names::nav::{SCRIPT, STYLE};
 
 /// Shared flat scripts the nav depends on but does NOT own: `popover-registry`
@@ -56,7 +56,7 @@ pub enum Articles {
     /// Article surface: a disclosure dropdown of recent posts (the rows are
     /// hoisted data). Pulls in the dropdown CSS + JS.
     Dropdown(Vec<DropdownItem>),
-    /// Everywhere else: a plain link to the article index. No extra assets.
+    /// Everywhere else: a plain link to the article index. Shared styles only.
     Link,
 }
 
@@ -132,6 +132,17 @@ fn render_articles_link() -> HtmlFragment {
     }
 }
 
+fn newsletter_link() -> HtmlFragment {
+    view! {
+        <a class="site-nav-newsletter" href="/subscribe" aria-label="Newsletter" title="Newsletter" data-hard-nav>
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                <rect x="3" y="5" width="18" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <path d="m3.5 6 8.5 6.5L20.5 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </a>
+    }
+}
+
 /// The two quiet service entry points also used on the feed.
 pub fn service_links() -> HtmlFragment {
     view! {
@@ -171,7 +182,7 @@ pub fn render(props: Props) -> Rendered {
         ),
         Articles::Link => (
             render_articles_link(),
-            Vec::new(),
+            vec![STYLE],
             vec![POPOVER_REGISTRY, SEARCH_TOGGLE],
         ),
     };
@@ -216,6 +227,7 @@ pub fn render(props: Props) -> Rendered {
                 <a class="site-nav-link" href="https://github.com/matthewharwood" target="_blank" rel="noopener" aria-label="View on GitHub">
                     { icon(ICON_GITHUB) }
                 </a>
+                { newsletter_link() }
             </div>
         </nav>
     };
@@ -296,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn link_config_is_plain_link_with_no_dropdown_assets() {
+    fn link_config_is_plain_link_with_shared_styles_and_no_dropdown_script() {
         let rendered = render(Props {
             articles: Articles::Link,
             ..dropdown_props()
@@ -306,9 +318,8 @@ mod tests {
             html.contains(r#"<a class="site-nav-link" href="/articles/" aria-label="Articles">"#)
         );
         assert!(!html.contains("nav-dropdown"));
-        // Plain link carries no co-located CSS and no dropdown JS — only the
-        // shared flat deps plus the absorbed global-search scripts.
-        assert!(rendered.critical_css.is_empty());
+        // Shared newsletter control styles apply to the plain nav too.
+        assert_eq!(rendered.critical_css, vec![STYLE]);
         assert!(rendered.deferred_css.is_empty());
         assert_eq!(
             rendered.js_deps,
@@ -319,5 +330,16 @@ mod tests {
                 "js/search-keyclick.js",
             ]
         );
+    }
+
+    #[test]
+    fn newsletter_is_a_named_icon_at_the_right_end_of_the_nav() {
+        let html = render(dropdown_props()).markup.into_string();
+        assert!(html.contains(
+            r#"href="/subscribe" aria-label="Newsletter" title="Newsletter" data-hard-nav"#
+        ));
+        assert!(html.find("site-nav-newsletter").unwrap() > html.find("View on GitHub").unwrap());
+        let icon = newsletter_link().into_string();
+        assert!(icon.contains(r#"aria-hidden="true" focusable="false""#));
     }
 }

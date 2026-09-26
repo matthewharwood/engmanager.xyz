@@ -5,8 +5,55 @@
  * the static styling.
  *
  * Co-located with the nav component (script.js + mod.rs). Loaded only on
- * pages that render the dropdown config; the structural `.site-nav` styling
+ * pages that render navigation; the structural `.site-nav` styling
  * stays in critical.css for above-the-fold inlining. */
+.site-nav-newsletter {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    flex-shrink: 0;
+    color: var(--text-1);
+    border-radius: 50%;
+    text-decoration: none;
+}
+
+.site-nav-newsletter svg {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+}
+
+.site-nav-newsletter:hover {
+    color: var(--accent);
+    background: var(--surface-2);
+}
+
+.site-nav-newsletter:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+}
+
+@media (max-width: 42rem) {
+    /* Keep the four right-hand controls clear of the centered theme picker,
+     * while the folder and social icons retain their mobile slots on the left. */
+    .site-nav .site-search-toggle {
+        box-sizing: border-box;
+        inline-size: 1.875rem;
+        block-size: 2.75rem;
+        padding: 0;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .site-nav .site-nav-links > .service-nav-link {
+        inline-size: 1.75rem;
+    }
+
+    .site-nav .site-nav-newsletter {
+        inline-size: 2rem;
+    }
+}
+
 .nav-dropdown {
     position: relative;
 }

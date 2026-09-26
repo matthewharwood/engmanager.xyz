@@ -34,6 +34,9 @@ impl TestServer {
             .env_remove("STRIPE_SECRET_KEY")
             .env_remove("STRIPE_PUBLISHABLE_KEY")
             .env_remove("STRIPE_WEBHOOK_SECRET")
+            // Empty values also prevent dotenv from restoring live credentials.
+            .env("KIT_API_KEY", "")
+            .env("KIT_FORM_ID", "")
             .stdout(Stdio::null())
             .stderr(Stdio::inherit());
         if let Some(url) = booking_url {

@@ -20,6 +20,7 @@ pub mod content;
 pub mod discord;
 pub mod experiences;
 pub mod http;
+pub mod newsletter;
 mod pages;
 pub mod router;
 pub mod search;
@@ -88,9 +89,11 @@ async fn main() {
     // Stripe runtime context for the on-site checkout (reused client + keys).
     // Built from env; absent keys just leave checkout reporting "unavailable".
     let stripe = Arc::new(stripe::Checkout::from_env());
+    let newsletter = Arc::new(newsletter::Newsletter::from_env());
     let state = AppState {
         search,
         stripe,
+        newsletter,
         discord: discord_rx,
     };
 
