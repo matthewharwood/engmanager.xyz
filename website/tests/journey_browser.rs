@@ -207,13 +207,19 @@ try{
   await reveal();await promote('/coach');
   await until(()=>query('[data-reader]')?.dataset.readerReady==='true','coach reader mounts after shop');
   frame.style.width='360px';await until(()=>win().innerWidth===360,'mobile coach viewport');
+  // Wait for the resized iframe's responsive layout before measuring. In
+  // reduced-motion Read mode the role also replaces paragraphs ABOVE this
+  // control, so compare geometry inside the spectrum, not its page position.
+  await win().__engTypography?.ready;
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
   const spectrumHead=query('.coach-spectrum-head'),spectrumTrack=query('.coach-spectrum-track'),spectrumInput=query('[data-spectrum-input]');
-  const headHeight=spectrumHead.getBoundingClientRect().height,trackTop=spectrumTrack.getBoundingClientRect().top;
+  const trackOffset=()=>spectrumTrack.getBoundingClientRect().top-query('.coach-spectrum').getBoundingClientRect().top;
+  const headHeight=spectrumHead.getBoundingClientRect().height,trackTop=trackOffset();
   spectrumInput.value='4';spectrumInput.dispatchEvent(new (win().Event)('input',{bubbles:true}));await delay(60);
   assert(query('[data-spectrum-current]').textContent==='Product designer','slider selects the longer mobile role');
   const roleRect=query('[data-spectrum-current]').getBoundingClientRect(),labelRect=spectrumHead.querySelector('label').getBoundingClientRect();
   assert(Math.abs(roleRect.top-labelRect.top)<12&&roleRect.right<=spectrumHead.getBoundingClientRect().right,'long role stays beside the mobile slider label');
-  assert(Math.abs(spectrumHead.getBoundingClientRect().height-headHeight)<1&&Math.abs(spectrumTrack.getBoundingClientRect().top-trackTop)<1,'long role label does not shift the mobile slider');
+  assert(Math.abs(spectrumHead.getBoundingClientRect().height-headHeight)<1&&Math.abs(trackOffset()-trackTop)<1,'long role label does not shift the mobile slider within its control: '+JSON.stringify({before:[headHeight,trackTop],after:[spectrumHead.getBoundingClientRect().height,trackOffset()],css:win().getComputedStyle(spectrumHead).gridTemplateRows,font:win().getComputedStyle(doc().documentElement).fontSize,animations:spectrumHead.getAnimations({subtree:true}).map(a=>a.animationName)}));
   spectrumInput.value='3';spectrumInput.dispatchEvent(new (win().Event)('input',{bubbles:true}));
   frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after mobile slider');
   assert(doc().querySelectorAll('[data-journey-previous]').length===1,'coaching replaces the earlier previous page with one storefront window');

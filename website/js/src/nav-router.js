@@ -217,6 +217,7 @@
         iframe.title = `Preview of ${rec.title}`;
         iframe.addEventListener('load', () => {
             try {
+                window.__engTypography?.syncDocument(iframe.contentDocument);
                 iframe.contentWindow.scrollTo(0, scroll);
                 iframe.contentDocument.fonts?.ready.then(() => {
                     if (iframe.isConnected) iframe.contentWindow.scrollTo(0, scroll);
@@ -659,6 +660,11 @@
                 const html = iframe.contentDocument?.documentElement;
                 if (theme) html?.setAttribute('data-theme', theme); else html?.removeAttribute('data-theme');
             } catch {}
+        });
+    });
+    window.addEventListener('engmanager:fontchange', () => {
+        runtime.querySelectorAll('iframe').forEach((iframe) => {
+            try { window.__engTypography?.syncDocument(iframe.contentDocument); } catch {}
         });
     });
     window.addEventListener('pagehide', () => { if (!nav.busy) remember(); });

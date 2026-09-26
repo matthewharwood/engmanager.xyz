@@ -1,6 +1,6 @@
 /* =============================================================================
  * Design system foundation. Adopted from mentor-playbook/css/style.css with
- * the Inter font import dropped (we keep Archivo + Monument Extended).
+ * theme typography provided by the Figma type system.
  *
  * Architecture, in cascade order:
  *
@@ -24,15 +24,6 @@
  * cqi without a `container-type` ancestor resolves against the viewport,
  * which is what we want for top-level scaling.
  * ========================================================================== */
-
-@font-face {
-    font-family: "Monument Extended";
-    src: url("/assets/fonts/monumentextended-black-webfont.woff2") format("woff2"),
-         url("/assets/fonts/monumentextended-black-webfont.woff") format("woff");
-    font-weight: 900;
-    font-style: normal;
-    font-display: swap;
-}
 
 @layer fp.config, fp.tokens, fp.themes, fp.compat, fp.base, fp.overlay;
 
@@ -499,11 +490,18 @@
         --radius-pill:   999em;
         --radius-circle: 50%;
 
-        /* Font families — Archivo + Monument Extended preserved.
-         * No Inter import: we ignore that per the design brief. */
-        --font-sans: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto,
-                     "Helvetica Neue", Arial, sans-serif;
-        --font-display: "Monument Extended", var(--font-sans);
+        /* The loader commits this role only after the selected face is decoded.
+         * --font-sans remains the compatibility alias used by components. */
+        --font-body: var(--font-body-active, system-ui, -apple-system, "Segoe UI", sans-serif);
+        --font-sans: var(--font-body);
+        --font-display: "PP Monument Extended", system-ui, sans-serif;
+        --font-body-weight: 400;
+        --font-body-leading: 1.5;
+        --font-body-tracking: 0em;
+        --font-display-weight: 900;
+        --font-display-leading: 1.2;
+        --font-display-tracking: -0.02em;
+        --font-reading-measure: 65ch;
         --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Code",
                      "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
@@ -645,7 +643,7 @@
 }
 
 /* ============================================================================
- * THEMES · 8 palettes keyed by `[data-theme="..."]`
+ * THEMES · 9 palettes keyed by `[data-theme="..."]`
  * ========================================================================== */
 @layer fp.themes {
 
@@ -1123,3 +1121,29 @@
  * the cascade is unchanged (the layer order is pre-declared up top).
  * Grouped cross-component overrides (reduced-data / reduced-motion) stay
  * above in fp.base. */
+
+/* Open Props is an unlayered external sheet. Keep the active family alias
+ * unlayered too, otherwise its --font-sans silently wins over fp.tokens. */
+:root { --font-sans: var(--font-body); }
+
+/* Cold theme loads only. The manifest never assigns an unloaded family to CSS.
+ * Shared display lettering and monospace code remain stable during body loading.
+ * Text stays in the DOM and available to assistive technology throughout. */
+:root:is([data-font-state="loading"], [data-font-state="leaving"]) {
+    --font-sans: "Redacted", system-ui, sans-serif;
+    --font-body: "Redacted", system-ui, sans-serif;
+}
+@media (prefers-reduced-motion: no-preference) {
+    :root[data-font-state="loading"] :where(p, label, button, summary, dt, dd, figcaption) {
+        animation: theme-font-pulse 900ms ease-in-out infinite alternate;
+    }
+    :root[data-font-state="leaving"] :where(p, label, button, summary, dt, dd, figcaption) {
+        animation: theme-font-out 140ms ease-in both;
+    }
+    :root[data-font-state="entering"] :where(p, label, button, summary, dt, dd, figcaption) {
+        animation: theme-font-in 220ms ease-out both;
+    }
+}
+@keyframes theme-font-pulse { to { opacity: .55; } }
+@keyframes theme-font-out { to { opacity: 0; filter: blur(2px); } }
+@keyframes theme-font-in { from { opacity: 0; filter: blur(2px); } }

@@ -107,7 +107,7 @@ body[data-dragging="true"] {
 
 .article-fluid-fallback {
     display: none;
-    font-family: "Archivo", sans-serif;
+    font-family: var(--font-sans);
     font-weight: 900;
     font-size: 1.25rem;
     line-height: 1.25;
@@ -180,7 +180,7 @@ body[data-dragging="true"] {
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    font-family: "Archivo", sans-serif;
+    font-family: var(--font-sans);
     font-size: 1.05rem;
     font-weight: 900;
     line-height: 1;
