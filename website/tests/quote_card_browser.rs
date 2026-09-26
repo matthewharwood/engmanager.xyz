@@ -62,12 +62,20 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate,label){for(let i=0;i<200;i++){if(predicate())return;await delay(40);}throw Error('Timed out: '+label);}
 try{
   await until(()=>document.readyState==='complete'&&query('[data-quote-card-open]')&&!query('[data-quote-card-open]').hidden,'article quote action ready');
-  if(!enabled){window.__journeyViewport=320;await until(()=>innerWidth===320,'mobile viewport');}
+  if(!enabled){
+    window.__journeyViewport=320;
+    await until(()=>innerWidth===320,'mobile viewport');
+    // The media-query callback relocates tools after viewport metrics change.
+    // Wait for the mobile disclosure before opening and focusing its action.
+    await until(()=>query('[data-quote-card-open]').closest('.article-meta-disclosure-tools'),'mobile article tools reach their Actions disclosure');
+  }
   const opener=query('[data-quote-card-open]'),actions=opener.closest('details');if(actions)actions.open=true;
   const blockquote=query('.article blockquote'),copy=blockquote.cloneNode(true);copy.querySelectorAll('button').forEach(node=>node.remove());
   const excerpt=copy.textContent.replace(/\s+/g,' ').trim();
   let exports=0;document.addEventListener('engmanager:quote-card-export',()=>exports++);
-  opener.focus();opener.click();
+  opener.focus();
+  assert(document.activeElement===opener,'visible article action can receive keyboard focus');
+  opener.click();
   await until(()=>query('[data-quote-card-dialog]').open,'native dialog opens');
   const dialog=query('[data-quote-card-dialog]'),text=query('[data-quote-card-text]'),artwork=query('[data-quote-card-artwork]'),download=query('[data-quote-card-download]');
   assert(dialog.contains(document.activeElement),'native dialog receives keyboard focus');
