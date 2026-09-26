@@ -95,8 +95,8 @@ try{
   for(const width of [320,390]){
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'diagram viewport '+width);
     const heroBounds=hero.getBoundingClientRect();
-    const overflowing=[...doc().querySelectorAll('body *')].filter(node=>{const bounds=node.getBoundingClientRect();return bounds.right>width+1&&win().getComputedStyle(node).position!=='fixed';}).slice(0,8).map(node=>({tag:node.tagName,klass:String(node.className).slice(0,80),right:Math.round(node.getBoundingClientRect().right)}));
-    assert(heroBounds.left>=-1&&heroBounds.right<=width+1&&doc().documentElement.scrollWidth<=width,'article hero stays inside the mobile viewport at '+width+'px: '+JSON.stringify({hero:[heroBounds.left,heroBounds.right],scrollWidth:doc().documentElement.scrollWidth,article:query('.article')?.getBoundingClientRect().toJSON(),overflowing}));
+    win().scrollTo({left:width*2,top:win().scrollY,behavior:'instant'});
+    assert(heroBounds.left>=-1&&heroBounds.right<=width+1&&Math.abs(win().scrollX)<1,'article hero stays inside the mobile viewport without page panning at '+width+'px: '+JSON.stringify({hero:[heroBounds.left,heroBounds.right],scrollX:win().scrollX,scrollWidth:doc().documentElement.scrollWidth}));
     for(const figure of doc().querySelectorAll('.model-figure')){
       const diagram=figure.querySelector('.mermaid'),bounds=figure.getBoundingClientRect();
       assert(bounds.left>=0&&bounds.right<=width&&diagram.clientWidth<=figure.clientWidth,'diagrams stay inside the mobile article at '+width+'px');
