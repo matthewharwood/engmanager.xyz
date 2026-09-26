@@ -1,5 +1,9 @@
 /* The atlas shares its frame, print register and theme tokens. Geometry and
  * treatment belong to each article's algorithm in article-heroes.js. */
+/* Clipped descendants can still extend the root scrollable width in Chrome.
+ * Clip the article viewport itself; diagram frames retain their own scrolling. */
+html:has(> body.articles-page) { overflow-x: clip; }
+
 .article-hero-scene,
 .article .article-hero-scene,
 .personality-article .article-hero-scene {
