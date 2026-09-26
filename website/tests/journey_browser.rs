@@ -83,12 +83,14 @@ try{
   const heroCanvas=hero.querySelector('canvas');
   if(heroCanvas.getContext('webgl2')){
     await until(()=>hero.dataset.renderer==='webgl','article hero draws its WebGL2 scene');
-    const sample=()=>{const gl=heroCanvas.getContext('webgl2');const pixel=new Uint8Array(4);gl.readPixels(Math.floor(heroCanvas.width/2),Math.floor(heroCanvas.height/2),1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);return [...pixel].join(',');};
-    const initialPixel=sample();
+    // The default framebuffer may clear after presentation; inspect the
+    // actual accent uniform sent to the shader instead of a stale pixel.
+    const accentUniform=()=>{const gl=heroCanvas.getContext('webgl2'),program=gl.getParameter(gl.CURRENT_PROGRAM);return [...gl.getUniform(program,gl.getUniformLocation(program,'u_accent'))].join(',');};
+    const initialAccent=accentUniform();
     const targetTheme=doc().documentElement.dataset.theme==='dark'?'catppuccin':'dark';
     for(let i=0;i<10&&doc().documentElement.dataset.theme!==targetTheme;i++)await click('[data-theme-cycle]');
     assert(doc().documentElement.dataset.theme===targetTheme,'theme cycle reaches a distinct palette');
-    await until(()=>sample()!==initialPixel,'article hero repaints with the theme palette');
+    await until(()=>accentUniform()!==initialAccent,'article hero repaints with the theme palette');
   }
   for(const width of [320,390]){
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'diagram viewport '+width);
