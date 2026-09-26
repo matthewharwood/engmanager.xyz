@@ -5,11 +5,12 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use axum::Form;
 use axum::extract::State;
 use axum::extract::rejection::FormRejection;
-use axum::http::{HeaderValue, StatusCode};
-use axum::response::{Redirect, Response};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::response::{Html, Redirect, Response};
+use axum::{Form, Json};
+use hmac::{Hmac, Mac};
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::json;
@@ -18,10 +19,18 @@ use tokio::sync::Semaphore;
 
 const KIT_API: &str = "https://api.kit.com/v4";
 const SIGNUP_REFERRER: &str = "https://engmanager.xyz/subscribe";
+const UNSUBSCRIBE_ORIGIN: &str = "https://engmanager.xyz/unsubscribe";
+const UNSUBSCRIBE_FIELD: &str = "engmanager_unsubscribe_url";
+const TOKEN_PURPOSE: &[u8] = b"engmanager.xyz/kit/unsubscribe/v1\0";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(8);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const MAX_CONCURRENT_SIGNUPS: usize = 8;
 const MAX_SIGNUP_ATTEMPTS: usize = 30;
+// Separate abuse budgets keep cancellation available during signup bursts.
+// An additional shared per-request budget stays below Kit's 120/min key limit.
+const MAX_UNSUBSCRIBE_ATTEMPTS: usize = 20;
+const MAX_UNSUBSCRIBE_PER_RECIPIENT: usize = 3;
+const MAX_KIT_REQUESTS: usize = 100;
 const SIGNUP_WINDOW: Duration = Duration::from_secs(60);
 
 /// No Debug implementation: API credentials must never reach logs. The
@@ -29,8 +38,13 @@ const SIGNUP_WINDOW: Duration = Duration::from_secs(60);
 pub struct Newsletter {
     client: Client,
     config: Option<KitConfig>,
+    // None allows the pre-rollout signup flow. An explicitly invalid secret
+    // fails closed; it must never silently fall back to unsigned links.
+    signing_key: Result<Option<Vec<u8>>, ()>,
     permits: Semaphore,
     rate_budget: Mutex<RateBudget>,
+    unsubscribe_budget: Mutex<VecDeque<(Instant, u64)>>,
+    api_budget: Mutex<VecDeque<Instant>>,
     // Fixed in production; only the module's tests inject a local mock.
     api_base: String,
 }
@@ -45,19 +59,22 @@ impl Newsletter {
         Self::with_config(
             std::env::var("KIT_API_KEY").ok().as_deref(),
             std::env::var("KIT_FORM_ID").ok().as_deref(),
+            std::env::var("NEWSLETTER_UNSUBSCRIBE_SECRET")
+                .ok()
+                .as_deref(),
         )
     }
 
     /// Deterministic unconfigured service, including in router tests.
     pub fn disabled() -> Self {
-        Self::with_config(None, None)
+        Self::with_config(None, None, None)
     }
 
     pub fn is_enabled(&self) -> bool {
-        self.config.is_some()
+        self.config.is_some() && self.signing_key.is_ok()
     }
 
-    fn with_config(api_key: Option<&str>, form_id: Option<&str>) -> Self {
+    fn with_config(api_key: Option<&str>, form_id: Option<&str>, secret: Option<&str>) -> Self {
         Self {
             client: Client::builder()
                 .timeout(REQUEST_TIMEOUT)
@@ -68,13 +85,23 @@ impl Newsletter {
                 .build()
                 .expect("build newsletter HTTP client"),
             config: KitConfig::parse(api_key, form_id),
+            signing_key: match secret {
+                None => Ok(None),
+                Some(secret) if secret.trim().len() >= 32 => Ok(Some(secret.as_bytes().to_vec())),
+                Some(_) => Err(()),
+            },
             permits: Semaphore::new(MAX_CONCURRENT_SIGNUPS),
             rate_budget: Mutex::new(RateBudget::default()),
+            unsubscribe_budget: Mutex::new(VecDeque::new()),
+            api_budget: Mutex::new(VecDeque::new()),
             api_base: KIT_API.to_owned(),
         }
     }
 
     async fn add_subscriber(&self, email: &str) -> Result<(), SignupError> {
+        self.signing_key
+            .as_ref()
+            .map_err(|_| SignupError::Unavailable)?;
         let config = self.config.as_ref().ok_or(SignupError::Unavailable)?;
         // Bound upstream work without building an unbounded request queue.
         let _permit = self
@@ -109,6 +136,7 @@ impl Newsletter {
     }
 
     async fn add_to_kit(&self, email: &str, config: &KitConfig) -> Result<(), SignupError> {
+        self.reserve_api_request()?;
         let response = self
             .client
             .post(format!("{}/subscribers", self.api_base))
@@ -135,10 +163,53 @@ impl Newsletter {
             _ => return Err(SignupError::InvalidResponse),
         }
 
+        if let Some(key) = self
+            .signing_key
+            .as_ref()
+            .map_err(|_| SignupError::Unavailable)?
+        {
+            // Persist and verify the personal footer URL BEFORE adding the
+            // subscriber to the form, which may immediately send confirmation.
+            let token = unsubscribe_token(key, config.form_id, subscriber.id);
+            let url = format!("{UNSUBSCRIBE_ORIGIN}?token={token}");
+            self.reserve_api_request()?;
+            let response = self
+                .client
+                .put(format!("{}/subscribers/{}", self.api_base, subscriber.id))
+                .header("X-Kit-Api-Key", config.api_key.clone())
+                .json(&json!({ "email_address": email, "fields": { UNSUBSCRIBE_FIELD: url } }))
+                .send()
+                .await
+                .map_err(|_| SignupError::Network)?;
+            require_success(response.status())?;
+            let updated = response
+                .json::<SubscriberResponse>()
+                .await
+                .map_err(|_| SignupError::InvalidResponse)?
+                .subscriber;
+            if updated.id != subscriber.id
+                || updated
+                    .fields
+                    .get(UNSUBSCRIBE_FIELD)
+                    .and_then(serde_json::Value::as_str)
+                    != Some(url.as_str())
+            {
+                return Err(SignupError::InvalidResponse);
+            }
+            match updated.state.as_str() {
+                // Respect cancellation that happened between the initial
+                // upsert and the custom-field update. Never change state here.
+                "cancelled" | "bounced" | "complained" | "blocked" => return Ok(()),
+                "active" | "inactive" => {}
+                _ => return Err(SignupError::InvalidResponse),
+            }
+        }
+
         // The configured Kit form MUST have its confirmation email enabled
         // and auto-confirm disabled. Adding the subscriber to that form
         // triggers Kit's double opt-in flow. Re-adding a form member is
         // idempotent and does not resend the confirmation email.
+        self.reserve_api_request()?;
         let response = self
             .client
             .post(format!(
@@ -152,6 +223,122 @@ impl Newsletter {
             .map_err(|_| SignupError::Network)?;
         require_success(response.status())
     }
+
+    async fn remove_subscriber(&self, token: &str) -> Result<(), UnsubscribeError> {
+        let config = self.config.as_ref().ok_or(UnsubscribeError::Unavailable)?;
+        let key = self
+            .signing_key
+            .as_ref()
+            .ok()
+            .and_then(Option::as_ref)
+            .ok_or(UnsubscribeError::Unavailable)?;
+        let subscriber_id = verify_unsubscribe_token(key, config.form_id, token)
+            .ok_or(UnsubscribeError::Invalid)?;
+        let _permit = self
+            .permits
+            .try_acquire()
+            .map_err(|_| UnsubscribeError::Unavailable)?;
+        {
+            let now = Instant::now();
+            let mut budget = self
+                .unsubscribe_budget
+                .lock()
+                .map_err(|_| UnsubscribeError::Unavailable)?;
+            while budget
+                .front()
+                .is_some_and(|(at, _)| now.duration_since(*at) >= SIGNUP_WINDOW)
+            {
+                budget.pop_front();
+            }
+            if budget.len() >= MAX_UNSUBSCRIBE_ATTEMPTS
+                || budget.iter().filter(|(_, id)| *id == subscriber_id).count()
+                    >= MAX_UNSUBSCRIBE_PER_RECIPIENT
+            {
+                return Err(UnsubscribeError::Unavailable);
+            }
+            budget.push_back((now, subscriber_id));
+        }
+        // Kit's cancellation is idempotent. Never locally cache consent state:
+        // a later explicit resubscription must still be revocable by this link.
+        self.reserve_api_request()
+            .map_err(|_| UnsubscribeError::Unavailable)?;
+        let response = self
+            .client
+            .post(format!(
+                "{}/subscribers/{subscriber_id}/unsubscribe",
+                self.api_base
+            ))
+            .header("X-Kit-Api-Key", config.api_key.clone())
+            .json(&json!({}))
+            .send()
+            .await
+            .map_err(|_| UnsubscribeError::Upstream)?;
+        if response.status() == StatusCode::NO_CONTENT {
+            Ok(())
+        } else {
+            Err(UnsubscribeError::Upstream)
+        }
+    }
+
+    fn reserve_api_request(&self) -> Result<(), SignupError> {
+        let now = Instant::now();
+        let mut budget = self
+            .api_budget
+            .lock()
+            .map_err(|_| SignupError::Unavailable)?;
+        while budget
+            .front()
+            .is_some_and(|at| now.duration_since(*at) >= SIGNUP_WINDOW)
+        {
+            budget.pop_front();
+        }
+        if budget.len() >= MAX_KIT_REQUESTS {
+            return Err(SignupError::Unavailable);
+        }
+        budget.push_back(now);
+        Ok(())
+    }
+}
+
+// The configured Kit form uniquely scopes the account/list together with a
+// dedicated secret. No email address, API key, or expiring session is encoded.
+fn token_mac(key: &[u8], form_id: u64, subscriber_id: u64) -> Hmac<Sha256> {
+    let mut mac = Hmac::<Sha256>::new_from_slice(key).expect("HMAC accepts every key length");
+    mac.update(TOKEN_PURPOSE);
+    mac.update(&form_id.to_be_bytes());
+    mac.update(&subscriber_id.to_be_bytes());
+    mac
+}
+
+fn unsubscribe_token(key: &[u8], form_id: u64, subscriber_id: u64) -> String {
+    let signature = hex::encode(
+        token_mac(key, form_id, subscriber_id)
+            .finalize()
+            .into_bytes(),
+    );
+    format!("v1.{subscriber_id}.{signature}")
+}
+
+fn verify_unsubscribe_token(key: &[u8], form_id: u64, token: &str) -> Option<u64> {
+    if token.len() > 88 {
+        return None;
+    }
+    let mut parts = token.split('.');
+    if parts.next()? != "v1" {
+        return None;
+    }
+    let id_text = parts.next()?;
+    let id = id_text.parse::<u64>().ok().filter(|id| *id > 0)?;
+    if id.to_string() != id_text {
+        return None;
+    }
+    let signature = parts.next()?;
+    if signature.len() != 64 || parts.next().is_some() {
+        return None;
+    }
+    let signature = hex::decode(signature).ok()?;
+    token_mac(key, form_id, id).verify_slice(&signature).ok()?;
+    Some(id)
 }
 
 impl KitConfig {
@@ -176,6 +363,8 @@ struct SubscriberResponse {
 struct Subscriber {
     id: u64,
     state: String,
+    #[serde(default)]
+    fields: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -214,6 +403,68 @@ pub async fn subscribe(
             );
             result_redirect("error")
         }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UnsubscribeForm {
+    token: String,
+}
+
+enum UnsubscribeError {
+    Invalid,
+    Unavailable,
+    Upstream,
+}
+
+/// Browser enhancement uses JSON; the ordinary form POST works without JS.
+/// GET is rendered separately and never contacts Kit or changes consent.
+pub async fn unsubscribe(
+    State(newsletter): State<Arc<Newsletter>>,
+    headers: HeaderMap,
+    form: Result<Form<UnsubscribeForm>, FormRejection>,
+) -> Response {
+    let result = match form {
+        Ok(Form(form)) => newsletter.remove_subscriber(&form.token).await,
+        Err(_) => Err(UnsubscribeError::Invalid),
+    };
+    let (status, message) = match &result {
+        Ok(()) => (StatusCode::OK, "You’re unsubscribed."),
+        Err(UnsubscribeError::Invalid) => (
+            StatusCode::BAD_REQUEST,
+            "This unsubscribe link is invalid. Please use the link in your email or contact matthew@engmanager.xyz.",
+        ),
+        Err(UnsubscribeError::Unavailable) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Unsubscribe is temporarily unavailable. Please try again or contact matthew@engmanager.xyz.",
+        ),
+        Err(UnsubscribeError::Upstream) => (
+            StatusCode::BAD_GATEWAY,
+            "We couldn’t confirm your unsubscribe. Please try again or contact matthew@engmanager.xyz.",
+        ),
+    };
+    let wants_json = headers
+        .get(header::ACCEPT)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| {
+            value
+                .split(',')
+                .any(|mime| mime.trim().split(';').next() == Some("application/json"))
+        });
+    if wants_json {
+        let body = if result.is_ok() {
+            json!({ "status": "unsubscribed" })
+        } else {
+            json!({ "error": message })
+        };
+        crate::http::no_store((status, Json(body)))
+    } else {
+        let page = if matches!(result, Err(UnsubscribeError::Invalid)) {
+            crate::pages::newsletter::unsubscribe_page(None)
+        } else {
+            crate::pages::newsletter::unsubscribe_result(result.is_ok())
+        };
+        crate::http::no_store((status, Html(page)))
     }
 }
 
@@ -372,6 +623,7 @@ mod tests {
     use super::*;
 
     const TEST_KEY: &str = "test-key-only";
+    const TEST_SECRET: &str = "newsletter-test-signing-key-32-bytes-minimum";
 
     struct CapturedRequest {
         method: String,
@@ -433,7 +685,14 @@ mod tests {
         }
 
         fn service(&self) -> Newsletter {
-            let mut service = Newsletter::with_config(Some(TEST_KEY), Some("123"));
+            let mut service = Newsletter::with_config(Some(TEST_KEY), Some("123"), None);
+            service.api_base.clone_from(&self.base);
+            service
+        }
+
+        fn signed_service(&self) -> Newsletter {
+            let mut service =
+                Newsletter::with_config(Some(TEST_KEY), Some("123"), Some(TEST_SECRET));
             service.api_base.clone_from(&self.base);
             service
         }
@@ -477,8 +736,395 @@ mod tests {
     fn test_router(service: Newsletter) -> Router {
         Router::new()
             .route("/api/newsletter/subscribe", post(subscribe))
+            .route("/api/newsletter/unsubscribe", post(unsubscribe))
+            .route(
+                "/unsubscribe",
+                axum::routing::get(crate::pages::newsletter::unsubscribe),
+            )
             .layer(DefaultBodyLimit::max(4096))
+            .layer(axum::middleware::from_fn(
+                crate::http::security_headers_layer,
+            ))
+            .layer(axum::middleware::from_fn(crate::http::html_cache_layer))
             .with_state(Arc::new(service))
+    }
+
+    async fn submit_unsubscribe(router: &Router, token: &str, json_response: bool) -> Response {
+        let body = form_urlencoded::Serializer::new(String::new())
+            .append_pair("token", token)
+            .finish();
+        router
+            .clone()
+            .oneshot(
+                Request::post("/api/newsletter/unsubscribe")
+                    .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .header(
+                        header::ACCEPT,
+                        if json_response {
+                            "application/json"
+                        } else {
+                            "text/html"
+                        },
+                    )
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap()
+    }
+
+    fn assert_private(response: &Response) {
+        assert_eq!(
+            response.headers()[header::CACHE_CONTROL],
+            "no-store, no-transform"
+        );
+        assert_eq!(response.headers()[header::REFERRER_POLICY], "no-referrer");
+        assert_eq!(
+            response.headers()["cloudflare-cdn-cache-control"],
+            "no-store"
+        );
+        assert!(
+            response.headers()["x-robots-tag"]
+                .to_str()
+                .unwrap()
+                .contains("noindex")
+        );
+        assert!(!response.headers().contains_key("cache-tag"));
+    }
+
+    #[test]
+    fn unsubscribe_tokens_are_bound_to_recipient_account_and_purpose() {
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        assert_eq!(
+            verify_unsubscribe_token(TEST_SECRET.as_bytes(), 123, &token),
+            Some(42)
+        );
+        assert_eq!(
+            verify_unsubscribe_token(TEST_SECRET.as_bytes(), 999, &token),
+            None
+        );
+        assert_eq!(
+            verify_unsubscribe_token(b"a different secret with at least 32 bytes", 123, &token),
+            None
+        );
+        for invalid in [
+            token.replace("v1.42.", "v1.43."),
+            token.replace("v1.", "v2."),
+            token.replace("v1.42.", "v1.042."),
+            format!("{token}.extra"),
+            "a".repeat(512),
+            format!("v1.42.{}", "0".repeat(64)),
+        ] {
+            assert_eq!(
+                verify_unsubscribe_token(TEST_SECRET.as_bytes(), 123, &invalid),
+                None
+            );
+        }
+        let mut other_purpose = Hmac::<Sha256>::new_from_slice(TEST_SECRET.as_bytes()).unwrap();
+        other_purpose.update(b"engmanager.xyz/kit/subscribe/v1\0");
+        other_purpose.update(&123u64.to_be_bytes());
+        other_purpose.update(&42u64.to_be_bytes());
+        let wrong_purpose = format!(
+            "v1.42.{}",
+            hex::encode(other_purpose.finalize().into_bytes())
+        );
+        assert_eq!(
+            verify_unsubscribe_token(TEST_SECRET.as_bytes(), 123, &wrong_purpose),
+            None
+        );
+        assert!(!token.contains('@'));
+    }
+
+    #[tokio::test]
+    async fn signed_footer_is_persisted_before_the_form_can_send_confirmation() {
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        let url = format!("{UNSUBSCRIBE_ORIGIN}?token={token}");
+        let kit = MockKit::start(vec![
+            MockReply::subscriber(StatusCode::CREATED, "inactive"),
+            MockReply::json(StatusCode::OK, json!({"subscriber": {"id":42,"state":"inactive","fields":{UNSUBSCRIBE_FIELD:url}}})),
+            MockReply::json(StatusCode::CREATED, json!({})),
+        ]).await;
+        assert_redirect(
+            &submit(
+                &test_router(kit.signed_service()),
+                "email=reader%40example.com",
+            )
+            .await,
+            "check-email",
+        );
+        let calls = kit.state.calls.lock().unwrap();
+        assert_eq!(calls.len(), 3);
+        assert_eq!(
+            (calls[1].method.as_str(), calls[1].path.as_str()),
+            ("PUT", "/v4/subscribers/42")
+        );
+        assert_eq!(
+            calls[1].body,
+            json!({"email_address":"reader@example.com","fields":{UNSUBSCRIBE_FIELD:url}})
+        );
+        assert_eq!(calls[2].path, "/v4/forms/123/subscribers/42");
+    }
+
+    #[tokio::test]
+    async fn missing_footer_persistence_stops_before_confirmation_is_sent() {
+        for reply in [
+            MockReply::subscriber(StatusCode::OK, "inactive"),
+            MockReply::json(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                json!({"error":"private details"}),
+            ),
+        ] {
+            let kit = MockKit::start(vec![
+                MockReply::subscriber(StatusCode::CREATED, "inactive"),
+                reply,
+            ])
+            .await;
+            assert_redirect(
+                &submit(
+                    &test_router(kit.signed_service()),
+                    "email=reader%40example.com",
+                )
+                .await,
+                "error",
+            );
+            assert_eq!(kit.call_count(), 2);
+        }
+    }
+
+    #[tokio::test]
+    async fn unsubscribe_get_and_head_are_inert_and_private() {
+        let kit = MockKit::start(vec![]).await;
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        let router = test_router(kit.signed_service());
+        for method in ["GET", "HEAD"] {
+            let response = router
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method(method)
+                        .uri(format!("/unsubscribe?token={token}"))
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_private(&response);
+            let body = to_bytes(response.into_body(), 100_000).await.unwrap();
+            let body = std::str::from_utf8(&body).unwrap();
+            assert!(!body.contains("__engNav") && !body.contains("experiences.js"));
+        }
+        assert_eq!(kit.call_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn unsubscribe_repeats_are_safe_and_only_claim_success_after_kit_accepts() {
+        let kit = MockKit::start(vec![
+            MockReply::json(StatusCode::NO_CONTENT, json!({})),
+            MockReply::json(StatusCode::NO_CONTENT, json!({})),
+        ])
+        .await;
+        let router = test_router(kit.signed_service());
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        for json_response in [true, false] {
+            let response = submit_unsubscribe(&router, &token, json_response).await;
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_private(&response);
+            let body = to_bytes(response.into_body(), 100_000).await.unwrap();
+            let body = std::str::from_utf8(&body).unwrap();
+            assert!(!body.contains(&token) && !body.contains(TEST_KEY));
+            if json_response {
+                assert_eq!(
+                    serde_json::from_str::<Value>(body).unwrap(),
+                    json!({"status":"unsubscribed"})
+                );
+            }
+        }
+        let calls = kit.state.calls.lock().unwrap();
+        assert_eq!(calls.len(), 2);
+        assert!(calls.iter().all(|call| call.method == "POST"
+            && call.path == "/v4/subscribers/42/unsubscribe"
+            && call.body == json!({})));
+    }
+
+    #[tokio::test]
+    async fn invalid_unsubscribe_tokens_never_contact_kit() {
+        let kit = MockKit::start(vec![]).await;
+        let router = test_router(kit.signed_service());
+        for token in ["", "v1.42.invalid", "reader@example.com"] {
+            let response = submit_unsubscribe(&router, token, true).await;
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+            assert_private(&response);
+        }
+        assert_eq!(kit.call_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn unsubscribe_failure_is_honest_and_retryable_without_leaking_provider_details() {
+        for status in [
+            StatusCode::UNAUTHORIZED,
+            StatusCode::NOT_FOUND,
+            StatusCode::TOO_MANY_REQUESTS,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            StatusCode::OK,
+        ] {
+            let kit = MockKit::start(vec![
+                MockReply::json(status, json!({"private":"reader@example.com"})),
+                MockReply::json(StatusCode::NO_CONTENT, json!({})),
+            ])
+            .await;
+            let router = test_router(kit.signed_service());
+            let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+            let response = submit_unsubscribe(&router, &token, true).await;
+            assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+            assert_private(&response);
+            let body = to_bytes(response.into_body(), 4096).await.unwrap();
+            let body = std::str::from_utf8(&body).unwrap();
+            assert!(
+                !body.contains("reader@example.com")
+                    && !body.contains(&token)
+                    && !body.contains("unsubscribed")
+            );
+            assert_eq!(
+                submit_unsubscribe(&router, &token, true).await.status(),
+                StatusCode::OK
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn missing_secret_keeps_legacy_signup_and_invalid_secret_fails_closed() {
+        let kit = MockKit::start(vec![]).await;
+        for secret in [None, Some(""), Some("too short")] {
+            let mut service = Newsletter::with_config(Some(TEST_KEY), Some("123"), secret);
+            assert_eq!(service.is_enabled(), secret.is_none());
+            service.api_base.clone_from(&kit.base);
+            let router = test_router(service);
+            assert_eq!(
+                submit_unsubscribe(&router, "token", true).await.status(),
+                StatusCode::SERVICE_UNAVAILABLE
+            );
+            if secret.is_some() {
+                assert_redirect(
+                    &submit(&router, "email=reader%40example.com").await,
+                    "unavailable",
+                );
+            }
+        }
+        assert_eq!(kit.call_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn cancellation_during_footer_update_never_readds_the_subscriber_to_the_form() {
+        let url = format!(
+            "{UNSUBSCRIBE_ORIGIN}?token={}",
+            unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42)
+        );
+        let kit = MockKit::start(vec![MockReply::subscriber(StatusCode::OK, "active"),
+            MockReply::json(StatusCode::OK, json!({"subscriber":{"id":42,"state":"cancelled","fields":{UNSUBSCRIBE_FIELD:url}}}))]).await;
+        assert_redirect(
+            &submit(
+                &test_router(kit.signed_service()),
+                "email=reader%40example.com",
+            )
+            .await,
+            "check-email",
+        );
+        assert_eq!(kit.call_count(), 2);
+    }
+
+    #[tokio::test]
+    async fn unsubscribe_timeout_never_claims_success_and_can_retry() {
+        let mut slow = MockReply::json(StatusCode::NO_CONTENT, json!({}));
+        slow.delay = Duration::from_millis(200);
+        let kit = MockKit::start(vec![
+            slow,
+            MockReply::json(StatusCode::NO_CONTENT, json!({})),
+        ])
+        .await;
+        let mut service = kit.signed_service();
+        service.client = Client::builder()
+            .timeout(Duration::from_millis(30))
+            .build()
+            .unwrap();
+        let router = test_router(service);
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        let response = submit_unsubscribe(&router, &token, true).await;
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        assert_private(&response);
+        let body = to_bytes(response.into_body(), 4096).await.unwrap();
+        assert!(
+            serde_json::from_slice::<Value>(&body)
+                .unwrap()
+                .get("error")
+                .is_some()
+        );
+        assert_eq!(
+            submit_unsubscribe(&router, &token, true).await.status(),
+            StatusCode::OK
+        );
+        assert_eq!(kit.call_count(), 2);
+    }
+
+    #[tokio::test]
+    async fn valid_token_replays_cannot_exhaust_the_upstream_key_quota() {
+        let kit = MockKit::start(
+            (0..MAX_UNSUBSCRIBE_PER_RECIPIENT)
+                .map(|_| MockReply::json(StatusCode::NO_CONTENT, json!({})))
+                .collect(),
+        )
+        .await;
+        let router = test_router(kit.signed_service());
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        for _ in 0..MAX_UNSUBSCRIBE_PER_RECIPIENT {
+            assert_eq!(
+                submit_unsubscribe(&router, &token, true).await.status(),
+                StatusCode::OK
+            );
+        }
+        assert_eq!(
+            submit_unsubscribe(&router, &token, true).await.status(),
+            StatusCode::SERVICE_UNAVAILABLE
+        );
+        assert_eq!(kit.call_count(), MAX_UNSUBSCRIBE_PER_RECIPIENT);
+
+        let limited = kit.signed_service();
+        let now = Instant::now();
+        limited
+            .unsubscribe_budget
+            .lock()
+            .unwrap()
+            .extend((1..=MAX_UNSUBSCRIBE_ATTEMPTS as u64).map(|id| (now, id)));
+        assert_eq!(
+            submit_unsubscribe(&test_router(limited), &token, true)
+                .await
+                .status(),
+            StatusCode::SERVICE_UNAVAILABLE
+        );
+        assert_eq!(kit.call_count(), MAX_UNSUBSCRIBE_PER_RECIPIENT);
+    }
+
+    #[tokio::test]
+    async fn shared_api_budget_bounds_actual_requests_across_both_flows() {
+        let kit = MockKit::start(vec![]).await;
+        let service = kit.signed_service();
+        let now = Instant::now();
+        service
+            .api_budget
+            .lock()
+            .unwrap()
+            .extend(std::iter::repeat_n(now, MAX_KIT_REQUESTS));
+        let router = test_router(service);
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        assert_eq!(
+            submit_unsubscribe(&router, &token, true).await.status(),
+            StatusCode::SERVICE_UNAVAILABLE
+        );
+        assert_redirect(
+            &submit(&router, "email=reader%40example.com").await,
+            "unavailable",
+        );
+        assert_eq!(kit.call_count(), 0);
     }
 
     async fn submit(router: &Router, body: &str) -> Response {
@@ -651,7 +1297,7 @@ mod tests {
             (Some(TEST_KEY), Some("0")),
             (Some(TEST_KEY), Some("not-a-number")),
         ] {
-            let service = Newsletter::with_config(key, form);
+            let service = Newsletter::with_config(key, form, None);
             assert!(!service.is_enabled());
             assert_redirect(
                 &submit(&test_router(service), "email=reader%40example.com").await,

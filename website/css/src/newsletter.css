@@ -122,6 +122,23 @@
     text-wrap: pretty;
 }
 
+.newsletter-sender {
+    margin: -0.5rem 0 1.5rem;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: var(--text-2);
+    overflow-wrap: anywhere;
+}
+
+.newsletter-sender a,
+.newsletter-privacy a,
+.newsletter-email-details a,
+.newsletter-inbox-help a,
+.newsletter-document a {
+    color: var(--text-1);
+    text-underline-offset: 0.2em;
+}
+
 .newsletter-form {
     display: grid;
     gap: 0.625rem;
@@ -188,9 +205,116 @@
     color: var(--text-on-brand);
 }
 
-.newsletter-shell :is(a, input, button):focus-visible {
+.newsletter-shell :is(a, input, button, summary):focus-visible,
+.newsletter-document :is(a, input, button, summary):focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 4px;
+}
+
+.newsletter-document {
+    box-sizing: border-box;
+    max-inline-size: 44rem;
+    margin: 4rem auto;
+    padding-inline: 1.25rem;
+}
+
+.newsletter-document h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 5.5vw, 2.75rem);
+    line-height: 1.2;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+}
+
+.newsletter-document-intro {
+    margin: 1.25rem 0 2.5rem;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--text-2);
+    text-wrap: pretty;
+}
+
+.newsletter-document section {
+    margin-block-start: 2rem;
+    padding-block-start: 1.75rem;
+    border-block-start: 1px solid var(--border-subtle);
+}
+
+.newsletter-document h2 {
+    margin: 0 0 0.875rem;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.newsletter-document section p {
+    margin: 0.75rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.8;
+    color: var(--text-2);
+    overflow-wrap: anywhere;
+}
+
+.newsletter-document-scope {
+    margin: 2.5rem 0 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+
+.newsletter-preferences {
+    max-inline-size: 36rem;
+    margin-block: clamp(3rem, 12vh, 8rem);
+}
+
+.newsletter-preferences .newsletter-eyebrow {
+    font-size: 0.625rem;
+}
+
+.newsletter-preferences h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(1.75rem, 7vw, 2.625rem);
+    line-height: 1.15;
+    letter-spacing: -0.045em;
+}
+
+.newsletter-preferences-mark {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 3rem;
+    block-size: 3rem;
+    margin-block-end: 1.5rem;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 1.25rem;
+}
+
+.newsletter-unsubscribe-form {
+    max-inline-size: 24rem;
+    margin-block: -0.75rem 1.75rem;
+}
+
+.newsletter-unsubscribe-form button {
+    justify-content: center;
+}
+
+.newsletter-unsubscribe-form button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.newsletter-preferences-contact {
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+
+@media (max-width: 30rem) {
+    .newsletter-document {
+        padding-inline: 0.5rem;
+    }
 }
 
 .newsletter-privacy {
@@ -230,6 +354,50 @@
     font-size: 0.8125rem;
     line-height: 1.6;
     color: var(--text-2);
+}
+
+.newsletter-email-details {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.875rem 1rem;
+    padding-block: 1rem;
+    margin: 0;
+    border-block: 1px solid var(--border-subtle);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+}
+
+.newsletter-email-details dt {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.newsletter-email-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.newsletter-inbox-help {
+    margin-block: 1.25rem 0.75rem;
+    padding-block-start: 0.625rem;
+    border-block-start: 1px solid var(--border-subtle);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+}
+
+.newsletter-inbox-help summary {
+    padding-block: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.newsletter-inbox-help p {
+    color: var(--text-2);
+    margin: 0.25rem 0 1rem;
 }
 
 .newsletter-reset {

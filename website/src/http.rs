@@ -223,6 +223,10 @@ fn directive_value<'a>(cache_control: &'a str, directive: &str) -> Option<&'a st
 }
 
 pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Response {
+    let unsubscribe_boundary = matches!(
+        req.uri().path(),
+        "/unsubscribe" | "/api/newsletter/unsubscribe"
+    );
     let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
     let mut response = next.run(req).await;
     let personality_boundary = personality_boundary
@@ -237,7 +241,7 @@ pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Re
     );
     headers.insert(
         header::REFERRER_POLICY,
-        HeaderValue::from_static(if personality_boundary {
+        HeaderValue::from_static(if personality_boundary || unsubscribe_boundary {
             "no-referrer"
         } else {
             "strict-origin-when-cross-origin"
@@ -268,6 +272,31 @@ pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Re
         headers.remove(header::CONTENT_SECURITY_POLICY_REPORT_ONLY);
         headers.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(
             "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'",
+        ));
+    }
+    if unsubscribe_boundary {
+        // Capability-bearing pages must never enter caches, referral headers,
+        // analytics injection, search indexes, or third-party script contexts.
+        headers.insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("no-store, no-transform"),
+        );
+        headers.insert(
+            CLOUDFLARE_CDN_CACHE_CONTROL,
+            HeaderValue::from_static("no-store"),
+        );
+        headers.insert(
+            HeaderName::from_static("cdn-cache-control"),
+            HeaderValue::from_static("no-store"),
+        );
+        headers.insert(
+            HeaderName::from_static("x-robots-tag"),
+            HeaderValue::from_static("noindex, nofollow, noarchive"),
+        );
+        headers.remove(CACHE_TAG);
+        headers.remove(header::CONTENT_SECURITY_POLICY_REPORT_ONLY);
+        headers.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static(
+            "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; worker-src 'none'",
         ));
     }
     response

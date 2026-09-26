@@ -24,7 +24,10 @@ pub mod routes {
     pub const FEED: &str = "/feed";
     pub const SUBSCRIBE: &str = "/subscribe";
     pub const NEWSLETTER: &str = "/newsletter";
+    pub const NEWSLETTER_PRIVACY: &str = "/newsletter/privacy";
     pub const NEWSLETTER_SUBSCRIBE: &str = "/api/newsletter/subscribe";
+    pub const UNSUBSCRIBE: &str = "/unsubscribe";
+    pub const NEWSLETTER_UNSUBSCRIBE: &str = "/api/newsletter/unsubscribe";
     pub const SHOP: &str = "/shop";
     pub const COACH: &str = "/coach";
     pub const PRODUCT: &str = "/products/{slug}";
@@ -56,6 +59,7 @@ pub fn build_router(state: AppState) -> Router {
         .route(routes::ROOT, get(root_handler))
         .route(routes::FEED, get(pages::homepage::index))
         .route(routes::SUBSCRIBE, get(pages::newsletter::index))
+        .route(routes::NEWSLETTER_PRIVACY, get(pages::newsletter::privacy))
         .route(
             routes::NEWSLETTER,
             get(|| async { Redirect::permanent(routes::SUBSCRIBE) }),
@@ -63,6 +67,11 @@ pub fn build_router(state: AppState) -> Router {
         .route(
             routes::NEWSLETTER_SUBSCRIBE,
             post(newsletter::subscribe).layer(DefaultBodyLimit::max(4096)),
+        )
+        .route(routes::UNSUBSCRIBE, get(pages::newsletter::unsubscribe))
+        .route(
+            routes::NEWSLETTER_UNSUBSCRIBE,
+            post(newsletter::unsubscribe).layer(DefaultBodyLimit::max(4096)),
         )
         .route(routes::SHOP, get(pages::shop::index))
         .route(routes::COACH, get(pages::coach::alias))
@@ -120,7 +129,13 @@ pub fn build_router(state: AppState) -> Router {
         // (text/css, text/html, application/javascript, etc.). Vary
         // header is added automatically so caches key on encoding.
         .layer(CompressionLayer::new())
-        .layer(TraceLayer::new_for_http())
+        // Never record raw URIs: unsubscribe query strings carry a bearer
+        // capability, and search/payment URLs can contain private data too.
+        .layer(TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<axum::body::Body>| {
+            let route = request.extensions().get::<axum::extract::MatchedPath>()
+                .map(axum::extract::MatchedPath::as_str).unwrap_or("unmatched");
+            tracing::debug_span!("http_request", method = %request.method(), route, version = ?request.version())
+        }))
 }
 
 async fn root_handler(
@@ -182,6 +197,51 @@ mod tests {
     const SITE_HOST: &str = "engmanager.xyz";
     const SHOP_HOST: &str = "shop.localhost";
     const COACH_HOST: &str = "coach.localhost";
+
+    #[tokio::test]
+    async fn unsubscribe_capabilities_never_enter_request_trace_output() {
+        use std::io::Write;
+        use std::sync::Mutex;
+        use tracing::instrument::WithSubscriber;
+
+        #[derive(Clone)]
+        struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+        impl Write for LogBuffer {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                self.0.lock().unwrap().extend_from_slice(bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let output = Arc::new(Mutex::new(Vec::new()));
+        let writer = LogBuffer(output.clone());
+        let subscriber = tracing_subscriber::fmt()
+            .with_ansi(false)
+            .without_time()
+            .with_max_level(tracing::Level::TRACE)
+            .with_writer(move || writer.clone())
+            .finish();
+        let router = test_router().await;
+        let response = get(
+            &router,
+            SITE_HOST,
+            "/unsubscribe?token=never-log-this-capability",
+        )
+        .with_subscriber(subscriber)
+        .await;
+        assert_eq!(response.headers()[header::REFERRER_POLICY], "no-referrer");
+        let output = String::from_utf8(output.lock().unwrap().clone()).unwrap();
+        assert!(
+            output.contains("http_request"),
+            "test must actually collect request traces"
+        );
+        assert!(
+            !output.contains("never-log-this-capability"),
+            "capability leaked: {output}"
+        );
+    }
 
     async fn test_router() -> Router {
         let search = Arc::new(

@@ -14,6 +14,10 @@ use crate::http::no_store;
 const TITLE: &str = "The newsletter · ENGMANAGER.XYZ";
 const DESCRIPTION: &str = "Occasional notes from Matthew Harwood on engineering leadership, building thoughtful teams, and finding your way as a manager.";
 const CANONICAL: &str = "https://engmanager.xyz/subscribe";
+const SENDER_EMAIL: &str = "matthew@engmanager.xyz";
+const SENDER_NAME: &str = "Matthew Harwood · ENGMANAGER";
+const CONFIRMATION_SUBJECT: &str = "Confirm your ENGMANAGER newsletter subscription";
+const PRIVACY_PATH: &str = "/newsletter/privacy";
 
 #[derive(Debug, Default, Deserialize)]
 pub struct NewsletterQuery {
@@ -143,6 +147,7 @@ fn signup_form(status: Option<&str>) -> HtmlFragment {
     view! {
         <h2 id="newsletter-signup-title">"Good questions."<br />"Useful notes."</h2>
         <p class="newsletter-card-description">"A little room to reflect on how you lead. Delivered occasionally, when there’s something worth sharing."</p>
+        <p class="newsletter-sender">"From Matthew Harwood at "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>"."</p>
         <form class="newsletter-form" method="post" action="/api/newsletter/subscribe">
             <label for="newsletter-email">"Your email address"</label>
             <input id="newsletter-email"
@@ -163,7 +168,7 @@ fn signup_form(status: Option<&str>) -> HtmlFragment {
             </div>
             { feedback }
             <button type="submit">"Send me the notes"<span aria-hidden="true">"↗"</span></button>
-            <p id="newsletter-privacy" class="newsletter-privacy">"Free to read. Unsubscribe whenever you like."</p>
+            <p id="newsletter-privacy" class="newsletter-privacy">"Free to read. Unsubscribe whenever you like."<br /><a href=PRIVACY_PATH data-hard-nav>"How your newsletter data is used"</a></p>
         </form>
     }
 }
@@ -174,8 +179,19 @@ fn confirmation() -> HtmlFragment {
             <span class="newsletter-confirmation-mark" aria-hidden="true">"✓"</span>
             <h2 id="newsletter-signup-title">"Check your inbox."</h2>
             <p class="newsletter-card-description">"If your address needs confirming, you’ll receive an email shortly. Follow the link inside to finish signing up."</p>
+            <dl class="newsletter-email-details">
+                <dt>"From"</dt>
+                <dd>{ SENDER_NAME }<br /><a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a></dd>
+                <dt>"Subject"</dt>
+                <dd>{ CONFIRMATION_SUBJECT }</dd>
+            </dl>
             <p class="newsletter-confirmation-note">"Already subscribed? You’re all set. Thanks for reading."</p>
         </div>
+        <details class="newsletter-inbox-help">
+            <summary>"Can’t find the email?"</summary>
+            <p>"Check Spam and Promotions. If it landed in Spam, mark it “Not spam.” In Gmail, you can move it to Primary if you’d prefer your notes there."</p>
+            <p>"Need a hand? "<a href="mailto:matthew@engmanager.xyz">"Email Matthew"</a>"."</p>
+        </details>
         <a class="newsletter-reset" href="/subscribe" data-hard-nav>"Use another email address"<span aria-hidden="true">" ↗"</span></a>
     }
 }
@@ -190,6 +206,182 @@ fn confirmed() -> HtmlFragment {
         </div>
         <a class="newsletter-reset" href="/feed" data-hard-nav>"Explore the articles"<span aria-hidden="true">" ↗"</span></a>
     }
+}
+
+pub async fn privacy() -> Response {
+    no_store(Html(privacy_page()))
+}
+
+pub fn privacy_page() -> String {
+    let title = "Newsletter privacy · ENGMANAGER.XYZ";
+    let site_nav = nav::render(nav::Props {
+        brand_icon_url: asset_url("favicon.svg"),
+        global_search: global_search::render(global_search::Props {
+            placeholder: "Search articles",
+        }),
+        search_toggle: render_nav_search_toggle(),
+        theme_picker: theme_picker(),
+        articles: nav::Articles::Link,
+    });
+    let mut assets = Head::new();
+    assets.add_css("css/newsletter.css");
+    assets.add(&site_nav);
+    let mut scripts = Head::new();
+    scripts.add_js("js/audio.js");
+    scripts.add(&site_nav);
+    let nav_markup = site_nav.markup;
+
+    let body = view! {
+        { nav_markup }
+        <main id="main" class="newsletter-document" tabindex="-1">
+            <p class="newsletter-eyebrow">"The ENGMANAGER newsletter"</p>
+            <h1>"Newsletter privacy."</h1>
+            <p class="newsletter-document-intro">"A note on the information used to send you these notes, and how to manage it."</p>
+            <section aria-labelledby="newsletter-data-heading">
+                <h2 id="newsletter-data-heading">"When you subscribe"</h2>
+                <p>"The signup form asks for your email address. This website passes it to Kit, the service Matthew Harwood uses to manage newsletter subscriptions and send emails. Kit records whether your subscription is unconfirmed, confirmed, or unsubscribed."</p>
+                <p>"Your email address and subscription status are used to send the confirmation email, deliver the newsletter you requested, and honor your subscription preferences."</p>
+            </section>
+            <section aria-labelledby="newsletter-provider-heading">
+                <h2 id="newsletter-provider-heading">"Email delivery records"</h2>
+                <p>"Kit keeps subscriber and email history and may record delivery, open, and link-click activity. This helps understand how the newsletter is delivered and read. Its handling of newsletter subscriber information is described in "<a href="https://kit.com/dpa" rel="noopener">"Kit’s data processing terms"</a>"."</p>
+            </section>
+            <section aria-labelledby="newsletter-leave-heading">
+                <h2 id="newsletter-leave-heading">"When you unsubscribe"</h2>
+                <p>"Use the unsubscribe link in a newsletter email to stop future newsletters. Unsubscribing keeps a record of your preference in Kit; it does not automatically delete your subscriber profile or email history."</p>
+            </section>
+            <section aria-labelledby="newsletter-contact-heading">
+                <h2 id="newsletter-contact-heading">"Questions or data requests"</h2>
+                <p>"For help with your subscription, or to request access, a correction, or deletion of newsletter information, email "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>"."</p>
+            </section>
+            <p class="newsletter-document-scope">"This notice covers the ENGMANAGER newsletter signup and email delivery."</p>
+            <a class="newsletter-reset" href="/feed" data-hard-nav>"Back to the articles"<span aria-hidden="true">" ↗"</span></a>
+        </main>
+    };
+
+    PageShell::new(title, "newsletter-page")
+        .meta(MetaTags {
+            description: Some("How newsletter signup information is used, and how to unsubscribe or request help with your data.".to_string()),
+            canonical: Some(format!("https://engmanager.xyz{PRIVACY_PATH}")),
+            ..MetaTags::default()
+        })
+        .assets(assets)
+        .scripts(scripts)
+        .nav_router(true)
+        .render(body)
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub struct UnsubscribeQuery {
+    pub token: Option<String>,
+}
+
+pub async fn unsubscribe(Query(query): Query<UnsubscribeQuery>) -> Response {
+    no_store(Html(unsubscribe_page(query.token.as_deref())))
+}
+
+/// Loading the link is inert. The dedicated script submits a POST when the
+/// page opens; without scripting, the same form remains a normal POST.
+pub fn unsubscribe_page(token: Option<&str>) -> String {
+    let token = token.filter(|value| {
+        if value.len() > 88 || !value.is_ascii() {
+            return false;
+        }
+        let mut parts = value.split('.');
+        let (Some("v1"), Some(subscriber_id), Some(signature), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return false;
+        };
+        subscriber_id.parse::<u64>().is_ok_and(|id| id > 0)
+            && signature.len() == 64
+            && signature.bytes().all(|byte| byte.is_ascii_hexdigit())
+    });
+    let (heading, message, state, form) = if let Some(token) = token {
+        (
+            "Unsubscribing…",
+            "Please wait a moment while your newsletter preference is updated.",
+            "processing",
+            view! {
+                <form class="newsletter-form newsletter-unsubscribe-form" method="post" action="/api/newsletter/unsubscribe" data-unsubscribe-form>
+                    <input type="hidden" name="token" value={ token } />
+                    <noscript><p class="newsletter-confirmation-note">"Select Unsubscribe below to stop future newsletters."</p></noscript>
+                    <button type="submit" data-unsubscribe-submit>"Unsubscribe"</button>
+                </form>
+            },
+        )
+    } else {
+        (
+            "This link isn’t valid.",
+            "Open the unsubscribe link in a newsletter email. If you need help, contact Matthew below.",
+            "invalid",
+            HtmlFragment::empty(),
+        )
+    };
+    unsubscribe_document(heading, message, state, form, token.is_some())
+}
+
+/// Native POST responses render the same quiet result without requiring JS.
+pub fn unsubscribe_result(success: bool) -> String {
+    let (heading, message, state) = if success {
+        (
+            "You’re unsubscribed.",
+            "Your ENGMANAGER newsletter subscription is turned off. You can close this page.",
+            "success",
+        )
+    } else {
+        (
+            "We couldn’t confirm the change.",
+            "Please open the unsubscribe link in your email to try again, or contact Matthew below for help.",
+            "error",
+        )
+    };
+    unsubscribe_document(heading, message, state, HtmlFragment::empty(), false)
+}
+
+fn unsubscribe_document(
+    heading: &str,
+    message: &str,
+    state: &str,
+    form: HtmlFragment,
+    has_script: bool,
+) -> String {
+    let script = if has_script {
+        view! { <script src={ asset_url("js/newsletter-unsubscribe.js") } defer></script> }
+    } else {
+        HtmlFragment::empty()
+    };
+    // This token-bearing surface intentionally omits the regular page shell:
+    // no navigation router, external resource hints, analytics, or theme
+    // runtime can observe the URL. Only local CSS and this POST script load.
+    let document = view! {
+        <html lang="en">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <meta name="robots" content="noindex,nofollow" />
+                <meta name="referrer" content="no-referrer" />
+                <title>"Newsletter preferences · ENGMANAGER.XYZ"</title>
+                <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
+                <link rel="stylesheet" href={ asset_url("css/critical.css") } />
+                <link rel="stylesheet" href={ asset_url("css/newsletter.css") } />
+                { script }
+            </head>
+            <body class="newsletter-page newsletter-preferences-page">
+                <a class="skip-link" href="#main">"Skip to content"</a>
+                <main id="main" class="newsletter-document newsletter-preferences" tabindex="-1" data-unsubscribe-state={ state }>
+                    <p class="newsletter-eyebrow">"ENGMANAGER · Newsletter preferences"</p>
+                    <span class="newsletter-preferences-mark" aria-hidden="true" data-unsubscribe-mark>{ if state == "success" { "✓" } else { "—" } }</span>
+                    <h1 data-unsubscribe-heading>{ heading }</h1>
+                    <p class="newsletter-document-intro" role="status" aria-live="polite" data-unsubscribe-message>{ message }</p>
+                    { form }
+                    <p class="newsletter-preferences-contact">"Need help? "<a href="mailto:matthew@engmanager.xyz?subject=Newsletter%20unsubscribe">"Email Matthew"</a>"."</p>
+                    <a class="newsletter-reset" href="/newsletter/privacy">"Newsletter privacy"</a>
+                </main>
+            </body>
+        </html>
+    };
+    format!("<!DOCTYPE html>{}", document.as_str())
 }
 
 #[cfg(test)]

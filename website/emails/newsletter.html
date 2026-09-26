@@ -1,0 +1,53 @@
+<style type="text/css">
+  .em-content { color: #202124; font-family: Arial, Helvetica, sans-serif; font-size: 17px; line-height: 1.7; overflow-wrap: break-word; }
+  .em-content p { margin: 0 0 20px; }
+  .em-content h1 { margin: 0 0 24px; color: #111111; font-size: 30px; line-height: 1.25; letter-spacing: -0.6px; }
+  .em-content h2 { margin: 32px 0 14px; color: #111111; font-size: 23px; line-height: 1.35; }
+  .em-content h3 { margin: 28px 0 12px; color: #111111; font-size: 19px; line-height: 1.4; }
+  .em-content a { color: #154ec1; text-decoration: underline; }
+  .em-content img { max-width: 100%; height: auto; border: 0; }
+  .em-content ul, .em-content ol { margin: 0 0 20px; padding-left: 24px; }
+  .em-content li { margin: 0 0 8px; }
+  .em-content blockquote { margin: 24px 0; padding: 0 0 0 20px; border-left: 3px solid #d6d9de; color: #4a4f57; }
+  .em-content .button { display: inline-block; padding: 12px 20px; background-color: #111111; border-radius: 4px; color: #ffffff; font-weight: bold; text-decoration: none; }
+  @media only screen and (max-width: 480px) {
+    .em-shell { padding: 0 !important; }
+    .em-inner { padding: 28px 22px !important; }
+    .em-content h1 { font-size: 27px !important; }
+  }
+</style>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; border-collapse:collapse; background-color:#f5f5f3;">
+  <tr>
+    <td class="em-shell" align="center" style="padding:32px 16px;">
+      <!--[if mso]><table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:640px; border-collapse:collapse; background-color:#ffffff;">
+        <tr>
+          <td class="em-inner" style="padding:40px 40px 36px;">
+            <p style="margin:0 0 32px; font-family:'Courier New', Courier, monospace; font-size:15px; line-height:1.4; font-weight:bold; letter-spacing:1.5px;">
+              <a href="https://engmanager.xyz" style="color:#111111; text-decoration:none;">ENGMANAGER</a>
+            </p>
+            <div class="em-content" style="color:#202124; font-family:Arial, Helvetica, sans-serif; font-size:17px; line-height:1.7;">
+              {{ message_content }}
+            </div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; border-collapse:collapse; margin-top:32px;">
+              <tr>
+                <td style="border-top:1px solid #dedfdf; padding-top:24px; color:#555b64; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.6;">
+                  <p style="margin:0 0 12px;">Matthew Harwood &middot; <a href="https://engmanager.xyz" style="color:#555b64; text-decoration:underline;">engmanager.xyz</a></p>
+                  {% assign first_party_unsubscribe = subscriber.engmanager_unsubscribe_url | default: "" | strip %}
+                  {% if first_party_unsubscribe != "" %}
+                  <p style="margin:0 0 8px;"><a href="{{ first_party_unsubscribe | escape }}" style="color:#154ec1; font-size:15px; font-weight:bold; text-decoration:underline;">Unsubscribe</a></p>
+                  <p style="margin:0 0 16px;"><a href="{{ unsubscribe_url }}" style="color:#555b64; text-decoration:underline;">Unsubscribe with Kit</a></p>
+                  {% else %}
+                  <p style="margin:0 0 16px;"><a href="{{ unsubscribe_url }}" style="color:#154ec1; font-size:15px; font-weight:bold; text-decoration:underline;">Unsubscribe</a></p>
+                  {% endif %}
+                  <p style="margin:0; color:#555b64;">{{ address }}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td>
+  </tr>
+</table>
