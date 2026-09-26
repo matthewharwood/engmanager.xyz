@@ -41,10 +41,6 @@
             isOpen = true;
             toggle.setAttribute("aria-expanded", "true");
             toggle.setAttribute("aria-label", "Close search");
-            // Mutual exclusion with the Articles dropdown (and any future
-            // popover) via the shared registry — opening here dismisses
-            // anything else that's currently open.
-            window.__engPopovers?.open("nav-search", () => close());
             if (!overlay.open) overlay.showModal();
             window.dispatchEvent(new Event("eng:overlaychange"));
             requestAnimationFrame(() => {
@@ -61,7 +57,6 @@
             isOpen = false;
             toggle.setAttribute("aria-expanded", "false");
             toggle.setAttribute("aria-label", "Open search");
-            window.__engPopovers?.close("nav-search");
             if (overlay.open) overlay.close();
             window.dispatchEvent(new Event("eng:overlaychange"));
         };
@@ -72,7 +67,6 @@
                 isOpen = false;
                 toggle.setAttribute("aria-expanded", "false");
                 toggle.setAttribute("aria-label", "Open search");
-                window.__engPopovers?.close("nav-search");
             }
             window.dispatchEvent(new Event("eng:overlaychange"));
         });

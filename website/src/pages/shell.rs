@@ -450,9 +450,9 @@ mod tests {
         assets.add_css("css/search.css");
         let mut scripts = Head::new();
         scripts.add_js("js/audio.js");
-        // Two components sharing js/popover-registry.js → one tag.
-        scripts.add(&component("css/c-nav.css", "js/popover-registry.js"));
-        scripts.add(&component("css/c-to-top.css", "js/popover-registry.js"));
+        // Two components sharing js/search.js → one tag.
+        scripts.add(&component("css/c-nav.css", "js/search.js"));
+        scripts.add(&component("css/c-to-top.css", "js/search.js"));
 
         let html = PageShell::new("Shell Test", "search-page")
             .assets(assets)
@@ -474,7 +474,7 @@ mod tests {
         let sfx = html.find("window.__engSfxUrls=").expect("sfx island");
         assert!(theme < sfx && sfx < audio);
         // Shared dep deduped to a single tag.
-        assert_eq!(html.matches("popover-registry").count(), 1);
+        assert_eq!(html.matches("/assets/js/search.").count(), 1);
         // Body scaffold: skip-link by default, no speculation rules.
         assert!(html.contains(r##"<body class="search-page"><a class="skip-link" href="#main">"##));
         assert!(!html.contains("speculationrules"));

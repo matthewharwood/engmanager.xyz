@@ -1840,7 +1840,7 @@ register({
     group: "input",
     isSupported: () => "PointerEvent" in globalThis,
     init: (api) => {
-        api.log("used", "nav-dropdown, marquees");
+        api.log("used", "marquees");
     },
 });
 
@@ -2155,14 +2155,9 @@ register({
             ]
                 .map((link) => sameOriginPath(link.href))
                 .filter(Boolean);
-            const navPrefetchUrls = [...document.querySelectorAll(".nav-dropdown-item")]
-                .slice(0, 3)
-                .map((link) => sameOriginPath(link.href))
-                .filter(Boolean);
             const unique = (items) => [...new Set(items)].filter((url) => url !== location.pathname);
             const prerenderUrls = unique(articleNavUrls).slice(0, 3);
-            const prefetchUrls = unique(navPrefetchUrls).slice(0, 3);
-            if (!prerenderUrls.length && !prefetchUrls.length) {
+            if (!prerenderUrls.length) {
                 return false;
             }
             const script = document.createElement("script");
@@ -2171,13 +2166,10 @@ register({
             if (prerenderUrls.length) {
                 rules.prerender = [{ urls: prerenderUrls, eagerness: "moderate" }];
             }
-            if (prefetchUrls.length) {
-                rules.prefetch = [{ urls: prefetchUrls, eagerness: "conservative" }];
-            }
             script.textContent = JSON.stringify(rules);
             document.head.appendChild(script);
             injected = script;
-            return `${prerenderUrls.length} prerender · ${prefetchUrls.length} prefetch`;
+            return `${prerenderUrls.length} prerender`;
         };
 
         // Soft navigation (JS_ROUTER_CONSTRAINTS §2.15a): rebuild from
@@ -3029,7 +3021,7 @@ function mountScavengerHooks() {
     // links (discover() is idempotent — a stray double bind on a
     // surviving node is harmless).
     const bindHoverDiscover = (root) =>
-        root.querySelectorAll(".article-fluid-link, .nav-dropdown-item").forEach(
+        root.querySelectorAll(".article-fluid-link").forEach(
             (link) =>
                 link.addEventListener(
                     "pointerenter",

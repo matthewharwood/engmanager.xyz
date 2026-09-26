@@ -39,7 +39,6 @@ pub fn page(status: Option<&str>) -> String {
         }),
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
-        articles: nav::Articles::Link,
     });
     let mut assets = Head::new();
     assets.add_css("css/newsletter.css");
@@ -225,7 +224,6 @@ pub fn privacy_page() -> String {
         }),
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
-        articles: nav::Articles::Link,
     });
     let mut assets = Head::new();
     assets.add_css("css/newsletter.css");

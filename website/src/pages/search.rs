@@ -157,7 +157,6 @@ fn render_page(
         }),
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
-        articles: nav::Articles::Link,
     });
     let mut assets = Head::new();
     assets.add_css("css/search.css");
