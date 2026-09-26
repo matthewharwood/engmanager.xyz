@@ -34,22 +34,23 @@
 }
 
 @media (max-width: 42rem) {
-    /* Keep the centered theme picker clear with three controls to its right.
-     * Search joins the brand and Articles on the left at phone widths. */
+    /* Keep the four right-hand controls clear of the centered theme picker,
+     * while the folder and social icons retain their mobile slots on the left. */
     .site-nav .site-search-toggle {
-        position: absolute;
-        inset-inline-start: 5.5rem;
         box-sizing: border-box;
-        inline-size: 2.75rem;
+        inline-size: 1.875rem;
         block-size: 2.75rem;
+        padding: 0;
         align-items: center;
         justify-content: center;
     }
-}
 
-@media (max-width: 22rem) {
-    .site-nav {
-        padding-inline-end: 0.5rem;
+    .site-nav .site-nav-links > .service-nav-link {
+        inline-size: 1.75rem;
+    }
+
+    .site-nav .site-nav-newsletter {
+        inline-size: 2rem;
     }
 }
 
