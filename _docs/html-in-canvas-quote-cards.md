@@ -3,7 +3,8 @@
 The blog uses HTML-in-Canvas for a concrete reader task: taking a passage
 into a slide or team discussion as a readable PNG with its article title,
 author, and source URL. The same card is an ordinary HTML preview in every
-browser that supports the dialog. PNG export is an optional enhancement.
+browser that supports the dialog. PNG export uses the native experimental
+API when available and an SVG compatibility renderer otherwise.
 
 ## Why this use case
 
@@ -31,15 +32,15 @@ measures lines, and duplicates the CSS card layout.
    and the dialog says so.
 3. Choose **Copy quote + link**. If clipboard access fails, the complete text
    is selected in the readonly field for manual copying.
-4. Where the experimental API is enabled, choose **Download PNG**. The file
+4. Choose **Download PNG**, without changing browser flags. The file
    includes the visible attribution and URL. It is a local download; no
    passage or card is sent to a server.
 
-The preview and copying remain useful without HTML-in-Canvas. Unsupported
-browsers omit the PNG button and explain that copying is available. If an
-export fails, the original preview is restored and the reader can retry or
-copy the passage. The dialog supports Escape, an explicit close button, and
-focus return to the action that opened it.
+The preview, PNG download, and copying remain available without HTML-in-Canvas.
+If native rendering fails, the compatibility renderer gets one attempt. If
+both exporters fail, the preview stays intact and the reader can retry or copy
+the passage. The dialog supports Escape, an explicit close button, and focus
+return to the action that opened it.
 
 ## Rendering and lifecycle
 
@@ -64,13 +65,25 @@ focus return to the action that opened it.
 - Earlier implementations return a transform from `drawElementImage`; it
   is applied only when present. The newer proposal returns no matrix and
   synchronizes 2D element geometry automatically.
+- The compatibility renderer clones only the text card, snapshots computed
+  styles, and embeds its selected theme and display fonts from same-origin
+  assets. It serializes the clone into an SVG `foreignObject` data URL, decodes
+  the image, and uses standard `drawImage` and `toBlob` for a 2x PNG. HTML still
+  handles text wrapping; no screenshot dependency or handwritten text renderer
+  is needed. This is a scoped export fallback, not a global polyfill for the
+  experimental drawing or paint APIs. It does not support arbitrary widgets,
+  external images, or pseudo-elements added to the card in the future.
+- The fallback has an eight-second timeout. Closing or navigating away aborts
+  pending font fetches, discards the detached snapshot and canvas, and prevents
+  a late download. The live preview is never moved by this renderer.
 - A nonempty `toBlob(..., "image/png")` result precedes download. Paint
   failure or timeout restores the same HTML node. Closing the dialog or
   navigating away aborts the operation, removes page handlers and generated
   actions, and revokes outstanding object URLs.
-- Only a successful export emits `engmanager:quote-card-export`. The Web API
-  Receipt begins with this API unsupported or supported-but-unused. Opening
-  the dialog or copying text does not count as discovering HTML-in-Canvas.
+- Only a successful export emits `engmanager:quote-card-export`, with a
+  `detail.renderer` of `html-in-canvas` or `svg`. The Web API Receipt credits
+  only a successful native export. A compatibility PNG does not claim the
+  experimental API was used, even if native support was detected but failed.
 
 Implementation lives in `website/src/components/quote_card/`, is mounted by
 the article detail page, and is registered in
@@ -96,10 +109,11 @@ availability. Keep a native export smoke test alongside unsupported-browser,
 clipboard-failure, mobile layout, and soft-navigation checks when changing
 this feature.
 
-No origin-trial token is shipped. Enabling this for ordinary visitors would
-require an applicable current trial or browser release and verification of
-its API and origin requirements. Until then, feature detection and the HTML
-copying fallback remain the production behavior.
+No origin-trial token is shipped. Using the native path for ordinary visitors
+requires an applicable trial or browser release. PNG export itself needs no
+trial because the compatibility path uses existing browser APIs. SVG images
+must contain their own resources, including the dynamically loaded font bytes;
+see [SVG as an image](https://developer.mozilla.org/en-US/docs/Web/SVG/Guides/SVG_as_an_image).
 
 Run the component, manifest, and native-browser checks with:
 
@@ -112,11 +126,9 @@ The browser suite launches an isolated Chrome profile with the feature
 explicitly disabled for fallback checks and enabled for native PNG checks.
 It does not change the reader's browser settings.
 
-Verified locally: 119 Rust unit tests and both quote-card browser cases pass.
-The native PNG was also visually inspected for text, wrapping, and source
-attribution. Browser checks cover real PNG pixels, null-encoder recovery,
-delayed theme fonts, font timeout/cancellation, the 320px fallback, clipboard denial, and modal
-Escape/focus restoration. The journey suite checks normal and reduced-motion
-navigation. Its mobile coaching assertion measures the slider within its
-component, since changing read-mode paragraphs legitimately moves the whole
-component vertically.
+Browser checks cover real PNG bytes and pixels in both renderers, a failed
+native draw that recovers through SVG, honest receipt discovery, delayed theme
+fonts, null-encoder recovery, timeout/cancellation, 320px layout, clipboard
+denial, and modal Escape/focus restoration. Saved PNGs support visual inspection
+of text, wrapping, fonts, and attribution. Chrome is the automated browser;
+that does not establish identical rendering in every browser engine.

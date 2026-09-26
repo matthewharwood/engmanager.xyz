@@ -1,5 +1,6 @@
 // Native HTML layout is the source of both the readable preview and its PNG.
-// No screenshot library, text-measurement renderer, or continuously running canvas.
+// The compatibility path snapshots this text-only card through SVG; it does
+// not patch browser prototypes or emulate the experimental paint lifecycle.
 (() => {
     const LIMIT = 480;
     const supported = () => typeof CanvasRenderingContext2D !== 'undefined'
@@ -14,9 +15,7 @@
         return clone?.textContent?.replace(/\s+/g, ' ').trim() || '';
     }
 
-    // Paint snapshots are only valid in the native paint event. Keep the card
-    // laid out, wait for fonts, and restore the same DOM node on every exit.
-    async function capture(artwork, signal) {
+    async function prepareFonts(signal) {
         signal.throwIfAborted();
         await new Promise((resolve, reject) => {
             const finish = error => {
@@ -41,6 +40,11 @@
             })().then(() => finish(), finish);
         });
         signal.throwIfAborted();
+    }
+
+    // Paint snapshots are only valid in the native paint event. Keep the card
+    // laid out and restore the same DOM node on every exit.
+    function captureNative(artwork, signal) {
         return new Promise((resolve, reject) => {
             const canvas = document.createElement('canvas');
             // Opt into subtree layout before creating the drawing context.
@@ -104,6 +108,124 @@
         });
     }
 
+    // SVG images cannot fetch external resources. Snapshot computed styles and
+    // embed only the fonts this card uses, including the dynamically loaded
+    // theme face (which has no @font-face rule in a stylesheet).
+    async function snapshotFonts(families, signal) {
+        const faces = Object.values(window.__engThemeFonts || {})
+            .filter(face => families.includes(face.family))
+            .map(face => ({ ...face, weight: '400' }));
+        const shared = document.querySelector('[data-theme-font-faces]')?.sheet;
+        for (const rule of shared?.cssRules || []) {
+            if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+            const family = rule.style.getPropertyValue('font-family').replace(/["']/g, '');
+            const url = rule.style.getPropertyValue('src').match(/url\(["']?([^"')]+)["']?\)/)?.[1];
+            if (url && families.includes(family)) faces.push({ family, url, weight: rule.style.fontWeight });
+        }
+        return (await Promise.all(faces.map(async face => {
+            const url = new URL(face.url, location.href);
+            if (url.origin !== location.origin) throw new Error('Unexpected font origin');
+            const response = await fetch(url, { signal });
+            if (!response.ok) throw new Error('Font snapshot unavailable');
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            signal.throwIfAborted();
+            let binary = '';
+            for (const byte of bytes) binary += String.fromCharCode(byte);
+            return `@font-face{font-family:"${face.family}";font-weight:${face.weight};font-style:normal;src:url(data:font/woff2;base64,${btoa(binary)}) format("woff2")}`;
+        }))).join('');
+    }
+
+    function captureSvg(artwork, signal) {
+        return new Promise((resolve, reject) => {
+            const operation = new AbortController();
+            const canvas = document.createElement('canvas');
+            const picture = new Image();
+            let finished = false;
+            const finish = (error, blob) => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timer);
+                signal.removeEventListener('abort', abort);
+                operation.abort();
+                picture.onload = picture.onerror = null;
+                picture.removeAttribute('src');
+                canvas.width = canvas.height = 0;
+                if (error) reject(error); else resolve(blob);
+            };
+            const abort = () => finish(new DOMException('Export cancelled', 'AbortError'));
+            const timer = setTimeout(() => finish(new Error('PNG snapshot timed out')), 8000);
+            signal.addEventListener('abort', abort, { once: true });
+            (async () => {
+                signal.throwIfAborted();
+                const rect = artwork.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) throw new Error('No drawable preview');
+                const clone = artwork.cloneNode(true);
+                const originals = [artwork, ...artwork.querySelectorAll('*')];
+                const copies = [clone, ...clone.querySelectorAll('*')];
+                const families = [];
+                originals.forEach((node, index) => {
+                    const style = getComputedStyle(node);
+                    families.push(style.fontFamily);
+                    for (const property of style) {
+                        // All standard computed properties have resolved lengths
+                        // and colors; custom properties are no longer needed.
+                        if (!property.startsWith('--')) copies[index].style.setProperty(property, style.getPropertyValue(property));
+                    }
+                    copies[index].style.animation = 'none';
+                    copies[index].style.transition = 'none';
+                });
+                clone.style.margin = '0';
+                clone.style.transform = 'none';
+                clone.style.width = `${rect.width}px`;
+                clone.style.height = `${rect.height}px`;
+                const fontCss = await snapshotFonts(families.join(','), operation.signal);
+                operation.signal.throwIfAborted();
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', String(rect.width));
+                svg.setAttribute('height', String(rect.height));
+                const foreign = document.createElementNS(svg.namespaceURI, 'foreignObject');
+                foreign.setAttribute('width', '100%');
+                foreign.setAttribute('height', '100%');
+                const fonts = document.createElement('style');
+                fonts.textContent = fontCss;
+                clone.prepend(fonts);
+                foreign.append(clone);
+                svg.append(foreign);
+                picture.onload = async () => {
+                    try {
+                        await picture.decode();
+                        operation.signal.throwIfAborted();
+                        canvas.width = Math.ceil(rect.width * 2);
+                        canvas.height = Math.ceil(rect.height * 2);
+                        canvas.dataset.quoteCardCanvas = '';
+                        const context = canvas.getContext('2d');
+                        if (!context) throw new Error('Canvas unavailable');
+                        context.drawImage(picture, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob(blob => finish(blob?.size ? null : new Error('Empty PNG'), blob), 'image/png');
+                    } catch (error) { finish(error); }
+                };
+                picture.onerror = () => finish(new Error('SVG snapshot unavailable'));
+                // A data URL preserves origin-clean canvas readback for SVG
+                // foreignObject content and fits the site's image CSP.
+                picture.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+            })().catch(error => finish(error));
+        });
+    }
+
+    async function capture(artwork, signal) {
+        await prepareFonts(signal);
+        if (supported()) {
+            try {
+                return { blob: await captureNative(artwork, signal), renderer: 'html-in-canvas' };
+            } catch (error) {
+                // Experimental support can exist without a working paint path.
+                // Its cleanup restores the card before the compatibility retry.
+                signal.throwIfAborted();
+            }
+        }
+        return { blob: await captureSvg(artwork, signal), renderer: 'svg' };
+    }
+
     function mount(root = document) {
         unmount();
         const article = root.querySelector('.article[data-article-slug]');
@@ -144,10 +266,9 @@
             quote.textContent = excerpt;
             copyText = `“${excerpt}”\n— Matthew Harwood, ${artwork.querySelector('.quote-card-article').textContent}\n${source.href}`;
             text.value = copyText;
-            download.hidden = !supported();
+            download.hidden = false;
             status.textContent = (shortened ? 'Long passage shortened for this card. ' : '')
-                + (supported() ? 'Download the card or copy the quote with its source.'
-                    : 'PNG export is not available in this browser. You can still copy the quote and link.');
+                + 'Download the card or copy the quote with its source.';
             returnFocus = trigger;
             dialog.showModal();
         }
@@ -185,13 +306,13 @@
             }
         }, { signal });
         download.addEventListener('click', async () => {
-            if (exporting || !supported()) return;
+            if (exporting) return;
             const operation = new AbortController();
             exporting = operation;
             download.disabled = true;
             status.textContent = 'Preparing PNG…';
             try {
-                const blob = await capture(artwork, operation.signal);
+                const { blob, renderer } = await capture(artwork, operation.signal);
                 operation.signal.throwIfAborted();
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -202,7 +323,7 @@
                 link.remove();
                 urls.set(url, setTimeout(() => { URL.revokeObjectURL(url); urls.delete(url); }, 60000));
                 status.textContent = 'PNG ready. The source link is included on the card.';
-                document.dispatchEvent(new CustomEvent('engmanager:quote-card-export'));
+                document.dispatchEvent(new CustomEvent('engmanager:quote-card-export', { detail: { renderer } }));
             } catch (error) {
                 if (error.name !== 'AbortError' && dialog.open) {
                     status.textContent = 'PNG export could not finish. Your quote is intact; copy the quote and link or try again.';
