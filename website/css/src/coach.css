@@ -647,6 +647,33 @@
 }
 
 @media (max-width: 48rem) {
+    .coach-spectrum-head {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        grid-template-rows: 1.5rem 1rem;
+        align-items: center;
+        gap: 0.2rem 0.65rem;
+    }
+    .coach-spectrum-hint {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-inline-size: 0;
+        margin-inline-end: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .coach-spectrum-current {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        min-inline-size: 0;
+        max-inline-size: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.5rem;
+    }
     .coach-spectrum-pips {
         block-size: 0.5rem;
     }

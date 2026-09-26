@@ -2909,12 +2909,6 @@ listen(window, "eng:optionalasset", () => {
     if (secret) finalizeCheckoutReturn(secret);
 });
 
-// Text remains readable while staging. The settling event only adds motion
-// once the incoming storefront has reached its full frame.
-listen(window, "eng:journeysettled", () => {
-    if (!reduceMotion.matches && !isProductOpen()) revealGridTextAfterClose();
-});
-
 active = { surface, dispose() {
     if (disposed) return;
     disposed = true;

@@ -24,18 +24,20 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
 }
 .journey-runway[data-ready="true"] .journey-runway-link { opacity: 0; pointer-events: none; }
 .journey-runway[data-ready="true"] .journey-runway-link:focus-visible { opacity: 1; pointer-events: auto; }
-.journey-stage { position: fixed; z-index: 1; inset: 0; visibility: hidden; pointer-events: none; }
-.journey-revealing .journey-stage { visibility: visible; }
+.journey-stage { position: fixed; z-index: 1; inset: 0; visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; }
+.journey-revealing .journey-stage[data-preview-ready],
+.journey-stage[data-committing] { visibility: visible; opacity: 1; }
+.journey-stage[data-committing] { z-index: 76; transition: none; }
 .journey-stage-viewport {
     position: absolute;
     inset: 0;
     overflow: hidden;
     border: 1px solid color-mix(in oklab, var(--text-2) 30%, transparent);
-    border-radius: 1rem;
+    border-radius: var(--journey-corner, 1rem);
     background: var(--surface-1);
     box-shadow: 0 24px 80px color-mix(in oklab, var(--text-1) 18%, transparent);
     transform: scale(var(--journey-scale, .82));
-    opacity: .96;
+    opacity: var(--journey-progress, 0);
 }
 .journey-preview { display: block; inline-size: 100%; block-size: 100%; border: 0; pointer-events: none; background: var(--surface-1); }
 .journey-promote {
@@ -95,6 +97,7 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     .homepage .journey-previous { inset-block-end: 5.5rem; }
 }
 @media (prefers-reduced-motion: reduce) {
+    .journey-stage { transition: none; }
     .journey-stage-viewport { transform: none; opacity: 1; }
 }
 @media print {
