@@ -23,16 +23,26 @@
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; max-width:640px; border-collapse:collapse; background-color:#ffffff;">
         <tr>
           <td class="em-inner" style="padding:40px 40px 36px;">
-            <p style="margin:0 0 32px; font-family:'Courier New', Courier, monospace; font-size:15px; line-height:1.4; font-weight:bold; letter-spacing:1.5px;">
-              <a href="https://engmanager.xyz" style="color:#111111; text-decoration:none;">ENGMANAGER</a>
-            </p>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse; margin-bottom:32px;">
+              <tr>
+                <td width="72" valign="middle" style="width:72px; padding-right:16px;">
+                  <a href="https://engmanager.xyz" style="text-decoration:none;"><img src="https://engmanager.xyz/cdn-cgi/imagedelivery/MdDtxXpLlqqwzPv4AklQiw/febf9573-0897-40b3-f687-a38a678b2300/public" width="56" height="56" alt="Matthew Harwood" style="display:block; width:56px; height:56px; border:0; border-radius:3px;" /></a>
+                </td>
+                <td valign="middle">
+                  <p style="margin:0 0 5px; font-family:'Courier New', Courier, monospace; font-size:15px; line-height:1.4; font-weight:bold; letter-spacing:1.5px;"><a href="https://engmanager.xyz" style="color:#111111; text-decoration:none;">ENGMANAGER</a></p>
+                  <p style="margin:0; font-family:Arial, Helvetica, sans-serif; color:#555b64; font-size:13px; line-height:1.5;">Notes from Matthew Harwood</p>
+                </td>
+              </tr>
+            </table>
             <div class="em-content" style="color:#202124; font-family:Arial, Helvetica, sans-serif; font-size:17px; line-height:1.7;">
               {{ message_content }}
             </div>
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; border-collapse:collapse; margin-top:32px;">
               <tr>
                 <td style="border-top:1px solid #dedfdf; padding-top:24px; color:#555b64; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.6;">
-                  <p style="margin:0 0 12px;">Matthew Harwood &middot; <a href="https://engmanager.xyz" style="color:#555b64; text-decoration:underline;">engmanager.xyz</a></p>
+                  <p style="margin:0 0 2px; color:#202124; font-weight:bold;">Matthew Harwood</p>
+                  <p style="margin:0 0 10px;">Engineering Manager @ Uber<br />Professional typist turned intellectual yapper.</p>
+                  <p style="margin:0 0 20px;"><a href="https://engmanager.xyz" style="color:#555b64; text-decoration:underline;">Website</a> &middot; <a href="https://www.linkedin.com/in/matthewcharwood/" style="color:#555b64; text-decoration:underline;">LinkedIn</a> &middot; <a href="https://engmanager.xyz/newsletter/privacy" style="color:#555b64; text-decoration:underline;">Newsletter privacy</a></p>
                   {% assign first_party_unsubscribe = subscriber.engmanager_unsubscribe_url | default: "" | strip %}
                   {% if first_party_unsubscribe != "" %}
                   <p style="margin:0 0 8px;"><a href="{{ first_party_unsubscribe | escape }}" style="color:#154ec1; font-size:15px; font-weight:bold; text-decoration:underline;">Unsubscribe</a></p>

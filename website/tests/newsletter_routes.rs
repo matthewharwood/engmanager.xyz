@@ -17,6 +17,26 @@ async fn newsletter_page_and_navigation_are_available_without_kit_credentials() 
     assert!(html.contains("/api/newsletter/subscribe"));
     assert!(html.contains("type=\"email\""));
     assert!(!html.contains("api.kit.com"));
+    assert!(html.contains(r#"name="twitter:card" content="summary_large_image""#));
+    assert!(html.contains(r#"property="og:image:width" content="1200""#));
+    assert!(html.contains(r#"property="og:image:height" content="630""#));
+    let share_image = html
+        .split(r#"property="og:image" content=""#)
+        .nth(1)
+        .and_then(|value| value.split('"').next())
+        .expect("newsletter links have a social preview image");
+    let share_image = reqwest::Url::parse(share_image).expect("share image is an absolute URL");
+    assert_eq!(
+        share_image.origin().ascii_serialization(),
+        "https://engmanager.xyz"
+    );
+    let image_response = client
+        .get(server.url(SITE_HOST, share_image.path()))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(image_response.status(), StatusCode::OK);
+    assert_eq!(image_response.headers()[header::CONTENT_TYPE], "image/jpeg");
 
     let home = client
         .get(server.url(SITE_HOST, "/"))

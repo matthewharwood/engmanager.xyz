@@ -49,6 +49,7 @@ pub mod nav;
 pub mod quick_actions;
 pub mod quote_card;
 pub mod region_map;
+pub mod sigil;
 pub mod to_top;
 
 /// Higher-order render result for components that carry their own CSS/JS.
