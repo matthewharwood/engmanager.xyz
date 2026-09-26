@@ -784,13 +784,8 @@ html[data-article-reveal="running"]
 .article .token.bold { font-weight: 700; }
 .article .token.italic { font-style: italic; }
 
-/* Auteurs-specific: shader canvas, QR + invite link, workflow, products. */
-.auteurs-shader {
-    display: block;
-    inline-size: min(100%, 32rem);
-    aspect-ratio: 1;
-    margin: 1rem auto 2rem;
-}
+/* Auteurs-specific QR + invite link, workflow, products. Its orb now lives
+ * in the shared article hero atlas immediately after the title. */
 
 .auteurs-join {
     display: flex;

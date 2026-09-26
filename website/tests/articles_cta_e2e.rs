@@ -63,6 +63,14 @@ async fn every_article_ends_with_the_coaching_call_to_action() {
             .unwrap_or_else(|error| panic!("GET {path}: {error}"));
         assert_eq!(response.status(), StatusCode::OK, "GET {path}");
         let html = response.text().await.expect("body");
+        assert!(
+            html.contains(&format!("data-article-hero=\"{slug}\"")),
+            "{slug} has no article-specific hero"
+        );
+        assert!(
+            html.contains("article-hero-poster"),
+            "{slug} has no static poster"
+        );
 
         if slug == "big-personality" {
             assert!(html.contains("data-personality-route=\"article\""));

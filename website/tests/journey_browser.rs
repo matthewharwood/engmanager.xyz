@@ -77,8 +77,26 @@ try{
   await click('[data-close-product]');await until(()=>win().location.pathname==='/shop'&&query('[data-product-panel]')?.getAttribute('aria-hidden')==='true','hard-loaded product returns to shop');
 
   await navigate(article);
+  const hero=query('[data-article-hero="the-execution-marketplace"]');
+  assert(hero&&hero.querySelector('svg.article-hero-poster')&&hero.querySelector('canvas.article-hero-canvas'),'execution article has an accessible static hero and canvas');
+  hero.scrollIntoView({behavior:'instant'});
+  const heroCanvas=hero.querySelector('canvas');
+  if(heroCanvas.getContext('webgl2')){
+    await until(()=>hero.dataset.renderer==='webgl','article hero draws its WebGL2 scene');
+    // The default framebuffer may clear after presentation; inspect the
+    // actual accent uniform sent to the shader instead of a stale pixel.
+    const accentUniform=()=>{const gl=heroCanvas.getContext('webgl2'),program=gl.getParameter(gl.CURRENT_PROGRAM);return [...gl.getUniform(program,gl.getUniformLocation(program,'u_accent'))].join(',');};
+    const initialAccent=accentUniform();
+    const targetTheme=doc().documentElement.dataset.theme==='dark'?'catppuccin':'dark';
+    for(let i=0;i<10&&doc().documentElement.dataset.theme!==targetTheme;i++)await click('[data-theme-cycle]');
+    assert(doc().documentElement.dataset.theme===targetTheme,'theme cycle reaches a distinct palette');
+    await until(()=>accentUniform()!==initialAccent,'article hero repaints with the theme palette');
+  }
   for(const width of [320,390]){
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'diagram viewport '+width);
+    const heroBounds=hero.getBoundingClientRect();
+    win().scrollTo({left:width*2,top:win().scrollY,behavior:'instant'});
+    assert(heroBounds.left>=-1&&heroBounds.right<=width+1&&Math.abs(win().scrollX)<1,'article hero stays inside the mobile viewport without page panning at '+width+'px: '+JSON.stringify({hero:[heroBounds.left,heroBounds.right],scrollX:win().scrollX,scrollWidth:doc().documentElement.scrollWidth}));
     for(const figure of doc().querySelectorAll('.model-figure')){
       const diagram=figure.querySelector('.mermaid'),bounds=figure.getBoundingClientRect();
       assert(bounds.left>=0&&bounds.right<=width&&diagram.clientWidth<=figure.clientWidth,'diagrams stay inside the mobile article at '+width+'px');

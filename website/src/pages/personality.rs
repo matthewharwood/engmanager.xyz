@@ -1,6 +1,8 @@
 //! A separate document boundary for local personality assessments. This shell
 //! deliberately does not load the blog's analytics, navigation, or CDN assets.
 
+use super::article_hero;
+use crate::asset_url;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Redirect, Response};
@@ -81,7 +83,7 @@ pub async fn article() -> Response {
             <p class="eyebrow">"A field guide to understanding yourself"</p>
             <h1>"The Big Six-Seven"</h1>
             <p class="lede">"Big Five personality + work interests + personal values"</p>
-            <img class="article-hero" src="/assets/personality/v1/media/six-lenses-hero.png" alt="" width="1536" height="1024" loading="lazy" />
+            { article_hero::render("big-personality") }
             { HtmlFragment::new(html) }
             <div class="actions"><a class="button primary" href="/personality/prepare">"Start with yourself →"</a>
                 <a href="/personality/library">"Open your saved reports"</a></div>
@@ -92,6 +94,14 @@ pub async fn article() -> Response {
 }
 
 fn render(route: &str, label: &str, content: HtmlFragment) -> String {
+    let article_assets = if route == "article" {
+        view! {
+            <link rel="stylesheet" href={ asset_url("css/article-heroes.css") } />
+            <script src={ asset_url("js/article-heroes.js") } defer></script>
+        }
+    } else {
+        HtmlFragment::empty()
+    };
     let mut navigation = HtmlFragment::empty();
     navigation.push_fragment(view! {
         <a href=ARTICLE_PATH class="sidebar-link" data-route="article"><span class="nav-icon" aria-hidden="true">"○"</span><span class="nav-label">"The introduction"</span></a>
@@ -136,6 +146,7 @@ fn render(route: &str, label: &str, content: HtmlFragment) -> String {
                 <link rel="stylesheet" href="/assets/personality/v1/style.css" />
                 <link rel="stylesheet" href="/assets/personality/v1/charts.css" />
                 <link id="personality-presentation-style" rel="stylesheet" href="/assets/personality/v7/style.css" media="not all" />
+                { article_assets }
                 <script type="module" src="/assets/personality/v7/bootstrap.mjs"></script>
             </head>
             <body class="personality" data-personality-route=route>

@@ -2709,7 +2709,7 @@ register({
         return !!(c.getContext("webgl") || c.getContext("webgl2"));
     },
     init: (api) => {
-        api.log("used", "auteurs-shader.js");
+        api.log("used", "article-heroes.js");
     },
 });
 

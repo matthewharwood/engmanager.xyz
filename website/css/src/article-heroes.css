@@ -1,0 +1,102 @@
+/* The atlas shares its frame, print register and theme tokens. Geometry and
+ * treatment belong to each article's algorithm in article-heroes.js. */
+/* Clipped descendants can still extend the root scrollable width in Chrome.
+ * Clip the article viewport itself; diagram frames retain their own scrolling. */
+html:has(> body.articles-page) { overflow-x: clip; }
+
+.article-hero-scene,
+.article .article-hero-scene,
+.personality-article .article-hero-scene {
+    --hero-paper: var(--ctp-mantle, var(--paper, #f5f2eb));
+    --hero-ink: var(--ctp-text, var(--ink, #30263a));
+    --hero-accent: var(--accent, var(--plum, #795477));
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    aspect-ratio: 16 / 9;
+    min-block-size: 11rem;
+    margin: 1.25rem auto 2rem;
+    padding: 0;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid color-mix(in oklab, var(--hero-ink) 22%, transparent);
+    border-radius: 0.75rem;
+    background: radial-gradient(ellipse at 56% 42%, color-mix(in oklab, var(--hero-accent) 15%, var(--hero-paper)), var(--hero-paper) 75%);
+    color: var(--hero-accent);
+}
+
+.article-hero-scene[data-article-hero="auteurs"] {
+    inline-size: min(100%, 32rem);
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 50%;
+}
+
+.article-hero-poster,
+.article-hero-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+.article-hero-poster {
+    padding: 5% 6% 9%;
+    box-sizing: border-box;
+    opacity: 0.85;
+}
+
+.article-hero-canvas {
+    opacity: 0;
+    transition: opacity 360ms ease-out;
+    pointer-events: none;
+}
+
+.article-hero-scene[data-renderer="webgl"] .article-hero-canvas { opacity: 1; }
+
+.article-hero-scene::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.12;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, var(--hero-paper) 3px 4px);
+}
+
+.article-hero-scene figcaption,
+.article .article-hero-scene figcaption,
+.personality-article .article-hero-scene figcaption {
+    position: absolute;
+    z-index: 3;
+    inset-inline: 1rem;
+    inset-block-end: 0.65rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1rem;
+    max-inline-size: none;
+    margin: 0;
+    padding: 0;
+    color: var(--hero-ink);
+    font: 600 0.625rem/1.2 var(--font-mono, ui-monospace, monospace);
+    letter-spacing: 0.08em;
+    text-align: start;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
+.article-hero-scene figcaption strong { font-weight: 800; text-align: end; }
+.article-hero-scene[data-article-hero="auteurs"] figcaption { inset-inline: 13%; inset-block-end: 7%; }
+
+@media (max-width: 42rem) {
+    .article-hero-scene:not([data-article-hero="auteurs"]) { aspect-ratio: 1.35; }
+    .article-hero-scene figcaption span { max-inline-size: 50%; overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .article-hero-canvas { transition: none; }
+}
