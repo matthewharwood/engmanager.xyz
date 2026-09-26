@@ -1015,7 +1015,7 @@ register({
         && typeof CanvasRenderingContext2D.prototype.drawElementImage === "function"
         && typeof HTMLCanvasElement.prototype.requestPaint === "function",
     init: (api) => {
-        api.log("use", "Article quote cards → attributed PNG; HTML + copy fallback");
+        api.log("use", "Article quote cards → attributed PNG; SVG export fallback");
         api.log("availability", "Experimental; requires enabled browser support");
         // An export may have finished while an earlier capability probe was
         // pending. Preserve its active state when the runner reaches us.
@@ -1025,7 +1025,8 @@ register({
 
 // Bind synchronously, before runAll awaits any capability probes. The article
 // tool is usable independently of that asynchronous registry initialization.
-document.addEventListener("engmanager:quote-card-export", () => {
+document.addEventListener("engmanager:quote-card-export", (event) => {
+    if (event.detail?.renderer !== "html-in-canvas") return;
     const entry = registry.byId.get("html-in-canvas");
     if (!entry.isSupported()) return;
     quoteCardExported = true;
