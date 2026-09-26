@@ -37,6 +37,7 @@ impl TestServer {
             // Empty values also prevent dotenv from restoring live credentials.
             .env("KIT_API_KEY", "")
             .env("KIT_FORM_ID", "")
+            .env("NEWSLETTER_UNSUBSCRIBE_SECRET", "")
             .stdout(Stdio::null())
             .stderr(Stdio::inherit());
         if let Some(url) = booking_url {

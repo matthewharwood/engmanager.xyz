@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
     // Both checkout documents and storefront redirects can carry payment
     // context. Bypass the cache in either direction, including stale entries
     // created by an older worker. URLSearchParams decodes encoded key names.
-    if (pathname === "/checkout" || pathname.startsWith("/checkout/") || pathname.startsWith("/api/")) return;
+    if (pathname === "/checkout" || pathname.startsWith("/checkout/") || pathname === "/unsubscribe" || pathname.startsWith("/api/")) return;
     if (["payment_intent", "payment_intent_client_secret", "setup_intent", "setup_intent_client_secret", "redirect_status"].some((key) => url.searchParams.has(key))) return;
 
     if (request.mode === "navigate") {

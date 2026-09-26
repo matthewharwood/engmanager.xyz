@@ -25,6 +25,8 @@ Visit <http://127.0.0.1:3000>. Routes:
 - `GET /subscribe` → newsletter signup page
 - `GET /newsletter` → permanent redirect to `/subscribe`
 - `POST /api/newsletter/subscribe` → server-side Kit signup, followed by a private result page
+- `GET /unsubscribe?token=…` → private, inert unsubscribe page; opening the page alone never changes a subscription
+- `POST /api/newsletter/unsubscribe` → validates the email's signed capability and cancels future Kit emails
 - `GET /shop` → storefront on every host
 - `GET /coach` → coaching on every host, including `?group=1`
 - `GET /products/{slug}` → storefront product deep link on every host
@@ -50,6 +52,23 @@ Configure these secrets/settings in the Render service environment:
 
 - `KIT_API_KEY`: a V4 personal-use API key for the site's Kit account.
 - `KIT_FORM_ID`: the numeric ID of the newsletter form in that account.
+- `NEWSLETTER_UNSUBSCRIBE_SECRET`: a dedicated random signing secret of at least
+  32 bytes. A 64-character cryptographically random hexadecimal value is suitable;
+  its literal UTF-8 bytes are the key. Keep it separate from the Kit API key.
+
+Before setting the signing secret, create the Kit custom field with API key
+`engmanager_unsubscribe_url`. With the secret enabled, signup writes a signed
+first-party URL to that field and verifies the saved value before adding the
+subscriber to the form. A failed/missing field update stops confirmation from
+being triggered and presents a retryable error. New subscribers remain inactive.
+
+For a coordinated rollout, an entirely **unset** signing secret retains the
+original signup flow and leaves first-party unsubscribe unavailable. An explicitly
+empty or shorter-than-32-byte secret fails closed for signup and unsubscribe.
+Do not publish first-party footer links until the secret is deployed and the
+field is populated for every recipient. Preserve the secret and `KIT_FORM_ID`
+across deployments; changing either invalidates existing email links. Rotating a
+Kit API key in the same account does not invalidate the links.
 
 On that Kit form, enable **Send confirmation email** and disable
 **Auto-confirm new subscribers**. Set the post-confirmation URL to
@@ -69,6 +88,62 @@ the confirmation email, verify its active status in Kit, then send a broadcast
 to the intended recipient list and verify actual inbox receipt. Automated
 tests use a local mock or a disabled integration and must never subscribe
 real addresses.
+
+#### First-party unsubscribe and existing subscribers
+
+The email footer must have a clearly labelled **Unsubscribe** link using the
+subscriber's `engmanager_unsubscribe_url` custom field. Configure confirmation,
+welcome, and broadcast templates consistently; retain Kit's required unsubscribe
+headers and any mandatory template elements. This route is for the visible email
+link and does not replace Kit's RFC 8058 mailbox one-click POST handler.
+The version-controlled [email template](website/emails/newsletter.html) matches
+Kit's **ENGMANAGER — Simple** template (`5555315`). Enable it as the default only
+after the deployed route and signed-field backfill are verified. Confirmation
+messages must use the default template to receive the same footer. The template
+retains a native Kit unsubscribe fallback when a recipient lacks the custom field;
+keep Kit's survey disabled so that fallback does not add questions.
+
+The link opens a minimal first-party page which automatically POSTs the capability
+once, then shows success only after Kit returns `204`. No survey, login, or second
+confirmation is required. Without JavaScript, a single Unsubscribe button performs
+the same POST. GET and HEAD stay inert so ordinary link-prefetch scanners cannot
+cancel a subscription; scanners that execute JavaScript can still activate the
+same flow. The API cancels all future email from the Kit account, retains the
+subscriber history, and never reactivates suppressed subscribers.
+
+Before changing existing email templates, backfill the custom field for existing
+intended recipients using Kit's authenticated subscriber-update API. Fetch the
+current subscriber ID and email, then PUT only `email_address` plus the custom
+field; do not change their state or add them to a form/sequence. Verify the returned
+field equals the expected URL before marking that record complete. Keep credentials,
+subscriber exports, and generated capability URLs out of Git and logs.
+
+For interoperable administrative backfill, the URL is
+`https://engmanager.xyz/unsubscribe?token=v1.<subscriber_id>.<signature>`.
+`signature` is lowercase hexadecimal HMAC-SHA256 over the concatenation of:
+
+1. UTF-8 `engmanager.xyz/kit/unsubscribe/v1` followed by one NUL byte;
+2. `KIT_FORM_ID` encoded as an unsigned 64-bit big-endian integer;
+3. the Kit subscriber ID encoded the same way.
+
+Use the secret's literal UTF-8 bytes as the HMAC key. These purpose/account-form
+scoped capabilities contain no email address and deliberately do not expire, so
+old emails remain usable. They authorize only cancellation, not reading subscriber
+data. Repeat POSTs safely request the same cancellation; provider failures remain
+retryable and are never reported as success. Local mock tests cover this flow.
+Per process, cancellation is limited to 20 attempts per minute and three per
+recipient, while a shared budget caps actual Kit requests from both signup and
+unsubscribe at 100 per minute. Limits reject honestly as temporarily unavailable;
+they never reuse cached consent state or falsely claim cancellation succeeded.
+
+#### Sending-domain authentication
+
+In Kit's Verified Sending Domain settings, verify `engmanager.xyz` using the exact
+DNS records Kit provides and add its DMARC record in Cloudflare. Preserve existing
+Google Workspace MX/SPF settings. After activation, check real confirmation and
+welcome messages' raw headers for aligned SPF/DKIM and DMARC pass, and confirm
+both visible and mailbox unsubscribe controls remain present. A verified sender
+email address alone is not equivalent to a verified sending domain.
 
 The blog, store, and coaching share a progressive navigation shell. Near the
 end of an article the store is prepared underneath it; the store leads to
