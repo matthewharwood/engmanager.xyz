@@ -67,7 +67,10 @@ async fn every_article_ends_with_the_coaching_call_to_action() {
             html.contains(&format!("data-article-hero=\"{slug}\"")),
             "{slug} has no article-specific hero"
         );
-        assert!(html.contains("article-hero-poster"), "{slug} has no static poster");
+        assert!(
+            html.contains("article-hero-poster"),
+            "{slug} has no static poster"
+        );
 
         if slug == "big-personality" {
             assert!(html.contains("data-personality-route=\"article\""));

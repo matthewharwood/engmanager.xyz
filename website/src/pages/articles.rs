@@ -7,8 +7,8 @@ use eng_domain::HtmlFragment;
 use eng_markup::view;
 use pulldown_cmark::{CowStr, Event, HeadingLevel, Tag as PmTag, TagEnd};
 
-use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
 use super::article_hero;
+use super::shell::{MetaTags, PageShell, json_ld_island, json_str_escape};
 use super::{
     AVATAR_SRC, SHARE_CARD_SIZE, article_share_card, avatar_srcset, render_experience_urls,
     render_liquid_title_filter, render_nav_search_toggle, share_card,

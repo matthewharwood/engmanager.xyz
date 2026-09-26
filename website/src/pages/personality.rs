@@ -1,13 +1,13 @@
 //! A separate document boundary for local personality assessments. This shell
 //! deliberately does not load the blog's analytics, navigation, or CDN assets.
 
+use super::article_hero;
+use crate::asset_url;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use eng_domain::HtmlFragment;
 use eng_markup::view;
-use super::article_hero;
-use crate::asset_url;
 
 pub const ARTICLE_PATH: &str = "/articles/big-personality";
 /// Marks the rendered document as well as its canonical path, so a percent-

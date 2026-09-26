@@ -106,10 +106,7 @@ mod tests {
     fn every_article_has_one_distinct_scene_and_accessible_fallback() {
         let slugs: HashSet<_> = HEROES.iter().map(|hero| hero.slug).collect();
         assert_eq!(slugs.len(), HEROES.len());
-        assert_eq!(
-            slugs,
-            ARTICLES.iter().map(|article| article.slug).collect()
-        );
+        assert_eq!(slugs, ARTICLES.iter().map(|article| article.slug).collect());
         for hero in HEROES {
             let html = render(hero.slug).into_string();
             assert!(html.contains(hero.description));
