@@ -22,6 +22,9 @@ Visit <http://127.0.0.1:3000>. Routes:
 
 - `GET /` → homepage
 - `GET /feed` → homepage on every host
+- `GET /subscribe` → newsletter signup page
+- `GET /newsletter` → permanent redirect to `/subscribe`
+- `POST /api/newsletter/subscribe` → server-side Kit signup, followed by a private result page
 - `GET /shop` → storefront on every host
 - `GET /coach` → coaching on every host, including `?group=1`
 - `GET /products/{slug}` → storefront product deep link on every host
@@ -36,7 +39,36 @@ Visit <http://127.0.0.1:3000>. Routes:
 - `GET /` on `coach.localhost:3000` → 1:1 coaching booking page
   (see `_docs/coach-subdomain-runbook.md`)
 
-No database, no env vars required.
+No database is required. The site runs without environment configuration;
+newsletter submissions require the Kit settings below.
+
+### Newsletter (Kit)
+
+The website owns the signup form at `/subscribe`; Kit remains the source of
+truth for subscriptions and sends confirmation emails and broadcasts.
+Configure these secrets/settings in the Render service environment:
+
+- `KIT_API_KEY`: a V4 personal-use API key for the site's Kit account.
+- `KIT_FORM_ID`: the numeric ID of the newsletter form in that account.
+
+On that Kit form, enable **Send confirmation email** and disable
+**Auto-confirm new subscribers**. Set the post-confirmation URL to
+`https://engmanager.xyz/subscribe?status=confirmed`. Verify the sender address
+in Kit before publishing a broadcast. Never commit an API key or expose it
+in HTML, browser JavaScript, URLs, or logs.
+
+New signups are created as inactive and added to the configured form.
+Existing cancelled, bounced, or complained subscribers are not reactivated.
+The endpoint validates email addresses, ignores honeypot submissions, and
+bounds concurrent requests and API usage. Form results use `no-store` and
+never include the submitted address. Missing settings leave the rest of the
+site functional and show an unavailable message on signup.
+
+For a launch check, submit a fresh address through the deployed form, follow
+the confirmation email, verify its active status in Kit, then send a broadcast
+to the intended recipient list and verify actual inbox receipt. Automated
+tests use a local mock or a disabled integration and must never subscribe
+real addresses.
 
 The blog, store, and coaching share a progressive navigation shell. Near the
 end of an article the store is prepared underneath it; the store leads to
@@ -161,7 +193,7 @@ engmanager.xyz/
 - Build command: `cargo build --release`
 - Start command: `./target/release/website`
 - Render auto-sets `PORT`, which flips the bind to `0.0.0.0`.
-- No env vars need to be configured.
+- Newsletter signup needs `KIT_API_KEY` and `KIT_FORM_ID`; see the setup above.
 
 `rust-toolchain.toml` pins the nightly toolchain required by `eng-markup`/`eng-domain`
 (their workspace declares `rust-version = "1.97"`, which only exists as nightly today).

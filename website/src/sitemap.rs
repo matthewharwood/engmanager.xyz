@@ -52,6 +52,7 @@ fn render_sitemap() -> String {
     );
 
     push_url(&mut xml, "/", Some(&latest_article_date), "weekly", "1.0");
+    push_url(&mut xml, "/subscribe", None, "monthly", "0.6");
     push_url(
         &mut xml,
         "/articles/",
@@ -135,6 +136,7 @@ mod tests {
 
         let mut expected_locs = vec![
             format!("{SITE_ORIGIN}/"),
+            format!("{SITE_ORIGIN}/subscribe"),
             format!("{SITE_ORIGIN}/articles/"),
         ];
         expected_locs.extend(
@@ -144,7 +146,7 @@ mod tests {
         assert_eq!(
             locs,
             expected_locs.iter().map(String::as_str).collect::<Vec<_>>(),
-            "sitemap should expose the homepage, article index, and every public article in order",
+            "sitemap should expose the homepage, newsletter, article index, and every public article in order",
         );
 
         let unique_locs: HashSet<_> = locs.iter().copied().collect();
@@ -177,7 +179,9 @@ mod tests {
                 loc.starts_with("https://"),
                 "sitemap loc must be absolute HTTPS: {loc}"
             );
-            assert_iso_date(child_text(url, "lastmod"));
+            if loc != format!("{SITE_ORIGIN}/subscribe") {
+                assert_iso_date(child_text(url, "lastmod"));
+            }
 
             let changefreq = child_text(url, "changefreq");
             assert!(
@@ -187,7 +191,7 @@ mod tests {
 
             let priority = child_text(url, "priority");
             assert!(
-                matches!(priority, "1.0" | "0.8" | "0.7"),
+                matches!(priority, "1.0" | "0.8" | "0.7" | "0.6"),
                 "unexpected priority `{priority}` for {loc}",
             );
         }

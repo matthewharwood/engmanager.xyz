@@ -3,6 +3,7 @@ pub mod articles;
 pub mod checkout;
 pub mod coach;
 pub mod homepage;
+pub mod newsletter;
 pub mod not_found;
 pub mod personality;
 pub mod search;
