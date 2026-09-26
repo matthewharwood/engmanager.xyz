@@ -103,13 +103,18 @@ messages must use the default template to receive the same footer. The template
 retains a native Kit unsubscribe fallback when a recipient lacks the custom field;
 keep Kit's survey disabled so that fallback does not add questions.
 
-The link opens a minimal first-party page which automatically POSTs the capability
+The link opens a first-party page which automatically POSTs the capability
 once, then shows success only after Kit returns `204`. No survey, login, or second
 confirmation is required. Without JavaScript, a single Unsubscribe button performs
 the same POST. GET and HEAD stay inert so ordinary link-prefetch scanners cannot
 cancel a subscription; scanners that execute JavaScript can still activate the
 same flow. The API cancels all future email from the Kit account, retains the
 subscriber history, and never reactivates suppressed subscribers.
+
+The decorative pyramid scene is independent of the unsubscribe controller: it
+must never delay cancellation or obscure its result. The page keeps its private,
+no-store response and restrictive same-origin policy, with no analytics. Motion
+can be paused and respects reduced-motion preferences.
 
 Before changing existing email templates, backfill the custom field for existing
 intended recipients using Kit's authenticated subscriber-update API. Fetch the
@@ -144,6 +149,24 @@ Google Workspace MX/SPF settings. After activation, check real confirmation and
 welcome messages' raw headers for aligned SPF/DKIM and DMARC pass, and confirm
 both visible and mailbox unsubscribe controls remain present. A verified sender
 email address alone is not equivalent to a verified sending domain.
+
+#### Newsletter identity
+
+The reusable email template uses Matthew's existing swirl portrait, the public
+headline **Engineering Manager @ Uber**, and **Professional typist turned
+intellectual yapper.** Keep the public Kit profile, email template, and website
+links consistent. Kit's editor stores its own copy of the HTML; deploying this
+repository does not update that copy automatically.
+
+The portrait in an email's content is separate from the sender avatar displayed
+by a mailbox. Kit's account profile picture is internal; the public newsletter
+profile and Google Workspace sender photo have their own settings. Recipient
+clients ultimately decide which avatar to display. Profile completeness helps
+readers recognize the sender but does not guarantee inbox or Primary placement.
+
+References: [Kit profile pictures](https://help.kit.com/en/articles/4296459-how-to-set-your-profile-picture),
+[Kit newsletter site](https://help.kit.com/en/articles/6412804-managing-your-newsletter-site-in-kit),
+and [Gmail profile pictures](https://support.google.com/mail/answer/35529?hl=en).
 
 The blog, store, and coaching share a progressive navigation shell. Near the
 end of an article the store is prepared underneath it; the store leads to

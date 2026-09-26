@@ -1,0 +1,163 @@
+.identity-page {
+    --identity-rule: color-mix(in srgb, var(--text-1) 17%, transparent);
+    --identity-muted: color-mix(in srgb, var(--text-1) 69%, var(--surface-1));
+    margin: 0;
+    padding: 0;
+    max-inline-size: none;
+    min-block-size: 100svh;
+    color: var(--text-1);
+    background: var(--surface-1);
+    isolation: isolate;
+}
+.identity-page::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 74% 43%, color-mix(in srgb, var(--text-1) 6%, transparent), transparent 53%);
+}
+.identity-wordmark {
+    color: var(--text-1);
+    font-family: var(--font-mono, monospace);
+    font-size: .69rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    min-block-size: 2.75rem;
+    display: inline-flex;
+    gap: .8rem;
+    align-items: center;
+}
+.identity-wordmark svg { inline-size: 1.4rem; block-size: 1.4rem; }
+.identity-wordmark:focus-visible { outline: 2px solid currentColor; outline-offset: 6px; }
+.sigil-scene { position: relative; min-inline-size: 0; pointer-events: none; }
+.sigil-canvas, .sigil-poster { display: block; inline-size: 100%; block-size: 100%; }
+.sigil-poster { position: absolute; inset: 0; }
+.sigil-canvas { opacity: 0; }
+.sigil-scene[data-sigil-ready] .sigil-canvas { opacity: 1; }
+.sigil-scene[data-sigil-ready] .sigil-poster { visibility: hidden; }
+.sigil-motion {
+    position: absolute;
+    inset-block-end: 2%;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    pointer-events: auto;
+    padding: .65rem .8rem;
+    min-block-size: 2.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--identity-muted);
+    font-family: var(--font-mono, monospace);
+    font-size: .5625rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.sigil-motion[hidden] { display: none; }
+.sigil-motion:hover { color: var(--text-1); }
+.sigil-motion:focus-visible { outline: 2px solid var(--text-1); outline-offset: 2px; }
+.sigil-poster-orbit { stroke: var(--identity-rule); stroke-width: .7; }
+.sigil-poster-face { fill: color-mix(in srgb, var(--text-1) 27%, var(--surface-1)); }
+.sigil-poster-side { fill: color-mix(in srgb, var(--text-1) 75%, var(--surface-1)); }
+.sigil-poster-cap { fill: #b99462; }
+.sigil-poster-edge { stroke: #b99462; stroke-width: 1; }
+.sigil-poster-eye { fill: color-mix(in srgb, var(--surface-1) 83%, #b99462); stroke: #b99462; stroke-width: 3; }
+.sigil-poster-iris { fill: #b99462; stroke: var(--text-1); }
+.sigil-poster-pupil { fill: #172021; }
+
+/* The preference result stays in normal flow and precedes the decoration. */
+.newsletter-preferences-page .preferences-header {
+    padding: clamp(1rem, 4vw, 2.5rem) clamp(1.25rem, 6vw, 6rem) 0;
+}
+.newsletter-preferences-page .newsletter-preferences {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    max-inline-size: 78rem;
+    min-block-size: min(44rem, 80svh);
+    padding: 1.5rem clamp(1.25rem, 6vw, 6rem) 4rem;
+    margin: 0 auto;
+    gap: 2rem;
+}
+.preferences-copy { position: relative; z-index: 1; max-inline-size: 29rem; }
+.newsletter-preferences-page .newsletter-eyebrow {
+    margin-block: 0 2.3rem;
+    font-size: .625rem;
+    letter-spacing: .15em;
+    color: var(--identity-muted);
+}
+.newsletter-preferences-page .newsletter-preferences-mark {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    margin-block-end: 1.2rem;
+    border-color: var(--identity-rule);
+    background: transparent;
+    font-size: 1rem;
+}
+.newsletter-preferences-page .newsletter-preferences h1 {
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: clamp(2.125rem, 4vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -.055em;
+    margin-block: 0 1.5rem;
+    text-wrap: balance;
+}
+.newsletter-preferences-page .newsletter-document-intro {
+    color: var(--identity-muted);
+    max-inline-size: 34ch;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-block-end: 2.25rem;
+}
+.newsletter-preferences-page .newsletter-unsubscribe-form { margin-block: 0 1.75rem; }
+.newsletter-preferences-page .newsletter-unsubscribe-form button {
+    border: 1px solid var(--text-1);
+    border-radius: 0;
+    background: var(--text-1);
+    color: var(--surface-1);
+    min-block-size: 3rem;
+    box-shadow: none;
+    font-family: var(--font-sans, system-ui, sans-serif);
+    font-size: .875rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.newsletter-preferences-page .newsletter-preferences-contact {
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--identity-rule);
+    font-size: .8125rem;
+    color: var(--identity-muted);
+}
+.newsletter-preferences-page .newsletter-preferences-contact a,
+.newsletter-preferences-page .newsletter-reset { color: var(--text-1); text-underline-offset: .2em; }
+.newsletter-preferences-page .newsletter-reset { font-size: .75rem; }
+.preferences-art { position: relative; min-inline-size: 0; align-self: stretch; display: grid; align-content: center; }
+.preferences-art .sigil-scene { inline-size: 125%; margin-inline: -12.5%; aspect-ratio: 1; }
+.preferences-art-caption {
+    margin: .25rem 0 0;
+    text-align: center;
+    color: var(--identity-muted);
+    font-family: var(--font-mono, monospace);
+    font-size: .56rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+@media (max-width: 45rem) {
+    .newsletter-preferences-page .newsletter-preferences {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding-block-start: 3rem;
+    }
+    .preferences-copy { max-inline-size: 32rem; margin-inline: auto; inline-size: 100%; }
+    .preferences-art { grid-row: 2; margin-inline: auto; inline-size: min(100%, 25rem); }
+    .preferences-art .sigil-scene { inline-size: 100%; margin: 0; }
+    .preferences-art-caption { margin-block-start: .25rem; }
+    .newsletter-preferences-page .newsletter-eyebrow { margin-block-end: 1.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .identity-page *, .identity-page *::before, .identity-page *::after { animation: none !important; transition: none !important; }
+}

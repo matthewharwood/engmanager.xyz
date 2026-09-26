@@ -6,9 +6,10 @@ use serde::Deserialize;
 
 use super::render_nav_search_toggle;
 use super::shell::{MetaTags, PageShell};
+use super::{DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, share_card};
 use crate::asset_url;
 use crate::components::quick_actions::theme_picker;
-use crate::components::{Head, global_search, nav};
+use crate::components::{Head, global_search, nav, sigil};
 use crate::http::no_store;
 
 const TITLE: &str = "The newsletter · ENGMANAGER.XYZ";
@@ -115,7 +116,10 @@ pub fn page(status: Option<&str>) -> String {
             og_type: Some("website"),
             og_url: Some(CANONICAL.to_string()),
             og_site_name: Some("ENGMANAGER.XYZ"),
-            twitter_card: Some("summary"),
+            og_image: Some(share_card("https://engmanager.xyz", DEFAULT_SHARE_CARD)),
+            og_image_size: Some(SHARE_CARD_SIZE),
+            og_image_alt: Some("ENG MANAGER — occasional notes from Matthew Harwood on engineering leadership, design systems, developer tooling, and building thoughtful teams.".into()),
+            twitter_card: Some("summary_large_image"),
             ..MetaTags::default()
         })
         .assets(assets)
@@ -346,6 +350,8 @@ fn unsubscribe_document(
     form: HtmlFragment,
     has_script: bool,
 ) -> String {
+    let sculpture = sigil::render(true);
+    let sculpture_markup = sculpture.markup;
     let script = if has_script {
         view! { <script src={ asset_url("js/newsletter-unsubscribe.js") } defer></script> }
     } else {
@@ -353,7 +359,8 @@ fn unsubscribe_document(
     };
     // This token-bearing surface intentionally omits the regular page shell:
     // no navigation router, external resource hints, analytics, or theme
-    // runtime can observe the URL. Only local CSS and this POST script load.
+    // runtime can observe the URL. The decorative local renderer is independent
+    // of the POST script and does not access URLs, forms, or subscriber state.
     let document = view! {
         <html lang="en">
             <head>
@@ -365,18 +372,32 @@ fn unsubscribe_document(
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
                 <link rel="stylesheet" href={ asset_url("css/newsletter.css") } />
+                <link rel="stylesheet" href={ asset_url(sigil::STYLE) } />
                 { script }
+                <script src={ asset_url(sigil::SCRIPT) } defer></script>
             </head>
-            <body class="newsletter-page newsletter-preferences-page">
+            <body class="newsletter-page newsletter-preferences-page identity-page">
                 <a class="skip-link" href="#main">"Skip to content"</a>
+                <header class="preferences-header">
+                    <a class="identity-wordmark" href="/" aria-label="ENGMANAGER home">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 10 18H2Z" stroke="currentColor" /><path d="M7 14q5-6 10 0-5 5-10 0Z" stroke="currentColor" /><circle cx="12" cy="14" r="1.5" fill="currentColor" /></svg>
+                        "ENGMANAGER"
+                    </a>
+                </header>
                 <main id="main" class="newsletter-document newsletter-preferences" tabindex="-1" data-unsubscribe-state={ state }>
-                    <p class="newsletter-eyebrow">"ENGMANAGER · Newsletter preferences"</p>
+                    <div class="preferences-copy">
+                    <p class="newsletter-eyebrow">"Newsletter preferences"</p>
                     <span class="newsletter-preferences-mark" aria-hidden="true" data-unsubscribe-mark>{ if state == "success" { "✓" } else { "—" } }</span>
                     <h1 data-unsubscribe-heading>{ heading }</h1>
                     <p class="newsletter-document-intro" role="status" aria-live="polite" data-unsubscribe-message>{ message }</p>
                     { form }
                     <p class="newsletter-preferences-contact">"Need help? "<a href="mailto:matthew@engmanager.xyz?subject=Newsletter%20unsubscribe">"Email Matthew"</a>"."</p>
                     <a class="newsletter-reset" href="/newsletter/privacy">"Newsletter privacy"</a>
+                    </div>
+                    <div class="preferences-art">
+                        { sculpture_markup }
+                        <p class="preferences-art-caption" aria-hidden="true">"A little space. A little perspective."</p>
+                    </div>
                 </main>
             </body>
         </html>

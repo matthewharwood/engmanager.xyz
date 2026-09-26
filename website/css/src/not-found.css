@@ -1,184 +1,44 @@
-.not-found-page {
-    --not-found-grid-strong: oklch(from var(--color-base-content) l c h / 0.04);
-    --not-found-grid-soft: oklch(from var(--color-base-content) l c h / 0.028);
-    --not-found-orb: oklch(from var(--brand) l c h / 0.24);
-    --not-found-vignette-mid: color-mix(in oklab, var(--surface-1) 32%, transparent);
-    --not-found-vignette-edge: color-mix(in oklab, var(--surface-1) 84%, transparent);
-    --not-found-pyramid-0: var(--brand);
-    --not-found-pyramid-1: var(--color-secondary);
-    --not-found-pyramid-2: var(--color-accent);
-    --not-found-pyramid-3: var(--info);
-    --not-found-pyramid-4: var(--warning);
-    --not-found-bouncer-bg-0: var(--brand);
-    --not-found-bouncer-fg-0: var(--brand-text);
-    --not-found-bouncer-bg-1: var(--color-secondary);
-    --not-found-bouncer-fg-1: var(--color-secondary-content);
-    --not-found-bouncer-bg-2: var(--color-accent);
-    --not-found-bouncer-fg-2: var(--color-accent-content);
-    --not-found-bouncer-bg-3: var(--info);
-    --not-found-bouncer-fg-3: var(--color-info-content);
-    --not-found-bouncer-bg-4: var(--warning);
-    --not-found-bouncer-fg-4: var(--color-warning-content);
-    min-block-size: 100svh;
-    margin: 0;
-    overflow: hidden;
-    background:
-        radial-gradient(circle at 50% 38%, var(--not-found-orb), transparent 36rem),
-        repeating-linear-gradient(
-            90deg,
-            var(--not-found-grid-strong) 0,
-            var(--not-found-grid-strong) 1px,
-            transparent 1px,
-            transparent 7px
-        ),
-        repeating-linear-gradient(
-            0deg,
-            var(--not-found-grid-soft) 0,
-            var(--not-found-grid-soft) 1px,
-            transparent 1px,
-            transparent 7px
-        ),
-        var(--surface-1);
-    color: var(--text-1);
-}
-
 .not-found-shell {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+    position: relative;
     isolation: isolate;
-}
-
-.not-found-stage {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    inline-size: 100%;
-    block-size: 100%;
-    display: block;
-}
-
-.not-found-vignette {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 50% 48%, transparent 0 42%, var(--not-found-vignette-mid) 62%, var(--not-found-vignette-edge) 100%),
-        linear-gradient(180deg, var(--not-found-vignette-mid), transparent 30%, var(--not-found-vignette-edge));
-}
-
-.not-found-copy {
-    position: absolute;
-    inset-block-start: max(1rem, env(safe-area-inset-top, 0px));
-    inset-inline-start: max(1rem, env(safe-area-inset-left, 0px));
-    z-index: 3;
+    min-block-size: 100svh;
+    overflow: clip;
     display: grid;
-    gap: 0.35rem;
-    justify-items: start;
-    pointer-events: auto;
+    grid-template-rows: auto 1fr auto;
+    padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1.25rem, 6vw, 6rem);
+    box-sizing: border-box;
 }
-
-.not-found-kicker {
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: clamp(0.64rem, 2vw, 0.78rem);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    text-transform: uppercase;
-    color: var(--brand);
+.not-found-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding-inline-end: 3rem; }
+.not-found-header-note { color: var(--identity-muted); font-family: var(--font-mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; }
+.not-found-copy { position: relative; z-index: 1; align-self: center; padding-block: 4rem 5rem; max-inline-size: 28rem; }
+.not-found-kicker { color: var(--identity-muted); font-family: var(--font-mono); font-size: .625rem; text-transform: uppercase; letter-spacing: .18em; margin: 0 0 1.8rem; }
+.not-found-copy h1 { margin: 0 0 1.6rem -.04em; font-family: var(--font-sans); font-size: clamp(7rem, 17vw, 17rem); font-weight: 400; letter-spacing: -.095em; line-height: .75; }
+.not-found-copy h2 { margin: 0 0 1rem; font-family: var(--font-sans); font-size: clamp(1.65rem, 2.7vw, 2.625rem); line-height: 1.1; letter-spacing: -.045em; font-weight: 500; }
+.not-found-description { max-inline-size: 26ch; color: var(--identity-muted); font-size: .875rem; line-height: 1.7; margin: 0 0 2rem; }
+.not-found-home { display: inline-flex; gap: 2.5rem; align-items: center; justify-content: space-between; min-block-size: 3rem; padding: .75rem 1.25rem; background: var(--text-1); color: var(--surface-1); border: 1px solid var(--text-1); font-family: var(--font-sans); font-size: .8125rem; text-decoration: none; transition: background 150ms, color 150ms; }
+.not-found-home:hover { color: var(--text-1); background: transparent; }
+.not-found-home:focus-visible { outline: 2px solid var(--text-1); outline-offset: 5px; }
+.not-found-art { position: absolute; z-index: 0; inset-block: 5vh 4vh; inset-inline: 30% -6%; display: grid; align-content: center; }
+.not-found-art .sigil-scene { inline-size: 100%; aspect-ratio: 1; max-block-size: 95svh; }
+.not-found-footer { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 2rem; border-block-start: 1px solid var(--identity-rule); padding-block-start: 1rem; font-family: var(--font-mono); font-size: .56rem; color: var(--identity-muted); letter-spacing: .12em; text-transform: uppercase; }
+.not-found-footer span:last-child { text-align: end; }
+.not-found-page .theme-picker { position: absolute; inset-block-start: clamp(1.25rem, 4vw, 3.5rem); inset-block-end: auto; inset-inline-start: auto; inset-inline-end: clamp(1.25rem, 6vw, 6rem); z-index: 70; }
+@media (max-width: 50rem) {
+    .not-found-header-note { display: none; }
+    .not-found-copy { padding-block: 3rem 3rem; }
+    .not-found-copy h1 { font-size: clamp(7rem, 24vw, 11rem); }
+    .not-found-art { inset-inline: 27% -32%; opacity: .84; }
 }
-
-.not-found-copy h1 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(3.75rem, 19vw, 10rem);
-    font-weight: 900;
-    line-height: 0.78;
-    color: var(--text-1);
-    text-shadow:
-        0.04em 0.04em 0 var(--brand),
-        -0.025em -0.025em 0 var(--color-secondary);
-}
-
-.not-found-home {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-block-size: 2.4rem;
-    padding-block: 0.55rem;
-    padding-inline: 0.8rem;
-    border: 2px solid var(--text-1);
-    background: var(--surface-1);
-    color: var(--text-1);
-    box-shadow: 4px 4px 0 0 var(--text-1);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 800;
-    line-height: 1;
-    text-decoration: none;
-    text-transform: uppercase;
-    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-}
-
-.not-found-home:hover,
-.not-found-home:focus-visible {
-    background: var(--brand);
-    color: var(--brand-text);
-    outline: none;
-    transform: translate(-1px, -1px);
-    box-shadow: 6px 6px 0 0 var(--text-1);
-}
-
-.not-found-home:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 0 var(--text-1);
-}
-
-.not-found-bouncer {
-    --bouncer-bg: var(--not-found-bouncer-bg-0);
-    --bouncer-fg: var(--not-found-bouncer-fg-0);
-    position: fixed;
-    inset-block-start: 0;
-    inset-inline-start: 0;
-    z-index: 4;
-    max-inline-size: min(23rem, calc(100vw - 1rem));
-    padding-block: clamp(0.42rem, 2vw, 0.72rem);
-    padding-inline: clamp(0.55rem, 2.6vw, 1rem);
-    border: 2px solid var(--text-1);
-    background: var(--bouncer-bg);
-    color: var(--bouncer-fg);
-    box-shadow: 0.24rem 0.24rem 0 0 var(--text-1);
-    font-family: var(--font-display);
-    font-size: clamp(0.88rem, 4vw, 1.45rem);
-    font-weight: 900;
-    line-height: 0.98;
-    text-align: center;
-    text-transform: uppercase;
-    user-select: none;
-    pointer-events: none;
-    transform: translate3d(var(--bouncer-x, 1rem), var(--bouncer-y, 55vh), 0);
-    will-change: transform;
-}
-
-.not-found-page .theme-picker {
-    inset-block-start: max(1rem, env(safe-area-inset-top, 0px));
-    inset-block-end: auto;
-    inset-inline-start: auto;
-    inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
-    z-index: 70;
-}
-
 @media (max-width: 34rem) {
-    .not-found-copy {
-        inset-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
-        inset-inline-start: max(0.75rem, env(safe-area-inset-left, 0px));
-    }
-
-    .not-found-home {
-        min-block-size: 2.15rem;
-        padding-block: 0.48rem;
-        padding-inline: 0.7rem;
-    }
+    .not-found-shell { min-block-size: 100svh; grid-template-rows: auto auto 1fr auto; }
+    .not-found-art { position: relative; inset: auto; grid-row: 2; inline-size: min(100%, 24rem); margin: -1rem auto .75rem; opacity: 1; }
+    .not-found-art .sigil-scene { block-size: 17rem; aspect-ratio: auto; }
+    .not-found-art .sigil-motion { inset-block-end: -1rem; }
+    .not-found-copy { grid-row: 3; padding-block: 1rem 2.5rem; max-inline-size: 22rem; }
+    .not-found-footer { grid-row: 4; }
+    .not-found-kicker { margin-block-end: 1.25rem; }
+    .not-found-copy h1 { font-size: 7.25rem; }
+    .not-found-copy h2 { font-size: 1.75rem; max-inline-size: 15ch; }
+    .not-found-description { font-size: .8125rem; max-inline-size: 27ch; }
+    .not-found-footer { font-size: .5rem; gap: .75rem; }
 }
