@@ -44,7 +44,7 @@ async function ready(path){await load(path);await until(()=>win().__engNav?.read
 async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;await win().__engNav.navigate(path,options);await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next page prepared');}
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next][data-preview-ready]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next page preview ready');}
 const article='/articles/the-execution-marketplace';
 try{
   await ready('/feed?receipt');
@@ -154,6 +154,7 @@ try{
 
   if(!win().matchMedia('(prefers-reduced-motion: reduce)').matches){
     await navigate(article);
+    await reveal();
     const incoming=win().__engNav.navigate('/shop',{source:'reveal'});
     await until(()=>win().location.pathname==='/shop'&&query('[data-journey-current="shop"]')&&win().__engNav.busy,'incoming reveal is still committing');
     win().history.back();await until(()=>win().location.pathname===article,'back during incoming animation');
@@ -165,12 +166,29 @@ try{
 
   await navigate(article);await reveal();
   await until(()=>!visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='0','table of contents fades during the storefront reveal');
+  if(!win().matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const firstOpacity=Number(win().getComputedStyle(query('.journey-stage-viewport')).opacity);
+    win().scrollBy({top:win().innerHeight*.3,behavior:'instant'});await delay(80);
+    const laterOpacity=Number(win().getComputedStyle(query('.journey-stage-viewport')).opacity);
+    assert(firstOpacity>0&&firstOpacity<1&&laterOpacity>firstOpacity&&laterOpacity<1,'next-page preview fades in with scroll progress');
+  }
   win().scrollTo({top:0,behavior:'instant'});
   await until(()=>visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='1','table of contents returns when scrolling back to the article');
   await reveal();await promote('/shop');
+  assert(!doc().body.classList.contains('shop-grid-text-revealing'),'the storefront does not restart text animation after the handoff');
   await until(()=>visible(previous()),'scroll reveal retains article');
   await reveal();await promote('/coach');
   await until(()=>query('[data-reader]')?.dataset.readerReady==='true','coach reader mounts after shop');
+  frame.style.width='360px';await until(()=>win().innerWidth===360,'mobile coach viewport');
+  const spectrumHead=query('.coach-spectrum-head'),spectrumTrack=query('.coach-spectrum-track'),spectrumInput=query('[data-spectrum-input]');
+  const headHeight=spectrumHead.getBoundingClientRect().height,trackTop=spectrumTrack.getBoundingClientRect().top;
+  spectrumInput.value='4';spectrumInput.dispatchEvent(new (win().Event)('input',{bubbles:true}));await delay(60);
+  assert(query('[data-spectrum-current]').textContent==='Product designer','slider selects the longer mobile role');
+  const roleRect=query('[data-spectrum-current]').getBoundingClientRect(),labelRect=spectrumHead.querySelector('label').getBoundingClientRect();
+  assert(Math.abs(roleRect.top-labelRect.top)<12&&roleRect.right<=spectrumHead.getBoundingClientRect().right,'long role stays beside the mobile slider label');
+  assert(Math.abs(spectrumHead.getBoundingClientRect().height-headHeight)<1&&Math.abs(spectrumTrack.getBoundingClientRect().top-trackTop)<1,'long role label does not shift the mobile slider');
+  spectrumInput.value='3';spectrumInput.dispatchEvent(new (win().Event)('input',{bubbles:true}));
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after mobile slider');
   assert(doc().querySelectorAll('[data-journey-previous]').length===1,'coaching replaces the earlier previous page with one storefront window');
   await click('[data-book-open]');await until(()=>query('[data-booking]')?.dataset.bookingState==='calendar','booking sheet opens');
   assert(!visible(previous()),'booking overlay hides the previous-page window');

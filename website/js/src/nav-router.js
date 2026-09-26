@@ -227,6 +227,30 @@
         return iframe;
     }
 
+    // Decode only images occupying the destination's first viewport. The
+    // preview stays covered until they are ready, then covers the real page
+    // while its own images hydrate. A timeout keeps a broken image from
+    // blocking navigation indefinitely.
+    async function visibleImagesReady(doc, timeout = 2000) {
+        const viewport = doc.defaultView;
+        const images = [...doc.querySelectorAll('img')].filter((img) => {
+            const rect = img.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.bottom > 0
+                && rect.top < viewport.innerHeight && rect.right > 0 && rect.left < viewport.innerWidth;
+        });
+        if (!images.length) return;
+        let timer;
+        try {
+            await Promise.race([
+                Promise.all(images.map((img) => {
+                    img.loading = 'eager';
+                    return img.decode?.().catch(() => {}) || Promise.resolve();
+                })),
+                new Promise((resolve) => { timer = setTimeout(resolve, timeout); }),
+            ]);
+        } finally { clearTimeout(timer); }
+    }
+
     function clearNext() {
         observer?.disconnect(); observer = null;
         preload?.abort(); preload = null;
@@ -258,7 +282,8 @@
                 const viewport = document.createElement('div');
                 viewport.className = 'journey-stage-viewport';
                 viewport.inert = true;
-                viewport.append(preview(rec));
+                const thumbnail = preview(rec);
+                viewport.append(thumbnail);
                 const promote = document.createElement('a');
                 promote.className = 'journey-promote';
                 promote.href = rec.url;
@@ -271,8 +296,17 @@
                 });
                 stage.append(viewport, promote);
                 runtime.append(stage);
-                runway.dataset.ready = 'true';
-                runway.querySelector('a').textContent = `Continue to ${label(rec.kind)} ↗`;
+                thumbnail.addEventListener('load', async () => {
+                    try {
+                        const doc = thumbnail.contentDocument;
+                        await Promise.all([doc.fonts?.ready, visibleImagesReady(doc)]);
+                    } catch {}
+                    if (current !== owner || !stage?.contains(thumbnail)) return;
+                    stage.dataset.previewReady = 'true';
+                    runway.dataset.ready = 'true';
+                    runway.querySelector('a').textContent = `Continue to ${label(rec.kind)} ↗`;
+                    syncOverlay(); updateScroll(true);
+                }, { once: true });
                 syncOverlay(); updateScroll(false);
                 return rec;
             } catch (error) {
@@ -387,10 +421,12 @@
         const progress = Math.max(0, Math.min(1, (innerHeight - top) / innerHeight));
         document.body.classList.toggle('journey-revealing', progress > 0 && !!next && !overlayOpen());
         if (stage) {
-            stage.style.setProperty('--journey-scale', reducedMotion() ? '1' : String(.82 + .16 * progress));
+            stage.style.setProperty('--journey-progress', reducedMotion() ? '1' : String(progress));
+            stage.style.setProperty('--journey-scale', reducedMotion() ? '1' : String(.82 + .18 * progress));
+            stage.style.setProperty('--journey-corner', `${1 - progress}rem`);
             stage.inert = progress < .08 || overlayOpen();
         }
-        if (userScrolled && top <= 2 && next && !saveData() && !nav.busy && !overlayOpen()
+        if (userScrolled && top <= 2 && next && stage?.dataset.previewReady && !saveData() && !nav.busy && !overlayOpen()
             && performance.now() > allowPromotionAt && performance.now() - inputAt < 1800) {
             inputAt = -Infinity;
             navigate(next.url, { source: 'reveal' });
@@ -447,6 +483,18 @@
                 outgoing.scroll = Math.min(outgoing.scroll, Math.max(0, outgoing.page.offsetTop + outgoing.page.offsetHeight - innerHeight));
                 writeState(true, outgoing);
             }
+            // Keep the fully revealed preview above the live swap until the
+            // destination's visible images have decoded. The scroll already
+            // supplied the entrance motion, so no second scale-in is needed.
+            const handoff = source === 'reveal' && stage?.dataset.previewReady ? stage : null;
+            if (handoff) {
+                handoff.dataset.committing = '';
+                handoff.inert = true;
+                handoff.style.setProperty('--journey-progress', '1');
+                handoff.style.setProperty('--journey-scale', '1');
+                handoff.style.setProperty('--journey-corner', '0rem');
+                stage = null;
+            }
             nav._before?.(document.body);
             document.querySelectorAll('[popover]:popover-open').forEach((node) => node.hidePopover());
             clearNext();
@@ -489,7 +537,17 @@
                 }
             }
             scrollTo({ top: current.scroll, left: 0, behavior: 'instant' });
-            await animatePage(rec, source);
+            if (handoff) {
+                await visibleImagesReady(document);
+                await frame();
+                if (!reducedMotion()) {
+                    const fade = handoff.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-out' });
+                    await fade.finished.catch(() => {});
+                }
+                handoff.remove();
+            } else if (source !== 'reveal') {
+                await animatePage(rec, source);
+            }
             current.page.inert = false;
             nav.busy = false; committing = false;
             setupNext();
