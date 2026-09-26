@@ -77,7 +77,7 @@
 
     function overlayOpen() {
         return document.body.matches('.shop-panel-open,.shop-cart-open')
-            || !!document.querySelector('dialog[open],[popover]:popover-open');
+            || !!document.querySelector('dialog[open],[popover]:popover-open:not([data-cursor-overlay])');
     }
 
     function syncOverlay() {
@@ -496,7 +496,7 @@
                 stage = null;
             }
             nav._before?.(document.body);
-            document.querySelectorAll('[popover]:popover-open').forEach((node) => node.hidePopover());
+            document.querySelectorAll('[popover]:popover-open:not([data-cursor-overlay])').forEach((node) => node.hidePopover());
             clearNext();
             previousCard?._resize?.disconnect();
             previousCard?.remove(); previousCard = null;

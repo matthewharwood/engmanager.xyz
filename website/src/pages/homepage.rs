@@ -460,6 +460,7 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/search.js");
     scripts.add_js("js/search-keyclick.js");
     scripts.add_js("js/fit-text.js");
+    scripts.add_js("js/cursor-renderer.js");
     scripts.add_js("js/big-cursor.js");
     scripts.add_js("js/keyboard-nav.js");
     scripts.add_js("js/view-transitions.js");
@@ -489,6 +490,9 @@ pub async fn index() -> Html<String> {
     };
 
     let body = view! {
+                <span hidden data-cursor-models
+                      data-pointer-url={ crate::asset_url("cursors/v1/pointer.glb") }
+                      data-hand-url={ crate::asset_url("cursors/v1/hand.glb") }></span>
                 { nav_markup }
                 <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
                     <svg class="dvd-bouncer-mark"

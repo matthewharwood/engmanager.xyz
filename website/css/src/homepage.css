@@ -1,5 +1,5 @@
 /* Homepage-only styles: fluid SVG headlines, article-link stack, resume
- * popover, big custom cursor. Loaded only by `/`. */
+ * popover, 3D custom cursor. Shared by `/` and `/feed`. */
 
 .fluid-display-wrap {
     inline-size: 100%;
@@ -1275,47 +1275,32 @@ body[data-dragging="true"] .marquee-track {
     margin-block-start: 0;
 }
 
-/* Native cursor hidden; scripts/big-cursor.js mounts a 256px SVG arrow. */
-.homepage,
-.homepage * {
-    cursor: none;
+/* Only a successfully rendered mouse cursor may suppress the native one. */
+@media (pointer: fine) and (hover: hover) and (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+    .homepage.cursor-3d-active,
+    .homepage.cursor-3d-active * {
+        cursor: none !important;
+    }
 }
 
 .big-cursor {
     position: fixed;
-    inset-block-start: 0;
-    inset-inline-start: 0;
-    inline-size: 256px;
-    block-size: 256px;
+    inset: 0 auto auto 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    inline-size: 192px;
+    block-size: 192px;
+    overflow: visible;
+    background: transparent;
     pointer-events: none;
-    z-index: 9999;
-    transition: opacity 150ms ease;
+    user-select: none;
+    z-index: 2147483647;
+    opacity: 0;
     will-change: transform;
-    filter: drop-shadow(0 0.25rem 0.75rem rgba(0, 0, 0, 0.18));
+    filter: drop-shadow(3px 5px 3px rgb(0 0 0 / 0.24));
 }
 
-/* Three cursor shapes are mounted side-by-side and toggled by
- * data-mode set in big-cursor.js: arrow (default), open (hovering a
- * draggable chip), grab (chip held / drag in progress). */
-.big-cursor .cursor-shape {
-    position: absolute;
-    inset: 0;
-    inline-size: 100%;
-    block-size: 100%;
-    display: none;
-}
-.big-cursor[data-mode="arrow"] .cursor-arrow,
-.big-cursor[data-mode="open"]  .cursor-open,
-.big-cursor[data-mode="grab"]  .cursor-grab {
-    display: block;
-}
-/* Tiny pop when transitioning into grab mode — picked-up feel. */
-.big-cursor[data-mode="grab"] .cursor-grab {
-    animation: cursor-grab-pop 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    transform-origin: 0 0;
-}
-@keyframes cursor-grab-pop {
-    0%   { transform: scale(0.86); }
-    60%  { transform: scale(1.08); }
-    100% { transform: scale(1); }
-}
+.big-cursor[data-visible="true"] { opacity: 1; }
+.big-cursor::backdrop { background: transparent; pointer-events: none; }
+.big-cursor canvas { display: block; inline-size: 100%; block-size: 100%; }

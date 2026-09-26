@@ -1,239 +1,273 @@
-// Comically-large custom cursor for the homepage.
-//
-// CSS cursor: url() caps at 128px in most browsers, so to get a real
-// 8x scale we render an SVG cursor as a fixed-position wrapper that
-// follows the pointer. Three shapes ship side-by-side; the wrapper's
-// `data-mode` swaps which one is visible:
-//
-//   arrow   default
-//   open    hovering a draggable marquee chip, visited article check,
-//           or catching the background DVD logo
-//   grab    a chip/article is being dragged (CSS `grabbing` analogue)
-//
-// Pointer Events throughout — `pointermove` instead of `mousemove`,
-// because trash-drag.js calls preventDefault() on pointerdown which
-// causes Chrome to suppress the synthesized mouse events for the
-// duration of the gesture. The cursor would freeze where the user
-// clicked. pointermove fires regardless.
-//
-// Top-layer hop in capture phase: Popover API elements render above
-// every z-index, so when a modal opens the cursor would disappear
-// behind it. Listener moves the cursor into the open popover so it
-// inherits the top-layer stacking context. `toggle` doesn't bubble —
-// `{ capture: true }` is mandatory.
-//
-// Self-guards: only activates inside <body class="homepage">,
-// respects prefers-reduced-motion and pointer: coarse.
-//
-// init/dispose pair (JS_ROUTER_CONSTRAINTS §2.6): the soft-nav router
-// mounts the cursor when a swap lands on the homepage and fully
-// disposes it (node removed, observer disconnected, window/document
-// listeners removed) when a swap leaves it. `dispose` doubles as the
-// module singleton guard — init() while mounted is a no-op, so
-// listeners never stack across re-inits.
-
-(function () {
-    if (
-        window.matchMedia &&
-        (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-            window.matchMedia("(pointer: coarse)").matches)
-    ) {
-        return;
-    }
-
-    const SIZE = 256;
-
+// Homepage/feed cursor controller. Blender models and GPU resources are loaded
+// only after mouse input; native cursors remain until a frame is ready.
+(() => {
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    const mouse = matchMedia('(pointer: fine) and (hover: hover)');
+    const contrast = matchMedia('(forced-colors: active)');
+    const INTERACTIVE = 'a[href],button,summary,[role="button"],label,select';
+    const NATIVE = 'input,textarea,[contenteditable]:not([contenteditable="false"]),iframe,[data-native-cursor]';
     let dispose = null;
 
+    function eligible() {
+        return document.body?.classList.contains('homepage') && navigator.gpu
+            && mouse.matches && !motion.matches && !contrast.matches
+            && !navigator.connection?.saveData;
+    }
+
     function init() {
-        if (dispose) return;
-        if (!document.body || !document.body.classList.contains("homepage")) {
-            return;
+        if (dispose || !eligible() || !window.__engCursorRenderer) return;
+        const config = document.querySelector('[data-journey-current] [data-cursor-models]')
+            || document.querySelector('[data-cursor-models]');
+        if (!config) return;
+
+        const body = document.body;
+        const abort = new AbortController();
+        const cursor = document.createElement('div');
+        cursor.className = 'big-cursor';
+        cursor.dataset.cursorOverlay = '';
+        cursor.dataset.mode = 'arrow';
+        cursor.setAttribute('aria-hidden', 'true');
+        // A manual popover keeps fixed coordinates above other top-layer UI,
+        // without inheriting a modal's transforms or intercepting its clicks.
+        if (typeof cursor.showPopover === 'function') cursor.setAttribute('popover', 'manual');
+        const canvas = document.createElement('canvas');
+        cursor.append(canvas);
+        body.append(cursor);
+
+        let renderer = null, loading = false, failed = false, disposed = false;
+        let frame = 0, lastTime = 0, modeTimer = 0, loadTimer = 0;
+        let x = -300, y = -300, inPage = false, native = false, down = false;
+        let targetTiltX = 0, targetTiltY = 0, lastMove = 0;
+        let tiltX = 0, tiltY = 0, velocityX = 0, velocityY = 0;
+        let press = 0, pressVelocity = 0, grip = 0;
+        const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+        function hide() {
+            body.classList.remove('cursor-3d-active');
+            cursor.dataset.visible = 'false';
+            if (cursor.matches(':popover-open')) cursor.hidePopover();
+            cancelAnimationFrame(frame);
+            frame = 0;
+            lastTime = 0;
         }
 
-        const cursor = document.createElement("div");
-        cursor.className = "big-cursor";
-        cursor.setAttribute("aria-hidden", "true");
-        cursor.dataset.mode = "arrow";
+        function fail() {
+            if (disposed || failed) return;
+            failed = true;
+            clearTimeout(loadTimer);
+            abort.abort();
+            hide();
+            renderer?.dispose();
+            renderer = null;
+        }
 
-        // Shared SVG style attrs. Repeated inline so the cursor is one
-        // self-contained HTML chunk — no CSS dependencies for the shapes.
-        const ATTR = 'fill="var(--accent, #e64553)" stroke="white" stroke-width="1.2" stroke-linejoin="round"';
+        function wake() {
+            if (!frame && renderer && inPage && !native && !document.hidden && !failed && !disposed) {
+                frame = requestAnimationFrame(paint);
+            }
+        }
 
-        // All three shapes have their hotspot at SVG (0, 0), matching the
-        // wrapper's top-left — so the click point lines up with the user's
-        // actual pointer position regardless of which shape is shown.
-        cursor.innerHTML = `
-        <svg class="cursor-shape cursor-arrow" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 0 L0 16 L4 12 L7 20 L10 19 L7 11 L14 11 Z" ${ATTR}/>
-        </svg>
-        <svg class="cursor-shape cursor-open" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="3" height="12" rx="1.5" ${ATTR}/>
-            <rect x="4" y="1" width="3" height="11" rx="1.5" ${ATTR}/>
-            <rect x="8" y="3" width="3" height="9" rx="1.5" ${ATTR}/>
-            <rect x="12" y="6" width="3" height="7" rx="1.5" ${ATTR}/>
-            <path d="M15 8 Q19 8 19 12 L19 14 L15 14 Z" ${ATTR}/>
-            <rect x="-1" y="11" width="21" height="11" rx="3" ${ATTR}/>
-        </svg>
-        <svg class="cursor-shape cursor-grab" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
-            <rect x="4" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
-            <rect x="8" y="2" width="3" height="5" rx="1.5" ${ATTR}/>
-            <rect x="12" y="3" width="3" height="4" rx="1.5" ${ATTR}/>
-            <rect x="-1" y="6" width="20" height="12" rx="3" ${ATTR}/>
-            <path d="M15 7 Q19 7 19 10 L19 13 L15 13 Z" ${ATTR}/>
-        </svg>
-    `;
+        function paint(time) {
+            frame = 0;
+            if (!renderer || disposed || failed || !inPage || native || document.hidden) return;
+            const dt = Math.min((time - (lastTime || time - 16.67)) / 1000, 1 / 30);
+            lastTime = time;
+            // Damped springs affect orientation only. Translation is exact so
+            // inertia never changes the actual click/drop point.
+            const decay = Math.exp(-dt * 13);
+            targetTiltX *= decay;
+            targetTiltY *= decay;
+            velocityX += ((targetTiltX - tiltX) * 240 - velocityX * 24) * dt;
+            velocityY += ((targetTiltY - tiltY) * 240 - velocityY * 24) * dt;
+            tiltX += velocityX * dt;
+            tiltY += velocityY * dt;
+            const pressed = down || cursor.dataset.mode === 'grab' ? 1 : 0;
+            pressVelocity += ((pressed - press) * 340 - pressVelocity * 26) * dt;
+            press += pressVelocity * dt;
+            const gripping = cursor.dataset.mode === 'grab' ? 1 : 0;
+            grip += (gripping - grip) * (1 - Math.exp(-dt * 18));
+            const hotspot = renderer.hotspot;
+            cursor.style.transform = `translate3d(${x - hotspot.x}px, ${y - hotspot.y}px, 0)`;
+            try {
+                if (renderer.render({ mode: cursor.dataset.mode, tiltX, tiltY, press, grip }) === false) {
+                    fail();
+                    return;
+                }
+                if (failed) return;
+                if (cursor.hasAttribute('popover') && !cursor.matches(':popover-open')) cursor.showPopover();
+                cursor.dataset.visible = 'true';
+                body.classList.add('cursor-3d-active');
+            } catch {
+                fail();
+                return;
+            }
+            // No permanent GPU loop: stop after movement/click/grip settles.
+            const energy = Math.abs(tiltX) + Math.abs(tiltY) + Math.abs(velocityX)
+                + Math.abs(velocityY) + Math.abs(pressVelocity) + Math.abs(pressed - press)
+                + Math.abs(gripping - grip);
+            if (energy > 0.001) wake();
+            else lastTime = 0;
+        }
 
-        document.body.appendChild(cursor);
+        async function load() {
+            if (loading || renderer || failed || disposed) return;
+            loading = true;
+            loadTimer = setTimeout(fail, 10000);
+            try {
+                const ready = await window.__engCursorRenderer.create(canvas, {
+                    pointerUrl: config.dataset.pointerUrl,
+                    handUrl: config.dataset.handUrl,
+                    signal: abort.signal,
+                    onFailure: fail,
+                });
+                if (disposed || failed) { ready.dispose(); return; }
+                renderer = ready;
+                clearTimeout(loadTimer);
+                cursor.style.width = `${ready.size}px`;
+                cursor.style.height = `${ready.size}px`;
+                wake();
+            } catch {
+                fail();
+            }
+        }
 
-        let mouseX = -SIZE;
-        let mouseY = -SIZE;
-        let pending = false;
-
-        function paint() {
-            pending = false;
-            cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+        function overDvd() {
+            const logo = document.querySelector('[data-journey-current] [data-dvd-bouncer]')
+                || document.querySelector('[data-dvd-bouncer]');
+            if (!logo || logo.hidden || logo.dataset.trashed === 'true') return false;
+            const rect = logo.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
         }
 
         function detectMode(target) {
-            if (document.body.dataset.dragging === "true") return "grab";
-            if (isOverDvdBouncer()) return "open";
-            const chip = target?.closest?.(".marquee .chip");
-            if (chip && chip.dataset.trashed !== "true") {
-                return "open";
-            }
-            const articleTrash = target?.closest?.(
-                ".article-fluid-link.is-visited .article-check",
-            );
-            if (articleTrash) {
-                return "open";
-            }
-            return "arrow";
+            if (body.dataset.dragging === 'true') return 'grab';
+            if (overDvd()) return 'open';
+            const chip = target?.closest?.('.marquee .chip');
+            if (chip && chip.dataset.trashed !== 'true') return 'open';
+            if (target?.closest?.('.article-fluid-link.is-visited .article-check')) return 'open';
+            if (target?.closest?.(INTERACTIVE) && !target.closest(':disabled,[aria-disabled="true"]')) return 'open';
+            return 'arrow';
         }
 
-        function isOverDvdBouncer() {
-            const logo = document.querySelector("[data-dvd-bouncer]");
-            if (!logo || logo.dataset.trashed === "true" || logo.hidden) return false;
-            const rect = logo.getBoundingClientRect();
-            return (
-                mouseX >= rect.left &&
-                mouseX <= rect.right &&
-                mouseY >= rect.top &&
-                mouseY <= rect.bottom
-            );
-        }
-
-        // Asymmetric debounce on de-engagement. Engaging a chip
-        // (arrow → open) and drag transitions (any → grab, grab → *)
-        // flip instantly so pickup / release feel tactile. Only the
-        // open → arrow downshift lingers for 300ms — long enough for
-        // the pointer to cross the seam between adjacent marquee chips
-        // without the cursor flicking fist ↔ arrow ↔ fist.
-        const MODE_LINGER_MS = 300;
-        let modeDebounce = null;
         function setMode(mode) {
-            if (cursor.dataset.mode === mode) {
-                // Re-engaged the same mode before the timer fired —
-                // cancel the pending downgrade.
-                if (modeDebounce !== null) {
-                    clearTimeout(modeDebounce);
-                    modeDebounce = null;
-                }
+            if (mode === cursor.dataset.mode) {
+                clearTimeout(modeTimer);
+                modeTimer = 0;
                 return;
             }
-            const isDownshift =
-                cursor.dataset.mode === "open" && mode === "arrow";
-            if (isDownshift) {
-                if (modeDebounce !== null) clearTimeout(modeDebounce);
-                modeDebounce = setTimeout(() => {
-                    cursor.dataset.mode = mode;
-                    modeDebounce = null;
-                }, MODE_LINGER_MS);
+            if (cursor.dataset.mode === 'open' && mode === 'arrow') {
+                if (!modeTimer) modeTimer = setTimeout(() => {
+                    modeTimer = 0;
+                    cursor.dataset.mode = 'arrow';
+                    wake();
+                }, 100);
                 return;
             }
-            if (modeDebounce !== null) {
-                clearTimeout(modeDebounce);
-                modeDebounce = null;
-            }
+            clearTimeout(modeTimer);
+            modeTimer = 0;
             cursor.dataset.mode = mode;
+            wake();
         }
 
-        function onMove(e) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            setMode(detectMode(e.target));
-            if (!pending) {
-                pending = true;
-                requestAnimationFrame(paint);
+        function updateTarget(target) {
+            native = !!target?.closest?.(NATIVE);
+            if (native) hide();
+            setMode(detectMode(target));
+        }
+
+        function onMove(event) {
+            if (event.pointerType !== 'mouse') { inPage = false; hide(); return; }
+            const now = performance.now();
+            const elapsed = Math.max(now - lastMove, 8);
+            if (inPage) {
+                targetTiltY = clamp((event.clientX - x) / elapsed * 0.14, -0.18, 0.18);
+                targetTiltX = clamp((event.clientY - y) / elapsed * 0.12, -0.15, 0.15);
             }
+            x = event.clientX;
+            y = event.clientY;
+            lastMove = now;
+            inPage = true;
+            updateTarget(event.target);
+            if (!native) { load(); wake(); }
         }
 
-        function onLeave() {
-            cursor.style.opacity = "0";
+        function onDown(event) {
+            if (event.pointerType !== 'mouse' || event.button !== 0) return;
+            onMove(event);
+            down = true;
+            wake();
         }
 
-        function onEnter() {
-            cursor.style.opacity = "1";
+        function onUp(event) {
+            if (event.pointerType !== 'mouse') return;
+            down = false;
+            updateTarget(document.elementFromPoint(x, y));
+            wake();
         }
 
-        // pointermove instead of mousemove — see top-of-file note.
-        window.addEventListener("pointermove", onMove, { passive: true });
-        document.addEventListener("pointerleave", onLeave);
-        document.addEventListener("pointerenter", onEnter);
+        function leave() {
+            inPage = false;
+            down = false;
+            targetTiltX = targetTiltY = tiltX = tiltY = velocityX = velocityY = 0;
+            press = pressVelocity = 0;
+            hide();
+        }
 
-        // While a drag is in progress, body[data-dragging] is set by
-        // trash-drag.js. The pointer might not move during the start of
-        // the gesture, so flip to grab mode the instant dragging starts.
-        const dragObserver = new MutationObserver(() => {
-            setMode(detectMode(document.elementFromPoint(mouseX, mouseY)));
+        function onScroll() {
+            if (!inPage) return;
+            updateTarget(document.elementFromPoint(x, y));
+            wake();
+        }
+
+        function onVisibility() {
+            if (document.hidden) leave();
+        }
+
+        function onToggle(event) {
+            if (event.target === cursor || event.newState !== 'open' || !renderer || !inPage || native) return;
+            // Raise the cursor after a modal/popover enters the top layer.
+            if (cursor.matches(':popover-open')) cursor.hidePopover();
+            wake();
+        }
+
+        const listen = (target, name, handler, options = {}) => target.addEventListener(name, handler, { ...options, signal: abort.signal });
+        listen(window, 'pointermove', onMove, { passive: true });
+        listen(window, 'pointerdown', onDown, { capture: true, passive: true });
+        listen(window, 'pointerup', onUp, { capture: true, passive: true });
+        listen(window, 'pointercancel', leave, { capture: true });
+        listen(window, 'blur', leave);
+        listen(window, 'pagehide', leave);
+        listen(window, 'scroll', onScroll, { capture: true, passive: true });
+        listen(window, 'resize', onScroll, { passive: true });
+        listen(document, 'pointerleave', leave);
+        listen(document, 'visibilitychange', onVisibility);
+        listen(document, 'toggle', onToggle, { capture: true });
+        const observer = new MutationObserver(() => {
+            updateTarget(document.elementFromPoint(x, y));
+            wake();
         });
-        dragObserver.observe(document.body, {
-            attributes: true,
-            attributeFilter: ["data-dragging"],
-        });
-
-        // Top-layer hop (capture phase — toggle doesn't bubble).
-        const hopToTopLayer = (event) => {
-            const target = event.target;
-            if (!(target instanceof HTMLElement)) return;
-            if (!target.hasAttribute("popover")) return;
-            if (event.newState === "open") {
-                target.appendChild(cursor);
-            } else if (cursor.parentElement === target) {
-                document.body.appendChild(cursor);
-            }
-        };
-        document.addEventListener("toggle", hopToTopLayer, true);
-        document.addEventListener("beforetoggle", hopToTopLayer, true);
+        observer.observe(body, { attributes: true, attributeFilter: ['data-dragging'] });
 
         dispose = () => {
-            window.removeEventListener("pointermove", onMove, {
-                passive: true,
-            });
-            document.removeEventListener("pointerleave", onLeave);
-            document.removeEventListener("pointerenter", onEnter);
-            document.removeEventListener("toggle", hopToTopLayer, true);
-            document.removeEventListener("beforetoggle", hopToTopLayer, true);
-            dragObserver.disconnect();
-            if (modeDebounce !== null) clearTimeout(modeDebounce);
+            if (disposed) return;
+            disposed = true;
+            clearTimeout(modeTimer);
+            clearTimeout(loadTimer);
+            abort.abort();
+            observer.disconnect();
+            hide();
+            renderer?.dispose();
+            renderer = null;
             cursor.remove();
         };
     }
 
-    init();
-
-    window.__engNav?.onBeforeSwap?.(() => {
+    function reset() {
         dispose?.();
         dispose = null;
-    });
-
-    window.__engNav?.onSwap?.(() => {
-        if (document.body.classList.contains("homepage")) {
-            init();
-        } else if (dispose) {
-            dispose();
-            dispose = null;
-        }
-    });
+    }
+    for (const query of [motion, mouse, contrast]) query.addEventListener('change', () => { reset(); init(); });
+    window.__engNav?.onBeforeSwap?.(reset);
+    window.__engNav?.onSwap?.(init);
+    init();
 })();
