@@ -7,6 +7,7 @@ pub mod newsletter;
 pub mod not_found;
 pub mod personality;
 pub mod search;
+pub mod server_error;
 pub mod shell;
 pub mod shop;
 pub mod typography;

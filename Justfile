@@ -20,7 +20,7 @@ dev:
     @command -v watchexec >/dev/null || { echo "watchexec is required. Run 'just bootstrap-tools' or 'cargo install watchexec-cli --locked'." >&2; exit 1; }
     systemfd --no-pid -s http::{{port}} -- \
         watchexec --restart \
-            --exts rs,toml,css,js,svg \
+            --exts rs,toml,css,js,svg,html \
             --watch website/src \
             --watch website/css/src \
             --watch website/js/src \

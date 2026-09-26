@@ -57,7 +57,8 @@ const CACHE_TAG: HeaderName = HeaderName::from_static("cache-tag");
 //   the shop page) keeps that value byte-for-byte and additionally gains the
 //   Cloudflare pair, with the CDN max-age derived from the page's own
 //   s-maxage horizon. `no-store`/`no-cache` lifetimes are retained.
-// - Assessment HTML also gains no-transform to prevent edge script injection.
+// - Assessment and server error HTML also gain no-transform to prevent edge
+//   script injection, including when a payment-return policy was applied.
 pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response {
     let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
     let stripe_return = req.uri().query().is_some_and(has_stripe_return_params);
@@ -93,6 +94,10 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
         || response
             .extensions()
             .get::<crate::pages::personality::PrivateDocument>()
+            .is_some()
+        || response
+            .extensions()
+            .get::<crate::pages::server_error::ServerErrorDocument>()
             .is_some()
     {
         // Prevent edge HTML rewriting, including automatic analytics injection.
@@ -299,6 +304,9 @@ pub(crate) async fn security_headers_layer(req: Request<Body>, next: Next) -> Re
             "default-src 'none'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; worker-src 'none'",
         ));
     }
+    // The self-contained failure document has its own inline style and no
+    // scripts or fetched assets, including on normally stricter private routes.
+    crate::pages::server_error::security_headers(&mut response);
     response
 }
 

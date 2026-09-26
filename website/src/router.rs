@@ -9,6 +9,7 @@ use axum::extract::{DefaultBodyLimit, Query, State};
 use axum::http::{HeaderMap, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
@@ -47,6 +48,7 @@ pub mod routes {
     pub const SITEMAP_ALIAS: &str = "/sitemaps.xml";
     pub const ROBOTS: &str = "/robots.txt";
     pub const HEALTH: &str = "/health";
+    pub const SERVER_ERROR: &str = "/500";
     pub const FAVICON: &str = "/favicon.ico";
     pub const RUM: &str = "/__rum";
     pub const OFFLINE: &str = "/offline.html";
@@ -98,6 +100,7 @@ pub fn build_router(state: AppState) -> Router {
         .route(routes::SITEMAP_ALIAS, get(sitemap::sitemap_handler))
         .route(routes::ROBOTS, get(sitemap::robots_handler))
         .route(routes::HEALTH, get(|| async { "OK" }))
+        .route(routes::SERVER_ERROR, get(pages::server_error::handler))
         .route(routes::FAVICON, get(assets::favicon_handler))
         .route(routes::RUM, post(http::rum_handler))
         .route(routes::OFFLINE, get(assets::offline_handler))
@@ -108,7 +111,8 @@ pub fn build_router(state: AppState) -> Router {
         // Layer stack, innermost first (each `.layer` call wraps everything
         // registered before it). Outermost → innermost at runtime:
         //   TraceLayer → CompressionLayer → html_cache_layer
-        //   → security_headers_layer → TimeoutLayer(30s) → routes.
+        //   → security_headers_layer → panic_document_layer
+        //   → CatchPanicLayer → TimeoutLayer(30s) → routes.
         // The header layers sit OUTSIDE the timeout deliberately: a 408
         // synthesized by TimeoutLayer still flows through them, so it gains
         // the security headers (html_cache_layer ignores it — no text/html
@@ -123,6 +127,8 @@ pub fn build_router(state: AppState) -> Router {
             StatusCode::REQUEST_TIMEOUT,
             Duration::from_secs(30),
         ))
+        .layer(CatchPanicLayer::custom(pages::server_error::panic_response))
+        .layer(axum::middleware::from_fn(pages::server_error::panic_document_layer))
         .layer(axum::middleware::from_fn(http::security_headers_layer))
         .layer(axum::middleware::from_fn(http::html_cache_layer))
         // Brotli + gzip over the wire for any compressible response
@@ -286,6 +292,71 @@ mod tests {
             .expect("body collects")
             .to_bytes();
         String::from_utf8(bytes.to_vec()).expect("body is utf-8")
+    }
+
+    #[tokio::test]
+    async fn server_error_document_keeps_500_and_private_headers_on_get_and_head() {
+        let router = test_router().await;
+        for (method, path) in [
+            (axum::http::Method::GET, "/500"),
+            (axum::http::Method::HEAD, "/500"),
+            (
+                axum::http::Method::GET,
+                "/500?payment_intent_client_secret=synthetic",
+            ),
+        ] {
+            let response = router
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method(method.clone())
+                        .uri(path)
+                        .header(header::HOST, SITE_HOST)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            assert_eq!(
+                header_str(&response, "content-type"),
+                Some("text/html; charset=utf-8")
+            );
+            assert_eq!(
+                header_str(&response, "cache-control"),
+                Some("no-store, no-transform")
+            );
+            assert_eq!(header_str(&response, "cdn-cache-control"), Some("no-store"));
+            assert_eq!(
+                header_str(&response, "cloudflare-cdn-cache-control"),
+                Some("no-store")
+            );
+            assert_eq!(
+                header_str(&response, "referrer-policy"),
+                Some("no-referrer")
+            );
+            assert!(
+                header_str(&response, "content-security-policy")
+                    .unwrap()
+                    .contains("script-src 'none'")
+            );
+            assert!(header_str(&response, "content-security-policy-report-only").is_none());
+            assert!(
+                header_str(&response, "x-robots-tag")
+                    .unwrap()
+                    .contains("noindex")
+            );
+            assert!(header_str(&response, "cache-tag").is_none());
+            let body = body_string(response).await;
+            if method == axum::http::Method::HEAD {
+                assert!(body.is_empty());
+            } else {
+                assert!(body.contains("Something went wrong on our side"));
+                assert!(body.contains("<svg"));
+                assert!(!body.contains("<script"));
+                assert!(!body.contains("/assets/"));
+            }
+        }
     }
 
     #[tokio::test]
