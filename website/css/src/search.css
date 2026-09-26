@@ -1,7 +1,7 @@
 .search-page {
     min-block-size: 100svh;
     margin: 0;
-    background: var(--surface-2);
+    background-color: var(--surface-2);
     color: var(--text-1);
     font-family: var(--font-sans);
 }
@@ -49,9 +49,9 @@
 .search-result,
 .search-empty {
     background: var(--surface-1);
-    border: 2px solid var(--text-1);
-    border-radius: var(--radius-xs);
-    box-shadow: 5px 5px 0 var(--text-1);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-box);
+    box-shadow: var(--surface-shadow);
 }
 
 .search-query-panel {
@@ -62,12 +62,12 @@
 
 .search-page-input {
     inline-size: 100%;
-    min-block-size: 3rem;
+    min-block-size: calc(var(--size-field) + .25rem);
     padding: 0.65rem 0.8rem;
     color: var(--text-1);
     background: var(--surface-1);
-    border: 2px solid var(--text-1);
-    border-radius: var(--radius-xs);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-field);
     font: 800 1rem var(--font-sans);
 }
 
@@ -88,22 +88,22 @@
 }
 
 .search-date-row input {
-    min-block-size: 2.35rem;
+    min-block-size: var(--size-field);
     padding-inline: 0.5rem;
     color: var(--text-1);
     background: var(--surface-1);
-    border: 2px solid var(--text-1);
-    border-radius: var(--radius-2xs);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-selector);
 }
 
 .search-date-row button {
-    min-block-size: 2.35rem;
+    min-block-size: var(--size-field);
     padding-inline: 0.9rem;
     color: var(--brand-text);
     background: var(--brand);
-    border: 2px solid var(--text-1);
-    border-radius: var(--radius-2xs);
-    box-shadow: 3px 3px 0 var(--text-1);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-selector);
+    box-shadow: var(--control-shadow);
     font-weight: 900;
     cursor: pointer;
 }
@@ -156,8 +156,8 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 0.5rem;
     align-items: center;
-    padding: 0.4rem 0.45rem;
-    border-radius: var(--radius-2xs);
+    padding: calc(var(--size-selector) + .15rem) .45rem;
+    border-radius: var(--radius-selector);
     font-size: 0.85rem;
     font-weight: 800;
 }
@@ -232,7 +232,7 @@
     padding-inline: 0.45rem;
     background: var(--surface-2);
     border: 1px solid var(--border-muted);
-    border-radius: var(--radius-2xs);
+    border-radius: var(--radius-selector);
     color: var(--text-2);
     font-size: 0.72rem;
     font-weight: 900;

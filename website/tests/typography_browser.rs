@@ -67,6 +67,15 @@ try{
   assert(win().getComputedStyle(doc().body).fontFamily.includes('Redacted'),theme+' renders the Redacted face while downloading');
   await win().__engTypography.ready;await delay(20);
   assert(root().dataset.fontTheme===theme,theme+' commits the requested face');
+  const panel=win().getComputedStyle(doc().querySelector('.site-search-panel'));
+  const input=win().getComputedStyle(doc().querySelector('.site-search-input'));
+  const tokens=win().getComputedStyle(root());
+  assert(panel.borderTopWidth===tokens.getPropertyValue('--border').trim(),theme+' applies its border width');
+  assert(input.borderTopLeftRadius===parseFloat(tokens.getPropertyValue('--radius-field'))*parseFloat(tokens.fontSize)+'px',theme+' applies its field corners');
+  assert(panel.backgroundColor!=='rgba(0, 0, 0, 0)'&&panel.boxShadow!=='none',theme+' resolves its surface and depth without invalid CSS');
+  if(theme==='lofi')assert(panel.boxShadow.includes(' 0)')||panel.boxShadow.includes('/ 0)'),theme+' depth is transparent');
+  if(theme==='cyberpunk')assert(panel.backdropFilter.includes('blur(0px)'),theme+' disables glass blur');
+
   assert(win().getComputedStyle(doc().body).fontFamily.includes(family),theme+' uses '+family);
   assert([...doc().fonts].some(face=>face.family===family&&face.status==='loaded'),theme+' is fully decoded before reveal');
   assert(win().__fontRequests.length===1,theme+' requests just its own face');

@@ -41,8 +41,9 @@
         display: grid;
         grid-template-rows: auto 1fr auto;
         background: var(--surface-1);
-        border: 3px solid var(--text-1);
-        box-shadow: 8px 8px 0 0 var(--text-1);
+        border: var(--border) solid var(--text-1);
+        border-radius: var(--radius-box);
+        box-shadow: var(--surface-shadow);
         overflow: hidden;
         min-block-size: 0;
     }

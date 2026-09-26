@@ -83,9 +83,12 @@
     position: relative;
     min-inline-size: 0;
     padding: 1.875rem;
-    border: 1px solid var(--text-1);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-box);
     background: var(--surface-1);
-    box-shadow: 0.375rem 0.375rem 0 var(--surface-2), 0.375rem 0.375rem 0 1px var(--text-1);
+    background-image: var(--background-noise);
+    background-size: .1875rem .1875rem, .3125rem .3125rem, .4375rem .4375rem;
+    box-shadow: var(--surface-shadow);
 }
 
 .newsletter-card-top {
@@ -153,10 +156,10 @@
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 0;
-    min-block-size: 3.25rem;
+    min-block-size: calc(var(--size-field) + .5rem);
     padding: 0.875rem 1rem;
-    border: 1px solid var(--border-strong);
-    border-radius: 0;
+    border: var(--border) solid var(--border-strong);
+    border-radius: var(--radius-field);
     background: var(--surface-1);
     color: var(--text-1);
     font-family: var(--font-sans);
@@ -179,11 +182,11 @@
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    min-block-size: 3.25rem;
+    min-block-size: calc(var(--size-field) + .5rem);
     margin-block-start: 0.125rem;
     padding: 0.875rem 1rem;
-    border: 1px solid var(--text-1);
-    border-radius: 0;
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-field);
     background: var(--text-1);
     color: var(--surface-1);
     font-family: var(--font-sans);
