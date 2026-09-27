@@ -44,7 +44,18 @@ async function ready(path){await load(path);await until(()=>win().__engNav?.read
 async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;await win().__engNav.navigate(path,options);await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next][data-preview-ready]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next page preview ready');}
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next][data-preview-ready]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next destination poster ready');}
+function observePosterRemoval(poster){
+  const state={rendered:false,removedAfterRender:false};
+  const observer=new (win().MutationObserver)(records=>{
+    for(const record of records){
+      if(record.type==='attributes'&&record.target.matches('[data-journey-current][data-journey-rendered="true"]'))state.rendered=true;
+      if([...record.removedNodes].includes(poster))state.removedAfterRender=state.rendered;
+    }
+  });
+  observer.observe(doc().body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-journey-rendered']});
+  return {state,disconnect:()=>observer.disconnect()};
+}
 const article='/articles/the-execution-marketplace';
 try{
   await ready('/feed?receipt');
@@ -208,20 +219,75 @@ try{
     assert(win().location.pathname==='/shop'&&query('[data-journey-current="shop"]'),'Back then Forward during animation leaves the newest history entry active');
   }
 
+  // A live destination mounts below the sculpture. Deliberately leave one
+  // lifecycle callback pending to prove a completed fetch cannot uncover it.
+  await navigate(article);await reveal();
+  const mountPoster=query('[data-journey-next="shop"]');
+  assert(mountPoster.querySelector('.journey-poster-art canvas')&&mountPoster.querySelector('.journey-poster-art img')&&!mountPoster.querySelector('iframe'),'shop transition uses a sculpture canvas and still instead of a page iframe');
+  const mountRemoval=observePosterRemoval(mountPoster);
+  let releaseMount,mountStarted=false;
+  const mountGate=new Promise(resolve=>{releaseMount=resolve;});
+  const removeMountGate=win().__engNav.onSwap(root=>{
+    if(root.querySelector('[data-journey-current="shop"]')){mountStarted=true;return mountGate;}
+  });
+  const gatedMount=win().__engNav.navigate('/shop',{source:'reveal'});
+  await until(()=>mountStarted&&query('[data-journey-current="shop"]'),'shop lifecycle callback is pending');
+  await delay(150);
+  assert(mountPoster.isConnected&&mountPoster.hasAttribute('data-committing')&&win().__engNav.busy&&query('[data-journey-current="shop"]').inert,'poster conceals the inert shop while its mount callback is pending');
+  assert(!query('[data-journey-current="shop"]').hasAttribute('data-journey-rendered'),'an unresolved mount is not marked rendered');
+  releaseMount();await gatedMount;removeMountGate();await delay(0);
+  assert(mountRemoval.state.removedAfterRender&&!mountPoster.isConnected&&query('[data-journey-current="shop"]').dataset.journeyRendered==='true','shop is marked rendered before its poster is removed');
+  mountRemoval.disconnect();
+
+  // Keep a visible product image pending longer than the former two-second
+  // timeout. The poster must await its decode, even when all scripts are ready.
+  await navigate(article);await reveal();
+  const imagePoster=query('[data-journey-next="shop"]'),imageRemoval=observePosterRemoval(imagePoster);
+  const imagePrototype=win().HTMLImageElement.prototype,actualDecode=imagePrototype.decode;
+  let releaseImage,imageStarted=false;
+  const imageGate=new Promise(resolve=>{releaseImage=resolve;});
+  imagePrototype.decode=function(){
+    const decoded=actualDecode.call(this);
+    if(this.closest('[data-journey-current="shop"]')){imageStarted=true;return Promise.all([decoded.catch(()=>{}),imageGate]);}
+    return decoded;
+  };
+  const gatedImage=win().__engNav.navigate('/shop',{source:'reveal'});
+  await until(()=>imageStarted,'visible shop image decode starts');await delay(2200);
+  assert(imagePoster.isConnected&&imagePoster.hasAttribute('data-committing')&&win().__engNav.busy&&query('[data-journey-current="shop"]').inert,'a slow visible image remains covered beyond two seconds');
+  assert(!query('[data-journey-current="shop"]').hasAttribute('data-journey-rendered'),'pending image decode does not report a completed render');
+  releaseImage();await gatedImage;imagePrototype.decode=actualDecode;await delay(0);
+  assert(imageRemoval.state.removedAfterRender&&!imagePoster.isConnected,'decoded shop content is marked rendered before the sculpture dissolves');
+  imageRemoval.disconnect();
+
   await navigate(article);await reveal();
   await until(()=>!visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='0','table of contents fades during the storefront reveal');
   if(!win().matchMedia('(prefers-reduced-motion: reduce)').matches){
     const firstOpacity=Number(win().getComputedStyle(query('.journey-stage-viewport')).opacity);
     win().scrollBy({top:win().innerHeight*.3,behavior:'instant'});await delay(80);
     const laterOpacity=Number(win().getComputedStyle(query('.journey-stage-viewport')).opacity);
-    assert(firstOpacity>0&&firstOpacity<1&&laterOpacity>firstOpacity&&laterOpacity<1,'next-page preview fades in with scroll progress');
+    assert(firstOpacity>0&&firstOpacity<1&&laterOpacity>firstOpacity&&laterOpacity<1,'destination poster fades in with scroll progress');
   }
   win().scrollTo({top:0,behavior:'instant'});
   await until(()=>visible(query('.article-toc'))&&win().getComputedStyle(query('.article-toc')).opacity==='1','table of contents returns when scrolling back to the article');
   await reveal();await promote('/shop');
   assert(!doc().body.classList.contains('shop-grid-text-revealing'),'the storefront does not restart text animation after the handoff');
   await until(()=>visible(previous()),'scroll reveal retains article');
-  await reveal();await promote('/coach');
+  await reveal();
+  const coachPoster=query('[data-journey-next="coach"]'),coachRemoval=observePosterRemoval(coachPoster);
+  let releaseCoach,coachMountStarted=false;
+  const coachGate=new Promise(resolve=>{releaseCoach=resolve;});
+  const removeCoachGate=win().__engNav.onSwap(root=>{
+    if(root.querySelector('[data-journey-current="coach"]')){coachMountStarted=true;return coachGate;}
+  });
+  const gatedCoach=win().__engNav.navigate('/coach',{source:'reveal'});
+  await until(()=>coachMountStarted&&query('[data-reader]')?.dataset.readerReady==='true','coach mounts behind its poster');
+  const coveredWord=query('[data-reader-word]').textContent,coveredMode=query('[data-reader]').dataset.readerMode;
+  await delay(1100);
+  assert(coachPoster.isConnected&&query('[data-journey-current="coach"]').inert&&query('[data-reader]').dataset.readerPlaying==='false'&&query('[data-reader-word]').textContent===coveredWord,'coaching preserves the first word while its mounted reader is covered');
+  releaseCoach();await gatedCoach;removeCoachGate();await delay(0);
+  assert(coachRemoval.state.removedAfterRender&&!coachPoster.isConnected&&query('[data-reader]').dataset.readerMode===coveredMode,'coaching reveals a rendered page without changing the chosen reader mode');
+  coachRemoval.disconnect();
+  if(coveredMode==='speed')await until(()=>query('[data-reader-word]').textContent!==coveredWord,'coaching playback starts after its poster dissolves');
   await until(()=>query('[data-reader]')?.dataset.readerReady==='true','coach reader mounts after shop');
   frame.style.width='360px';await until(()=>win().innerWidth===360,'mobile coach viewport');
   // Wait for the resized iframe's responsive layout before measuring. In

@@ -45,8 +45,8 @@ const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_ma
 /// page, ahead of all deferred scripts, so a bundle can register
 /// unconditionally whether or not the page ships the router. Set-based with
 /// per-callback try/catch — one broken callback never blocks the rest.
-/// Kept under 300 bytes.
-const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set(),b=new Set(),a=(s,c)=>(s.add(c),()=>s.delete(c)),f=(s,m)=>{for(const c of s){try{c(m)}catch{}}};return{onSwap:c=>a(s,c),_fire:m=>f(s,m),onBeforeSwap:c=>a(b,c),_before:m=>f(b,m)}})();</script>"#;
+/// Mount promises are awaited by the journey poster before it reveals the page.
+const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set(),b=new Set(),a=(s,c)=>(s.add(c),()=>s.delete(c)),f=(s,m)=>Promise.allSettled([...s].map(c=>{try{return c(m)}catch{}}));return{onSwap:c=>a(s,c),_fire:m=>f(s,m),onBeforeSwap:c=>a(b,c),_before:m=>f(b,m)}})();</script>"#;
 
 /// Escape a string for embedding inside a JSON string literal that itself
 /// lives in a `<script>` element: the JSON specials (`"`, `\`, control chars)
@@ -326,6 +326,24 @@ impl PageShell {
         // registers a `navigate` listener). The `__engNav` bootstrap it fires
         // is emitted further up, before any script tier.
         if self.nav_router {
+            let posters = serde_json::json!({
+                "renderer": asset_url("js/journey-poster-renderer.js"),
+                "models": (["shop", "coach", "feed"].into_iter().map(|kind| {
+                    (kind, serde_json::json!({
+                        "model": asset_url(&format!("journey/{kind}.glb")),
+                        "still": asset_url(&format!("journey/{kind}.webp")),
+                    }))
+                }).collect::<std::collections::BTreeMap<_, _>>())
+            })
+            .to_string();
+            head.add_inline(crate::components::script_island(
+                "__journeyPosters",
+                &posters,
+            ));
+            head.add_inline(crate::components::page_config_island(
+                "__journeyPosters",
+                &posters,
+            ));
             head.add_js("js/nav-router.js");
         }
 
