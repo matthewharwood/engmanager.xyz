@@ -17,7 +17,7 @@ pixels, device pixel ratio 1.25, and 30fps. The page pauses on hidden/offscreen
 states and frees textures, buffers and device on navigation/pagehide. Reduced
 motion renders a still frame; Pause orbit is always available when enhanced.
 
-The embedded SVG provides first paint, no-script and GPU-failure artwork.
+The responsive Figma Observatory SVGs provide first paint, no-script and GPU-failure artwork. Desktop uses the 620 × 600 composition; mobile uses the 346 × 210 crop.
 Shader failure/device loss do not disable the form or independent audio button.
 The texture is a same-origin, content-hashed 768px WebP (123,742 bytes), reused
 from the image cache for the GPU upload. No effect contacts an external service.
@@ -48,3 +48,14 @@ and inert prerendering. Chrome review checks real WebGPU shader execution,
 pause and AudioContext state transitions, desktop/mobile composition, and the
 no-script fallback. Existing Rust signup-route and journey/theme browser tests
 cover form availability, redirects, themes and navigation regressions.
+
+## Direction 02 layout
+
+The signup copy and form share the left column; the existing live armillary is
+on the right. Mobile puts the introduction and stacked 56px form controls
+before the sculpture, then the topic summary and footer. The theme supplies
+all type, colors, borders and control corners. The Figma gold SVGs remain exact
+static fallbacks; the live sculpture keeps its existing material and shader.
+Copy covers all six homepage categories as free coaching notes, with no promise
+of a fixed schedule or paid sessions. Kit routes and confirmation states remain
+unchanged.
