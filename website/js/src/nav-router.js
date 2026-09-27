@@ -6,7 +6,7 @@
     const initialPage = document.querySelector('[data-eng-page]');
     if (!nav || nav.ready || !initialPage) return;
 
-    const CONFIGS = ['__shopProducts', '__checkout', '__coach', '__engUrls', '__engSfxUrls'];
+    const CONFIGS = ['__shopProducts', '__checkout', '__coach', '__engUrls', '__engSfxUrls', '__journeyPosters'];
     const META = 'meta[name="description"],meta[name="robots"],meta[property^="og:"],meta[property^="article:"],meta[name^="twitter:"],link[rel="canonical"],link[rel="alternate"],script[type="application/ld+json"]';
     const privatePath = (p) => p === '/articles/big-personality' || /^\/personality(?:\/|$)/.test(p);
     const eligible = (url) => url.origin === location.origin && !privatePath(url.pathname)
@@ -83,7 +83,7 @@
     function syncOverlay() {
         const open = overlayOpen();
         if (previousCard) previousCard.hidden = open || committing;
-        if (stage) stage.hidden = open;
+        if (stage) { stage.hidden = open; stage._posterVisible(); }
         if (open) inputAt = -Infinity;
     }
     new MutationObserver(syncOverlay).observe(document.body, { attributes: true, attributeFilter: ['class'] });
@@ -228,28 +228,128 @@
         return iframe;
     }
 
-    // Decode only images occupying the destination's first viewport. The
-    // preview stays covered until they are ready, then covers the real page
-    // while its own images hydrate. A timeout keeps a broken image from
-    // blocking navigation indefinitely.
-    async function visibleImagesReady(doc, timeout = 2000) {
-        const viewport = doc.defaultView;
-        const images = [...doc.querySelectorAll('img')].filter((img) => {
+    // A slow image must not be mistaken for a rendered destination. Actual
+    // decode errors settle to the page's native fallback; a hung request keeps
+    // the poster up until the normal hard-navigation recovery takes over.
+    async function visibleImagesReady(doc) {
+        const images = [...doc.querySelectorAll('[data-journey-current] img')].filter((img) => {
             const rect = img.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 && rect.bottom > 0
-                && rect.top < viewport.innerHeight && rect.right > 0 && rect.left < viewport.innerWidth;
+                && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
         });
-        if (!images.length) return;
+        await Promise.all(images.map((img) => {
+            img.loading = 'eager';
+            return img.decode?.().catch(() => {}) || Promise.resolve();
+        }));
+    }
+
+    async function destinationReady(rec, mounted) {
         let timer;
         try {
             await Promise.race([
-                Promise.all(images.map((img) => {
-                    img.loading = 'eager';
-                    return img.decode?.().catch(() => {}) || Promise.resolve();
-                })),
-                new Promise((resolve) => { timer = setTimeout(resolve, timeout); }),
+                (async () => {
+                    await mounted;
+                    await window.__engTypography?.ready;
+                    await window.__engTypography?.displayReady;
+                    await document.fonts?.ready;
+                    await frame();
+                    await visibleImagesReady(document);
+                    // Two paints let layout and synchronous mount observers
+                    // settle before the first pixels of the live page show.
+                    await frame();
+                    await frame();
+                    rec.page.dataset.journeyRendered = 'true';
+                })(),
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => reject(new Error('destination readiness timeout')), 15000);
+                }),
             ]);
         } finally { clearTimeout(timer); }
+    }
+
+    const POSTERS = {
+        shop: { number: '01', title: 'The shop.', detail: 'Caps for people who build.', sculpture: 'A marble portrait wearing a dad cap' },
+        coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A Greek philosopher carved in marble' },
+        feed: { number: '03', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'A marble brain with watchful eyes' },
+    };
+    let rendererScript;
+    function loadPosterRenderer() {
+        if (window.__engJourneyPoster) return Promise.resolve();
+        if (!rendererScript) {
+            const script = document.createElement('script');
+            script.src = window.__journeyPosters.renderer;
+            rendererScript = loadTag(script).catch((error) => { rendererScript = null; throw error; });
+        }
+        return rendererScript;
+    }
+
+    function createStage(kind, url) {
+        const spec = POSTERS[kind] || POSTERS.feed;
+        const assets = window.__journeyPosters?.models[kind];
+        const card = document.createElement('section');
+        card.className = 'journey-stage';
+        card.dataset.journeyNext = kind;
+        card.dataset.destination = url;
+        card.setAttribute('aria-label', `Continue to ${label(kind)}`);
+        const viewport = document.createElement('div');
+        viewport.className = 'journey-stage-viewport journey-poster';
+        const rail = document.createElement('div');
+        rail.className = 'journey-poster-rail';
+        const brand = document.createElement('span'); brand.textContent = 'ENGMANAGER.XYZ';
+        const index = document.createElement('span'); index.textContent = `NEXT / ${spec.number}`;
+        rail.append(brand, index);
+        const art = document.createElement('div'); art.className = 'journey-poster-art';
+        art.setAttribute('role', 'img'); art.setAttribute('aria-label', spec.sculpture);
+        const still = document.createElement('img');
+        still.alt = ''; still.decoding = 'async';
+        if (assets) still.src = assets.still;
+        const canvas = document.createElement('canvas'); canvas.setAttribute('aria-hidden', 'true');
+        art.append(still, canvas);
+        const caption = document.createElement('div'); caption.className = 'journey-poster-caption';
+        const heading = document.createElement('h2'); heading.textContent = spec.title;
+        const detail = document.createElement('p'); detail.textContent = spec.detail;
+        caption.append(heading, detail);
+        const hint = document.createElement('span'); hint.className = 'journey-poster-hint';
+        hint.textContent = 'SCROLL TO CONTINUE';
+        viewport.append(rail, art, caption, hint);
+        const promote = document.createElement('a');
+        promote.className = 'journey-promote'; promote.href = url;
+        promote.dataset.journeyPromote = '';
+        promote.textContent = `Continue to ${label(kind)} ↗`;
+        promote.addEventListener('click', (event) => {
+            if (modified(event)) return;
+            event.preventDefault(); navigate(url, { source: 'reveal' });
+        });
+        card.append(viewport, promote);
+        runtime.append(card);
+        const lifetime = new AbortController();
+        let renderer, progress = 0;
+        let stillTimer;
+        card._posterReady = Promise.race([
+            still.decode().catch(() => { still.hidden = true; }),
+            new Promise((resolve) => { stillTimer = setTimeout(resolve, 1200); }),
+        ]).finally(() => clearTimeout(stillTimer));
+        card._posterVisible = () => renderer?.setVisible(!card.hidden && (progress > 0 || card.hasAttribute('data-committing')));
+        card._posterProgress = (value) => { progress = value; renderer?.setProgress(value); card._posterVisible(); };
+        card._dispose = () => { lifetime.abort(); renderer?.destroy(); card.remove(); };
+        // The still is an actual Blender render of this same sculpture. It is
+        // also the complete low-data / unavailable-GPU experience.
+        if (assets && !saveData() && navigator.gpu) {
+            (async () => {
+                try {
+                    await loadPosterRenderer();
+                    if (lifetime.signal.aborted) return;
+                    renderer = await window.__engJourneyPoster.mount(canvas, {
+                        url: assets.model, reducedMotion: reducedMotion(), signal: lifetime.signal,
+                        onError: () => { delete art.dataset.rendered; },
+                    });
+                    if (lifetime.signal.aborted) { renderer.destroy(); return; }
+                    card._posterProgress(progress);
+                    art.dataset.rendered = 'true';
+                } catch { /* Keep the carved still; navigation never depends on GPU support. */ }
+            })();
+        }
+        return card;
     }
 
     function clearNext() {
@@ -257,12 +357,30 @@
         preload?.abort(); preload = null;
         next = null; stagedPromise = null;
         runway?.remove(); runway = null;
-        stage?.remove(); stage = null;
+        stage?._dispose(); stage = null;
         document.body.classList.remove('journey-revealing');
     }
 
     function label(kind) {
         return ({ shop: 'the store', coach: 'coaching', feed: 'the feed', article: 'your article', articles: 'articles' })[kind] || 'the next page';
+    }
+
+    // Warm local page bundles while the reader is still moving through the
+    // poster. Scripts execute only after the live outlet is swapped; payment
+    // providers and other third-party resources stay out of this path.
+    function warmDestination(rec, signal) {
+        const present = new Set(assetTags(document).map((tag) => assetUrl(tag).href));
+        for (const tag of rec.assets) {
+            const url = assetUrl(tag);
+            if (url.origin !== location.origin || present.has(url.href)) continue;
+            const hint = document.createElement('link');
+            hint.rel = 'preload'; hint.as = tag.tagName === 'SCRIPT' ? 'script' : 'style';
+            hint.href = url.href;
+            const cleanup = () => { hint.remove(); signal.removeEventListener('abort', cleanup); };
+            hint.onload = hint.onerror = cleanup;
+            signal.addEventListener('abort', cleanup, { once: true });
+            document.head.append(hint);
+        }
     }
 
     async function prepareNext() {
@@ -276,38 +394,20 @@
                 const rec = await fetchPage(new URL(owner.nextUrl, owner.url).href, controller.signal);
                 if (controller.signal.aborted || current !== owner) return null;
                 next = rec;
-                stage = document.createElement('section');
-                stage.className = 'journey-stage';
-                stage.dataset.journeyNext = rec.kind;
-                stage.setAttribute('aria-label', `Continue to ${label(rec.kind)}`);
-                const viewport = document.createElement('div');
-                viewport.className = 'journey-stage-viewport';
-                viewport.inert = true;
-                const thumbnail = preview(rec);
-                viewport.append(thumbnail);
-                const promote = document.createElement('a');
-                promote.className = 'journey-promote';
-                promote.href = rec.url;
-                promote.dataset.journeyPromote = '';
-                promote.textContent = `Continue to ${label(rec.kind)} ↗`;
-                promote.addEventListener('click', (event) => {
-                    if (modified(event)) return;
-                    event.preventDefault();
-                    navigate(rec.url, { source: 'reveal' });
-                });
-                stage.append(viewport, promote);
-                runtime.append(stage);
-                thumbnail.addEventListener('load', async () => {
-                    try {
-                        const doc = thumbnail.contentDocument;
-                        await Promise.all([doc.fonts?.ready, visibleImagesReady(doc)]);
-                    } catch {}
-                    if (current !== owner || !stage?.contains(thumbnail)) return;
-                    stage.dataset.previewReady = 'true';
+                warmDestination(rec, controller.signal);
+                if (stage && stage.dataset.destination !== rec.url) {
+                    if (stage.hasAttribute('data-committing')) return rec;
+                    stage._dispose(); stage = null;
+                }
+                stage ||= createStage(rec.kind, rec.url);
+                const poster = stage;
+                await poster._posterReady;
+                if (current !== owner || stage !== poster) return null;
+                stage.dataset.previewReady = 'true';
+                if (runway) {
                     runway.dataset.ready = 'true';
                     runway.querySelector('a').textContent = `Continue to ${label(rec.kind)} ↗`;
-                    syncOverlay(); updateScroll(true);
-                }, { once: true });
+                }
                 syncOverlay(); updateScroll(false);
                 return rec;
             } catch (error) {
@@ -417,7 +517,7 @@
     }
 
     function updateScroll(userScrolled) {
-        if (!runway || committing) return;
+        if (!runway || committing || stage?.hasAttribute('data-committing')) return;
         const top = runway.getBoundingClientRect().top;
         const progress = Math.max(0, Math.min(1, (innerHeight - top) / innerHeight));
         document.body.classList.toggle('journey-revealing', progress > 0 && !!next && !overlayOpen());
@@ -425,6 +525,7 @@
             stage.style.setProperty('--journey-progress', reducedMotion() ? '1' : String(progress));
             stage.style.setProperty('--journey-scale', reducedMotion() ? '1' : String(.82 + .18 * progress));
             stage.style.setProperty('--journey-corner', `${1 - progress}rem`);
+            stage._posterProgress(progress);
             stage.inert = progress < .08 || overlayOpen();
         }
         if (userScrolled && top <= 2 && next && stage?.dataset.previewReady && !saveData() && !nav.busy && !overlayOpen()
@@ -464,8 +565,35 @@
         request?.abort();
         const controller = new AbortController(), version = ++generation;
         request = controller; nav.busy = true;
+        const scrollLock = new AbortController();
+        if (source === 'reveal') {
+            // Keep the decoded first viewport in place while the poster covers
+            // it. Momentum scrolling must not race ahead into unloaded images.
+            const holdScroll = (event) => { if (!event.ctrlKey && event.cancelable) event.preventDefault(); };
+            document.addEventListener('wheel', holdScroll, { passive: false, signal: scrollLock.signal });
+            document.addEventListener('touchmove', holdScroll, { passive: false, signal: scrollLock.signal });
+            document.addEventListener('keydown', (event) => {
+                if (['PageDown', 'PageUp', 'Home', 'End', 'ArrowDown', 'ArrowUp', ' '].includes(event.key)) holdScroll(event);
+            }, { signal: scrollLock.signal });
+        }
         document.documentElement.dataset.journeyLoading = 'true';
         try {
+            // Cover cold link promotion too: the destination can fetch, mount
+            // and hydrate behind an opaque poster without exposing the swap.
+            if (source === 'reveal') {
+                const kind = ({ '/shop': 'shop', '/coach': 'coach', '/feed': 'feed', '/': 'feed' })[dest.pathname];
+                if (kind) {
+                    if (stage && stage.dataset.destination !== dest.href) clearNext();
+                    stage ||= createStage(kind, dest.href);
+                    stage.dataset.committing = '';
+                    stage.inert = true;
+                    stage.style.setProperty('--journey-progress', '1');
+                    stage.style.setProperty('--journey-scale', '1');
+                    stage.style.setProperty('--journey-corner', '0rem');
+                    stage._posterProgress(1);
+                    await frame();
+                }
+            }
             let rec = options.record;
             if (!rec && source === 'reveal') {
                 if (!next && stagedPromise) await stagedPromise;
@@ -484,16 +612,16 @@
                 outgoing.scroll = Math.min(outgoing.scroll, Math.max(0, outgoing.page.offsetTop + outgoing.page.offsetHeight - innerHeight));
                 writeState(true, outgoing);
             }
-            // Keep the fully revealed preview above the live swap until the
-            // destination's visible images have decoded. The scroll already
-            // supplied the entrance motion, so no second scale-in is needed.
-            const handoff = source === 'reveal' && stage?.dataset.previewReady ? stage : null;
+            // Keep the opaque sculpture poster above the real destination
+            // throughout script mounting, font layout and image decoding.
+            const handoff = source === 'reveal' ? stage : null;
             if (handoff) {
                 handoff.dataset.committing = '';
                 handoff.inert = true;
                 handoff.style.setProperty('--journey-progress', '1');
                 handoff.style.setProperty('--journey-scale', '1');
                 handoff.style.setProperty('--journey-corner', '0rem');
+                handoff._posterProgress(1);
                 stage = null;
             }
             nav._before?.(document.body);
@@ -525,7 +653,7 @@
             if (!options.history) writeState(false, current);
             scrollTo({ top: current.scroll, left: 0, behavior: 'instant' });
             await scripts(rec);
-            nav._fire?.(document.body);
+            const mounted = nav._fire?.(document.body);
             await frame();
             if (!options.history && source !== 'resume' && new URL(rec.url).hash) {
                 let id;
@@ -539,14 +667,15 @@
             }
             scrollTo({ top: current.scroll, left: 0, behavior: 'instant' });
             if (handoff) {
-                await visibleImagesReady(document);
-                await frame();
+                await destinationReady(rec, mounted);
+                handoff.dataset.dissolving = 'true';
                 if (!reducedMotion()) {
-                    const fade = handoff.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-out' });
+                    const fade = handoff.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 620, easing: 'cubic-bezier(.2,.65,.3,1)' });
                     await fade.finished.catch(() => {});
                 }
-                handoff.remove();
+                handoff._dispose();
             } else if (source !== 'reveal') {
+                await mounted;
                 await animatePage(rec, source);
             }
             current.page.inert = false;
@@ -570,6 +699,7 @@
             location.assign(dest.href);
             return false;
         } finally {
+            scrollLock.abort();
             if (version === generation) {
                 request = null; nav.busy = false; committing = false;
                 delete document.documentElement.dataset.journeyLoading;

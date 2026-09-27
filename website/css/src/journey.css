@@ -57,6 +57,89 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     text-decoration: none;
     pointer-events: auto;
 }
+/* A quiet museum label and one sculpture, always using the active theme. */
+.journey-poster {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: clamp(1.25rem, 4vw, 4rem);
+    padding-block-start: max(3.75rem, env(safe-area-inset-top));
+    padding-block-end: max(6.5rem, calc(env(safe-area-inset-bottom) + 5rem));
+    color: var(--text-1);
+    background-color: var(--surface-1);
+    background-image: radial-gradient(ellipse at 50% 42%, color-mix(in oklab, var(--text-2) 9%, transparent), transparent 62%), var(--background-noise);
+    isolation: isolate;
+}
+.journey-poster::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 14% 22% 25%;
+    border: 1px solid color-mix(in oklab, var(--text-2) 12%, transparent);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.journey-poster-rail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block-end: .85rem;
+    border-block-end: 1px solid color-mix(in oklab, var(--text-2) 25%, transparent);
+    font: 500 .65rem/1.3 var(--font-mono);
+    letter-spacing: .1em;
+    color: var(--text-2);
+}
+.journey-poster-art {
+    position: relative;
+    justify-self: center;
+    inline-size: min(100%, 42rem);
+    min-block-size: 0;
+    block-size: 100%;
+}
+.journey-poster-art::before {
+    content: '';
+    position: absolute;
+    inset: auto 23% 2%;
+    block-size: 4%;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--text-1) 15%, transparent);
+    filter: blur(16px);
+}
+.journey-poster-art img, .journey-poster-art canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+}
+.journey-poster-art img[hidden] { display: none; }
+.journey-poster-art canvas { opacity: 0; transition: opacity .3s ease-out; }
+.journey-poster-art[data-rendered] canvas { opacity: 1; }
+.journey-poster-art img { transition: opacity .3s ease-out; }
+.journey-poster-art[data-rendered] img { opacity: 0; }
+.journey-poster-caption { position: relative; display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.journey-poster-caption h2 { margin: 0; color: inherit; font: 500 clamp(2.75rem, 7vw, 6.5rem)/.95 var(--font-body); letter-spacing: -.065em; }
+.journey-poster-caption p { margin: 0 0 .2rem; max-inline-size: 19rem; color: var(--text-2); font: .8rem/1.5 var(--font-mono); text-align: end; }
+.journey-poster-hint { position: absolute; inset-inline-end: clamp(1.25rem, 4vw, 4rem); inset-block-end: 2.5rem; color: var(--text-2); font: .6rem/1 var(--font-mono); letter-spacing: .12em; }
+.journey-stage[data-committing] .journey-poster-hint,
+.journey-stage[data-committing] .journey-promote { visibility: hidden; }
+@media (max-width: 42rem) {
+    .journey-poster { padding-block-end: max(7rem, calc(env(safe-area-inset-bottom) + 5rem)); }
+    .journey-poster-caption { display: block; }
+    .journey-poster-caption p { margin-block-start: .8rem; text-align: start; font-size: .7rem; }
+    .journey-poster-hint { display: none; }
+    .journey-poster::before { inset: 20% 8% 35%; }
+    .journey-poster-rail { font-size: .55rem; }
+}
+@media (max-height: 520px) and (min-width: 42rem) {
+    .journey-poster { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; padding-block-end: 4.5rem; }
+    .journey-poster-rail { grid-column: 1 / -1; }
+    .journey-poster-art { grid-column: 2; grid-row: 2; }
+    .journey-poster-caption { grid-column: 1; grid-row: 2; display: block; align-self: center; }
+    .journey-poster-caption p { text-align: start; margin-block-start: 1rem; }
+    .journey-poster-hint { display: none; }
+}
 .journey-previous {
     position: fixed;
     z-index: 75;
@@ -72,6 +155,7 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     overflow: hidden;
 }
 .journey-previous[hidden], .journey-stage[hidden] { display: none; }
+.journey-revealing .journey-previous { visibility: hidden; }
 .journey-resume { display: block; inline-size: 100%; padding: 0; border: 0; color: inherit; background: transparent; text-align: start; cursor: pointer; font: inherit; }
 .journey-previous-viewport { display: block; position: relative; aspect-ratio: 16 / 9; overflow: hidden; pointer-events: none; }
 .journey-previous-viewport .journey-preview { position: absolute; inset: 0; transform-origin: top left; }
@@ -97,7 +181,7 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     .homepage .journey-previous { inset-block-end: 5.5rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .journey-stage { transition: none; }
+    .journey-stage, .journey-poster-art canvas, .journey-poster-art img { transition: none; }
     .journey-stage-viewport { transform: none; opacity: 1; }
 }
 @media print {

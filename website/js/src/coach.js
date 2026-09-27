@@ -137,9 +137,10 @@ function mount() {
         wpm: DEFAULT_WPM,
         mode: "speed",
         wantsPlay: resumedReader?.wantsPlay ?? true,
-        // Reasons playback is on hold regardless of intent: "booking",
-        // "offscreen", "hidden".
-        holds: new Set(),
+        // A mounted reader can still be covered by a journey poster. Preserve
+        // its first (or resumed) word until the live page is actually revealed.
+        // Holds never change the reader's chosen mode or play/pause intent.
+        holds: new Set(window.__engNav?.busy ? ["journey"] : []),
         timer: 0,
     };
 
@@ -649,6 +650,10 @@ function mount() {
     });
 
     listen(document, "visibilitychange", () => hold("hidden", document.hidden));
+    listen(window, "eng:journeysettled", () => {
+        if (!reader.holds.delete("journey")) return;
+        syncPlayback(START_DELAY_MS);
+    });
 
     // Don't flash words at someone who has scrolled down to read the posts.
     let readerObserver = null;

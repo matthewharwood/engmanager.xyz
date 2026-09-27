@@ -90,8 +90,12 @@ try{
  assert(win().getComputedStyle(doc().body).fontFamily.includes('PP Eiko'),'hard reload decodes and renders the cached face');
  await until(()=>win().__engNav?.ready,'router');await win().__engNav.navigate('/coach');
  assert(root().dataset.fontTheme==='luxury'&&win().getComputedStyle(doc().querySelector('.coach-reader-text')).fontFamily.includes('PP Eiko'),'font persists through soft navigation');
- await win().__engNav.prepareNext();await until(()=>doc().querySelector('.journey-preview')?.contentDocument?.documentElement?.dataset.fontTheme==='luxury','preview font');
- assert(true,'inert journey preview uses the same decoded theme face');
+ await win().__engNav.prepareNext();
+ const posterHeading=doc().querySelector('.journey-poster-caption h2');
+ assert(posterHeading&&win().getComputedStyle(posterHeading).fontFamily.includes('PP Eiko'),'journey poster inherits the decoded theme face');
+ await win().__engNav.navigate('/feed',{source:'reveal'});
+ await until(()=>doc().querySelector('.journey-previous .journey-preview')?.contentDocument?.documentElement?.dataset.fontTheme==='luxury','previous preview font');
+ assert(true,'the retained previous-page preview uses the same decoded theme face');
  result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATE: '+JSON.stringify(root()?.dataset)+'\nSTATES: '+JSON.stringify(win()?.__fontStates)+'\nREQUESTS: '+JSON.stringify(win()?.__fontRequests)+'\nCHECKS: '+checks.join('\n');document.body.dataset.testResult='failed'}
 </script></body></html>"##;
