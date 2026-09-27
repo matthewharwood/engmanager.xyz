@@ -205,6 +205,7 @@ fn layout(
     scripts.add_js("js/search-keyclick.js");
     if detail {
         scripts.add_js("js/copy-code.js");
+        scripts.add_js("js/article-taxonomy.js");
         scripts.add_js("js/article-heroes.js");
         // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
         // exact head position; its stylesheet is pinned after articles.css
