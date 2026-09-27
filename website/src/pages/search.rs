@@ -22,6 +22,7 @@ use crate::search::{
 pub struct TypeaheadParams {
     #[serde(default)]
     q: String,
+    kind: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -41,7 +42,15 @@ pub async fn typeahead(
     State(state): State<AppState>,
     Query(params): Query<TypeaheadParams>,
 ) -> Response {
-    no_store(Json(state.search.typeahead(&params.q, 8)))
+    no_store(Json(
+        state.search.typeahead_for_kind(
+            &params.q,
+            params.kind.as_deref().filter(|kind| {
+                matches!(*kind, "article" | "product" | "coaching" | "subscription")
+            }),
+            24,
+        ),
+    ))
 }
 
 pub async fn page(State(state): State<AppState>, RawQuery(raw_query): RawQuery) -> Response {
@@ -116,13 +125,28 @@ fn render_page(
         let product_results = render_product_results(&results.product_hits);
         view! {
             <section class="search-result-group search-result-group-caps">
-                <h2>"Caps"</h2>
+                <h2>"Store"</h2>
                 { product_results }
             </section>
         }
     };
+    let service_sections: HtmlFragment = results.service_hits.iter().map(|hit| {
+        view! {
+            <section class="search-result-group">
+                <h2>{ if hit.kind == "coaching" { "Coaching" } else { "Subscription" } }</h2>
+                <article class="search-result">
+                    <a class="search-result-title" href={ hit.url.clone() }>{ hit.title.clone() }</a>
+                    <div class="search-result-meta">{ hit.meta.clone() }</div>
+                    <p>{ hit.detail.clone() }</p>
+                </article>
+            </section>
+        }
+    }).collect();
     let filters = render_filters(params, search_query, results);
-    let empty = if results.total_articles == 0 && results.total_products == 0 {
+    let empty = if results.total_articles == 0
+        && results.total_products == 0
+        && results.service_hits.is_empty()
+    {
         view! {
             <section class="search-empty">
                 <h2>"No matches"</h2>
@@ -141,15 +165,24 @@ fn render_page(
     } else {
         String::new()
     };
+    let service_summary = if results.service_hits.is_empty() {
+        String::new()
+    } else {
+        format!(
+            " · {} service{}",
+            results.service_hits.len(),
+            plural(results.service_hits.len())
+        )
+    };
     let summary = format!(
-        "{} article{}{}",
+        "{} article{}{}{}",
         results.total_articles,
         plural(results.total_articles),
-        cap_summary
+        cap_summary,
+        service_summary
     );
 
-    // The search page shows the plain-link nav config (no recent-articles
-    // dropdown), so it pulls in no co-located CSS and no dropdown JS.
+    // Include the navigation's shared search styles and scripts.
     let nav = nav::render(nav::Props {
         brand_icon_url: asset_url("favicon.svg"),
         global_search: global_search::render(global_search::Props {
@@ -160,6 +193,7 @@ fn render_page(
     });
     let mut assets = Head::new();
     assets.add_css("css/search.css");
+    assets.add(&nav);
 
     let mut scripts = Head::new();
     scripts.add_js("js/audio.js");
@@ -201,6 +235,7 @@ fn render_page(
                         { filters }
                     </form>
                     <div class="search-results-grid">
+                        { service_sections }
                         { product_section }
                         <section class="search-result-group">
                             <h2>"Articles"</h2>

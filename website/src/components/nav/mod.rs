@@ -135,7 +135,10 @@ mod tests {
     #[test]
     fn nav_declares_control_styles_and_absorbed_search() {
         let rendered = render(nav_props());
-        assert_eq!(rendered.critical_css, vec![STYLE]);
+        assert_eq!(
+            rendered.critical_css,
+            vec![STYLE, "css/c-global-search.css"]
+        );
         assert!(rendered.deferred_css.is_empty());
         assert_eq!(
             rendered.js_deps,

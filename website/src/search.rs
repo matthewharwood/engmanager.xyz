@@ -10,7 +10,9 @@ use tantivy::schema::document::Value;
 use tantivy::schema::{Field, STORED, STRING, Schema, TEXT};
 use tantivy::{Index, IndexReader, TantivyDocument};
 
-use crate::catalog::{PriceCents, SHOP_PRODUCTS, ShopProduct};
+use crate::asset_url;
+use crate::catalog::{CAP_VIEWS, PriceCents, SHOP_PRODUCTS, ShopProduct, product_image_url};
+use crate::coaching::OFFER;
 use crate::content::{Article, ArticleDate, Category, Tag, article_markdown, public_articles};
 
 // Shop products live on the dedicated shop host; search results link there with
@@ -32,6 +34,7 @@ struct ArticleDoc {
     category: Category,
     tags: Vec<Tag>,
     date: ArticleDate,
+    sections: Vec<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -65,12 +68,16 @@ pub struct TypeaheadHit {
     pub title: String,
     pub detail: String,
     pub url: String,
+    pub meta: String,
+    pub image: Option<String>,
+    pub sections: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
 pub struct SearchResults {
     pub article_hits: Vec<ArticleSearchHit>,
     pub product_hits: Vec<ProductSearchHit>,
+    pub service_hits: Vec<TypeaheadHit>,
     pub total_articles: usize,
     pub total_products: usize,
     pub facets: FacetCounts,
@@ -125,6 +132,7 @@ impl SearchEngine {
                 category: article.category,
                 tags: article.tags.to_vec(),
                 date: article.date,
+                sections: article_sections(&markdown),
             };
             article_writer
                 .add_document(article_to_tantivy_doc(&article_fields, &doc))
@@ -143,8 +151,17 @@ impl SearchEngine {
     }
 
     pub fn typeahead(&self, q: &str, limit: usize) -> Vec<TypeaheadHit> {
+        self.typeahead_for_kind(q, None, limit)
+    }
+
+    pub fn typeahead_for_kind(
+        &self,
+        q: &str,
+        kind: Option<&str>,
+        limit: usize,
+    ) -> Vec<TypeaheadHit> {
         let needle = q.trim().to_lowercase();
-        if needle.len() < 2 {
+        if needle.len() == 1 {
             return Vec::new();
         }
 
@@ -154,7 +171,9 @@ impl SearchEngine {
             .filter_map(|article| {
                 let title = article.title.to_lowercase();
                 let summary = article.summary.to_lowercase();
-                let rank = if title.starts_with(&needle) {
+                let rank = if needle.is_empty() {
+                    0
+                } else if title.starts_with(&needle) {
                     0
                 } else if title.contains(&needle) {
                     1
@@ -170,29 +189,83 @@ impl SearchEngine {
                         title: article.title.clone(),
                         detail: article.summary.clone(),
                         url: format!("/articles/{}", article.slug),
+                        meta: format!("{} · {}", article.category.label(), article.date.label()),
+                        image: None,
+                        sections: article.sections.clone(),
                     },
                 ))
             })
             .collect();
 
         hits.extend(
-            matching_products(&needle)
-                .into_iter()
-                .map(|(rank, product)| {
-                    (
-                        rank,
-                        TypeaheadHit {
-                            kind: "product",
-                            title: product.name.to_string(),
-                            detail: product.description.to_string(),
-                            url: product_url(product.slug),
-                        },
-                    )
-                }),
+            (if needle.is_empty() {
+                SHOP_PRODUCTS
+                    .iter()
+                    .take(if kind.is_some() {
+                        SHOP_PRODUCTS.len()
+                    } else {
+                        2
+                    })
+                    .map(|product| (0, product))
+                    .collect()
+            } else {
+                matching_products(&needle)
+            })
+            .into_iter()
+            .map(|(rank, product)| {
+                (
+                    rank,
+                    TypeaheadHit {
+                        kind: "product",
+                        title: product.name.to_string(),
+                        detail: product.description.to_string(),
+                        url: product_url(product.slug),
+                        meta: format!("Dad cap · {}", product.price.label()),
+                        image: Some(product_image_url(product, &CAP_VIEWS[0])),
+                        sections: Vec::new(),
+                    },
+                )
+            }),
         );
 
-        hits.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.title.cmp(&b.1.title)));
-        hits.into_iter().take(limit).map(|(_, hit)| hit).collect()
+        hits.extend(matching_services(&needle));
+        hits.retain(|(_, hit)| kind.is_none_or(|kind| hit.kind == kind));
+        hits.sort_by(|a, b| {
+            if needle.is_empty() {
+                a.1.kind.cmp(b.1.kind).then_with(|| {
+                    if a.1.kind == "article" {
+                        let date = |hit: &TypeaheadHit| {
+                            self.articles
+                                .get(hit.url.trim_start_matches("/articles/"))
+                                .map(|article| article.date)
+                        };
+                        date(&b.1)
+                            .cmp(&date(&a.1))
+                            .then_with(|| a.1.title.cmp(&b.1.title))
+                    } else {
+                        a.1.title.cmp(&b.1.title)
+                    }
+                })
+            } else {
+                a.0.cmp(&b.0).then_with(|| a.1.title.cmp(&b.1.title))
+            }
+        });
+        // Give every content kind room in All; filtering happens before capping.
+        let mut counts = HashMap::new();
+        hits.into_iter()
+            .filter(|(_, hit)| {
+                let count = counts.entry(hit.kind).or_insert(0);
+                *count += 1;
+                *count
+                    <= if needle.is_empty() && kind.is_none() {
+                        if hit.kind == "article" { 2 } else { 1 }
+                    } else {
+                        8
+                    }
+            })
+            .take(limit)
+            .map(|(_, hit)| hit)
+            .collect()
     }
 
     pub fn search(&self, query: &SearchQuery) -> Result<SearchResults> {
@@ -247,6 +320,10 @@ impl SearchEngine {
             total_products,
             article_hits,
             product_hits,
+            service_hits: matching_services(&query.q.trim().to_lowercase())
+                .into_iter()
+                .map(|(_, hit)| hit)
+                .collect(),
             facets,
             page,
             page_size: PAGE_SIZE,
@@ -427,6 +504,96 @@ fn matching_products(needle: &str) -> Vec<(u8, &'static ShopProduct)> {
         .collect()
 }
 
+fn matching_services(needle: &str) -> Vec<(u8, TypeaheadHit)> {
+    let entries = [
+        (
+            "coaching",
+            "Career coaching",
+            "A resume review and career call for engineers and designers. Bring your questions. Leave with a plan.",
+            "/coach",
+            format!(
+                "{} · {} · Google Meet",
+                OFFER.duration_label(),
+                OFFER.price.label()
+            ),
+            "career resume review mentorship manager leadership engineering design coaching coach",
+            vec![
+                "Send your resume and intake doc",
+                "Meet Matthew on Friday",
+                "Leave with a plan",
+            ],
+        ),
+        (
+            "subscription",
+            "Free coaching notes",
+            "Notes from Matthew Harwood on workflow, developer tools, frameworks, community, engineering leadership, and essays.",
+            "/subscribe",
+            "Free · Sent occasionally · Unsubscribe anytime".to_string(),
+            "newsletter subscribe subscription email inbox free coaching notes workflow developer tools frameworks community leadership essays",
+            vec![
+                "Free coaching in your inbox",
+                "All six site topics, and more",
+                "Confirm your email to join",
+            ],
+        ),
+    ];
+    entries
+        .into_iter()
+        .filter_map(|(kind, title, detail, url, meta, keywords, sections)| {
+            let title_lower = title.to_lowercase();
+            let rank = if needle.is_empty() || title_lower.starts_with(needle) {
+                0
+            } else if title_lower.contains(needle) {
+                1
+            } else if keywords.contains(needle) || detail.to_lowercase().contains(needle) {
+                2
+            } else {
+                return None;
+            };
+            Some((
+                rank,
+                TypeaheadHit {
+                    kind,
+                    title: title.into(),
+                    detail: detail.into(),
+                    url: url.into(),
+                    meta,
+                    image: Some(asset_url("favicon.svg")),
+                    sections: sections.into_iter().map(String::from).collect(),
+                },
+            ))
+        })
+        .collect()
+}
+
+fn article_sections(markdown: &str) -> Vec<String> {
+    let mut sections = Vec::new();
+    let mut heading = None;
+    for event in pulldown_cmark::Parser::new(markdown) {
+        match event {
+            Event::Start(pulldown_cmark::Tag::Heading {
+                level: pulldown_cmark::HeadingLevel::H2,
+                ..
+            }) => heading = Some(String::new()),
+            Event::Text(text) | Event::Code(text) => {
+                if let Some(heading) = heading.as_mut() {
+                    heading.push_str(&text);
+                }
+            }
+            Event::End(pulldown_cmark::TagEnd::Heading(_)) => {
+                if let Some(heading) = heading.take() {
+                    sections.push(heading);
+                    if sections.len() == 5 {
+                        break;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    sections
+}
+
 fn product_url(slug: &str) -> String {
     format!("{SHOP_PRODUCT_ORIGIN}/products/{slug}?image=front")
 }
@@ -505,8 +672,49 @@ pub fn all_indexed_article_tags() -> Vec<Tag> {
 
 #[cfg(test)]
 mod tests {
-    use super::{MAX_PAGE, SearchEngine, SearchQuery};
+    use super::{MAX_PAGE, OFFER, SearchEngine, SearchQuery};
     use crate::content::ARTICLES;
+
+    #[test]
+    fn typeahead_groups_include_live_services_and_preview_data() {
+        let engine = SearchEngine::build_in_memory(ARTICLES).unwrap();
+        let hits = engine.typeahead("", 24);
+        for kind in ["article", "product", "coaching", "subscription"] {
+            assert!(hits.iter().any(|hit| hit.kind == kind), "missing {kind}");
+        }
+        let coaching = engine.typeahead_for_kind("resume", Some("coaching"), 24);
+        assert_eq!(coaching.len(), 1);
+        assert_eq!(coaching[0].url, "/coach");
+        assert!(coaching[0].meta.contains(&OFFER.price.label()));
+        let subscriptions = engine.typeahead("newsletter", 24);
+        assert!(
+            subscriptions
+                .iter()
+                .any(|hit| hit.kind == "subscription" && hit.url == "/subscribe")
+        );
+        let products = engine.typeahead_for_kind("cap", Some("product"), 24);
+        assert!(!products.is_empty());
+        assert!(products.iter().all(|hit| hit.kind == "product"
+            && hit.image.as_deref().unwrap().starts_with("/assets/shop/")));
+        let articles = engine.typeahead_for_kind("execution", Some("article"), 24);
+        assert!(articles.iter().any(|hit| !hit.sections.is_empty()));
+        assert!(engine.typeahead("x", 24).is_empty());
+        assert!(engine.typeahead("no-such-content-xyz", 24).is_empty());
+    }
+
+    #[test]
+    fn full_search_can_find_coaching_and_subscription() {
+        let engine = SearchEngine::build_in_memory(ARTICLES).unwrap();
+        for (query, kind) in [("resume", "coaching"), ("newsletter", "subscription")] {
+            let hits = engine
+                .search(&SearchQuery {
+                    q: query.into(),
+                    ..SearchQuery::default()
+                })
+                .unwrap();
+            assert!(hits.service_hits.iter().any(|hit| hit.kind == kind));
+        }
+    }
 
     // A hostile `?page=` value must clamp instead of overflowing
     // `(page - 1) * PAGE_SIZE` (which panics in debug, wraps in release).
