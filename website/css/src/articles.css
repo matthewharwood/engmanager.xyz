@@ -1533,8 +1533,8 @@ html[data-article-reveal="running"]
 .diagram-expand,
 .diagram-close,
 .diagram-zoom button {
-    border: 1px solid var(--ctp-surface1);
-    border-radius: 0.4rem;
+    border: var(--border) solid var(--border-strong);
+    border-radius: var(--radius-field);
     background: var(--ctp-base);
     color: var(--ctp-text);
     font: 700 0.75rem var(--font-mono);

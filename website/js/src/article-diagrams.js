@@ -20,10 +20,14 @@
         const context = canvas.getContext("2d", { willReadFrequently: true });
         // Mermaid's color parser does not understand our OKLCH theme tokens.
         // A browser-painted pixel normalizes every supported CSS color to sRGB.
-        const color = (name, fallback) => {
+        const color = (name, fallback, backdrop = "#ffffff") => {
             if (!context) return fallback;
             try {
                 context.clearRect(0, 0, 1, 1);
+                // Hex cannot carry our translucent surface/line tokens. Paint
+                // them over the page first rather than discarding their alpha.
+                context.fillStyle = backdrop;
+                context.fillRect(0, 0, 1, 1);
                 context.fillStyle = fallback;
                 context.fillStyle = styles.getPropertyValue(name).trim() || fallback;
                 context.fillRect(0, 0, 1, 1);
@@ -31,18 +35,25 @@
                 return `#${Array.from(rgba).slice(0, 3).map((value) => value.toString(16).padStart(2, "0")).join("")}`;
             } catch { return fallback; }
         };
-        const accent = color("--accent", "#e64553");
-        const text = color("--ctp-text", "#cdd6f4");
         const base = color("--ctp-base", "#1e1e2e");
-        const surface = color("--ctp-surface0", "#313244");
-        const mantle = color("--ctp-mantle", "#181825");
-        const line = color("--ctp-overlay1", "#7f849c");
+        const accent = color("--accent", "#e64553", base);
+        const text = color("--ctp-text", "#cdd6f4", base);
+        const surface = color("--ctp-surface0", "#313244", base);
+        const mantle = color("--ctp-mantle", "#181825", base);
+        const line = color("--ctp-subtext0", "#a6adc8", base);
         return {
             background: base,
             primaryColor: surface, primaryTextColor: text, primaryBorderColor: accent,
             secondaryColor: mantle, secondaryTextColor: text, secondaryBorderColor: line,
             tertiaryColor: mantle, tertiaryTextColor: text, tertiaryBorderColor: line,
-            lineColor: line, textColor: text, nodeBorder: accent, clusterBkg: mantle,
+            lineColor: line, defaultLinkColor: line, textColor: text,
+            nodeTextColor: text, nodeBorder: accent, mainBkg: surface,
+            clusterBkg: mantle, clusterBorder: line, titleColor: text,
+            edgeLabelBackground: base,
+            noteBkgColor: mantle, noteTextColor: text, noteBorderColor: line,
+            actorBkg: surface, actorTextColor: text, actorBorder: accent,
+            signalColor: line, signalTextColor: text,
+            labelBoxBkgColor: surface, labelTextColor: text, loopTextColor: text,
             fontFamily: styles.getPropertyValue("--font-mono").trim() || "ui-monospace, monospace",
             fontSize: "14px",
         };
