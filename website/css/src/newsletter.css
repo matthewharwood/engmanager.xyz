@@ -1,5 +1,9 @@
 .newsletter-page {
-    padding-block-end: 2rem;
+    padding: 0 0 2rem;
+}
+
+.newsletter-page .site-nav {
+    margin: 0;
 }
 
 .newsletter-shell {
@@ -14,9 +18,6 @@
 
 .newsletter-eyebrow,
 .newsletter-byline,
-.newsletter-card-top,
-.newsletter-topics > h2,
-.newsletter-topic-number,
 .newsletter-footer,
 .newsletter-privacy {
     font-family: var(--font-mono);
@@ -72,13 +73,6 @@
     line-height: 1.7;
 }
 
-.newsletter-byline-rule {
-    inline-size: 1.5rem;
-    block-size: 1px;
-    background: currentColor;
-    opacity: 0.5;
-}
-
 .newsletter-card {
     position: relative;
     min-inline-size: 0;
@@ -89,24 +83,6 @@
     background-image: var(--background-noise);
     background-size: .1875rem .1875rem, .3125rem .3125rem, .4375rem .4375rem;
     box-shadow: var(--surface-shadow);
-}
-
-.newsletter-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding-block-end: 1.125rem;
-    margin-block-end: 1.75rem;
-    border-block-end: 1px solid var(--border-subtle);
-    font-size: 0.5625rem;
-    text-transform: uppercase;
-    letter-spacing: 0.075em;
-}
-
-.newsletter-card-top svg {
-    flex-shrink: 0;
-    color: var(--accent);
 }
 
 .newsletter-card h2 {
@@ -413,49 +389,6 @@
     font-size: 0.8125rem;
 }
 
-.newsletter-topics {
-    grid-column: 1 / -1;
-    padding-block-start: 2rem;
-    border-block-start: 1px solid var(--border-subtle);
-}
-
-.newsletter-topics > h2 {
-    margin: 0 0 2rem;
-    font-size: 0.625rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.newsletter-topic-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2.75rem;
-}
-
-.newsletter-topic-number {
-    display: block;
-    margin-block-end: 0.75rem;
-    font-size: 0.625rem;
-    color: var(--accent);
-}
-
-.newsletter-topic h3 {
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    font-weight: 700;
-}
-
-.newsletter-topic p {
-    margin: 0.625rem 0 0;
-    max-inline-size: 28rem;
-    font-size: 0.875rem;
-    line-height: 1.7;
-    color: var(--text-2);
-    text-wrap: pretty;
-}
-
 .newsletter-footer {
     grid-column: 1 / -1;
     display: flex;
@@ -523,22 +456,6 @@
         font-size: 1.625rem;
     }
 
-    .newsletter-topic-grid {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 1.75rem;
-    }
-
-    .newsletter-topic {
-        position: relative;
-        padding-inline-start: 2.5rem;
-    }
-
-    .newsletter-topic-number {
-        position: absolute;
-        inset-inline-start: 0;
-        inset-block-start: 0.25rem;
-    }
-
     .newsletter-footer {
         margin-block-start: 0;
         flex-wrap: wrap;
@@ -556,41 +473,66 @@
     }
 }
 
-/* Planetary subscribe composition: sculpture, quiet editorial copy, clear form. */
+/* Direction 02 / Observatory. Keep this scoped away from privacy/preferences. */
 .newsletter-page .newsletter-shell {
-    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, .8fr);
-    grid-template-rows: auto auto auto auto;
-    gap: 0 6rem;
-    max-inline-size: 76rem;
-    margin-block-start: 1rem;
-    padding-inline: 2rem;
+    grid-template-columns: minmax(0, 600fr) minmax(0, 620fr);
+    align-items: start;
+    gap: 2rem 4.375rem;
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 90rem;
+    margin-inline: auto;
+    margin-block-start: 2.125rem;
+    padding-inline: clamp(1.375rem, 4.45vw, 4rem);
 }
-.newsletter-cosmos { grid-column: 1; grid-row: 1; margin: -1.5rem -2rem .5rem; }
-.newsletter-page .newsletter-intro { grid-column: 1; grid-row: 2; padding: 0 1.5rem; }
-.newsletter-page .newsletter-eyebrow { margin-block-end: 1rem; font-size: .6rem; letter-spacing: .14em; color: var(--text-muted); }
-.newsletter-page .newsletter-intro h1 { font-family: var(--font-sans); font-size: clamp(3rem, 4.5vw, 4.5rem); font-weight: 400; letter-spacing: -.075em; line-height: .94; }
+.newsletter-content { display: grid; gap: 1.625rem; min-inline-size: 0; }
+.newsletter-page .newsletter-eyebrow { flex-wrap: wrap; margin: 0 0 1.625rem; font: .8125rem/1.4 var(--font-mono); letter-spacing: .06em; }
+.newsletter-page .newsletter-intro h1 { font-family: var(--font-sans); font-size: clamp(3.5rem, 5.98vw, 5.375rem); font-weight: 400; letter-spacing: -.02em; line-height: 1.025; }
 .newsletter-page .newsletter-intro h1 span { color: var(--text-1); }
-.newsletter-page .newsletter-description { max-inline-size: 39ch; font-size: .9rem; line-height: 1.8; margin-block-start: 1.25rem; color: var(--text-muted); }
-.newsletter-page .newsletter-byline { font-size: .6rem; margin-block-start: 1.25rem; color: var(--text-muted); }
-.newsletter-page .newsletter-card { grid-column: 2; grid-row: 1 / span 2; align-self: center; margin-block-start: 2rem; padding: 2rem 0; background: transparent; background-image: none; border: 0; border-block: var(--border) solid var(--border-subtle); border-radius: 0; box-shadow: none; }
-.newsletter-page .newsletter-card-top { font-size: .6rem; color: var(--text-muted); border: 0; margin-block-end: 1.25rem; }
-.newsletter-page .newsletter-card h2 { font-family: var(--font-sans); font-weight: 500; font-size: clamp(1.75rem, 2.5vw, 2.5rem); line-height: 1.08; letter-spacing: -.05em; }
-.newsletter-page .newsletter-card-description { font-size: .875rem; line-height: 1.8; color: var(--text-muted); }
-.newsletter-page .newsletter-form input[type="email"], .newsletter-page .newsletter-form button { border-radius: min(var(--radius-field), .375rem); font-size: .875rem; }
-.newsletter-page .newsletter-form label { color: var(--text-muted); font-size: .6875rem; }
-.newsletter-page .newsletter-topics { grid-row: 3; margin-block-start: 4rem; }
-.newsletter-page .newsletter-footer { grid-row: 4; }
-@media (max-width: 60rem) {
-    .newsletter-page .newsletter-shell { gap: 0 3rem; padding-inline: 1.5rem; }
-    .newsletter-cosmos { margin-inline: -2rem; }
-    .newsletter-page .newsletter-intro { padding-inline: 0; }
+.newsletter-page .newsletter-description { max-inline-size: 34rem; margin-block-start: 1.625rem; font-size: 1.3125rem; line-height: 1.48; }
+.newsletter-page .newsletter-byline { display: block; margin-block-start: 1.625rem; font: .9375rem/1.47 var(--font-sans); color: var(--accent); overflow-wrap: anywhere; }
+.newsletter-byline a { color: inherit; text-underline-offset: .2em; }
+.newsletter-page .newsletter-card { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.newsletter-page .newsletter-card h2:not(.sr-only) { font-family: var(--font-sans); font-weight: 400; font-size: 2rem; letter-spacing: -.02em; }
+.newsletter-page .newsletter-card-description { font-size: 1.0625rem; }
+.newsletter-page .newsletter-form { gap: .75rem; max-inline-size: 36.25rem; }
+.newsletter-page .newsletter-form label { font-size: 1.125rem; font-weight: 400; line-height: 1.33; }
+.newsletter-form-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .625rem; }
+.newsletter-page .newsletter-form input[type="email"], .newsletter-page .newsletter-form button { min-block-size: 3.5rem; border-radius: min(var(--radius-field), .375rem); font-size: 1.125rem; line-height: 1.33; }
+.newsletter-page .newsletter-form button { margin: 0; padding-inline: 1.25rem; background: var(--accent); color: var(--text-on-brand); border-color: var(--accent); font-weight: 400; }
+.newsletter-page .newsletter-form button:hover { filter: brightness(1.1); }
+.newsletter-page .newsletter-privacy { margin: 0; font: .9375rem/1.47 var(--font-sans); text-align: start; }
+.newsletter-scope { max-inline-size: 34rem; margin: 0; font-size: .9375rem; line-height: 1.47; color: var(--text-2); text-wrap: pretty; }
+.newsletter-cosmos { min-inline-size: 0; }
+.newsletter-page .newsletter-footer { grid-column: 1 / -1; gap: 1.25rem; margin: 0; padding-block-start: 1.125rem; font: .875rem/1.43 var(--font-sans); }
+@media (max-width: 65rem) {
+    .newsletter-page .newsletter-shell { column-gap: 2rem; }
+    .newsletter-form-controls { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 50rem) {
-    .newsletter-page .newsletter-shell { grid-template-columns: minmax(0, 1fr); gap: 0; max-inline-size: 38rem; margin-block-start: 0; padding-inline: 1.25rem; }
-    .newsletter-cosmos { grid-column: 1; grid-row: 1; margin: -1rem -1rem .75rem; }
-    .newsletter-page .newsletter-intro { grid-column: 1; grid-row: 2; }
-    .newsletter-page .newsletter-intro h1 { font-size: clamp(3rem, 11vw, 4.5rem); }
-    .newsletter-page .newsletter-card { grid-column: 1; grid-row: 3; margin-block-start: 2.5rem; padding-block: 1.5rem; }
-    .newsletter-page .newsletter-topics { grid-row: 4; margin-block-start: 2.5rem; }
-    .newsletter-page .newsletter-footer { grid-row: 5; }
+    .newsletter-page .newsletter-shell { grid-template-columns: minmax(0, 1fr); max-inline-size: 38rem; margin-block-start: 1.5rem; gap: 1.375rem; }
+    .newsletter-content { gap: 1.1875rem; }
+    .newsletter-page .newsletter-eyebrow { margin-block-end: 1.1875rem; font-size: .75rem; }
+    .newsletter-page .newsletter-intro h1 { font-size: clamp(2.75rem, 14.1vw, 4.5rem); line-height: 1.04; }
+    .newsletter-page .newsletter-description { margin-block-start: 1.1875rem; font-size: 1.125rem; line-height: 1.5; }
+    .newsletter-page .newsletter-byline { margin-block-start: 1.1875rem; font-size: .875rem; }
+    .newsletter-page .newsletter-form label { font-size: 1rem; }
+    .newsletter-page .newsletter-privacy { font-size: .875rem; line-height: 1.57; }
+    .newsletter-scope { grid-row: 4; font-size: 1rem; line-height: 1.44; }
+    .newsletter-content { display: contents; }
+    .newsletter-intro { grid-row: 1; }
+    .newsletter-page .newsletter-card { grid-row: 2; }
+    .newsletter-cosmos { grid-row: 3; }
+    .newsletter-page .newsletter-footer { grid-row: 5; flex-direction: column; align-items: start; gap: .5rem; font-size: .8125rem; }
+}
+
+/* The monospace theme needs a smaller measure for the same unbroken headline. */
+:root[data-theme="cyberpunk"] .newsletter-page .newsletter-intro h1 { font-size: clamp(2.75rem, 4.9vw, 4.375rem); }
+@media (max-width: 50rem) {
+    :root[data-theme="cyberpunk"] .newsletter-page .newsletter-intro h1 { font-size: clamp(2rem, 11.4vw, 3.75rem); }
+}
+
+@media (max-width: 22.5rem) {
+    .newsletter-page .newsletter-intro h1 { font-size: clamp(2.5rem, 13.3vw, 3rem); }
+    :root[data-theme="cyberpunk"] .newsletter-page .newsletter-intro h1 { font-size: clamp(2rem, 11.4vw, 3rem); }
 }

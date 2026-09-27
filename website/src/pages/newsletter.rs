@@ -13,7 +13,7 @@ use crate::components::{Head, armillary, global_search, nav, sigil};
 use crate::http::no_store;
 
 const TITLE: &str = "The newsletter · ENGMANAGER.XYZ";
-const DESCRIPTION: &str = "Occasional notes from Matthew Harwood on engineering leadership, building thoughtful teams, and finding your way as a manager.";
+const DESCRIPTION: &str = "Free coaching notes from Matthew Harwood on workflow, developer tools, frameworks, community, engineering leadership, and more.";
 const CANONICAL: &str = "https://engmanager.xyz/subscribe";
 const SENDER_EMAIL: &str = "matthew@engmanager.xyz";
 const SENDER_NAME: &str = "Matthew Harwood · ENGMANAGER";
@@ -60,53 +60,30 @@ pub fn page(status: Option<&str>) -> String {
     let body = view! {
         { nav_markup }
         <main id="main" class="newsletter-shell" tabindex="-1">
-            <div class="newsletter-cosmos">{ sculpture_markup }</div>
-            <div class="newsletter-intro">
-                <p class="newsletter-eyebrow">
-                    <span class="newsletter-pip" aria-hidden="true"></span>
-                    "The ENGMANAGER newsletter"
-                </p>
-                <h1>"Keep a little"<br /><span>"perspective."</span></h1>
-                <p class="newsletter-description">
-                    "Leading a team is a practice. I write about the people, decisions, and small shifts that make it better."
-                </p>
-                <p class="newsletter-byline">
-                    <span class="newsletter-byline-rule" aria-hidden="true"></span>
-                    "Notes from Matthew Harwood"
+            <div class="newsletter-content">
+                <div class="newsletter-intro">
+                    <p class="newsletter-eyebrow">
+                        <span class="newsletter-pip" aria-hidden="true"></span>
+                        "The ENGMANAGER newsletter · Free"
+                    </p>
+                    <h1>"Keep a little"<br /><span>"perspective."</span></h1>
+                    <p class="newsletter-description">
+                        "Free coaching, in your inbox. I share what I’m learning about building things, leading teams, and finding your way at work."
+                    </p>
+                    <p class="newsletter-byline">
+                        "From Matthew Harwood · "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>
+                    </p>
+                </div>
+                <section class="newsletter-card" aria-labelledby="newsletter-signup-title">
+                    { signup }
+                </section>
+                <p class="newsletter-scope">
+                    "We’ll cover workflow, developer tools, frameworks, community, engineering leadership, and essays. Plus whatever else helps us grow."
                 </p>
             </div>
-            <section class="newsletter-card" aria-labelledby="newsletter-signup-title">
-                <div class="newsletter-card-top" aria-hidden="true">
-                    <span>"A note for your inbox"</span>
-                    <svg viewBox="0 0 40 32" width="40" height="32" fill="none">
-                        <rect x="2" y="3" width="36" height="26" rx="1" stroke="currentColor" stroke-width="1.5" />
-                        <path d="m3 5 17 13L37 5M3 27l12-11m22 11L25 16" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                    </svg>
-                </div>
-                { signup }
-            </section>
-            <section class="newsletter-topics" aria-labelledby="newsletter-topics-title">
-                <h2 id="newsletter-topics-title">"A few things we’ll think through"</h2>
-                <div class="newsletter-topic-grid">
-                    <div class="newsletter-topic">
-                        <span class="newsletter-topic-number" aria-hidden="true">"01"</span>
-                        <h3>"The people part"</h3>
-                        <p>"Feedback, trust, and the conversations that help a team grow."</p>
-                    </div>
-                    <div class="newsletter-topic">
-                        <span class="newsletter-topic-number" aria-hidden="true">"02"</span>
-                        <h3>"The work itself"</h3>
-                        <p>"Making decisions, creating focus, and shipping work that matters."</p>
-                    </div>
-                    <div class="newsletter-topic">
-                        <span class="newsletter-topic-number" aria-hidden="true">"03"</span>
-                        <h3>"Your way forward"</h3>
-                        <p>"Finding your footing as a manager, and growing into what comes next."</p>
-                    </div>
-                </div>
-            </section>
+            <div class="newsletter-cosmos">{ sculpture_markup }</div>
             <footer class="newsletter-footer">
-                <span>"Curious before you subscribe?"</span>
+                <span>"Notes from Matthew Harwood. Sent when there’s something worth sharing."</span>
                 <a href="/feed" data-hard-nav>"Read the articles"<span aria-hidden="true">" ↗"</span></a>
             </footer>
         </main>
@@ -122,7 +99,7 @@ pub fn page(status: Option<&str>) -> String {
             og_site_name: Some("ENGMANAGER.XYZ"),
             og_image: Some(share_card("https://engmanager.xyz", DEFAULT_SHARE_CARD)),
             og_image_size: Some(SHARE_CARD_SIZE),
-            og_image_alt: Some("ENG MANAGER — occasional notes from Matthew Harwood on engineering leadership, design systems, developer tooling, and building thoughtful teams.".into()),
+            og_image_alt: Some("ENG MANAGER — free coaching notes from Matthew Harwood on workflow, developer tools, frameworks, community, engineering leadership, and essays.".into()),
             twitter_card: Some("summary_large_image"),
             ..MetaTags::default()
         })
@@ -153,29 +130,29 @@ fn signup_form(status: Option<&str>) -> HtmlFragment {
         .unwrap_or_else(HtmlFragment::empty);
 
     view! {
-        <h2 id="newsletter-signup-title">"Good questions."<br />"Useful notes."</h2>
-        <p class="newsletter-card-description">"A little room to reflect on how you lead. Delivered occasionally, when there’s something worth sharing."</p>
-        <p class="newsletter-sender">"From Matthew Harwood at "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>"."</p>
+        <h2 id="newsletter-signup-title" class="sr-only">"Get the free coaching notes."</h2>
         <form class="newsletter-form" method="post" action="/api/newsletter/subscribe">
             <label for="newsletter-email">"Your email address"</label>
-            <input id="newsletter-email"
-                   type="email"
-                   name="email"
-                   autocomplete="email"
-                   inputmode="email"
-                   autocapitalize="none"
-                   spellcheck="false"
-                   maxlength="254"
-                   placeholder="you@example.com"
-                   required
-                   aria-invalid={ if status == Some("invalid") { "true" } else { "false" } }
-                   aria-describedby={ described_by } />
+            <div class="newsletter-form-controls">
+                <input id="newsletter-email"
+                       type="email"
+                       name="email"
+                       autocomplete="email"
+                       inputmode="email"
+                       autocapitalize="none"
+                       spellcheck="false"
+                       maxlength="254"
+                       placeholder="you@example.com"
+                       required
+                       aria-invalid={ if status == Some("invalid") { "true" } else { "false" } }
+                       aria-describedby={ described_by } />
+                <button type="submit">"Send me the notes"<span aria-hidden="true">"↗"</span></button>
+            </div>
             <div class="newsletter-honeypot" hidden aria-hidden="true">
                 <label for="newsletter-website">"Leave this field empty"</label>
                 <input id="newsletter-website" type="text" name="website" tabindex="-1" autocomplete="off" />
             </div>
             { feedback }
-            <button type="submit">"Send me the notes"<span aria-hidden="true">"↗"</span></button>
             <p id="newsletter-privacy" class="newsletter-privacy">"Free to read. Unsubscribe whenever you like."<br /><a href=PRIVACY_PATH data-hard-nav>"How your newsletter data is used"</a></p>
         </form>
     }

@@ -1,12 +1,13 @@
 .armillary { position: relative; inline-size: 100%; isolation: isolate; }
-.armillary-art { position: relative; aspect-ratio: 1.15; inline-size: 100%; block-size: clamp(21rem, 35vw, 29rem); }
-.armillary-sunburst, .armillary-poster, .armillary-canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: contain; pointer-events: none; }
+.armillary-art { position: relative; aspect-ratio: 620 / 600; inline-size: 100%; }
+.armillary-sunburst, .armillary-canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: contain; pointer-events: none; }
 .armillary-sunburst { opacity: .23; mix-blend-mode: screen; mask-image: radial-gradient(ellipse, #000 15%, transparent 68%); }
-.armillary-poster { opacity: .95; }
+.armillary-poster { position: absolute; inset: 0; opacity: .95; pointer-events: none; }
+.armillary-poster img { display: block; inline-size: 100%; block-size: auto; }
 .armillary-canvas { opacity: 0; transition: opacity 600ms ease; }
 .armillary[data-renderer="webgpu"] .armillary-canvas { opacity: 1; }
 .armillary[data-renderer="webgpu"] .armillary-poster { opacity: 0; }
-.armillary-controls { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin: -.75rem 1.5rem 0; font: .55rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); }
+.armillary-controls { display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin: 0; padding-block-start: .75rem; border-block-start: 1px solid var(--border-subtle); font: .8125rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); }
 .armillary-controls > div { display: flex; gap: .65rem; }
 .armillary-controls button { appearance: none; border: 0; border-block-end: 1px solid var(--border-subtle); border-radius: 0; color: inherit; background: transparent; padding: .7rem .15rem; min-block-size: 2.75rem; font: inherit; letter-spacing: inherit; cursor: pointer; }
 .armillary-controls button[hidden] { display: none; }
@@ -15,4 +16,4 @@
 @media (prefers-color-scheme: light) { :root:not([data-theme]) .armillary-sunburst { mix-blend-mode: multiply; opacity: .16; filter: invert(1); } }
 :root:is([data-theme="light"], [data-theme="catppuccin"], [data-theme="cyberpunk"], [data-theme="lofi"]) .armillary-sunburst { mix-blend-mode: multiply; opacity: .16; filter: invert(1); }
 @media (prefers-reduced-motion: reduce) { .armillary-canvas { transition: none; } }
-@media (max-width: 50rem) { .armillary-art { aspect-ratio: 1.25; block-size: auto; } .armillary-controls { margin-inline: .5rem; font-size: .5rem; } }
+@media (max-width: 50rem) { .armillary-art { aspect-ratio: 346 / 210; overflow: hidden; } .armillary-canvas, .armillary-sunburst { block-size: 165%; inset-block-start: -32.5%; } .armillary-controls { font-size: .75rem; flex-wrap: wrap; } }
