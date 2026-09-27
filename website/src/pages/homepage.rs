@@ -434,7 +434,7 @@ pub async fn index() -> Html<String> {
     let site_nav = nav::render(nav::Props {
         brand_icon_url: crate::asset_url("favicon.svg"),
         global_search: global_search::render(global_search::Props {
-            placeholder: "Search articles",
+            placeholder: "Search the site",
         }),
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),

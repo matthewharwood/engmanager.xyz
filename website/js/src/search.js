@@ -48,114 +48,197 @@
             list.id = listId;
             input.setAttribute("aria-controls", listId);
 
+            const preview = form.querySelector("[data-search-preview]");
+            const empty = form.querySelector("[data-search-empty]");
+            const status = form.querySelector("[data-search-status]");
+            const filters = [...form.querySelectorAll("[data-search-kind]")];
+            const labels = { article: "Articles", product: "Store", coaching: "Coaching", subscription: "Subscription" };
+            const actions = { article: "Read article", product: "View in store", coaching: "Explore coaching", subscription: "Subscribe for free" };
+            let kind = "";
             let debounce = 0;
             let controller = null;
             let items = [];
+            let hits = [];
             let activeIndex = -1;
 
+            const icon = (kind) => {
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("viewBox", "0 0 24 24");
+                svg.setAttribute("aria-hidden", "true");
+                svg.setAttribute("focusable", "false");
+                svg.setAttribute("fill", "none");
+                svg.setAttribute("stroke", "currentColor");
+                svg.setAttribute("stroke-width", "1.5");
+                svg.setAttribute("stroke-linejoin", "round");
+                const paths = {
+                    article: ["M5 3h10l4 4v14H5Z", "M15 3v5h4M8 12h8M8 16h6"],
+                    product: ["M12 4 21 20H3Z"],
+                    coaching: ["M14 9a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z", "M20 15a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z"],
+                    subscription: ["M3 5h18v14H3Z", "m3 6 9 7 9-7"],
+                };
+                for (const d of paths[kind] || paths.article) {
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", d);
+                    svg.append(path);
+                }
+                return svg;
+            };
+            const text = (tag, className, value) => {
+                const node = document.createElement(tag);
+                node.className = className;
+                node.textContent = value;
+                return node;
+            };
+            const showPreview = (hit) => {
+                if (!preview) return;
+                preview.replaceChildren();
+                if (!hit) {
+                    preview.append(text("p", "site-search-preview-placeholder", "A closer look. Focus a result to preview it here."));
+                    return;
+                }
+                const category = text("p", "site-search-preview-kind", labels[hit.kind] || hit.kind);
+                category.prepend(icon(hit.kind));
+                preview.append(category);
+                if (hit.image && hit.kind === "product") {
+                    const image = document.createElement("img");
+                    image.src = hit.image;
+                    image.alt = hit.title;
+                    image.className = "site-search-preview-image";
+                    image.decoding = "async";
+                    preview.append(image);
+                }
+                preview.append(text("p", "site-search-preview-meta", hit.meta || ""));
+                preview.append(text("h2", "site-search-preview-title", hit.title));
+                preview.append(text("p", "site-search-preview-detail", hit.detail || ""));
+                if (hit.sections?.length) {
+                    preview.append(text("p", "site-search-preview-section-label", hit.kind === "article" ? "In this article" : "What to expect"));
+                    const sections = document.createElement("ul");
+                    sections.className = "site-search-preview-sections";
+                    hit.sections.forEach(section => sections.append(text("li", "", section)));
+                    preview.append(sections);
+                }
+                const link = text("a", "site-search-preview-link", `${actions[hit.kind] || "Open result"} ↗`);
+                link.href = hit.url;
+                preview.append(link);
+            };
             const close = () => {
+                clearTimeout(debounce);
+                controller?.abort();
                 list.hidden = true;
                 input.setAttribute("aria-expanded", "false");
                 input.removeAttribute("aria-activedescendant");
                 activeIndex = -1;
-                items.forEach((item) => item.classList.remove("is-active"));
+                items.forEach(item => { item.classList.remove("is-active"); item.setAttribute("aria-selected", "false"); });
+                if (status) status.textContent = "";
+                showPreview(null);
             };
-
-            const setActive = (nextIndex) => {
-                if (!items.length) return;
-                items.forEach((item) => item.classList.remove("is-active"));
+            const setActive = (nextIndex, scroll = true) => {
+                if (!items.length || list.hidden) return;
                 activeIndex = (nextIndex + items.length) % items.length;
-                const item = items[activeIndex];
-                item.classList.add("is-active");
-                input.setAttribute("aria-activedescendant", item.id);
-                item.scrollIntoView({ block: "nearest" });
-            };
-
-            const render = (hits) => {
-                list.replaceChildren();
-                items = hits.map((hit, index) => {
-                    const item = document.createElement("li");
-                    item.id = `${listId}-option-${index}`;
-                    item.setAttribute("role", "option");
-                    item.className = "site-search-result";
-
-                    const link = document.createElement("a");
-                    link.href = hit.url;
-
-                    const title = document.createElement("span");
-                    title.className = "site-search-result-title";
-                    title.textContent = hit.title;
-
-                    const detail = document.createElement("span");
-                    detail.className = "site-search-result-detail";
-                    detail.textContent = hit.detail || hit.kind;
-
-                    link.append(title, detail);
-                    item.append(link);
-                    list.append(item);
-                    return item;
+                items.forEach((item, index) => {
+                    item.classList.toggle("is-active", index === activeIndex);
+                    item.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
                 });
-
-                if (items.length) {
-                    list.hidden = false;
-                    input.setAttribute("aria-expanded", "true");
-                    activeIndex = -1;
-                } else {
-                    close();
-                }
+                const item = items[activeIndex];
+                input.setAttribute("aria-activedescendant", item.id);
+                if (scroll) item.scrollIntoView({ block: "nearest" });
+                showPreview(hits[activeIndex]);
             };
-
+            const render = (results) => {
+                list.replaceChildren();
+                hits = [];
+                items = [];
+                for (const group of Object.keys(labels)) {
+                    const groupHits = results.filter(hit => hit.kind === group);
+                    if (!groupHits.length) continue;
+                    const heading = text("li", "site-search-group", labels[group]);
+                    heading.setAttribute("role", "presentation");
+                    heading.prepend(icon(group));
+                    if (preview) list.append(heading);
+                    for (const hit of groupHits) {
+                        const index = items.length;
+                        const item = document.createElement("li");
+                        item.id = `${listId}-option-${index}`;
+                        item.setAttribute("role", "option");
+                        item.setAttribute("aria-selected", "false");
+                        item.className = "site-search-result";
+                        const link = document.createElement("a");
+                        link.href = hit.url;
+                        link.tabIndex = preview ? -1 : 0;
+                        const copy = document.createElement("span");
+                        copy.append(text("span", "site-search-result-title", hit.title));
+                        copy.append(text("span", "site-search-result-detail", hit.meta || hit.detail || hit.kind));
+                        if (preview) link.append(icon(hit.kind));
+                        link.append(copy);
+                        item.append(link);
+                        item.addEventListener("pointerenter", () => setActive(index, false));
+                        link.addEventListener("focus", () => setActive(index, false));
+                        list.append(item);
+                        hits.push(hit);
+                        items.push(item);
+                    }
+                }
+                list.hidden = !items.length;
+                input.setAttribute("aria-expanded", items.length ? "true" : "false");
+                if (empty) {
+                    empty.hidden = !!items.length;
+                    empty.textContent = "No matches here. Try another topic or category.";
+                }
+                if (status) status.textContent = `${items.length} result${items.length === 1 ? "" : "s"}${kind ? ` in ${labels[kind]}` : ""}.`;
+                activeIndex = -1;
+                if (items.length) setActive(0, false);
+                else { input.removeAttribute("aria-activedescendant"); showPreview(null); }
+            };
             const fetchResults = async () => {
                 const value = input.value.trim();
-                if (value.length < 2) {
-                    controller?.abort();
+                if (value.length === 1 || (!preview && value.length < 2)) {
                     close();
+                    if (empty) { empty.hidden = false; empty.textContent = "Type at least two letters to search."; }
                     return;
                 }
-
-                controller?.abort();
+                close();
+                if (empty) { empty.hidden = false; empty.textContent = "Searching…"; }
+                if (status) status.textContent = "Searching.";
                 const requestController = new AbortController();
                 controller = requestController;
+                const requestedKind = kind;
                 try {
-                    const response = await fetch(
-                        `/api/search/typeahead?q=${encodeURIComponent(value)}`,
-                        { signal: requestController.signal, headers: { Accept: "application/json" } },
-                    );
-                    if (!response.ok) return;
-                    const hits = await response.json();
-                    if (!requestController.signal.aborted && form.isConnected) render(hits);
+                    const response = await fetch(`/api/search/typeahead?q=${encodeURIComponent(value)}${kind ? `&kind=${kind}` : ""}`, {
+                        signal: requestController.signal, headers: { Accept: "application/json" },
+                    });
+                    if (!response.ok) throw new Error("Search unavailable");
+                    const results = await response.json();
+                    if (!requestController.signal.aborted && form.isConnected && value === input.value.trim() && kind === requestedKind) render(results);
                 } catch (error) {
-                    if (error.name !== "AbortError") close();
+                    if (error.name !== "AbortError" && !requestController.signal.aborted) {
+                        close();
+                        if (empty) { empty.hidden = false; empty.textContent = "Search is taking a break. Press Enter to try the full search."; }
+                    }
                 }
             };
-
+            filters.forEach(button => button.addEventListener("click", () => {
+                kind = button.dataset.searchKind;
+                filters.forEach(filter => filter.setAttribute("aria-pressed", filter === button ? "true" : "false"));
+                fetchResults();
+            }));
+            input.addEventListener("focus", () => { if (preview) fetchResults(); });
             input.addEventListener("input", () => {
-                clearTimeout(debounce);
+                close();
+                if (empty) { empty.hidden = false; empty.textContent = "Searching…"; }
                 debounce = setTimeout(fetchResults, 150);
             });
-
-            input.addEventListener("keydown", (event) => {
-                if (event.key === "ArrowDown") {
+            input.addEventListener("keydown", event => {
+                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
                     event.preventDefault();
-                    setActive(activeIndex + 1);
-                } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setActive(activeIndex - 1);
-                } else if (event.key === "Enter" && activeIndex >= 0 && items[activeIndex]) {
+                    setActive(activeIndex + (event.key === "ArrowDown" ? 1 : -1));
+                } else if (event.key === "Enter" && activeIndex >= 0 && items[activeIndex] && !list.hidden) {
                     event.preventDefault();
                     const link = items[activeIndex].querySelector("a");
                     if (link) window.location.assign(link.href);
-                } else if (event.key === "Escape") {
-                    close();
-                } else if (event.key === "Tab") {
-                    close();
-                }
+                } else if (event.key === "Escape" || (event.key === "Tab" && !preview)) close();
             });
-
-            addCloser(form, close, () => {
-                clearTimeout(debounce);
-                controller?.abort();
-            });
+            form.closest("[data-search-overlay]")?.addEventListener("close", close);
+            addCloser(form, close, () => { clearTimeout(debounce); controller?.abort(); });
 
             initHomeKeyboard(form, input, close);
         });
