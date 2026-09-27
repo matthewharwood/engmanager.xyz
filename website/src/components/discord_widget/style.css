@@ -20,8 +20,8 @@
     margin-block: 1.75rem;
     padding: 1.25rem;
     background: var(--ctp-mantle);
-    border: 1px solid var(--ctp-surface0);
-    border-radius: 0.75rem;
+    border: var(--border) solid var(--ctp-surface0);
+    border-radius: var(--radius-box);
 }
 
 .discord-widget-header {

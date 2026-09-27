@@ -235,8 +235,8 @@
 
     .site-search-overlay::backdrop {
         background: color-mix(in oklab, var(--surface-2) 48%, transparent);
-        -webkit-backdrop-filter: blur(10px) saturate(120%);
-        backdrop-filter: blur(10px) saturate(120%);
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+        backdrop-filter: blur(var(--glass-blur)) saturate(120%);
     }
 
     .site-search-panel {
@@ -245,13 +245,14 @@
         inline-size: min(42rem, 100%);
         margin: clamp(5rem, 18vh, 12rem) auto 0;
         padding: clamp(1rem, 3vw, 1.5rem);
-        border: 1px solid color-mix(in oklab, var(--text-1) 22%, transparent);
-        border-radius: 1.25rem;
-        background: color-mix(in oklab, var(--surface-1) 78%, transparent);
-        box-shadow: 0 1.5rem 5rem color-mix(in oklab, var(--text-1) 18%, transparent),
-                    0 1px 0 color-mix(in oklab, white 45%, transparent) inset;
-        -webkit-backdrop-filter: blur(28px) saturate(150%);
-        backdrop-filter: blur(28px) saturate(150%);
+        border: var(--border) solid color-mix(in oklab, var(--text-1) 22%, transparent);
+        border-radius: var(--radius-box);
+        background: color-mix(in oklab, var(--surface-1) var(--surface-opacity), transparent);
+        box-shadow: var(--surface-shadow);
+        background-image: var(--background-noise);
+        background-size: .1875rem .1875rem, .3125rem .3125rem, .4375rem .4375rem;
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+        backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     }
 
     .site-search {
@@ -276,7 +277,7 @@
         inline-size: 2.5rem;
         block-size: 2.5rem;
         padding: 0;
-        border: 1px solid var(--border-subtle);
+        border: var(--border) solid var(--border-subtle);
         border-radius: 50%;
         background: transparent;
         color: var(--text-1);
@@ -301,12 +302,12 @@
     .site-search-input {
         box-sizing: border-box;
         inline-size: 100%;
-        min-block-size: 3.25rem;
+        min-block-size: calc(var(--size-field) + .5rem);
         padding: 0.75rem 1rem;
         color: var(--text-1);
         background: color-mix(in oklab, var(--surface-1) 65%, transparent);
-        border: 1px solid var(--border-subtle);
-        border-radius: 0.75rem;
+        border: var(--border) solid var(--border-subtle);
+        border-radius: var(--radius-field);
         box-shadow: none;
         font: 500 1rem var(--font-sans);
     }
@@ -327,7 +328,7 @@
         list-style: none;
         background: transparent;
         border: 0;
-        border-radius: 0.75rem;
+        border-radius: var(--radius-field);
         box-shadow: none;
     }
 
@@ -601,8 +602,13 @@
 
         --disabled-opacity: 0.45;
 
-        --background-noise-ink: oklch(from var(--color-base-content) l c h / 0.052);
-        --background-noise-soft: oklch(from var(--color-base-content) l c h / 0.032);
+        --background-noise-ink: oklch(from var(--color-base-content) l c h / calc(var(--noise) * 0.065));
+        --background-noise-soft: oklch(from var(--color-base-content) l c h / calc(var(--noise) * 0.04));
+        /* Shadows and grain are CSS-only; no image, filter, or script fetch. */
+        --surface-shadow: var(--shadow-offset) var(--shadow-offset) var(--shadow-blur)
+            oklch(from var(--color-base-content) l c h / calc(var(--depth) * 0.16));
+        --control-shadow: var(--shadow-offset) var(--shadow-offset) var(--shadow-blur)
+            oklch(from var(--color-base-content) l c h / calc(var(--depth) * 0.12));
         --background-noise:
             radial-gradient(
                 circle at 22% 28%,
@@ -623,7 +629,7 @@
 }
 
 /* ============================================================================
- * THEMES · 9 palettes keyed by `[data-theme="..."]`
+ * THEMES · 9 palettes and material profiles keyed by `[data-theme="..."]`
  * ========================================================================== */
 @layer fp.themes {
 
@@ -650,9 +656,18 @@
         --color-warning-content:   oklch(20% 0.08 60);
         --color-error:             oklch(65% 0.22 25);
         --color-error-content:     oklch(98% 0.012 25);
-        --radius-selector: 0.5rem; --radius-field: 0.5rem; --radius-box: 1rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 0;
+        --radius-selector: .375rem;
+        --radius-field: .5rem;
+        --radius-box: .875rem;
+        --size-field: 2.75rem;
+        --size-selector: .25rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: 0;
+        --shadow-offset: 2px;
+        --shadow-blur: 8px;
+        --surface-opacity: 96%;
+        --glass-blur: 12px;
     }
 
     [data-theme="dark"] {
@@ -676,9 +691,18 @@
         --color-warning-content:   oklch(18% 0.07 60);
         --color-error:             oklch(72% 0.20 25);
         --color-error-content:     oklch(15% 0.07 25);
-        --radius-selector: 0.5rem; --radius-field: 0.5rem; --radius-box: 1rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 0;
+        --radius-selector: .375rem;
+        --radius-field: .5rem;
+        --radius-box: .75rem;
+        --size-field: 2.75rem;
+        --size-selector: .25rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .15;
+        --shadow-offset: 2px;
+        --shadow-blur: 12px;
+        --surface-opacity: 94%;
+        --glass-blur: 14px;
     }
 
     /* System-preferred dark when no explicit theme chosen. */
@@ -704,6 +728,18 @@
             --color-warning-content:   oklch(18% 0.07 60);
             --color-error:             oklch(72% 0.20 25);
             --color-error-content:     oklch(15% 0.07 25);
+            --radius-selector: .375rem;
+            --radius-field: .5rem;
+            --radius-box: .75rem;
+            --size-field: 2.75rem;
+            --size-selector: .25rem;
+            --border: 1px;
+            --depth: 1;
+            --noise: .15;
+            --shadow-offset: 2px;
+            --shadow-blur: 12px;
+            --surface-opacity: 94%;
+            --glass-blur: 14px;
         }
     }
 
@@ -728,9 +764,18 @@
         --color-warning-content:   oklch(15% 0.08 60);
         --color-error:             oklch(70% 0.25 0);
         --color-error-content:     oklch(98% 0.02 0);
-        --radius-selector: 0; --radius-field: 0; --radius-box: 0;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 1;
+        --radius-selector: .25rem;
+        --radius-field: .25rem;
+        --radius-box: .5rem;
+        --size-field: 2.75rem;
+        --size-selector: .25rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .35;
+        --shadow-offset: 2px;
+        --shadow-blur: 14px;
+        --surface-opacity: 93%;
+        --glass-blur: 12px;
     }
 
     [data-theme="cyberpunk"] {
@@ -754,9 +799,18 @@
         --color-warning-content:   oklch(15% 0.08 65);
         --color-error:             oklch(60% 0.30 25);
         --color-error-content:     oklch(98% 0.04 25);
-        --radius-selector: 0; --radius-field: 0; --radius-box: 0;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 2px; --depth: 0; --noise: 0;
+        --radius-selector: 0;
+        --radius-field: 0;
+        --radius-box: .125rem;
+        --size-field: 2.75rem;
+        --size-selector: .225rem;
+        --border: 2px;
+        --depth: 1;
+        --noise: 0;
+        --shadow-offset: 3px;
+        --shadow-blur: 0px;
+        --surface-opacity: 100%;
+        --glass-blur: 0px;
     }
 
     [data-theme="forest"] {
@@ -780,9 +834,18 @@
         --color-warning-content:   oklch(15% 0.07 60);
         --color-error:             oklch(65% 0.20 25);
         --color-error-content:     oklch(98% 0.012 25);
-        --radius-selector: 0.5rem; --radius-field: 0.5rem; --radius-box: 1rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 0;
+        --radius-selector: .5rem;
+        --radius-field: .625rem;
+        --radius-box: 1rem;
+        --size-field: 2.875rem;
+        --size-selector: .3rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .65;
+        --shadow-offset: 2px;
+        --shadow-blur: 10px;
+        --surface-opacity: 97%;
+        --glass-blur: 8px;
     }
 
     [data-theme="lofi"] {
@@ -806,9 +869,18 @@
         --color-warning-content:   oklch(98% 0.002 80);
         --color-error:             oklch(45% 0.06 25);
         --color-error-content:     oklch(98% 0.002 25);
-        --radius-selector: 0.25rem; --radius-field: 0.25rem; --radius-box: 0.25rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 0; --noise: 0;
+        --radius-selector: .125rem;
+        --radius-field: .125rem;
+        --radius-box: .25rem;
+        --size-field: 2.75rem;
+        --size-selector: .225rem;
+        --border: 1px;
+        --depth: 0;
+        --noise: .45;
+        --shadow-offset: 0px;
+        --shadow-blur: 0px;
+        --surface-opacity: 100%;
+        --glass-blur: 0px;
     }
 
     [data-theme="dracula"] {
@@ -832,9 +904,18 @@
         --color-warning-content:   oklch(20% 0.08 60);
         --color-error:             oklch(70% 0.22 15);
         --color-error-content:     oklch(98% 0.02 15);
-        --radius-selector: 0.5rem; --radius-field: 0.5rem; --radius-box: 1rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 0;
+        --radius-selector: .25rem;
+        --radius-field: .375rem;
+        --radius-box: .625rem;
+        --size-field: 2.75rem;
+        --size-selector: .25rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .25;
+        --shadow-offset: 3px;
+        --shadow-blur: 10px;
+        --surface-opacity: 95%;
+        --glass-blur: 10px;
     }
 
     /* Original Catppuccin Latte preserved so the brand identity has a
@@ -860,9 +941,18 @@
         --color-warning-content:   oklch(20% 0.07 60);
         --color-error:             oklch(56% 0.22 25);
         --color-error-content:     oklch(98% 0.012 25);
-        --radius-selector: 0.5rem; --radius-field: 0.5rem; --radius-box: 1rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 0;
+        --radius-selector: .625rem;
+        --radius-field: .75rem;
+        --radius-box: 1.25rem;
+        --size-field: 2.875rem;
+        --size-selector: .3rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .2;
+        --shadow-offset: 3px;
+        --shadow-blur: 16px;
+        --surface-opacity: 92%;
+        --glass-blur: 16px;
     }
 
     [data-theme="luxury"] {
@@ -886,11 +976,18 @@
         --color-warning-content:   oklch(15% 0.07 60);
         --color-error:             oklch(65% 0.20 20);
         --color-error-content:     oklch(98% 0.02 20);
-        --radius-selector: 0.25rem; --radius-field: 0.25rem; --radius-box: 0.5rem;
-        --size-field: 2.5rem; --size-selector: 0.25rem;
-        --border: 1px; --depth: 1; --noise: 1;
-        --background-noise-ink: oklch(from var(--color-base-content) l c h / 0.075);
-        --background-noise-soft: oklch(from var(--color-base-content) l c h / 0.046);
+        --radius-selector: .125rem;
+        --radius-field: .25rem;
+        --radius-box: .5rem;
+        --size-field: 2.875rem;
+        --size-selector: .3rem;
+        --border: 1px;
+        --depth: 1;
+        --noise: .8;
+        --shadow-offset: 1px;
+        --shadow-blur: 8px;
+        --surface-opacity: 98%;
+        --glass-blur: 6px;
     }
 }
 

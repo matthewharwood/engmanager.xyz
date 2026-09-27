@@ -83,9 +83,12 @@
     position: relative;
     min-inline-size: 0;
     padding: 1.875rem;
-    border: 1px solid var(--text-1);
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-box);
     background: var(--surface-1);
-    box-shadow: 0.375rem 0.375rem 0 var(--surface-2), 0.375rem 0.375rem 0 1px var(--text-1);
+    background-image: var(--background-noise);
+    background-size: .1875rem .1875rem, .3125rem .3125rem, .4375rem .4375rem;
+    box-shadow: var(--surface-shadow);
 }
 
 .newsletter-card-top {
@@ -153,10 +156,10 @@
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 0;
-    min-block-size: 3.25rem;
+    min-block-size: calc(var(--size-field) + .5rem);
     padding: 0.875rem 1rem;
-    border: 1px solid var(--border-strong);
-    border-radius: 0;
+    border: var(--border) solid var(--border-strong);
+    border-radius: var(--radius-field);
     background: var(--surface-1);
     color: var(--text-1);
     font-family: var(--font-sans);
@@ -179,11 +182,11 @@
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    min-block-size: 3.25rem;
+    min-block-size: calc(var(--size-field) + .5rem);
     margin-block-start: 0.125rem;
     padding: 0.875rem 1rem;
-    border: 1px solid var(--text-1);
-    border-radius: 0;
+    border: var(--border) solid var(--text-1);
+    border-radius: var(--radius-field);
     background: var(--text-1);
     color: var(--surface-1);
     font-family: var(--font-sans);
@@ -551,4 +554,43 @@
     .newsletter-form button {
         border: 1px solid ButtonText;
     }
+}
+
+/* Planetary subscribe composition: sculpture, quiet editorial copy, clear form. */
+.newsletter-page .newsletter-shell {
+    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, .8fr);
+    grid-template-rows: auto auto auto auto;
+    gap: 0 6rem;
+    max-inline-size: 76rem;
+    margin-block-start: 1rem;
+    padding-inline: 2rem;
+}
+.newsletter-cosmos { grid-column: 1; grid-row: 1; margin: -1.5rem -2rem .5rem; }
+.newsletter-page .newsletter-intro { grid-column: 1; grid-row: 2; padding: 0 1.5rem; }
+.newsletter-page .newsletter-eyebrow { margin-block-end: 1rem; font-size: .6rem; letter-spacing: .14em; color: var(--text-muted); }
+.newsletter-page .newsletter-intro h1 { font-family: var(--font-sans); font-size: clamp(3rem, 4.5vw, 4.5rem); font-weight: 400; letter-spacing: -.075em; line-height: .94; }
+.newsletter-page .newsletter-intro h1 span { color: var(--text-1); }
+.newsletter-page .newsletter-description { max-inline-size: 39ch; font-size: .9rem; line-height: 1.8; margin-block-start: 1.25rem; color: var(--text-muted); }
+.newsletter-page .newsletter-byline { font-size: .6rem; margin-block-start: 1.25rem; color: var(--text-muted); }
+.newsletter-page .newsletter-card { grid-column: 2; grid-row: 1 / span 2; align-self: center; margin-block-start: 2rem; padding: 2rem 0; background: transparent; background-image: none; border: 0; border-block: var(--border) solid var(--border-subtle); border-radius: 0; box-shadow: none; }
+.newsletter-page .newsletter-card-top { font-size: .6rem; color: var(--text-muted); border: 0; margin-block-end: 1.25rem; }
+.newsletter-page .newsletter-card h2 { font-family: var(--font-sans); font-weight: 500; font-size: clamp(1.75rem, 2.5vw, 2.5rem); line-height: 1.08; letter-spacing: -.05em; }
+.newsletter-page .newsletter-card-description { font-size: .875rem; line-height: 1.8; color: var(--text-muted); }
+.newsletter-page .newsletter-form input[type="email"], .newsletter-page .newsletter-form button { border-radius: min(var(--radius-field), .375rem); font-size: .875rem; }
+.newsletter-page .newsletter-form label { color: var(--text-muted); font-size: .6875rem; }
+.newsletter-page .newsletter-topics { grid-row: 3; margin-block-start: 4rem; }
+.newsletter-page .newsletter-footer { grid-row: 4; }
+@media (max-width: 60rem) {
+    .newsletter-page .newsletter-shell { gap: 0 3rem; padding-inline: 1.5rem; }
+    .newsletter-cosmos { margin-inline: -2rem; }
+    .newsletter-page .newsletter-intro { padding-inline: 0; }
+}
+@media (max-width: 50rem) {
+    .newsletter-page .newsletter-shell { grid-template-columns: minmax(0, 1fr); gap: 0; max-inline-size: 38rem; margin-block-start: 0; padding-inline: 1.25rem; }
+    .newsletter-cosmos { grid-column: 1; grid-row: 1; margin: -1rem -1rem .75rem; }
+    .newsletter-page .newsletter-intro { grid-column: 1; grid-row: 2; }
+    .newsletter-page .newsletter-intro h1 { font-size: clamp(3rem, 11vw, 4.5rem); }
+    .newsletter-page .newsletter-card { grid-column: 1; grid-row: 3; margin-block-start: 2.5rem; padding-block: 1.5rem; }
+    .newsletter-page .newsletter-topics { grid-row: 4; margin-block-start: 2.5rem; }
+    .newsletter-page .newsletter-footer { grid-row: 5; }
 }

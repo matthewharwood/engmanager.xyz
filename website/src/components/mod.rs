@@ -41,6 +41,7 @@ pub mod asset_names {
 }
 
 pub mod api_receipt;
+pub mod armillary;
 pub mod article_toc;
 pub mod discord_widget;
 pub mod discovery_toasts;

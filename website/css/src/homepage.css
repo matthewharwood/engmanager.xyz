@@ -267,9 +267,9 @@ body[data-dragging="true"] {
             var(--ctp-base) 0.45rem,
             var(--ctp-base) 0.9rem
         );
-    border: 0.12em solid var(--ctp-text);
-    border-radius: 1.1rem;
-    box-shadow: 0.35rem 0.35rem 0 0 var(--ctp-text);
+    border: var(--border) solid var(--ctp-text);
+    border-radius: var(--radius-box);
+    box-shadow: var(--surface-shadow);
 }
 
 .home-keyboard[hidden] {
@@ -286,13 +286,13 @@ body[data-dragging="true"] {
     flex: 1 1 0;
     min-inline-size: 2.2rem;
     min-block-size: 2.35rem;
-    padding: 0.35rem 0.45rem;
+    padding: calc(var(--size-selector) + .1rem) .45rem;
     appearance: none;
     color: var(--ctp-text);
     background: var(--ctp-base);
-    border: 0.1em solid var(--ctp-text);
-    border-radius: 0.45rem;
-    box-shadow: 0.16rem 0.16rem 0 0 var(--ctp-text);
+    border: var(--border) solid var(--ctp-text);
+    border-radius: var(--radius-selector);
+    box-shadow: var(--control-shadow);
     cursor: pointer;
     font-family: var(--font-mono);
     font-size: 0.78rem;
@@ -315,7 +315,7 @@ body[data-dragging="true"] {
 .home-key:hover,
 .home-key:focus-visible {
     transform: translate(-1px, -1px);
-    box-shadow: 0.22rem 0.22rem 0 0 var(--ctp-text);
+    box-shadow: var(--surface-shadow);
     outline: none;
 }
 
@@ -1260,11 +1260,11 @@ body[data-dragging="true"] .marquee-track {
     position-anchor: --avatar;
     position-area: top right;
     padding: 1.25rem 1.5rem;
-    border: 1px solid var(--ctp-surface0);
-    border-radius: 0.75rem;
+    border: var(--border) solid var(--ctp-surface0);
+    border-radius: var(--radius-box);
     background: var(--ctp-base);
     color: var(--ctp-text);
-    box-shadow: 0 1.25rem 2.5rem -0.5rem rgba(76, 79, 105, 0.18);
+    box-shadow: var(--surface-shadow);
 }
 
 #bio::backdrop {
