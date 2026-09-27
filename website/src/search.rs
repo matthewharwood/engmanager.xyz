@@ -171,9 +171,8 @@ impl SearchEngine {
             .filter_map(|article| {
                 let title = article.title.to_lowercase();
                 let summary = article.summary.to_lowercase();
-                let rank = if needle.is_empty() {
-                    0
-                } else if title.starts_with(&needle) {
+                // Every title starts with an empty query, which also handles browse mode.
+                let rank = if title.starts_with(&needle) {
                     0
                 } else if title.contains(&needle) {
                     1

@@ -133,6 +133,18 @@ fn cdp_command(
     method: &str,
     params: serde_json::Value,
 ) -> serde_json::Value {
+    let value = cdp_response(socket, id, nonce, method, params);
+    assert!(value.get("error").is_none(), "CDP {method}: {value}");
+    value
+}
+
+fn cdp_response(
+    socket: &mut BufReader<TcpStream>,
+    id: &mut u32,
+    nonce: u32,
+    method: &str,
+    params: serde_json::Value,
+) -> serde_json::Value {
     *id += 1;
     let request = serde_json::json!({"id":id,"method":method,"params":params});
     send_frame(
@@ -145,7 +157,6 @@ fn cdp_command(
         let value: serde_json::Value =
             serde_json::from_slice(&receive_message(socket)).expect("CDP JSON");
         if value["id"] == *id {
-            assert!(value.get("error").is_none(), "CDP {method}: {value}");
             return value;
         }
     }
@@ -298,12 +309,26 @@ pub async fn dump_dom_with_blink_features(
         } else {
             "({html:document.documentElement.outerHTML})"
         };
-        let response = cdp_command(
+        let response = cdp_response(
             &mut socket,
             &mut id,
             nonce as u32,
             "Runtime.evaluate",
             serde_json::json!({"expression":expression,"returnByValue":true}),
+        );
+        // A page target can appear before its initial navigation creates the
+        // default execution context. Retry only this read-only observation and
+        // only within the fixture's existing deadline; other CDP failures stay fatal.
+        if response["error"]["code"] == -32000
+            && response["error"]["message"] == "Cannot find default execution context"
+            && Instant::now() < deadline
+        {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            continue;
+        }
+        assert!(
+            response.get("error").is_none(),
+            "CDP Runtime.evaluate: {response}"
         );
         let value = &response["result"]["result"]["value"];
         if let Some(dom) = value["html"].as_str() {
