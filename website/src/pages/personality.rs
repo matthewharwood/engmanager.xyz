@@ -87,7 +87,9 @@ pub async fn article() -> Response {
             { HtmlFragment::new(html) }
             <div class="actions"><a class="button primary" href="/personality/prepare">"Start with yourself →"</a>
                 <a href="/personality/library">"Open your saved reports"</a></div>
-            { super::articles::render_newsletter_cta() }
+            // This document deliberately keeps form-action 'none'. The signup
+            // link reaches the ordinary newsletter form without weakening it.
+            { super::articles::render_newsletter_cta(false) }
         </article>
     })).into_response();
     response.extensions_mut().insert(PrivateDocument);

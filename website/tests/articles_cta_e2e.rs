@@ -62,6 +62,11 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
             .await
             .unwrap_or_else(|error| panic!("GET {path}: {error}"));
         assert_eq!(response.status(), StatusCode::OK, "GET {path}");
+        let csp = response
+            .headers()
+            .get("content-security-policy")
+            .map(|value| value.to_str().expect("CSP header").to_owned())
+            .unwrap_or_default();
         let html = response.text().await.expect("body");
         assert!(
             html.contains(&format!("data-article-hero=\"{slug}\"")),
@@ -81,6 +86,26 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
             "{slug} repeats the newsletter module"
         );
         let signup = &html[newsletter..];
+        assert!(signup.contains(r#"href="/newsletter/privacy""#));
+        assert!(signup.contains(r#"href="/subscribe""#));
+        assert!(html.contains("/assets/css/article-newsletter."));
+
+        if slug == "big-personality" {
+            assert!(csp.contains("form-action 'none'"));
+            assert!(!signup.contains("<form"));
+            assert!(signup.contains(r#"class="article-newsletter-signup-link" href="/subscribe""#));
+            assert!(html.contains("data-personality-route=\"article\""));
+            assert!(html.contains("href=\"/personality/prepare\""));
+            assert!(!html.contains("class=\"article-coach\""));
+            assert!(!html.contains("experiences.js"));
+            assert!(
+                newsletter > html.find(r#"href="/personality/library""#).unwrap(),
+                "{slug}: newsletter displaced the questionnaire actions"
+            );
+            continue;
+        }
+
+        assert!(!csp.contains("form-action 'none'"));
         assert!(
             signup.contains(r#"method="post" action="/api/newsletter/subscribe""#),
             "{slug} does not use the existing headless signup endpoint"
@@ -92,21 +117,6 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
         assert!(signup.contains(r#"required aria-describedby="article-newsletter-privacy""#));
         assert!(signup.contains(r#"<div hidden aria-hidden="true">"#));
         assert!(signup.contains(r#"name="website" tabindex="-1" autocomplete="off""#));
-        assert!(signup.contains(r#"href="/newsletter/privacy""#));
-        assert!(signup.contains(r#"href="/subscribe""#));
-        assert!(html.contains("/assets/css/article-newsletter."));
-
-        if slug == "big-personality" {
-            assert!(html.contains("data-personality-route=\"article\""));
-            assert!(html.contains("href=\"/personality/prepare\""));
-            assert!(!html.contains("class=\"article-coach\""));
-            assert!(!html.contains("experiences.js"));
-            assert!(
-                newsletter > html.find(r#"href="/personality/library""#).unwrap(),
-                "{slug}: newsletter displaced the questionnaire actions"
-            );
-            continue;
-        }
 
         let cta = html
             .find(r#"<aside class="article-coach""#)

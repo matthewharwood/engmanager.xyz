@@ -386,13 +386,14 @@ fn render_coaching_cta() -> HtmlFragment {
 
 /// Native signup uses the same server-owned Kit endpoint as /subscribe.
 /// The distinct field IDs also let the module live on the personality article.
-pub(super) fn render_newsletter_cta() -> HtmlFragment {
+pub(super) fn render_newsletter_cta(inline_signup: bool) -> HtmlFragment {
     view! {
         <aside class="article-newsletter" aria-labelledby="article-newsletter-title">
             <p class="article-newsletter-kicker">"Free coaching notes · Matthew Harwood"</p>
             <h2 id="article-newsletter-title" class="article-newsletter-title">"Keep learning, in your inbox."</h2>
             <p class="article-newsletter-copy">"Notes on building things, leading teams, tools, workflow, and community. I send a note when I have something worth sharing."</p>
-            <form class="article-newsletter-form" method="post" action="/api/newsletter/subscribe">
+            { if inline_signup { view! {
+              <form class="article-newsletter-form" method="post" action="/api/newsletter/subscribe">
                 <label for="article-newsletter-email">"Your email address"</label>
                 <div class="article-newsletter-controls">
                     <input id="article-newsletter-email"
@@ -413,8 +414,12 @@ pub(super) fn render_newsletter_cta() -> HtmlFragment {
                     <input id="article-newsletter-website" type="text" name="website" tabindex="-1" autocomplete="off" />
                 </div>
                 <p id="article-newsletter-privacy" class="article-newsletter-privacy">"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
-            </form>
-            <a class="article-newsletter-about" href="/subscribe">"More about the newsletter"<span aria-hidden="true">" →"</span></a>
+              </form>
+              <a class="article-newsletter-about" href="/subscribe">"More about the newsletter"<span aria-hidden="true">" →"</span></a>
+            } } else { view! {
+              <a class="article-newsletter-signup-link" href="/subscribe">"Get the free notes"<span aria-hidden="true">" ↗"</span></a>
+              <p class="article-newsletter-privacy">"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
+            } } }
         </aside>
     }
 }
@@ -589,7 +594,7 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                     { inner }
                     { article_navigation }
                     { render_coaching_cta() }
-                    { render_newsletter_cta() }
+                    { render_newsletter_cta(true) }
                 </article>
                 { toc }
                 { quote_card }

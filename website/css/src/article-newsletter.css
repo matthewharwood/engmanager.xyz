@@ -124,6 +124,19 @@
     font-size: 0.85rem;
 }
 
+.article-newsletter a.article-newsletter-signup-link {
+    display: inline-block;
+    margin-block-start: 1.3rem;
+    padding: 0.75rem 1rem;
+    border: var(--border, 1px) solid var(--newsletter-accent);
+    border-radius: var(--radius-field, 0.3rem);
+    background: var(--newsletter-accent);
+    color: var(--color-primary-content, #fffefa);
+    font-size: 1rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+
 @media (max-width: 32rem) {
     .article-newsletter-controls {
         grid-template-columns: minmax(0, 1fr);

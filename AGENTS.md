@@ -25,6 +25,8 @@ For journey/navigation changes, keep the real Chrome tests for normal and reduce
 
 Retained pages remount with their existing DOM. Reset GPU/audio control state before initialization, and cover resuming a previously animated page with Save-Data or unavailable GPU. Decorative scroll physics must settle without further input and stop scheduling frames while offscreen, hidden, reduced-motion, or disposed.
 
+When adding forms to a new surface, verify its enforced Content-Security-Policy permits submission; markup alone cannot prove that a form works. Preserve private personality documents' `form-action 'none'` by linking to signup on its ordinary page.
+
 Exercise automatic reveals by scrolling instead of calling `prepareNext` from the test. Verify that the poster remains visible and Continue works when a background page fetch stalls or fails, including mobile and Save-Data mode. Optional font caches must not block rendering; cover corrupt cached bytes, stalled storage, and recovery after a transient network failure.
 
 For WebGPU or glTF changes, inspect the actual exported assets in Chrome as well as running loader tests. A Blender still can hide missing geometry or inward-facing triangles because its render settings differ from the browser's back-face culling. Check every journey sculpture, reduced-motion/static fallback, and resource disposal after navigation; mock GPU tests alone do not compile WGSL or prove the result is visible.
