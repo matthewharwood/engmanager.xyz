@@ -37,7 +37,17 @@ pub fn config() -> HtmlFragment {
             )
         })
         .collect();
-    crate::components::script_island("__engThemeFonts", &json!(themes).to_string())
+    crate::components::script_islands(&[
+        ("__engThemeFonts", &json!(themes).to_string()),
+        (
+            "__engSharedFonts",
+            &json!({
+                "display": {"family": "PP Monument Extended", "url": crate::asset_url(DISPLAY), "weight": "900"},
+                "redacted": {"family": "Redacted", "url": crate::asset_url(REDACTED), "weight": "400"},
+            })
+            .to_string(),
+        ),
+    ])
 }
 
 #[cfg(test)]

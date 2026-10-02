@@ -30,13 +30,23 @@ impl Drop for ProxyTask {
 // The real font files still go through Chrome's FontFace decoder.
 const INSTRUMENT: &str = r#"<style>:root{--font-sans:system-ui}</style><script>
 window.__fontStates=[];window.__fontRequests=[];
+const fontRecovery=new URLSearchParams(location.search).get('font-recovery');
+if(fontRecovery==='corrupt')caches.match=async()=>new Response('invalid cached font');
+if(fontRecovery==='transient'||fontRecovery==='display')caches.match=async()=>undefined;
+window.__failShared=fontRecovery==='display';
+if(fontRecovery==='storage'){
+ caches.match=()=>new Promise(()=>{});
+ const open=caches.open.bind(caches);
+ caches.open=async name=>{const cache=await open(name);return {put:()=>new Promise(()=>{}),delete:cache.delete.bind(cache)}};
+}
 new MutationObserver(records=>{for(const r of records)window.__fontStates.push(document.documentElement.dataset.fontState)}).observe(document.documentElement,{attributes:true,attributeFilter:['data-font-state']});
 const realFetch=window.fetch.bind(window);
 window.fetch=async(url,options={})=>{
+ if(fontRecovery&&String(url).includes('.woff2')&&options.cache==='only-if-cached')return new Response('',{status:504});
  if(String(url).includes('.woff2')&&options.cache!=='only-if-cached'){
   window.__fontRequests.push(String(url));
   await new Promise(resolve=>setTimeout(resolve,180));
-  if(window.__failFont)throw new Error('test offline');
+  if(window.__failFont||(fontRecovery==='transient'&&window.__fontRequests.length===1)||(window.__failShared&&String(url).includes('PPMonumentExtended')))throw new Error('test offline');
  }
  return realFetch(url,options);
 };
@@ -51,6 +61,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(value,label)=>{if(!value)throw Error(label);checks.push(label)};
 async function until(predicate,label){for(let i=0;i<400;i++){if(predicate())return;await delay(20)}throw Error('Timed out: '+label)}
 async function ready(){await until(()=>win().__engTypography&&doc().readyState==='complete','document scripts');await win().__engTypography.ready;await win().__engTypography.displayReady;}
+async function reload(path){const loaded=new Promise(resolve=>frame.addEventListener('load',resolve,{once:true}));frame.src=path;await loaded;await ready();}
 const cycle=()=>doc().querySelector('[data-theme-cycle]').click();
 const loading=()=>win().__fontStates.some(state=>['loading','leaving','entering'].includes(state));
 const reset=()=>{win().__fontStates.length=0;win().__fontRequests.length=0};
@@ -96,8 +107,27 @@ try{
  await win().__engNav.navigate('/feed',{source:'reveal'});
  await until(()=>doc().querySelector('.journey-previous .journey-preview')?.contentDocument?.documentElement?.dataset.fontTheme==='luxury','previous preview font');
  assert(true,'the retained previous-page preview uses the same decoded theme face');
+ // Mobile hard-load recovery uses actual Chrome font decoding and the same
+ // runtime, with only cache/network faults injected before startup.
+ frame.style.width='390px';
+ await reload('/feed?font-recovery=corrupt');
+ assert(root().dataset.fontTheme==='luxury'&&root().dataset.fontState==='ready'&&win().__fontRequests.length===1,'corrupt cached bytes recover with a fresh download on mobile');
+ await reload('/feed?font-recovery=storage');
+ assert(root().dataset.fontState==='ready'&&win().getComputedStyle(doc().body).fontFamily.includes('PP Eiko'),'stalled mobile cache reads and writes do not block the decoded face');
+ await reload('/feed?font-recovery=transient');
+ assert(root().dataset.fontTheme==='luxury'&&root().dataset.fontState==='ready'&&win().__fontRequests.length===2,'one failed initial mobile font request recovers without another theme click');
+ await reload('/feed?font-recovery=display');
+ const displayFaces=()=>[...doc().fonts].filter(face=>face.family.includes('PP Monument Extended'));
+ assert(root().dataset.fontState==='ready'&&displayFaces().some(face=>face.status==='error')&&!displayFaces().some(face=>face.status==='loaded'),'a failed CSS display font does not masquerade as a body font failure');
+ const title=doc().querySelector('svg.fluid-display-svg');
+ await until(()=>title.getAttribute('viewBox')!=='0 0 1200 200','fallback title measurement');
+ const fallbackBounds=title.getAttribute('viewBox');window.__fallbackBounds=fallbackBounds;
+ let refitted=false;const refitObserver=new MutationObserver(()=>{refitted=true});refitObserver.observe(title,{attributes:true,attributeFilter:['viewBox']});
+ win().__failShared=false;win().dispatchEvent(new Event('online'));await win().__engTypography.displayReady;
+ await until(()=>displayFaces().some(face=>face.status==='loaded')&&refitted,'display font recovery and title refit');refitObserver.disconnect();
+ assert(true,'online recovery replaces a sticky failed CSS display face and remeasures mobile SVG headings');
  result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
-}catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATE: '+JSON.stringify(root()?.dataset)+'\nSTATES: '+JSON.stringify(win()?.__fontStates)+'\nREQUESTS: '+JSON.stringify(win()?.__fontRequests)+'\nCHECKS: '+checks.join('\n');document.body.dataset.testResult='failed'}
+}catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATE: '+JSON.stringify(root()?.dataset)+'\nSTATES: '+JSON.stringify(win()?.__fontStates)+'\nREQUESTS: '+JSON.stringify(win()?.__fontRequests)+'\nDISPLAY: '+JSON.stringify([...doc().fonts].map(face=>({family:face.family,status:face.status,weight:face.weight})))+'\nBOUNDS: '+window.__fallbackBounds+' -> '+doc().querySelector('svg.fluid-display-svg')?.getAttribute('viewBox')+'\nCHECKS: '+checks.join('\n');document.body.dataset.testResult='failed'}
 </script></body></html>"##;
 
 #[derive(Clone)]
@@ -107,6 +137,10 @@ struct Proxy {
 }
 
 async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response {
+    let fail_display = request
+        .uri()
+        .query()
+        .is_some_and(|query| query.contains("font-recovery=display"));
     let response = match proxy
         .client
         .get(format!("{}{}", proxy.target, request.uri()))
@@ -137,11 +171,20 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
                 .and_then(|v| v.to_str().ok())
                 .is_some_and(|v| v.contains("text/html"));
             if is_html {
-                let html = String::from_utf8_lossy(&bytes).replacen(
+                let mut html = String::from_utf8_lossy(&bytes).replacen(
                     "<head>",
                     &format!("<head>{INSTRUMENT}"),
                     1,
                 );
+                if fail_display {
+                    // Break only the CSS face URL. The authoritative recovery
+                    // manifest still points to the real font, fetched after the
+                    // fixture clears its temporary network fault.
+                    html = html.replace(
+                        "font-family:\"PP Monument Extended\";src:url(\"",
+                        "font-family:\"PP Monument Extended\";src:url(\"/__missing_display_font?original=",
+                    );
+                }
                 (status, headers, html).into_response()
             } else {
                 (status, headers, bytes).into_response()

@@ -28,12 +28,17 @@ Stripe's isolated payment controls use their available system font stack.
 ## Loading and transitions
 
 - The shell preloads only Monument (30,692 bytes) and Redacted (3,828 bytes).
-  Theme URLs are inert JSON. No unselected body family has a CSS font-face rule.
+  Shared face loads use a visible glyph sample and a one-second budget. If a CSS
+  font face fails or stalls, the
+  loader decodes a replacement from the shared manifest; page/connection resume
+  can recover it independently of the body face. Fitted SVG headings remeasure
+  when the display face recovers. Theme URLs are inert JSON. No unselected body family has a CSS font-face rule.
 - The synchronous theme button updates the palette before paint, then asks
   `theme-fonts.js` for the matching body face.
 - A decoded in-memory face switches immediately. Otherwise the loader first checks
-  Cache Storage, then the same-origin HTTP cache with `only-if-cached`. It never
-  uses a persistent “loaded” flag as evidence that bytes survived eviction.
+  Cache Storage, then the same-origin HTTP cache with `only-if-cached`. Each
+  optional probe has a 250 ms budget so stalled mobile storage cannot block a
+  network load. It never uses a persistent “loaded” flag as evidence that bytes survived eviction.
 - A cached response is decoded with `FontFace.load()` while the previous readable
   face stays visible. It then swaps without Redacted or an animation.
 - On a cold fetch, eagerly loaded Redacted replaces body typography and pulses.
@@ -44,12 +49,19 @@ Stripe's isolated payment controls use their available system font stack.
   Text remains in the DOM for assistive technology; the theme button stays usable.
 - Requests are deduplicated. Generation checks prevent an older download or
   animation from overwriting a newer selection. Downloads time out after 12 s;
-  failures restore the last readable face or system fallback and allow retry.
+  a transient network error gets one retry within that deadline. Invalid cached
+  bytes are discarded and fetched fresh during the same selection. Cached reads
+  and decodes have a separate one-second budget; network decoding shares the
+  download deadline. Persistent
+  failures restore the last readable face or system fallback; returning online,
+  resuming the page, or navigating retries the selected face.
 - Valid decoded bytes are stored in `engmanager-theme-fonts-v1`, keyed by the
-  content-hashed asset URL. Disabled storage/quota errors do not block rendering.
+  content-hashed asset URL. Writes happen after decoding and outside the render
+  promise. Disabled storage, quota errors, or stalled writes do not block rendering.
   A font update changes its URL and therefore cannot reuse stale cached bytes.
 - Soft navigation retains the controller and active font. Script-free journey
-  previews receive the already decoded active face and its CSS role.
+  previews receive the already decoded active face and its CSS role, along with
+  any recovered shared display/loading faces.
 
 The supplied local PP TTF files were losslessly compressed with `woff2_compress`.
 Google's [Redacted source](https://github.com/google/fonts/tree/main/ofl/redacted)
@@ -58,9 +70,13 @@ was compressed the same way; its OFL is included beside the font assets.
 ## Verification
 
 `scripts/theme-fonts.test.mjs` covers cold/cache paths, storage denial, races,
+corrupt or stalled storage, transient fetch recovery, page/connection resume,
 retry, reduced motion, OS preference changes, and preview reuse.
 `website/tests/typography_browser.rs` exercises actual theme-button clicks and
 Chrome font decoding for all nine themes, throttled cold loads, memory and
-hard-reload cache hits, rapid clicks, reduced motion, and soft navigation.
+hard-reload cache hits, rapid clicks, reduced motion, and soft navigation. Mobile
+fixtures also inject corrupt cache bytes, stalled storage, and an initial network
+failure against the real font decoder, plus a failed CSS display font followed
+by an online recovery and SVG title refit.
 Rust tests verify every manifest asset resolves to a content-hashed URL and only
 the two shared faces are preloaded.
