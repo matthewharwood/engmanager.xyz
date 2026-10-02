@@ -2,7 +2,8 @@
 
     blender --background --factory-startup --python scripts/journey-posters/build.py
 
-All geometry is authored here: no downloaded meshes, image maps or add-ons.
+Shop and feed are authored here. Coach uses the licensed Aristotle scan and
+rebuild_coach.py; see sources/ATTRIBUTION.md for provenance and reuse terms.
 The exported glTF is Y-up, faces +Z, and uses only uncompressed triangle meshes.
 """
 
@@ -205,7 +206,7 @@ def face():
     return obj
 
 
-def torso(draped=False):
+def torso():
     verts,faces=[],[]
     rows,cols=40,96
     for i in range(rows+1):
@@ -229,24 +230,6 @@ def torso(draped=False):
     for sign in [-1,1]:
         tube("Sternocleidomastoid",[(sign*(.22+.04*i/32),-.19-.06*i/32,1.18-.59*i/32,.4+.35*math.sin(math.pi*i/32)) for i in range(33)],.035)
         tube("Clavicle",[(sign*(.06+.67*i/40),-.321+.05*i/40,.53-.065*math.sin(math.pi*i/40),.3+.7*math.sin(math.pi*i/40)) for i in range(41)],.030)
-    if draped:
-        # A single broad stone himation over the left shoulder, with cut parallel folds.
-        verts,faces=[],[]
-        for i in range(35):
-            t=i/34
-            for j in range(9):
-                s=j/8
-                x=-.91+.42*s+.18*t
-                y=-.17-.16*math.sin(math.pi*t)-.025*math.sin(TAU*s*3)
-                z=.57-1.05*t+.10*s
-                verts.append((x,y,z))
-        for i in range(34):
-            for j in range(8):
-                a=i*9+j
-                faces.append((a,a+1,a+10,a+9))
-        obj=mesh("Himation carved folds",verts,faces)
-        sub=obj.modifiers.new("Softly worn folds","SUBSURF");sub.levels=2
-        solid=obj.modifiers.new("Stone thickness","SOLIDIFY");solid.thickness=.06
     bpy.ops.mesh.primitive_cylinder_add(vertices=96,radius=1,depth=.16,location=(0,0,-.61))
     plinth=bpy.context.object;plinth.name="Oval museum socle";plinth.scale=(.57,.39,1)
     bevel=plinth.modifiers.new("Chisel softened edge","BEVEL");bevel.width=.022;bevel.segments=3
@@ -301,81 +284,6 @@ def cap():
         sphere("Cap ventilation eyelet",(sign*.53,-.321,2.55),(.015,.01,.015),CUT,20,12)
     for part in MODEL_OBJECTS[first_cap_object:]:
         part.location.z+=.12
-
-
-def curl(name, center, radius, length, direction=1, tilt=0, mat=MARBLE, surface=None):
-    cx,cy,cz=center
-    pts=[]
-    for i in range(45):
-        t=i/44
-        a=direction*(.3+t*math.pi*2.2)
-        r=radius*(1-.77*t)
-        x=cx+r*math.cos(a)+tilt*t
-        z=cz+length*(.5-t)+r*.65*math.sin(a)
-        y=surface(x,z)-.009 if surface else cy-.030*math.sin(math.pi*t)-.024*math.sin(a)
-        pts.append((x,y,z,.38+.62*math.sin(math.pi*(.1+.8*t))))
-    tube(name,pts,radius*.40,mat)
-
-
-def philosopher_hair():
-    sphere("Underlying mass of carved hair",(0,.045,2.35),(.618,.548,.515),MARBLE,64,32)
-    def beard_section(z):
-        t=max(0,min(1,(z-.92)/.90))
-        w=profile(t,[(0,.04),(.12,.20),(.35,.33),(.7,.435),(1,.44)])
-        depth=profile(t,[(0,.04),(.12,.22),(.35,.28),(.7,.27),(1,.15)])
-        return w,depth,-.40-.16*(1-t)
-    def beard_surface(x,z):
-        w,depth,center=beard_section(z)
-        return center-depth*math.sqrt(max(0,1-(x/w)**2))+.22*gauss(x,z,0,1.58,.23,.15)
-    verts,faces=[],[]
-    for i in range(41):
-        t=i/40
-        z=.92+.90*t
-        w=profile(t,[(0,.04),(.12,.20),(.35,.33),(.7,.435),(1,.44)])
-        depth=profile(t,[(0,.04),(.12,.22),(.35,.28),(.7,.27),(1,.15)])
-        for j in range(80):
-            a=TAU*j/80
-            x=w*math.sin(a)
-            y=-.40-.16*(1-t)-depth*math.cos(a)+.22*gauss(x,z,0,1.58,.23,.15)*max(0,math.cos(a))**4
-            verts.append((x,y,z))
-    for i in range(40):
-        for j in range(80):
-            a=i*80+j;b=i*80+(j+1)%80
-            faces.append((a,b,b+80,a+80))
-    faces.extend([tuple(range(79,-1,-1)),tuple(3200+j for j in range(80))])
-    mesh("Continuous carved beard volume",verts,faces)
-    # Interlocking locks follow the cranium; separate curls retain the sculptor's cuts.
-    for row in range(4):
-        for k in range(16):
-            p=TAU*(k+.45*(row%2))/16
-            a=.26+row*.28
-            x=.635*math.sin(a)*math.sin(p)
-            y=-.552*math.sin(a)*math.cos(p)+.02
-            z=2.27+.585*math.cos(a)
-            curl("Crown lock",(x,y,z),.087+random.random()*.025,.12+random.random()*.05,1 if k%2 else -1,random.uniform(-.02,.02))
-    for sign in [-1,1]:
-        for row in range(4):
-            for k in range(5):
-                p=sign*(.75+k*.36)
-                x=.62*math.sin(p)
-                y=-.53*math.cos(p)+.055
-                z=2.45-row*.16
-                curl("Temple and occipital curl",(x,y,z),.096,.17,sign,sign*.02)
-    # Beard emerges under cheekbones, narrows into the characteristic philosopher point.
-    for row in range(5):
-        z=1.70-row*.155
-        width=.40-row*.036
-        for k in range(7):
-            t=(k-3)/3
-            x=width*t
-            if row<2 and abs(t)<.5:
-                continue
-            y=-.47-.14*(1-t*t)-.028*row
-            curl("Beard ringlet",(x,y,z),.075+random.random()*.012,.23,1 if (k+row)%2 else -1,-t*.02,surface=beard_surface)
-    for sign in [-1,1]:
-        for k in range(4):
-            cx=sign*(.048+k*.066)
-            tube("Swept moustache lock",[(cx+sign*.07*t,-.60-.035*math.sin(math.pi*t),1.632-.065*t-.02*math.sin(math.pi*t),1-.6*t) for t in [i/32 for i in range(33)]],.036-k*.003)
 
 
 def brain():
@@ -530,15 +438,24 @@ def finalize(kind):
 
 
 def package_stills():
-    """The PNGs are working renders; only compact WebP images ship to browsers."""
+    """Ship compact WebP fallbacks and rebuild the review sheet from all three."""
     import numpy as np
     kinds=['shop','coach','feed']
-    sources=[OUT/(kind+'.png') for kind in kinds]
+    encoder=shutil.which('cwebp')
+    if not encoder:
+        raise RuntimeError('Install cwebp (brew install webp) to package fallback images.')
+    for kind in kinds:
+        png=OUT/(kind+'.png')
+        if png.exists():
+            subprocess.run([encoder,'-quiet','-q','86','-alpha_q','100','-m','6',str(png),'-o',str(OUT/(kind+'.webp'))],check=True)
+            png.unlink()
+    sources=[OUT/(kind+'.webp') for kind in kinds]
     if all(path.exists() for path in sources):
         canvas=np.ones((1050,2700,4),dtype=np.float32)
         canvas[:,:,:3]=(.018,.021,.027)
         for index,path in enumerate(sources):
             img=bpy.data.images.load(str(path),check_existing=False)
+            img.scale(900,1050)
             pixels=np.empty(900*1050*4,dtype=np.float32)
             img.pixels.foreach_get(pixels)
             pixels=pixels.reshape((1050,900,4))
@@ -549,14 +466,6 @@ def package_stills():
         sheet.pixels.foreach_set(canvas.ravel())
         sheet.filepath_raw=str(SOURCE/'contact-sheet.png')
         sheet.file_format='PNG';sheet.save()
-    encoder=shutil.which('cwebp')
-    if not encoder:
-        raise RuntimeError('Install cwebp (brew install webp) to package fallback images.')
-    for kind in kinds:
-        png=OUT/(kind+'.png')
-        if png.exists():
-            subprocess.run([encoder,'-quiet','-q','86','-alpha_q','100','-m','6',str(png),'-o',str(OUT/(kind+'.webp'))],check=True)
-            png.unlink()
 
 
 def main():
@@ -570,15 +479,17 @@ def main():
     for kind in ['shop','coach','feed']:
         if opts.only and kind!=opts.only:
             continue
+        if kind=='coach':
+            subprocess.run([bpy.app.binary_path, '--background', '--factory-startup',
+                            '--python', str(SOURCE/'rebuild_coach.py')], check=True)
+            continue
         bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
         MODEL_OBJECTS=[]
         random.seed(41)
         if kind=='feed':
             brain()
         else:
-            torso(draped=kind=='coach');face()
-            if kind=='shop': cap()
-            else: philosopher_hair()
+            torso();face();cap()
         finalize(kind)
     package_stills()
 

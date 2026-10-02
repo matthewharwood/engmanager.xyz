@@ -1,4 +1,5 @@
-// The three original sculptures are authored/exported in Blender. This small
+// The sculptures are prepared/exported in Blender; source credits live beside
+// the assets and on the coaching poster. This small
 // renderer accepts our opaque, uncompressed glTF 2 triangle assets only; it is
 // deliberately not a general-purpose glTF engine or a runtime dependency.
 (function () {

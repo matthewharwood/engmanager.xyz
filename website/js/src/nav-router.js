@@ -269,7 +269,7 @@
 
     const POSTERS = {
         shop: { number: '01', title: 'The shop.', detail: 'Caps for people who build.', sculpture: 'A marble portrait wearing a dad cap' },
-        coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A Greek philosopher carved in marble' },
+        coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A marble bust of Aristotle' },
         feed: { number: '03', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'A marble brain with watchful eyes' },
     };
     let rendererScript;
@@ -309,6 +309,19 @@
         const heading = document.createElement('h2'); heading.textContent = spec.title;
         const detail = document.createElement('p'); detail.textContent = spec.detail;
         caption.append(heading, detail);
+        if (kind === 'coach') {
+            const title = document.createElement('div');
+            const credit = document.createElement('small'); credit.className = 'journey-poster-credit';
+            const source = document.createElement('a');
+            source.href = 'https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930';
+            source.textContent = 'Aristotele bust by nicola_scaramella';
+            const license = document.createElement('a');
+            license.href = 'https://creativecommons.org/licenses/by/4.0/';
+            license.textContent = 'CC BY 4.0';
+            credit.append(source, ' · ', license, document.createElement('br'), 'Adapted in Blender.');
+            heading.replaceWith(title);
+            title.append(heading, credit);
+        }
         const hint = document.createElement('span'); hint.className = 'journey-poster-hint';
         hint.textContent = 'SCROLL TO CONTINUE';
         viewport.append(rail, art, caption, hint);
