@@ -1,9 +1,9 @@
-"""Carve a folded correspondence letter onto the accepted marble portrait.
+"""Sculpt a marble messenger: licensed facial anatomy within unfurling scrolls.
 
-Reads coach.blend without changing its portrait or source geometry. The letter
-has an outward-facing closed surface, modeled folds and an original seal. Run
-with Blender 5.1+ and --python-exit-code 1; use --review-only to render studies
-before replacing the runtime assets.
+The accepted bust supplies only a sampled face surface. The skull, neck, chest
+and shoulders do not appear in this composition. Two original closed stone
+scrolls create a fresh silhouette. The complete accepted portrait and scan are
+retained as hidden references; coach.blend is never rewritten.
 """
 
 import argparse
@@ -28,20 +28,20 @@ spec = importlib.util.spec_from_file_location("coach_source", HERE / "rebuild_co
 coach = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(coach)
 PARTS = []
-HALF_WIDTH, HALF_HEIGHT = .76, .275
-ROLL = math.radians(3)
 COPYRIGHT = (
     'Adapted from "Aristotele bust" by nicola_scaramella. '
     'https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930 '
     'Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. '
-    'Changes: orientation, normalization, restrained relief enhancement, export '
-    'decimation, marble material, vertex cavity shading, and an original carved '
-    'folded correspondence letter with envelope folds and a star seal. '
-    'The accepted coaching portrait and its source remain unchanged.'
+    'Changes: original facial surface cropped and resampled into a shallow '
+    'theatrical mask with a flared perimeter and supported bas-relief back; '
+    'skull, neck and torso omitted; original unfurling scrolls '
+    'with rolled stone edges and shallow carved inscription lines; composition '
+    'normalization, marble material and vertex cavity shading. '
+    'The accepted coaching sculpture and source remain unchanged.'
 )
 
 
-def mesh(name, vertices, faces, smooth=True):
+def mesh(name, vertices, faces):
     data = bpy.data.meshes.new(name)
     data.from_pydata(vertices, [], faces)
     data.update()
@@ -53,146 +53,228 @@ def mesh(name, vertices, faces, smooth=True):
     bm.to_mesh(data)
     bm.free()
     for face in data.polygons:
-        face.use_smooth = smooth
+        face.use_smooth = True
     PARTS.append(obj)
     return obj
 
 
-def distance_to_segment(point, start, end):
-    point, start, end = Vector(point), Vector(start), Vector(end)
-    segment = end - start
-    fraction = min(1, max(0, (point - start).dot(segment) / segment.length_squared))
-    return (point - start - segment * fraction).length
-
-
-def letter_depth(u, v, relief=True):
-    # The lower edge rests against the bust's cropped base; the upper edge
-    # recedes into the chest behind the existing beard. This is a shallow carved
-    # stone relief, rather than a floating paper prop or invented human hands.
-    depth = -.16 + .61 * v + .24 * u * u
-    if relief:
-        folds = [
-            ((-HALF_WIDTH, HALF_HEIGHT), (0, -.045)),
-            ((HALF_WIDTH, HALF_HEIGHT), (0, -.045)),
-            ((-HALF_WIDTH, -HALF_HEIGHT), (0, .025)),
-            ((HALF_WIDTH, -HALF_HEIGHT), (0, .025)),
-        ]
-        distance = min(distance_to_segment((u, v), start, end) for start, end in folds)
-        depth += .009 * math.exp(-(distance / .006) ** 2)
-        # The folded paper is represented as softly honed stone; no noise
-        # displacement is applied to the accepted facial anatomy.
-        depth += .0014 * math.sin(u * 14 + v * 9) * math.sin(v * 17)
-    return depth
-
-
-def point(u, v, depth):
-    return Vector((u * math.cos(ROLL) - v * math.sin(ROLL), depth,
-                   -1.12 + u * math.sin(ROLL) + v * math.cos(ROLL)))
-
-
-def build_letter():
-    columns, rows = 168, 78
+def build_mask(portrait, scroll):
+    """Sample actual source facial relief; never synthesize facial features."""
+    rings, columns = 100, 224
     vertices, faces = [], []
-    count = (columns + 1) * (rows + 1)
+    samples = []
+    # A small elliptical crop preserves the natural forehead, eyes, nose,
+    # mouth and chin while excluding the full head and bust silhouette.
+    for i in range(rings + 1):
+        angles = [0] if i == 0 else [math.tau * j / columns for j in range(columns)]
+        for angle in angles:
+            r = i / rings
+            x = .105 + .585 * r * math.cos(angle)
+            z = .105 + .78 * r * math.sin(angle)
+            found, hit, _, _ = portrait.ray_cast(Vector((x, -4, z)), Vector((0, 1, 0)))
+            if not found:
+                raise RuntimeError(f"The facial crop leaves the licensed surface at {x}, {z}.")
+            samples.append(hit)
+    surface = [Vector(((sample.x - .105) * .67, sample.y * .67 + .40,
+                       (sample.z - .105) * .67 + .47)) for sample in samples]
+
+    def support(point):
+        found, hit, _, _ = scroll.ray_cast(Vector((point.x, -4, point.z)), Vector((0, 1, 0)))
+        if not found:
+            raise RuntimeError(f"The mask relief leaves its stone scroll support at {point}.")
+        return hit.y
+
+    # A softly flared carved border merges the facial crop into the scroll.
+    # Unlike a floating mask hung by its forehead, the whole cheek/chin rear
+    # is supported. These outer rings are original supporting stone geometry;
+    # all inner facial points remain exact samples of the licensed anatomy.
+    edge = surface[-columns:]
+    collar_rings = 18
+    for ring in range(1, collar_rings + 1):
+        fraction = ring / collar_rings
+        blend = 1 - (1 - fraction) ** 2
+        for original in edge:
+            point = Vector((original.x * (1 + .14 * fraction), original.y,
+                            .47 + (original.z - .47) * (1 + .14 * fraction)))
+            plane = support(point) + .009
+            point.y = original.y * (1 - blend) + plane * blend
+            surface.append(point)
+    rings += collar_rings
+    # A solid bas-relief back extends a small distance inside the scroll across
+    # the entire crop. The attachment is intentional, never a paper-thin shell
+    # with an unsupported chin or a new skull/neck behind the face.
     for back in [False, True]:
-        for i in range(rows + 1):
-            v = -HALF_HEIGHT + 2 * HALF_HEIGHT * i / rows
-            for j in range(columns + 1):
-                u = -HALF_WIDTH + 2 * HALF_WIDTH * j / columns
-                depth = letter_depth(u, v, not back)
-                if back:
-                    # The rear lies within the torso; only the fine folded edge
-                    # projects in side view. The overlapping pieces remain
-                    # independently watertight rather than voxel-remeshing the
-                    # face and losing the scan's accepted sculptural detail.
-                    depth += .175
-                else:
-                    edge = min(HALF_WIDTH - abs(u), HALF_HEIGHT - abs(v))
-                    depth += .009 * math.exp(-(edge / .009) ** 2)
-                vertices.append(tuple(point(u, v, depth)))
-        for i in range(rows):
+        for point in surface:
+            depth = max(point.y + .035, support(point) + .032) if back else point.y
+            vertices.append((point.x, depth, point.z))
+    count = len(surface)
+    for back in [False, True]:
+        offset = int(back) * count
+        for j in range(columns):
+            face = (offset, offset + 1 + j, offset + 1 + (j + 1) % columns)
+            faces.append(tuple(reversed(face)) if back else face)
+        for ring in range(rings - 1):
             for j in range(columns):
-                a = int(back) * count + i * (columns + 1) + j
-                face = (a, a + 1, a + columns + 2, a + columns + 1)
+                a = offset + 1 + ring * columns + j
+                b = offset + 1 + ring * columns + (j + 1) % columns
+                face = (a, a + columns, b + columns, b)
                 faces.append(tuple(reversed(face)) if back else face)
-    boundary = list(range(columns + 1))
-    boundary += [i * (columns + 1) + columns for i in range(1, rows + 1)]
-    boundary += [rows * (columns + 1) + j for j in range(columns - 1, -1, -1)]
-    boundary += [i * (columns + 1) for i in range(rows - 1, 0, -1)]
+    start = 1 + (rings - 1) * columns
+    for j in range(columns):
+        a, b = start + j, start + (j + 1) % columns
+        faces.append((a, b, b + count, a + count))
+    return mesh("Oracle — facial anatomy carved into a theatrical mask", vertices, faces)
+
+
+def closed_sheet(name, points, width_samples, thickness):
+    """Create a closed thick sheet, avoiding zero-thickness paper surfaces."""
+    rows = len(points)
+    vertices, faces = [], []
+    for back in [False, True]:
+        for row in points:
+            for point, normal in row:
+                vertices.append(tuple(point + normal * thickness * (.5 if back else -.5)))
+    count = rows * width_samples
+    for back in [False, True]:
+        for i in range(rows - 1):
+            for j in range(width_samples - 1):
+                a = int(back) * count + i * width_samples + j
+                face = (a, a + 1, a + width_samples + 1, a + width_samples)
+                faces.append(tuple(reversed(face)) if back else face)
+    boundary = list(range(width_samples))
+    boundary += [i * width_samples + width_samples - 1 for i in range(1, rows)]
+    boundary += [(rows - 1) * width_samples + j for j in range(width_samples - 2, -1, -1)]
+    boundary += [i * width_samples for i in range(rows - 2, 0, -1)]
     for i, a in enumerate(boundary):
         b = boundary[(i + 1) % len(boundary)]
         faces.append((a, a + count, b + count, b))
-    return mesh("Correspondence — carved envelope with recessed folds", vertices, faces)
+    return mesh(name, vertices, faces)
 
 
-def build_seal():
-    # A deliberately restrained seal ties the envelope folds together. Its
-    # scalloped wax-like contour and four-point stamp are all marble geometry.
-    u, v = .025, -.032
-    origin = point(u, v, letter_depth(u, v) - .008)
-    normal = Vector((-math.sin(ROLL) * .61, -1, math.cos(ROLL) * .61)).normalized()
-    tangent = Vector((math.cos(ROLL), 0, math.sin(ROLL)))
-    vertical = normal.cross(tangent).normalized()
-    segments, rings = 96, 12
-    vertices = [tuple(origin + normal * .032)]
-    for ring in range(1, rings + 1):
-        r = ring / rings
-        for j in range(segments):
-            angle = math.tau * j / segments
-            scallop = 1 + .025 * math.sin(angle * 13) + .015 * math.cos(angle * 7)
-            radius = .092 * r * scallop
-            height = .011 + .021 * max(0, 1 - r * r) ** .6
-            if .72 < r < .91:
-                height += .005 * math.sin(math.pi * (r - .72) / .19)
-            vertices.append(tuple(origin + normal * height + radius * (
-                tangent * math.cos(angle) + vertical * math.sin(angle))))
-    faces = [(0, 1 + j, 1 + (j + 1) % segments) for j in range(segments)]
-    for ring in range(rings - 1):
-        for j in range(segments):
-            a = 1 + ring * segments + j
-            b = 1 + ring * segments + (j + 1) % segments
-            faces.append((a, a + segments, b + segments, b))
-    back = len(vertices)
-    vertices.append(tuple(origin - normal * .009))
-    start = 1 + (rings - 1) * segments
-    faces += [(back, start + (j + 1) % segments, start + j) for j in range(segments)]
-    mesh("Correspondence — scalloped marble seal", vertices, faces)
-    # A tiny four-point star echoes the site's minimal geometric vocabulary.
+def main_path():
     points = []
-    for i in range(8):
-        angle = math.pi / 2 + i * math.pi / 4
-        radius = .039 if i % 2 == 0 else .011
-        points.append(origin + tangent * (math.cos(angle) * radius)
-                      + vertical * (math.sin(angle) * radius))
-    vertices = [tuple(p + normal * .032) for p in points]
-    vertices += [tuple(p + normal * .038) for p in points]
-    faces = [tuple(range(7, -1, -1)), tuple(range(8, 16))]
-    faces += [(i, (i + 1) % 8, (i + 1) % 8 + 8, i + 8) for i in range(8)]
-    star = mesh("Correspondence — four-point seal stamp", vertices, faces, smooth=False)
-    bpy.context.view_layer.objects.active = star
-    bevel = star.modifiers.new("Soft carved stamp edges", "BEVEL")
-    bevel.width = .002
-    bevel.segments = 2
-    bpy.ops.object.modifier_apply(modifier=bevel.name)
+    # Continuous lower and upper volutes unwind into the same broad sheet.
+    # The radial step exceeds the sheet thickness, so the spiral cannot touch
+    # itself. Closed side walls give every visible curl real stone depth.
+    for i in range(77):
+        fraction = i / 76
+        angle = math.tau * fraction
+        radius = .105 + .145 * fraction
+        points.append(Vector((0, -.225 + radius * math.cos(angle), -1.15 + radius * math.sin(angle))))
+    for i in range(1, 121):
+        t = i / 120
+        points.append(Vector((0, .025 + .04 * t + .06 * math.sin(math.pi * t), -1.15 + 2.28 * t)))
+    for i in range(1, 85):
+        fraction = i / 84
+        angle = math.tau * fraction
+        radius = .265 - .16 * fraction
+        points.append(Vector((0, -.20 + radius * math.cos(angle), 1.13 + radius * math.sin(angle))))
+    return points
+
+
+def build_main_scroll():
+    curve = main_path()
+    columns = 92
+    points = []
+    for i, center in enumerate(curve):
+        tangent = (curve[min(i + 1, len(curve) - 1)] - curve[max(0, i - 1)]).normalized()
+        normal = Vector((0, tangent.z, -tangent.y)).normalized()
+        row = []
+        # Asymmetry gives the sculpture a new silhouette rather than a plain
+        # rectangular plaque. The upper scroll is broader than the lower curl.
+        height = min(1, max(0, (center.z + 1.25) / 2.5))
+        half_width = .85 + .29 * height
+        for j in range(columns):
+            u = -1 + 2 * j / (columns - 1)
+            x = u * half_width
+            twist = .075 * x * center.z
+            wave = .045 * u * u + .018 * math.sin(u * 4 + center.z * 2)
+            p = center + Vector((x, wave, twist))
+            # Shallow inscription: interrupted horizontal scored strokes in
+            # the lower open sheet. All lettering detail is geometry, with no
+            # bitmap, UV or font dependency in the runtime model.
+            if 77 <= i <= 196:
+                for line, z in enumerate([-.31, -.43, -.55, -.67, -.79]):
+                    length = .50 if line % 2 == 0 else .39
+                    if abs(x + .05) < length:
+                        p += normal * (.008 * math.exp(-((center.z - z) / .006) ** 2))
+            row.append((p, normal))
+        points.append(row)
+    return closed_sheet("Oracle — broad unfurled stone scroll with spiral volutes", points, columns, .052)
+
+
+def catmull(points, t):
+    position = t * (len(points) - 1)
+    index = min(len(points) - 2, int(position))
+    q = position - index
+    a = points[max(0, index - 1)]
+    b, c = points[index], points[index + 1]
+    d = points[min(len(points) - 1, index + 2)]
+    return .5 * ((2 * b) + (-a + c) * q + (2 * a - 5 * b + 4 * c - d) * q * q
+                 + (-a + 3 * b - 3 * c + d) * q * q * q)
+
+
+def build_messenger_ribbon():
+    # A second broad sheet sweeps from the grounded lower coil around the right
+    # side. The two scrolls form a sculptural body; there is no bust pedestal.
+    guide = [Vector(p) for p in [
+        (-.40, -.18, -1.38), (-.94, -.22, -1.26), (-1.17, -.23, -.89),
+        (-.85, -.26, -.61), (-.14, -.29, -.82), (.54, -.20, -.81),
+        (1.06, -.10, -.48), (1.17, .12, .10), (.99, .17, .54),
+    ]]
+    rows, columns = 172, 28
+    points = []
+    for i in range(rows):
+        t = i / (rows - 1)
+        center = catmull(guide, t)
+        tangent = (catmull(guide, min(1, t + .0005)) - catmull(guide, max(0, t - .0005))).normalized()
+        side = Vector((tangent.z, 0, -tangent.x)).normalized()
+        normal = tangent.cross(side).normalized()
+        width = .33 + .075 * math.sin(math.pi * t)
+        row = []
+        for j in range(columns):
+            u = -1 + 2 * j / (columns - 1)
+            # A concave edge and slightly rolled surface emphasize its carved
+            # cross section under grazing light without decorative clutter.
+            p = center + side * (u * width / 2) + normal * (.019 * u * u)
+            row.append((p, normal))
+        points.append(row)
+    return closed_sheet("Oracle — sweeping messenger scroll ribbon", points, columns, .047)
 
 
 def prepare():
     source = HERE / "coach.blend"
     source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     bpy.ops.wm.open_mainfile(filepath=str(source))
-    obj = coach.study_object()
-    obj.name = "The correspondent — newsletter marble study"
-    portrait_before = np.array([vert.co[:] for vert in obj.data.vertices])
-    PARTS.append(obj)
-    build_letter()
-    build_seal()
-    if not np.array_equal(portrait_before, np.array([vert.co[:] for vert in obj.data.vertices])):
-        raise RuntimeError("The accepted portrait geometry was changed.")
+    portrait = coach.study_object()
+    scroll = build_main_scroll()
+    mask = build_mask(portrait, scroll)
+    preserved = coach.collection("Oracle — accepted portrait reference")
+    coach.move_to(portrait, preserved)
+    preserved.hide_render = True
+    preserved.hide_viewport = True
+    build_messenger_ribbon()
+    components = {}
+    for part in PARTS:
+        topology = coach.topology_report(part)
+        if topology["nonmanifold_edges"] or topology["signed_volume"] <= 0:
+            raise RuntimeError(f"Invalid closed component {part.name}: {topology}")
+        coordinates = np.array([vertex.co[:] for vertex in part.data.vertices])
+        topology["height"] = float(coordinates[:, 2].max() - coordinates[:, 2].min())
+        components[part.name] = topology
     bpy.ops.object.select_all(action="DESELECT")
     for part in PARTS:
         part.select_set(True)
-    bpy.context.view_layer.objects.active = obj
+    bpy.context.view_layer.objects.active = mask
     bpy.ops.object.join()
+    obj = mask
+    obj.name = "The messenger oracle — marble mask and unfurling scrolls"
+    # Normalize this new silhouette independently, retaining the common series
+    # scale and Y-up export contract without changing the accepted coach file.
+    points = np.array([vertex.co[:] for vertex in obj.data.vertices])
+    low, high = points.min(axis=0), points.max(axis=0)
+    points = (points - (low + high) / 2) * (3 / (high[2] - low[2]))
+    obj.data.vertices.foreach_set("co", points.ravel())
     for attr in list(obj.data.color_attributes):
         obj.data.color_attributes.remove(attr)
     obj.data.materials.clear()
@@ -209,12 +291,13 @@ def prepare():
         if text.name.startswith("SOURCE AND LICENSE"):
             bpy.data.texts.remove(text)
     bpy.data.texts.new("SOURCE AND LICENSE").write(COPYRIGHT)
-    return obj, source_hash, len(portrait_before)
+    bpy.context.scene.camera.data.ortho_scale = 3.65
+    return obj, source_hash, components
 
 
 def export(obj):
     material = obj.data.materials[0]
-    runtime = bpy.data.materials.new("Correspondent — ivory marble with vertex cavities")
+    runtime = bpy.data.materials.new("Messenger oracle — ivory marble with vertex cavities")
     runtime.use_nodes = True
     runtime.diffuse_color = material.diffuse_color
     runtime.use_backface_culling = True
@@ -240,16 +323,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--review-only", action="store_true")
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--preview-dir", type=Path, default=Path(tempfile.gettempdir()) / "aristotle-correspondent")
+    parser.add_argument("--preview-dir", type=Path, default=Path(tempfile.gettempdir()) / "marble-messenger-oracle")
     options = parser.parse_args(args)
-    obj, source_hash, portrait_vertices = prepare()
+    obj, source_hash, components = prepare()
     if options.quick:
         bpy.context.scene.render.resolution_x = 660
         bpy.context.scene.render.resolution_y = 780
-    colors = coach.bake_cavity(obj)
     topology = coach.topology_report(obj)
     if topology["nonmanifold_edges"] or topology["signed_volume"] <= 0:
         raise RuntimeError(f"Non-manifold or reversed sculpture: {topology}")
+    colors = coach.bake_cavity(obj)
     coach.render_review(options.preview_dir)
     coach.save_study(HERE / "subscribe.blend")
     if not options.review_only:
@@ -265,11 +348,12 @@ def main():
         raise RuntimeError("The accepted coaching source was modified.")
     report = {
         "coach_blend_sha256_unchanged": source_hash,
-        "portrait_vertices_unchanged": portrait_vertices,
+        "modifications": "Facial anatomy resampled into a small closed mask with a flared border and continuous rear support attached to the main scroll; head, neck, shoulders and chest omitted; two original thick curled scrolls form the new sculpture.",
+        "components_before_composition_normalization": components,
         "export": topology, "linear_cavity": colors, "copyright": COPYRIGHT,
     }
     (HERE / "sources/subscribe-validation.json").write_text(json.dumps(report, indent=2) + "\n")
-    print("CORRESPONDENT_STUDY", json.dumps(report), flush=True)
+    print("MESSENGER_ORACLE_STUDY", json.dumps(report), flush=True)
 
 
 if __name__ == "__main__":

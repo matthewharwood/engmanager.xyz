@@ -1,23 +1,57 @@
 {
   "coach_blend_sha256_unchanged": "54adb29f9f84f987e642222092b70e1ab9c3e9f9ef1eee683f968f552ec198ad",
-  "portrait_vertices_unchanged": 90002,
+  "modifications": "Facial anatomy resampled into a small closed mask with a flared border and continuous rear support attached to the main scroll; head, neck, shoulders and chest omitted; two original thick curled scrolls form the new sculpture.",
+  "components_before_composition_normalization": {
+    "Oracle \u2014 broad unfurled stone scroll with spiral volutes": {
+      "vertices": 51704,
+      "faces": 51702,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        51704
+      ],
+      "signed_volume": 0.4742465504798639,
+      "height": 2.9761416912078857
+    },
+    "Oracle \u2014 facial anatomy carved into a theatrical mask": {
+      "vertices": 52866,
+      "faces": 53088,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        52866
+      ],
+      "signed_volume": 0.2051095666842474,
+      "height": 1.1915279626846313
+    },
+    "Oracle \u2014 sweeping messenger scroll ribbon": {
+      "vertices": 9632,
+      "faces": 9630,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        9632
+      ],
+      "signed_volume": 0.08319465621119657,
+      "height": 2.1445272564888
+    }
+  },
   "export": {
-    "vertices": 117970,
-    "faces": 235924,
+    "vertices": 114202,
+    "faces": 228392,
     "boundary_edges": 0,
     "nonmanifold_edges": 0,
     "island_vertex_counts": [
-      90002,
-      26702,
-      1154,
-      112
+      52866,
+      51704,
+      9632
     ],
-    "signed_volume": 5.458086218278377
+    "signed_volume": 0.7332924904768621
   },
   "linear_cavity": {
     "minimum": 0.6499999761581421,
-    "mean": 0.9775934815406799,
+    "mean": 0.8922603130340576,
     "maximum": 1.0
   },
-  "copyright": "Adapted from \"Aristotele bust\" by nicola_scaramella. https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930 Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Changes: orientation, normalization, restrained relief enhancement, export decimation, marble material, vertex cavity shading, and an original carved folded correspondence letter with envelope folds and a star seal. The accepted coaching portrait and its source remain unchanged."
+  "copyright": "Adapted from \"Aristotele bust\" by nicola_scaramella. https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930 Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Changes: original facial surface cropped and resampled into a shallow theatrical mask with a flared perimeter and supported bas-relief back; skull, neck and torso omitted; original unfurling scrolls with rolled stone edges and shallow carved inscription lines; composition normalization, marble material and vertex cavity shading. The accepted coaching sculpture and source remain unchanged."
 }

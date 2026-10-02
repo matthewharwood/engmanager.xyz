@@ -33,4 +33,6 @@ For WebGPU or glTF changes, inspect the actual exported assets in Chrome as well
 
 For figurative sculpture, compare front, profile, and three-quarter views against real references before polishing materials. Preserve a detailed source mesh and simplify an export copy; inspect disconnected fragments and non-manifold edges instead of treating a successful export as visual acceptance. Record the source and license for any reused geometry, including attribution and modification notes.
 
+For a distinct sculpture derived from an existing one, reuse its anatomy and material style while changing the composition and silhouette. An accessory on the same bust is not a fresh model. Compare the full series before exporting.
+
 For scripted Blender builds, pass `--python-exit-code 1` before `--python` in both outer commands and child processes. Blender otherwise exits successfully after Python exceptions, which can hide failed validation and package stale assets.

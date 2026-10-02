@@ -333,8 +333,8 @@ for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
         if (name === 'shop') assert.match(attribution, /cap/, 'the added cap remains disclosed');
         if (name === 'feed') assert.match(attribution, /eyes/, 'the added eyes remain disclosed');
         if (name === 'subscribe') {
-            assert.match(attribution, /letter/i, 'the folded letter remains disclosed');
-            assert.match(attribution, /seal/i, 'the carved seal remains disclosed');
+            assert.match(attribution, /mask/i, 'the cropped portrait mask remains disclosed');
+            assert.match(attribution, /scroll/i, 'the new carved scrolls remain disclosed');
         }
 
         let coloredVertices = 0;

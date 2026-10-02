@@ -345,7 +345,7 @@ try{
   await navigate('/coach',{source:'reveal'});await reveal();
   const newsletterPoster=query('[data-journey-next="subscribe"]');
   assert(newsletterPoster&&newsletterPoster.querySelector('h2').textContent==='The newsletter.'&&newsletterPoster.querySelector('.journey-poster-rail').textContent.includes('03'),'coaching reveals the newsletter as the third destination');
-  assert(newsletterPoster.querySelector('.journey-poster-credit').textContent.includes('folded letter and seal added'),'the newsletter sculpture credits its source and additions');
+  assert(newsletterPoster.querySelector('.journey-poster-credit').textContent.includes('portrait carved into a mask and scrolls added'),'the newsletter sculpture credits its source and additions');
   const newsletterRemoval=observePosterRemoval(newsletterPoster);
   await promote('/subscribe');
   const newsletterHost=query('[data-armillary]');
