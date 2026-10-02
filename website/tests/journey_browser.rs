@@ -71,6 +71,99 @@ function observePosterRemoval(poster){
   observer.observe(doc().body,{subtree:true,childList:true,attributes:true,attributeFilter:['data-journey-rendered']});
   return {state,disconnect:()=>observer.disconnect()};
 }
+async function checkArticleReveal(path,width,action,slug='the-execution-marketplace',height=900){
+  frame.style.width=width+'px';
+  frame.style.height=height+'px';
+  win().localStorage.removeItem('engmanager.visited-articles');
+  const oldDocument=doc();frame.src=path;
+  // Reload after clearing storage: the visited set is held in the page's
+  // closure, so changing storage alone would skip the unread-click path.
+  await until(()=>doc()!==oldDocument&&win().location.pathname===path&&doc()?.readyState==='complete'&&settled(),'fresh unread '+path+' at '+width);
+  await Promise.allSettled([win().__engTypography?.ready,win().__engTypography?.displayReady,doc().fonts.ready]);
+  const target='/articles/'+slug,link=query('.article-fluid-link[data-slug="'+slug+'"]');
+  const popover=query('#article-reveal'),card=popover.querySelector('.reveal-card-frame');
+  const content=card.querySelector('.reveal-card-content');
+  assert(link&&!link.classList.contains('is-visited'),'article begins unread at '+path+' '+width);
+  assert(content,'article reveal separates scrollable copy from its controls');
+  link.scrollIntoView({block:'center',behavior:'instant'});
+  window.__journeyKey='Tab';await until(()=>!window.__journeyKey,'keyboard focus modality for unread article');
+  const samples={before:0,open:0,peakDocument:0,peakBody:0,violations:[]};
+  const capture=()=>{
+    const opened=popover.matches(':popover-open');
+    samples[opened?'open':'before']++;
+    const rootWidth=doc().documentElement.scrollWidth,bodyWidth=doc().body.scrollWidth;
+    samples.peakDocument=Math.max(samples.peakDocument,rootWidth);samples.peakBody=Math.max(samples.peakBody,bodyWidth);
+    // The card's intentional spring paint can exceed the popover's clip
+    // without creating a scrollable area. Check actual scrolling here;
+    // settled content dimensions are checked after the animation below.
+    if(opened)popover.scrollLeft=width*2;
+    const bad=rootWidth>width+1||bodyWidth>width+1||Math.abs(win().scrollX)>1||
+      (opened&&(popover.clientWidth>width+1||Math.abs(popover.scrollLeft)>1||card.scrollWidth>card.clientWidth+1||content.scrollWidth>content.clientWidth+1));
+    if(bad&&samples.violations.length<3)samples.violations.push({opened,rootWidth,bodyWidth,scrollX:win().scrollX,
+      popover:[popover.clientWidth,popover.scrollWidth],card:[card.clientWidth,card.scrollWidth],content:[content.clientWidth,content.scrollWidth],
+      linkTransform:win().getComputedStyle(link).transform,strikeTransform:win().getComputedStyle(link.querySelector('.article-strike')).transform});
+  };
+  capture();
+  let quiet=0;
+  const started=performance.now();
+  const sampling=new Promise((resolve,reject)=>{
+    const tick=()=>{
+      capture();
+      const running=[...link.getAnimations({subtree:true}),...popover.getAnimations({subtree:true})]
+        .some(animation=>animation.playState==='running'||animation.pending);
+      quiet=popover.matches(':popover-open')&&!running?quiet+1:0;
+      if(quiet>=3)return resolve();
+      if(performance.now()-started>6000)return reject(new Error('Article reveal animations did not settle: '+path+' '+width));
+      win().requestAnimationFrame(tick);
+    };
+    win().requestAnimationFrame(tick);
+  });
+  // Real keyboard modality makes this match :focus-visible; node.click()
+  // alone would miss the full-row focus/hover scale that caused the bug.
+  link.focus({preventScroll:true});
+  assert(link.matches(':focus-visible'),'unread click exercises visible keyboard focus');
+  link.click();
+  await sampling;
+  assert(samples.before>1&&samples.open>1,'sampled the unread delay and full reveal entrance at '+path+' '+width);
+  assert(!samples.violations.length,'unread article stays horizontally contained throughout animation at '+path+' '+width+': '+JSON.stringify(samples));
+  const bounds=card.getBoundingClientRect();
+  assert(bounds.left>=-1&&bounds.right<=width+1,'settled article reveal fits the viewport at '+path+' '+width);
+  assert(popover.scrollWidth<=popover.clientWidth+1,'settled article reveal content fits its popover');
+  win().scrollTo({left:width*2,top:win().scrollY,behavior:'instant'});
+  assert(Math.abs(win().scrollX)<1,'unread article reveal cannot pan the page horizontally');
+  const read=query('[data-reveal-continue]');
+  assert(doc().activeElement===read&&new URL(read.href).pathname===target,'Read receives focus and targets the selected public article');
+  const close=query('.reveal-card-close');
+  const controlFits=node=>{
+    const controlBounds=node.getBoundingClientRect(),cardBounds=card.getBoundingClientRect();
+    return controlBounds.left>=Math.max(0,cardBounds.left)-1&&controlBounds.right<=Math.min(width,cardBounds.right)+1&&
+      controlBounds.top>=Math.max(0,cardBounds.top)-1&&controlBounds.bottom<=Math.min(height,cardBounds.bottom)+1;
+  };
+  // Do not scroll either control into view: the app focuses Read on open,
+  // and keyboard users must be able to see it without repairing the layout.
+  assert(controlFits(read)&&controlFits(close),'initially focused Read and Close are visible without scrolling at '+width+'×'+height);
+  const overflowing=content.scrollHeight>content.clientHeight+1;
+  assert(!overflowing||['auto','scroll'].includes(win().getComputedStyle(content).overflowY),
+    'long article copy allows vertical scrolling independently of its controls');
+  if(height===568)assert(overflowing,'the short-viewport case exercises genuinely overflowing article copy');
+  if(overflowing){
+    const readTop=read.getBoundingClientRect().top,closeTop=close.getBoundingClientRect().top;
+    content.scrollTop=content.scrollHeight;
+    assert(content.scrollTop>0,'the reader can scroll through long article copy');
+    assert(controlFits(read)&&controlFits(close)&&Math.abs(read.getBoundingClientRect().top-readTop)<1&&Math.abs(close.getBoundingClientRect().top-closeTop)<1,
+      'Read and Close remain visible and stationary while article copy scrolls');
+    content.scrollTop=0;
+  }
+  assert(controlFits(action==='close'?close:read)&&Math.abs(win().scrollX)<1,
+    action+' remains reachable inside the card and viewport at '+width+'×'+height);
+  if(action==='close'){
+    await click('.reveal-card-close');await until(()=>!popover.matches(':popover-open'),'close article reveal');
+    assert(win().location.pathname===path,'closing the article reveal keeps the feed route');
+  }else{
+    await click('[data-reveal-continue]');await until(()=>win().location.pathname===target&&settled(),'Read opens the selected article');
+    assert(!query('#article-reveal')?.matches(':popover-open'),'Read leaves no reveal overlay over the article');
+  }
+}
 const article='/articles/the-execution-marketplace';
 try{
   await ready('/feed?receipt');
@@ -89,6 +182,13 @@ try{
   const expiringToast=query('.discovery-toast');
   await until(()=>!expiringToast.isConnected,'discovery actions expire with their toasts');
   assert(!query('#api-receipt-modal').matches(':popover-open'),'expired discovery toasts leave the receipt closed');
+
+  for(const [path,width,action] of [['/feed',320,'close'],['/feed',390,'read'],['/',320,'read'],['/',390,'close']]){
+    await checkArticleReveal(path,width,action);
+  }
+  await checkArticleReveal('/feed',320,'read','claude-code-lsp',568);
+  frame.style.height='900px';
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after unread article reveals');
 
   await ready('/shop');
   assert(!visible(previous()),'opening the storefront directly has no previous-page window');

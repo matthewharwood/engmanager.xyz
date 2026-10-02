@@ -29,6 +29,8 @@ When adding forms to a new surface, verify its enforced Content-Security-Policy 
 
 Exercise automatic reveals by scrolling instead of calling `prepareNext` from the test. Verify that the poster remains visible and Continue works when a background page fetch stalls or fails, including mobile and Save-Data mode. Optional font caches must not block rendering; cover corrupt cached bytes, stalled storage, and recovery after a transient network failure.
 
+For mobile interstitials, exercise the initiating click/focus and sample horizontal overflow throughout entrance animations. Checking only the settled modal can miss overflow from the underlying row's hover zoom or overshooting decoration. Keep keyboard focus from panning the page while the card animates.
+
 For WebGPU or glTF changes, inspect the actual exported assets in Chrome as well as running loader tests. A Blender still can hide missing geometry or inward-facing triangles because its render settings differ from the browser's back-face culling. Check every journey sculpture, reduced-motion/static fallback, and resource disposal after navigation; mock GPU tests alone do not compile WGSL or prove the result is visible.
 
 For figurative sculpture, compare front, profile, and three-quarter views against real references before polishing materials. Preserve a detailed source mesh and simplify an export copy; inspect disconnected fragments and non-manifold edges instead of treating a successful export as visual acceptance. Record the source and license for any reused geometry, including attribution and modification notes.
