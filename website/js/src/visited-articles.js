@@ -191,6 +191,6 @@ function openReveal(slug, data, href) {
 
     // Focus the primary action so Enter dismisses with a Read.
     requestAnimationFrame(() => {
-        continueLink?.focus();
+        continueLink?.focus({ preventScroll: true });
     });
 }

@@ -627,6 +627,7 @@ body[data-dragging="true"] {
     position: relative;
     box-sizing: border-box;
     inline-size: min(28rem, calc(100dvw - var(--reveal-card-gutter) - var(--reveal-card-shadow)));
+    min-inline-size: 0;
     max-inline-size: 100%;
     max-block-size: calc(100dvh - 4rem);
     display: flex;
@@ -693,6 +694,19 @@ body[data-dragging="true"] {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Long cards scroll their reading area; Close and Read stay in view. */
+.reveal-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-inline-size: 0;
+    min-block-size: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .reveal-card-emoji {
@@ -820,6 +834,7 @@ body[data-dragging="true"] {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-block-start: 0.25rem;
+    flex-shrink: 0;
 }
 
 .reveal-card-dismiss,
@@ -1190,6 +1205,19 @@ body[data-dragging="true"] .marquee-track {
 .article-fluid-link:focus-visible {
     outline: 1rem solid var(--accent);
     outline-offset: 1rem;
+}
+
+@media (max-width: 42rem), (hover: none), (pointer: coarse) {
+    /* Touch browsers can retain :hover after a tap. A full-width row
+     * must never zoom past the viewport while its reveal card opens. */
+    .article-fluid-link:hover,
+    .article-fluid-link:focus-visible {
+        transform: none;
+    }
+
+    /* The fresh-read strike overshoots its title. Keep that paint inside
+     * the row instead of enlarging the page during the reveal delay. */
+    .article-fluid-link .fluid-display-wrap { overflow: clip; }
 }
 
 .article-trash-ghost {

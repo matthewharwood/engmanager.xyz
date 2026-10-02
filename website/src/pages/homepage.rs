@@ -119,10 +119,12 @@ fn render_reveal_card() -> HtmlFragment {
                         "✕"
                     </button>
                 </header>
-                <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
-                <time class="reveal-card-date" data-reveal-date>"…"</time>
-                <p class="reveal-card-summary" data-reveal-summary>"…"</p>
-                <div class="reveal-card-tags" data-reveal-tags></div>
+                <div class="reveal-card-content">
+                    <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
+                    <time class="reveal-card-date" data-reveal-date>"…"</time>
+                    <p class="reveal-card-summary" data-reveal-summary>"…"</p>
+                    <div class="reveal-card-tags" data-reveal-tags></div>
+                </div>
                 <footer class="reveal-card-actions">
                     <button class="reveal-card-dismiss"
                             type="button"
