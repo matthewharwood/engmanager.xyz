@@ -273,7 +273,20 @@ try{
   assert(decodeURIComponent(win().location.hash.slice(1))===headingId,'cross-page navigation preserves the article heading fragment');
   assert(headingRect.top>=0&&headingRect.top<win().innerHeight*.5&&doc().activeElement===heading,'cross-page heading navigation scrolls to and focuses its target');
   for(const width of [1200,686,375,320]){
+    const oldTagTrack=query('.article-tag-track'),oldWidth=win().innerWidth;
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'navigation width '+width);
+    const tagViewport=query('.article-tags'),category=query('.article-category');
+    if(!win().matchMedia('(prefers-reduced-motion: reduce)').matches){
+      await until(()=>query('.article-tag-track')&&(oldWidth===width||query('.article-tag-track')!==oldTagTrack),'taxonomy recalculates after resize '+width);
+      const runs=tagViewport.querySelectorAll('.article-tag-run'),distance=parseFloat(tagViewport.style.getPropertyValue('--tag-loop-distance'));
+      assert(runs.length===2&&runs[1].getAttribute('aria-hidden')==='true','taxonomy has one accessible run and one decorative copy');
+      assert(distance>=tagViewport.clientWidth&&Math.abs(runs[0].getBoundingClientRect().width-runs[1].getBoundingClientRect().width)<.5,'measured taxonomy loop covers its viewport with matching seam widths at '+width);
+      assert(tagViewport.querySelectorAll('.article-tag-placeholder:not([aria-hidden="true"])').length===0,'redacted filler tags remain decorative');
+      if(width===1200)assert(tagViewport.querySelector('.article-tag-placeholder')&&win().getComputedStyle(tagViewport.querySelector('.article-tag-placeholder')).fontFamily.includes('Redacted'),'wide taxonomy fills unused space with the Redacted face');
+    }else assert(!query('.article-tag-track')&&!query('.article-tag-placeholder'),'reduced motion keeps the original tags still and scrollable');
+    const categoryBox=category.getBoundingClientRect(),tagsBox=tagViewport.getBoundingClientRect(),taxonomyBox=query('.article-taxonomy').getBoundingClientRect();
+    assert(categoryBox.right<=tagsBox.left&&Math.abs((categoryBox.top+categoryBox.bottom)-(tagsBox.top+tagsBox.bottom))<2,'category stays first in a single taxonomy row at '+width);
+    assert(taxonomyBox.left>=0&&taxonomyBox.right<=width,'taxonomy stays within the article content bounds at '+width);
     await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
     const navRect=query('.site-nav').getBoundingClientRect(),themeRect=query('[data-theme-cycle]').getBoundingClientRect(),searchRect=query('[data-search-toggle]').getBoundingClientRect();
     const controls=[...doc().querySelectorAll('.site-nav-brand,.site-nav-links > a,.site-search-toggle,[data-theme-cycle]')].filter(visible).map(node=>node.getBoundingClientRect());

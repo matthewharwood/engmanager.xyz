@@ -292,13 +292,17 @@
 .article-taxonomy {
     flex-basis: 100%;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow: hidden;
     align-items: center;
     gap: 0.5rem 0.625rem;
     margin-block-start: 0.5rem;
 }
 
 .article-category {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     padding-block: 0.25rem;
@@ -318,13 +322,32 @@
 
 .article-tags {
     display: flex;
-    flex-wrap: wrap;
+    flex: 1 1 0;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.3125rem 0.4375rem;
     min-inline-size: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.article-tags[data-marquee] {
+    display: block; overflow: hidden; cursor: pointer;
+    mask-image: linear-gradient(to right, transparent, #000 .4375rem, #000 calc(100% - .4375rem), transparent);
+}
+.article-tags:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.article-tag-track, .article-tag-run { display: flex; inline-size: max-content; align-items: center; }
+.article-tag-run { gap: .4375rem; padding-inline-end: .4375rem; }
+.article-tag-track { animation: article-tags-loop var(--tag-loop-duration) linear infinite; }
+.article-tags:is(:hover, :focus-within, [data-paused]) .article-tag-track { animation-play-state: paused; }
+.article-tag.article-tag-placeholder { font-family: "Redacted", sans-serif; font-weight: 400; opacity: .45; }
+@keyframes article-tags-loop { to { transform: translateX(calc(-1 * var(--tag-loop-distance))); } }
+@media (prefers-reduced-motion: reduce) {
+    .article-tag-track { animation: none; }
 }
 
 .article-tag {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     padding-block: 0.1875rem;
