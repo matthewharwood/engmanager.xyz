@@ -44,7 +44,7 @@ async function ready(path){await load(path);await until(()=>win().__engNav?.read
 async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;await win().__engNav.navigate(path,options);await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await win().__engNav.prepareNext();await until(()=>query('[data-journey-next][data-preview-ready]')&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'next destination poster ready');}
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]'))&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'scroll automatically reveals the next destination poster');}
 function observePosterRemoval(poster){
   const state={rendered:false,removedAfterRender:false};
   const observer=new (win().MutationObserver)(records=>{
@@ -239,6 +239,21 @@ try{
   assert(mountRemoval.state.removedAfterRender&&!mountPoster.isConnected&&query('[data-journey-current="shop"]').dataset.journeyRendered==='true','shop is marked rendered before its poster is removed');
   mountRemoval.disconnect();
 
+  // The managed loader can recover a native CSS font request that remains
+  // pending. Only the replacement faces used by the page should gate reveal.
+  await navigate(article);await reveal();
+  await win().__engTypography.ready;await win().__engTypography.displayReady;
+  const nativeFontReadyDescriptor=Object.getOwnPropertyDescriptor(doc().fonts,'ready');
+  Object.defineProperty(doc().fonts,'ready',{configurable:true,value:new Promise(()=>{})});
+  const fontPoster=query('[data-journey-next="shop"]'),fontRemoval=observePosterRemoval(fontPoster);
+  try{
+    await promote('/shop');
+    assert(fontRemoval.state.removedAfterRender&&!fontPoster.isConnected,'ready managed fonts reveal the destination even while obsolete native font readiness is pending');
+  }finally{
+    fontRemoval.disconnect();
+    if(nativeFontReadyDescriptor)Object.defineProperty(doc().fonts,'ready',nativeFontReadyDescriptor);else delete doc().fonts.ready;
+  }
+
   // Keep a visible product image pending longer than the former two-second
   // timeout. The poster must await its decode, even when all scripts are ready.
   await navigate(article);await reveal();
@@ -371,6 +386,78 @@ try{
   await navigate('/coach');releaseFetch();await superseded;await delay(150);
   assert(win().location.pathname==='/coach'&&query('[data-reader]'),'a superseded fetch cannot overwrite the newer destination');
   win().fetch=actualFetch;
+
+  // A mobile reveal must not depend on a completed HTML prefetch or an
+  // IntersectionObserver callback. Exercise the actual scroll path; calling
+  // prepareNext directly would conceal the missing automatic preparation.
+  frame.style.width='390px';await until(()=>win().innerWidth===390,'mobile cold reveal viewport');
+  const actualIntersectionObserver=win().IntersectionObserver;
+  win().IntersectionObserver=function(callback,options){
+    if(options?.rootMargin)return {observe(){},disconnect(){}};
+    return new actualIntersectionObserver(callback,options);
+  };
+  let rejectPrefetch,prefetchPending=false;
+  win().fetch=(input,options)=>new URL(input?.url||String(input),win().location.href).pathname==='/shop'?new Promise((resolve,reject)=>{
+    prefetchPending=true;rejectPrefetch=()=>{prefetchPending=false;reject(new TypeError('Synthetic delayed prefetch failure'));};
+    options?.signal?.addEventListener('abort',()=>reject(new DOMException('Superseded','AbortError')),{once:true});
+  }):actualFetch(input,options);
+  await navigate(article);await reveal();
+  const delayedPoster=query('[data-journey-next="shop"]'),delayedStill=delayedPoster.querySelector('img');
+  await until(()=>delayedStill.complete&&delayedStill.naturalWidth>0,'mobile sculpture fallback decoded');
+  assert(prefetchPending&&visible(delayedPoster)&&!delayedStill.hidden,'mobile scrolling reveals the sculpture while destination HTML is still pending and the observer has not fired');
+  rejectPrefetch();await until(()=>query('[data-journey-runway]').dataset.failed==='true','delayed prefetch reports failure');
+  assert(visible(delayedPoster)&&delayedStill.naturalWidth>0,'a failed background prefetch leaves the sculpture and continue action visible');
+  win().fetch=actualFetch;win().IntersectionObserver=actualIntersectionObserver;
+  await promote('/shop');
+
+  let stalledRequests=0,stalledAborted=false;
+  win().fetch=(input,options)=>{
+    if(new URL(input?.url||String(input),win().location.href).pathname==='/shop'&&++stalledRequests===1){
+      return new Promise((resolve,reject)=>options?.signal?.addEventListener('abort',()=>{
+        stalledAborted=true;reject(new DOMException('Superseded','AbortError'));
+      },{once:true}));
+    }
+    return actualFetch(input,options);
+  };
+  await navigate(article);await reveal();await promote('/shop');
+  assert(stalledAborted&&stalledRequests===2,'Continue abandons a stalled prefetch and successfully makes one fresh foreground request');
+  win().fetch=actualFetch;
+
+  let supersededPrefetchRequests=0;
+  win().fetch=(input,options)=>{
+    if(new URL(input?.url||String(input),win().location.href).pathname==='/shop'){
+      supersededPrefetchRequests++;
+      return new Promise((resolve,reject)=>options?.signal?.addEventListener('abort',()=>reject(new DOMException('Superseded','AbortError')),{once:true}));
+    }
+    return actualFetch(input,options);
+  };
+  await navigate(article);await reveal();
+  const waitingPromotion=win().__engNav.navigate('/shop',{source:'reveal'});
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+  await navigate('/coach');const supersededResult=await waitingPromotion;
+  assert(supersededResult===false&&supersededPrefetchRequests===1&&win().location.pathname==='/coach','superseding Continue cancels its prefetch wait without issuing a stale foreground request');
+  win().fetch=actualFetch;
+
+  // Save-Data keeps the small sculpture still instead of an empty runway,
+  // and only downloads the destination after the visitor chooses Continue.
+  const connectionDescriptor=Object.getOwnPropertyDescriptor(win().navigator,'connection');
+  Object.defineProperty(win().navigator,'connection',{configurable:true,value:{saveData:true}});
+  let lowDataPageRequests=0,lowDataModelRequests=0;
+  win().fetch=(input,options)=>{
+    const path=new URL(input?.url||String(input),win().location.href).pathname;
+    if(path==='/shop')lowDataPageRequests++;
+    if(path.endsWith('.glb'))lowDataModelRequests++;
+    return actualFetch(input,options);
+  };
+  await navigate(article);await reveal();
+  const lowDataPoster=query('[data-journey-next="shop"]'),lowDataStill=lowDataPoster.querySelector('img');
+  await until(()=>lowDataStill.complete&&lowDataStill.naturalWidth>0,'Save-Data sculpture still decoded');
+  assert(visible(lowDataPoster)&&!lowDataStill.hidden&&lowDataPageRequests===0&&lowDataModelRequests===0,'Save-Data reveals a usable sculpture without next-page or model prefetches');
+  await promote('/shop');
+  assert(lowDataPageRequests===1&&lowDataModelRequests===0,'Save-Data Continue loads the requested page without a GLB download');
+  win().fetch=actualFetch;
+  if(connectionDescriptor)Object.defineProperty(win().navigator,'connection',connectionDescriptor);else delete win().navigator.connection;
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after cold mobile reveal');
 
   await navigate(article);
   win().fetch=(input,options)=>new URL(input?.url||String(input),win().location.href).pathname==='/shop'?Promise.reject(new TypeError('Synthetic offline failure')):actualFetch(input,options);

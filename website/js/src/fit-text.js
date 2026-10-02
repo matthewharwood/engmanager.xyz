@@ -150,8 +150,9 @@ function syncTitleMetrics(svg, ink) {
     async function fit(root) {
         const run = ++generation;
         try {
-            if (document.fonts && document.fonts.ready) {
-                await window.__engTypography?.displayReady;
+            if (window.__engTypography) {
+                await window.__engTypography.displayReady;
+            } else if (document.fonts?.ready) {
                 await document.fonts.ready;
             }
             if (run !== generation) return;
@@ -178,6 +179,13 @@ function syncTitleMetrics(svg, ink) {
     }
 
     fit(document);
+    window.addEventListener("engmanager:fontchange", (event) => {
+        if (event.detail?.role !== "display") return;
+        // Measurements taken with a fallback face are invalid after recovery.
+        observer?.disconnect();
+        measurements.clear();
+        fit(document);
+    });
     window.__engNav?.onBeforeSwap?.(() => {
         generation++;
         observer?.disconnect();

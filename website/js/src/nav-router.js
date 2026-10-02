@@ -249,9 +249,13 @@
             await Promise.race([
                 (async () => {
                     await mounted;
-                    await window.__engTypography?.ready;
-                    await window.__engTypography?.displayReady;
-                    await document.fonts?.ready;
+                    const typography = window.__engTypography;
+                    if (typography) {
+                        // Managed faces may have recovered a stalled native
+                        // font request; do not wait on that obsolete request.
+                        await typography.ready;
+                        await typography.displayReady;
+                    } else await document.fonts?.ready;
                     await frame();
                     await visibleImagesReady(document);
                     // Two paints let layout and synchronous mount observers
@@ -386,6 +390,33 @@
         return ({ shop: 'the store', coach: 'coaching', feed: 'the feed', article: 'your article', articles: 'articles' })[kind] || 'the next page';
     }
 
+    function posterKind(url) {
+        return ({ '/shop': 'shop', '/coach': 'coach', '/feed': 'feed', '/': 'feed' })[new URL(url, location.href).pathname];
+    }
+
+    // The sculpture and its small fallback are local metadata. Show them as
+    // soon as the runway approaches, even if the destination HTML is slow or
+    // unavailable. A page prefetch must never leave an empty reveal behind.
+    function preparePoster(kind, url, owner = current) {
+        if (stage && stage.dataset.destination !== url) {
+            if (stage.hasAttribute('data-committing')) return stage;
+            stage._dispose(); stage = null;
+        }
+        if (!stage) {
+            const poster = stage = createStage(kind, url);
+            poster._posterReady.then(() => {
+                if (current !== owner || stage !== poster) return;
+                poster.dataset.previewReady = 'true';
+                if (runway) {
+                    runway.dataset.ready = 'true';
+                    runway.querySelector('a').textContent = `Continue to ${label(kind)} ↗`;
+                }
+                syncOverlay(); updateScroll(false);
+            });
+        }
+        return stage;
+    }
+
     // Warm local page bundles while the reader is still moving through the
     // poster. Scripts execute only after the live outlet is swapped; payment
     // providers and other third-party resources stay out of this path.
@@ -406,30 +437,25 @@
 
     async function prepareNext() {
         if (!current.nextUrl) return null;
+        const url = new URL(current.nextUrl, current.url).href;
+        const kind = posterKind(url);
+        if (kind) preparePoster(kind, url);
+        // Save-Data still gets the sculpture's compact rendered image, without
+        // downloading a multi-megabyte model or the unrequested next page.
+        if (saveData()) return null;
         if (next) return next;
         if (stagedPromise) return stagedPromise;
         const owner = current, controller = new AbortController();
         preload = controller;
         stagedPromise = (async () => {
             try {
-                const rec = await fetchPage(new URL(owner.nextUrl, owner.url).href, controller.signal);
+                const rec = await fetchPage(url, controller.signal);
                 if (controller.signal.aborted || current !== owner) return null;
                 next = rec;
                 warmDestination(rec, controller.signal);
-                if (stage && stage.dataset.destination !== rec.url) {
-                    if (stage.hasAttribute('data-committing')) return rec;
-                    stage._dispose(); stage = null;
-                }
-                stage ||= createStage(rec.kind, rec.url);
-                const poster = stage;
+                const poster = preparePoster(rec.kind, rec.url, owner);
                 await poster._posterReady;
                 if (current !== owner || stage !== poster) return null;
-                stage.dataset.previewReady = 'true';
-                if (runway) {
-                    runway.dataset.ready = 'true';
-                    runway.querySelector('a').textContent = `Continue to ${label(rec.kind)} ↗`;
-                }
-                syncOverlay(); updateScroll(false);
                 return rec;
             } catch (error) {
                 if (!controller.signal.aborted && current === owner) {
@@ -462,15 +488,16 @@
         });
         runway.append(link);
         runtime.append(runway);
-        if ('IntersectionObserver' in window && !saveData()) {
+        if ('IntersectionObserver' in window) {
             observer = new IntersectionObserver((entries) => {
                 if (entries.some((entry) => entry.isIntersecting)) prepareNext();
-            }, { rootMargin: '1200px 0px' });
+            }, { rootMargin: saveData() ? '0px' : '1200px 0px' });
             observer.observe(runway);
         }
         allowPromotionAt = performance.now() + 800;
         inputAt = -Infinity;
         lastScroll = scrollY;
+        updateScroll(false);
     }
 
     function dismissPrevious() {
@@ -540,8 +567,11 @@
     function updateScroll(userScrolled) {
         if (!runway || committing || stage?.hasAttribute('data-committing')) return;
         const top = runway.getBoundingClientRect().top;
+        // Fast touch scrolling, restored positions, and viewport changes can
+        // reach the runway before IntersectionObserver delivers its callback.
+        if (!stage && top < innerHeight + (saveData() ? 0 : 1200)) prepareNext();
         const progress = Math.max(0, Math.min(1, (innerHeight - top) / innerHeight));
-        document.body.classList.toggle('journey-revealing', progress > 0 && !!next && !overlayOpen());
+        document.body.classList.toggle('journey-revealing', progress > 0 && !!stage && !overlayOpen());
         if (stage) {
             stage.style.setProperty('--journey-progress', reducedMotion() ? '1' : String(progress));
             stage.style.setProperty('--journey-scale', reducedMotion() ? '1' : String(.82 + .18 * progress));
@@ -602,7 +632,7 @@
             // Cover cold link promotion too: the destination can fetch, mount
             // and hydrate behind an opaque poster without exposing the swap.
             if (source === 'reveal') {
-                const kind = ({ '/shop': 'shop', '/coach': 'coach', '/feed': 'feed', '/': 'feed' })[dest.pathname];
+                const kind = posterKind(dest.href);
                 if (kind) {
                     if (stage && stage.dataset.destination !== dest.href) clearNext();
                     stage ||= createStage(kind, dest.href);
@@ -615,11 +645,34 @@
                     await frame();
                 }
             }
+            if (controller.signal.aborted || version !== generation) return false;
             let rec = options.record;
             if (!rec && source === 'reveal') {
-                if (!next && stagedPromise) await stagedPromise;
+                if (!next && stagedPromise) {
+                    const pending = stagedPromise;
+                    let timer, abortWait;
+                    try {
+                        // Reuse a nearly complete prefetch, but a stalled
+                        // background request must not trap the Continue action.
+                        await Promise.race([pending, new Promise((resolve) => {
+                            timer = setTimeout(resolve, 1500);
+                            abortWait = () => resolve();
+                            controller.signal.addEventListener('abort', abortWait, { once: true });
+                        })]);
+                    } finally {
+                        clearTimeout(timer);
+                        controller.signal.removeEventListener('abort', abortWait);
+                    }
+                    if (controller.signal.aborted || version !== generation) return false;
+                    if (!next && stagedPromise === pending) {
+                        const background = preload;
+                        preload = null; stagedPromise = null;
+                        background?.abort();
+                    }
+                }
                 if (next?.url === dest.href) rec = next;
             }
+            if (controller.signal.aborted || version !== generation) return false;
             rec ||= await fetchPage(dest.href, controller.signal);
             if (controller.signal.aborted || version !== generation) return false;
             await styles(rec);
