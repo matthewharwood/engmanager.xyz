@@ -1,0 +1,35 @@
+{
+  "coach_blend_sha256_unchanged": "54adb29f9f84f987e642222092b70e1ab9c3e9f9ef1eee683f968f552ec198ad",
+  "anatomy": {
+    "protected_vertices_unchanged": 60713,
+    "covered_scalp_vertices_adjusted": 29289
+  },
+  "export": {
+    "vertices": 118930,
+    "faces": 234828,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "signed_volume": 5.082821631963845,
+    "island_count": 758,
+    "island_vertex_count_histogram": {
+      "10": 342,
+      "15": 396,
+      "26": 6,
+      "30": 1,
+      "150": 6,
+      "244": 1,
+      "266": 1,
+      "486": 1,
+      "1086": 1,
+      "3726": 1,
+      "12674": 1,
+      "90002": 1
+    }
+  },
+  "linear_cavity": {
+    "minimum": 0.6499999761581421,
+    "mean": 0.8908727765083313,
+    "maximum": 1.0
+  },
+  "copyright": "Adapted from \"Aristotele bust\" by nicola_scaramella. https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930 Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Changes: orientation, normalization, restrained relief enhancement, export decimation, marble material, vertex cavity shading, and an original fitted six-panel dad cap with curved visor, seams, stitching, eyelets and rear strap. Coaching sculpture remains unchanged."
+}

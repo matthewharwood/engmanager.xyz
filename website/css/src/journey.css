@@ -121,6 +121,9 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
 .journey-poster-caption { position: relative; display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
 .journey-poster-caption h2 { margin: 0; color: inherit; font: 500 clamp(2.75rem, 7vw, 6.5rem)/.95 var(--font-body); letter-spacing: -.065em; }
 .journey-poster-caption p { margin: 0 0 .2rem; max-inline-size: 19rem; color: var(--text-2); font: .8rem/1.5 var(--font-mono); text-align: end; }
+.journey-poster-credit { display: block; margin-block-start: .85rem; color: var(--text-2); font: .6rem/1.6 var(--font-mono); }
+.journey-poster-credit a { color: inherit; pointer-events: auto; text-underline-offset: .2em; }
+.journey-poster-credit a:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .journey-poster-hint { position: absolute; inset-inline-end: clamp(1.25rem, 4vw, 4rem); inset-block-end: 2.5rem; color: var(--text-2); font: .6rem/1 var(--font-mono); letter-spacing: .12em; }
 .journey-stage[data-committing] .journey-poster-hint,
 .journey-stage[data-committing] .journey-promote { visibility: hidden; }

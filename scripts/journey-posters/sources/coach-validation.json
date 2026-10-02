@@ -1,0 +1,30 @@
+{
+  "source": {
+    "Aristotele (repaired)": {
+      "vertices": 110854,
+      "faces": 221704,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        110854
+      ],
+      "signed_volume": 11307332.357075753
+    }
+  },
+  "export": {
+    "vertices": 90002,
+    "faces": 180000,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      90002
+    ],
+    "signed_volume": 5.311819132899636
+  },
+  "linear_cavity": {
+    "minimum": 0.6692773103713989,
+    "mean": 0.9889569878578186,
+    "maximum": 1.0
+  },
+  "copyright": "Adapted from \"Aristotele bust\" by nicola_scaramella. https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930 Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Changes: orientation, normalization, restrained relief enhancement, export decimation, marble material and vertex cavity shading."
+}

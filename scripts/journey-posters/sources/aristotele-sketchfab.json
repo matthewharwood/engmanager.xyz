@@ -1,0 +1,132 @@
+{
+  "animationCount": 0,
+  "categories": [],
+  "commentCount": 0,
+  "createdAt": "2016-07-26T18:12:38.022272",
+  "embedUrl": "https://sketchfab.com/models/8717fddd94c44498a5f91d652f866930/embed",
+  "faceCount": 221704,
+  "isAgeRestricted": false,
+  "license": {
+    "uri": "https://api.sketchfab.com/v3/licenses/322a749bcfa841b29dff1e8a1bb74b0b",
+    "label": "CC Attribution",
+    "fullName": "Creative Commons Attribution",
+    "requirements": "Author must be credited. Commercial use is allowed.",
+    "url": "http://creativecommons.org/licenses/by/4.0/",
+    "slug": "by"
+  },
+  "likeCount": 4,
+  "name": "Aristotele bust",
+  "publishedAt": "2016-07-26T18:19:37.091740",
+  "soundCount": 0,
+  "staffpickedAt": null,
+  "tags": [
+    {
+      "name": "aristotele",
+      "slug": "aristotele",
+      "uri": "https://api.sketchfab.com/v3/tags/aristotele"
+    },
+    {
+      "name": "bust",
+      "slug": "bust",
+      "uri": "https://api.sketchfab.com/v3/tags/bust"
+    }
+  ],
+  "thumbnails": {
+    "images": [
+      {
+        "uid": "12107b46c19045e3a936a9d024a037a6",
+        "width": 640,
+        "height": 360,
+        "size": 14579,
+        "url": "https://media.sketchfab.com/models/8717fddd94c44498a5f91d652f866930/thumbnails/34d077c257404c2195a39d321ec18185/640x360.jpeg"
+      },
+      {
+        "uid": "844ab451f34546fd94213c2ce25dd2eb",
+        "width": 448,
+        "height": 252,
+        "size": 9097,
+        "url": "https://media.sketchfab.com/models/8717fddd94c44498a5f91d652f866930/thumbnails/34d077c257404c2195a39d321ec18185/448x252.jpeg"
+      },
+      {
+        "uid": "1376054425404369a7916594c76a5f54",
+        "width": 200,
+        "height": 200,
+        "size": 4869,
+        "url": "https://media.sketchfab.com/models/8717fddd94c44498a5f91d652f866930/thumbnails/34d077c257404c2195a39d321ec18185/200x200.jpeg"
+      },
+      {
+        "uid": "2003e1e8ddf74833bd06d7b61fd4d96f",
+        "width": 100,
+        "height": 100,
+        "size": 2142,
+        "url": "https://media.sketchfab.com/models/8717fddd94c44498a5f91d652f866930/thumbnails/34d077c257404c2195a39d321ec18185/100x100.jpeg"
+      },
+      {
+        "uid": "ed55116e3288448fa881cd298d86a956",
+        "width": 50,
+        "height": 50,
+        "size": 1051,
+        "url": "https://media.sketchfab.com/models/8717fddd94c44498a5f91d652f866930/thumbnails/34d077c257404c2195a39d321ec18185/50x50.jpeg"
+      }
+    ]
+  },
+  "uid": "8717fddd94c44498a5f91d652f866930",
+  "uri": "https://api.sketchfab.com/v3/models/8717fddd94c44498a5f91d652f866930",
+  "user": {
+    "uid": "0435302d9da14d4ea35357c790a67173",
+    "username": "nicola_scaramella",
+    "displayName": "nicola_scaramella",
+    "account": "basic",
+    "profileUrl": "https://sketchfab.com/nicola_scaramella",
+    "avatar": {
+      "uid": "ca7cc1890dab4ec1a916df6e21e1742d",
+      "uri": "https://api.sketchfab.com/v3/avatars/ca7cc1890dab4ec1a916df6e21e1742d",
+      "images": [
+        {
+          "width": 100,
+          "height": 100,
+          "size": 2492,
+          "url": "https://media.sketchfab.com/avatars/ca7cc1890dab4ec1a916df6e21e1742d/76c4affa703e47b48d6adb5785999dcc.jpeg"
+        },
+        {
+          "width": 90,
+          "height": 90,
+          "size": 2160,
+          "url": "https://media.sketchfab.com/avatars/ca7cc1890dab4ec1a916df6e21e1742d/c4f2ab4419214ec6bf9bb24f33460724.jpeg"
+        },
+        {
+          "width": 48,
+          "height": 48,
+          "size": 1036,
+          "url": "https://media.sketchfab.com/avatars/ca7cc1890dab4ec1a916df6e21e1742d/1d98a4e608c041c3957b137181b1da06.jpeg"
+        },
+        {
+          "width": 32,
+          "height": 32,
+          "size": 675,
+          "url": "https://media.sketchfab.com/avatars/ca7cc1890dab4ec1a916df6e21e1742d/5f4bfb0024214f799cba80c3113d05c8.jpeg"
+        }
+      ]
+    },
+    "uri": "https://api.sketchfab.com/v3/users/0435302d9da14d4ea35357c790a67173"
+  },
+  "vertexCount": 110854,
+  "viewCount": 1225,
+  "viewerUrl": "https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930",
+  "isDownloadable": true,
+  "isProtected": false,
+  "description": "Bust of the philosopher Aristotle.\nPrivate collection.",
+  "price": null,
+  "downloadCount": 269,
+  "editorUrl": "https://sketchfab.com/models/8717fddd94c44498a5f91d652f866930/edit",
+  "status": {
+    "warning": {},
+    "processing": "SUCCEEDED"
+  },
+  "source": "website-deflated",
+  "hasCommentsDisabled": false,
+  "updatedAt": "2022-07-11T07:46:58.194519",
+  "pbrType": null,
+  "textureCount": 0,
+  "materialCount": 1
+}
