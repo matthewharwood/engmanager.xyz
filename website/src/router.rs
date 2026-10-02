@@ -896,8 +896,14 @@ mod tests {
                 (
                     "/coach",
                     "coach",
-                    Some("/feed"),
+                    Some("/subscribe"),
                     "<title>1:1 Coaching · ENGMANAGER.XYZ</title>",
+                ),
+                (
+                    "/subscribe",
+                    "subscribe",
+                    Some("/feed"),
+                    "<title>The newsletter · ENGMANAGER.XYZ</title>",
                 ),
                 (
                     "/products/engmanager-xyz?image=front",

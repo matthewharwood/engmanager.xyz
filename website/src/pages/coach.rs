@@ -190,7 +190,7 @@ fn page_at(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> Stri
         })
         .assets(assets)
         .scripts(scripts)
-        .journey("coach", Some("/feed"))
+        .journey("coach", Some("/subscribe"))
         .skip_link(Some("Skip to coaching"))
         .render(body)
 }

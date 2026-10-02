@@ -16,6 +16,10 @@ async fn newsletter_page_and_navigation_are_available_without_kit_credentials() 
     let html = response.text().await.unwrap();
     assert!(html.contains("/api/newsletter/subscribe"));
     assert!(html.contains("type=\"email\""));
+    assert!(html.contains(r#"data-eng-page="subscribe" data-eng-next="/feed""#));
+    assert!(html.contains(r#"href="/feed""#));
+    assert!(html.contains("Back to the feed"));
+    assert!(html.contains("journey/subscribe."));
     assert!(!html.contains("api.kit.com"));
     assert!(html.contains(r#"name="twitter:card" content="summary_large_image""#));
     assert!(html.contains(r#"property="og:image:width" content="1200""#));
@@ -47,6 +51,17 @@ async fn newsletter_page_and_navigation_are_available_without_kit_credentials() 
         .await
         .unwrap();
     assert!(home.contains("href=\"/subscribe\""));
+
+    let coach = client
+        .get(server.url(SITE_HOST, "/coach"))
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    assert!(coach.contains(r#"data-eng-page="coach" data-eng-next="/subscribe""#));
+    assert!(coach.contains("Get the free newsletter"));
 
     let alias = client
         .get(server.url(SITE_HOST, "/newsletter"))

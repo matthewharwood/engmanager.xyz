@@ -86,45 +86,50 @@ fn turn(p: vec3f) -> vec3f {
     }
     function mount() {
         const host=document.querySelector('[data-armillary]');
-        if(current?.host===host) return;
+        if(current?.host===host) return current.ready;
         current?.dispose(); current=null;
         if(!host || document.prerendering) return;
         current=create(host);
+        return current.ready;
     }
     function create(host) {
         const canvas=host.querySelector('[data-armillary-canvas]');
         const play=host.querySelector('[data-armillary-motion]');
         const sound=host.querySelector('[data-armillary-sound]');
         const status=host.querySelector('[data-armillary-audio-status]');
-        const events=new AbortController();
+        const events=new AbortController(),gpuWork=new AbortController();
         let device,context,vertices,uniform,texture,color,depth,pipeline,bind,vertexCount;
         let stopped=false,gpuFailed=false,paused=motion.matches,visible=true,raf=0,last=0,time=0,audio=null;
-        let observer,resize;
+        let observer,resize,firstPaint;
+        let journeyHold=window.__engNav?.busy===true;
+        const painted=new Promise(resolve=>{firstPaint=resolve;});
+        host.dataset.renderer='poster';play.hidden=true;
         const mute=()=>{
             if(audio) { const old=audio;audio=null;old.gain.gain.setTargetAtTime(0,old.ctx.currentTime,.07);setTimeout(()=>old.ctx.close().catch(()=>{}),300); }
             sound.setAttribute('aria-pressed','false');sound.textContent='Sound off';status.textContent='Ambient sound disabled.';
         };
         const dispose=()=>{
-            if(stopped) return;stopped=true;cancelAnimationFrame(raf);events.abort();observer?.disconnect();resize?.disconnect();mute();
+            if(stopped) return;stopped=true;cancelAnimationFrame(raf);events.abort();gpuWork.abort();observer?.disconnect();resize?.disconnect();mute();
             [vertices,uniform,texture,color,depth].forEach(x=>x?.destroy());context?.unconfigure();device?.destroy();
         };
         const fallback=()=>{
-            if(gpuFailed||stopped)return;gpuFailed=true;host.dataset.renderer='poster';play.hidden=true;cancelAnimationFrame(raf);raf=0;pipeline=null;
+            if(gpuFailed||stopped)return;gpuFailed=true;gpuWork.abort();host.dataset.renderer='poster';play.hidden=true;cancelAnimationFrame(raf);raf=0;pipeline=null;
             [vertices,uniform,texture,color,depth].forEach(x=>x?.destroy());context?.unconfigure();device?.destroy();
         };
         const active=()=>!stopped&&visible&&!document.hidden&&host.isConnected;
         function paint(now=0) {
             raf=0;if(!active()||!pipeline) return;
-            if(!paused&&now-last<33) {raf=requestAnimationFrame(paint);return;}
-            if(!paused&&last)time+=Math.min((now-last)/1000,.05);last=now;
+            if(!firstPaint&&!paused&&!journeyHold&&now-last<33) {raf=requestAnimationFrame(paint);return;}
+            if(!paused&&!journeyHold&&last)time+=Math.min((now-last)/1000,.05);last=now;
             try {
                 device.queue.writeBuffer(uniform,0,new Float32Array([canvas.width,canvas.height,time,0]));
                 const encoder=device.createCommandEncoder();
                 const pass=encoder.beginRenderPass({colorAttachments:[{view:color.createView(),resolveTarget:context.getCurrentTexture().createView(),clearValue:{r:0,g:0,b:0,a:0},loadOp:'clear',storeOp:'discard'}],depthStencilAttachment:{view:depth.createView(),depthClearValue:1,depthLoadOp:'clear',depthStoreOp:'discard'}});
                 pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.setVertexBuffer(0,vertices);pass.draw(vertexCount);pass.end();device.queue.submit([encoder.finish()]);
                 host.dataset.renderer='webgpu';
+                firstPaint?.();firstPaint=null;
             } catch (_) {fallback();return;}
-            if(!paused)raf=requestAnimationFrame(paint);
+            if(!paused&&!journeyHold)raf=requestAnimationFrame(paint);
         }
         function requestPaint() {if(!raf&&active())raf=requestAnimationFrame(paint);}
         function size() {
@@ -140,6 +145,7 @@ fn turn(p: vec3f) -> vec3f {
         const preference=()=>{paused=motion.matches;play.textContent=paused?'Resume orbit':'Pause orbit';play.setAttribute('aria-pressed',String(paused));last=0;requestPaint();};
         motion.addEventListener('change',preference,{signal:events.signal});
         document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden){cancelAnimationFrame(raf);raf=0;mute();}else requestPaint();},{signal:events.signal});
+        window.addEventListener('eng:journeysettled',()=>{journeyHold=false;last=0;requestPaint();},{signal:events.signal});
         sound.hidden=!(window.AudioContext||window.webkitAudioContext);
         sound.addEventListener('click',async()=>{
             if(audio){mute();return;}
@@ -159,8 +165,8 @@ fn turn(p: vec3f) -> vec3f {
         async function boot() {
             try {
                 if(!navigator.gpu||navigator.connection?.saveData)return;
-                const adapter=await navigator.gpu.requestAdapter({powerPreference:'low-power'});if(!adapter||stopped)return;
-                const candidate=await adapter.requestDevice();if(stopped){candidate.destroy();return;}device=candidate;
+                const adapter=await navigator.gpu.requestAdapter({powerPreference:'low-power'});if(!adapter||stopped||gpuFailed)return;
+                const candidate=await adapter.requestDevice();if(stopped||gpuFailed){candidate.destroy();return;}device=candidate;
                 device.lost.then(()=>{if(!stopped)fallback();});device.addEventListener('uncapturederror',fallback,{signal:events.signal});
                 context=canvas.getContext('webgpu');if(!context)throw new Error('Canvas unavailable');
                 const format=navigator.gpu.getPreferredCanvasFormat();context.configure({device,format,alphaMode:'premultiplied'});
@@ -169,16 +175,23 @@ fn turn(p: vec3f) -> vec3f {
                 if(stopped||gpuFailed)return;
                 const data=mesh();vertexCount=data.length/12;vertices=device.createBuffer({size:data.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});device.queue.writeBuffer(vertices,0,data);
                 uniform=device.createBuffer({size:16,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
-                const response=await fetch(host.dataset.texture,{signal:events.signal,credentials:'same-origin'});if(!response.ok)throw new Error('Material unavailable');
-                const bitmap=await createImageBitmap(await response.blob());if(stopped){bitmap.close();return;}
+                const response=await fetch(host.dataset.texture,{signal:gpuWork.signal,credentials:'same-origin'});if(!response.ok)throw new Error('Material unavailable');
+                const bitmap=await createImageBitmap(await response.blob());if(stopped||gpuFailed){bitmap.close();return;}
                 texture=device.createTexture({size:[bitmap.width,bitmap.height],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
                 device.queue.copyExternalImageToTexture({source:bitmap},{texture},{width:bitmap.width,height:bitmap.height});bitmap.close();
                 bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:uniform}},{binding:1,resource:texture.createView()},{binding:2,resource:device.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'repeat',addressModeV:'repeat'})}]});
                 play.hidden=false;preference();resize=new ResizeObserver(size);resize.observe(canvas);size();
+                cancelAnimationFrame(raf);raf=0;paint();
                 observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;last=0;if(!visible){cancelAnimationFrame(raf);raf=0;mute();}else requestPaint();});observer.observe(host);
+                await painted;
+                await device.queue.onSubmittedWorkDone?.();
             } catch (_) {if(!stopped)fallback();}
         }
-        boot();return {host,dispose};
+        // Resolve only after a submitted first frame or an explicit static
+        // fallback. A stalled optional GPU cannot hold the newsletter curtain.
+        const limit=setTimeout(fallback,4000);
+        const ready=Promise.race([boot(),new Promise(resolve=>gpuWork.signal.addEventListener('abort',resolve,{once:true}))]).finally(()=>clearTimeout(limit));
+        return {host,dispose,ready};
     }
     window.__engArmillary={mount};mount();
     window.addEventListener('pagehide',()=>{current?.dispose();current=null;});

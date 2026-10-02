@@ -9,6 +9,27 @@
     transform-origin: 50% 0;
 }
 .shop-page [data-journey-current] { min-block-size: 100svh; }
+/* The rag belongs to the outgoing surface, above the destination poster.
+   It extends into the scroll runway without changing document height. */
+.journey-curtain {
+    position: absolute;
+    inset-block-start: calc(100% - 1px);
+    inset-inline-start: 0;
+    inline-size: 100%;
+    block-size: clamp(3.5rem, 6vw, 6rem);
+    overflow: visible;
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 4px 2px color-mix(in oklab, var(--text-1) 8%, transparent));
+}
+.journey-curtain-paper { fill: var(--surface-1); }
+.journey-curtain-edge, .journey-curtain-fibers {
+    fill: none;
+    stroke: color-mix(in oklab, var(--text-2) 28%, transparent);
+    stroke-width: .7;
+    vector-effect: non-scaling-stroke;
+}
+.journey-curtain-fibers { stroke-opacity: .55; }
 html[data-journey="ready"] [data-journey-fallback] { display: none; }
 .journey-next { padding: 4rem 1rem; text-align: center; }
 .journey-next-link, .journey-runway-link { color: var(--text-1); text-underline-offset: .3em; }
@@ -188,6 +209,6 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     .journey-stage-viewport { transform: none; opacity: 1; }
 }
 @media print {
-    .journey-runtime, .home-services, .journey-next { display: none !important; }
+    .journey-runtime, .home-services, .journey-next, .journey-curtain { display: none !important; }
     [data-journey-current] { box-shadow: none; }
 }

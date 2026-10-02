@@ -5,7 +5,8 @@ Source: complete 12:52 design transcript supplied on 2026-09-24.
 ## Experience and decisions
 
 The reading surface reveals the storefront underneath it as the reader reaches
-the end. The storefront then reveals coaching, and coaching reveals the feed.
+the end. The storefront then reveals coaching, coaching reveals the newsletter,
+and the newsletter returns to the feed.
 Opening an article from the feed is ordinary navigation. Minimal, labelled
 triangle/shop and coaching icons also provide direct access.
 
@@ -24,8 +25,8 @@ Each new reveal replaces the previous card; there is no nested preview stack.
 Normal browser Back/Forward continues to work independently. Direct navigation
 does not manufacture a previous card or a coaching upsell window.
 
-Browser history cannot rewrite the origin. Same-origin `/shop`, `/coach` and
-`/feed` routes therefore power the continuous journey on every supported host.
+Browser history cannot rewrite the origin. Same-origin `/shop`, `/coach`,
+`/subscribe` and `/feed` routes therefore power the continuous journey on every supported host.
 Existing shop/coaching subdomain entry points and the legacy `/coaching` redirect
 remain valid. Full document navigation is required when actually changing host.
 Reference: https://developer.mozilla.org/en-US/docs/Web/API/History/pushState.

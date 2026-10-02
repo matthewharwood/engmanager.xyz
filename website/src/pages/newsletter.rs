@@ -84,7 +84,7 @@ pub fn page(status: Option<&str>) -> String {
             <div class="newsletter-cosmos">{ sculpture_markup }</div>
             <footer class="newsletter-footer">
                 <span>"Notes from Matthew Harwood. Sent when there’s something worth sharing."</span>
-                <a href="/feed" data-hard-nav>"Read the articles"<span aria-hidden="true">" ↗"</span></a>
+                <a href="/feed">"Read the articles"<span aria-hidden="true">" ↗"</span></a>
             </footer>
         </main>
     };
@@ -105,7 +105,7 @@ pub fn page(status: Option<&str>) -> String {
         })
         .assets(assets)
         .scripts(scripts)
-        .nav_router(true)
+        .journey("subscribe", Some("/feed"))
         .render(body)
 }
 
@@ -189,7 +189,7 @@ fn confirmed() -> HtmlFragment {
             <p class="newsletter-card-description">"Thanks for making a little room in your inbox. I’ll send you a note when there’s something worth sharing."</p>
             <p class="newsletter-confirmation-note">"Until then, there’s plenty to read."</p>
         </div>
-        <a class="newsletter-reset" href="/feed" data-hard-nav>"Explore the articles"<span aria-hidden="true">" ↗"</span></a>
+        <a class="newsletter-reset" href="/feed">"Explore the articles"<span aria-hidden="true">" ↗"</span></a>
     }
 }
 

@@ -87,6 +87,9 @@ pub async fn article() -> Response {
             { HtmlFragment::new(html) }
             <div class="actions"><a class="button primary" href="/personality/prepare">"Start with yourself →"</a>
                 <a href="/personality/library">"Open your saved reports"</a></div>
+            // This document deliberately keeps form-action 'none'. The signup
+            // link reaches the ordinary newsletter form without weakening it.
+            { super::articles::render_newsletter_cta(false) }
         </article>
     })).into_response();
     response.extensions_mut().insert(PrivateDocument);
@@ -96,6 +99,7 @@ pub async fn article() -> Response {
 fn render(route: &str, label: &str, content: HtmlFragment) -> String {
     let article_assets = if route == "article" {
         view! {
+            <link rel="stylesheet" href={ asset_url("css/article-newsletter.css") } />
             <link rel="stylesheet" href={ asset_url("css/article-heroes.css") } />
             <script src={ asset_url("js/article-heroes.js") } defer></script>
         }

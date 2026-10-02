@@ -328,7 +328,7 @@ impl PageShell {
         if self.nav_router {
             let posters = serde_json::json!({
                 "renderer": asset_url("js/journey-poster-renderer.js"),
-                "models": (["shop", "coach", "feed"].into_iter().map(|kind| {
+                "models": (["shop", "coach", "subscribe", "feed"].into_iter().map(|kind| {
                     (kind, serde_json::json!({
                         "model": asset_url(&format!("journey/{kind}.glb")),
                         "still": asset_url(&format!("journey/{kind}.webp")),
@@ -345,6 +345,7 @@ impl PageShell {
                 &posters,
             ));
             head.add_js("js/nav-router.js");
+            head.add_js("js/journey-curtain.js");
         }
 
         let mut doc = String::with_capacity(16 * 1024);
@@ -430,7 +431,8 @@ impl PageShell {
                 let label = match kind {
                     "article" => "Explore the store",
                     "shop" => "Discover coaching",
-                    "coach" => "Back to the feed",
+                    "coach" => "Get the free newsletter",
+                    "subscribe" => "Back to the feed",
                     _ => "Continue exploring",
                 };
                 doc.push_str(view! {

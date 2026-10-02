@@ -241,7 +241,7 @@ test('device loss reports once and stops frames so the poster can use its still'
     assert.equal(h.state.frames.size, 0);
 });
 
-for (const name of ['shop', 'coach', 'feed']) {
+for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
     test(`real Blender ${name} export satisfies the runtime GLB contract`, async () => {
         const file = await readFile(new URL(`../website/assets/journey/${name}.glb`, import.meta.url));
         const h = harness({ data: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) });
@@ -312,7 +312,7 @@ test('an explicitly hidden fixed poster stays ready without animating in the bac
     renderer.destroy();
 });
 
-for (const name of ['shop', 'coach', 'feed']) {
+for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
     test(`${name} retains its vertex cavity shading and source attribution through export and upload`, async () => {
         const file = await readFile(new URL(`../website/assets/journey/${name}.glb`, import.meta.url));
         const jsonLength = file.readUInt32LE(12);
@@ -332,6 +332,10 @@ for (const name of ['shop', 'coach', 'feed']) {
         assert.match(attribution, /Changes:/, 'adaptations remain disclosed in the redistributed asset');
         if (name === 'shop') assert.match(attribution, /cap/, 'the added cap remains disclosed');
         if (name === 'feed') assert.match(attribution, /eyes/, 'the added eyes remain disclosed');
+        if (name === 'subscribe') {
+            assert.match(attribution, /mask/i, 'the cropped portrait mask remains disclosed');
+            assert.match(attribution, /scroll/i, 'the new carved scrolls remain disclosed');
+        }
 
         let coloredVertices = 0;
         let minimum = 1;

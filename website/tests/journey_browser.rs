@@ -45,6 +45,21 @@ async function navigate(path,options={}){const expected=new URL(path,win().locat
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
 async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]'))&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'scroll automatically reveals the next destination poster');}
+async function checkCurtain(){
+  const rag=query('[data-journey-curtain]');
+  assert(rag&&rag.closest('[data-journey-current]')&&rag.getAttribute('aria-hidden')==='true','one decorative torn curtain belongs to the outgoing surface');
+  await until(()=>!rag.hasAttribute('data-moving'),'curtain initially settles');
+  const path=rag.querySelector('.journey-curtain-edge'),rest=path.getAttribute('d');
+  win().scrollTo({top:win().scrollY+55,behavior:'instant'});
+  if(win().matchMedia('(prefers-reduced-motion: reduce)').matches){
+    await delay(100);assert(path.getAttribute('d')===rest&&!rag.hasAttribute('data-moving'),'reduced motion leaves the torn curtain completely still');
+  }else{
+    await until(()=>rag.hasAttribute('data-moving')&&path.getAttribute('d')!==rest,'scroll velocity bends the torn curtain');
+    await until(()=>!rag.hasAttribute('data-moving'),'curtain springs stop after scrolling');
+    assert(path.getAttribute('d')===rest,'curtain falls back to its exact original rag');
+  }
+  assert(doc().documentElement.scrollWidth<=win().innerWidth,'torn edge stays within the window width');
+}
 function observePosterRemoval(poster){
   const state={rendered:false,removedAfterRender:false};
   const observer=new (win().MutationObserver)(records=>{
@@ -223,6 +238,7 @@ try{
   // lifecycle callback pending to prove a completed fetch cannot uncover it.
   await navigate(article);await reveal();
   const mountPoster=query('[data-journey-next="shop"]');
+  await checkCurtain();
   assert(mountPoster.querySelector('.journey-poster-art canvas')&&mountPoster.querySelector('.journey-poster-art img')&&!mountPoster.querySelector('iframe'),'shop transition uses a sculpture canvas and still instead of a page iframe');
   const mountRemoval=observePosterRemoval(mountPoster);
   let releaseMount,mountStarted=false;
@@ -326,8 +342,28 @@ try{
   await click('[data-booking-close]');await until(()=>query('[data-booking]')?.dataset.bookingState==='closed'&&visible(previous()),'closing booking restores previous window');
   await click('[data-journey-resume]');await until(()=>win().location.pathname==='/shop'&&settled(),'resume storefront');
   assert(!previous()?.textContent.includes('Execution marketplace'),'the ephemeral previous window never retains an article stack');
-  await navigate('/coach',{source:'reveal'});await reveal();await promote('/feed');
-  assert(doc().body.classList.contains('homepage'),'coaching completes the cycle at the feed');
+  await navigate('/coach',{source:'reveal'});await reveal();
+  const newsletterPoster=query('[data-journey-next="subscribe"]');
+  assert(newsletterPoster&&newsletterPoster.querySelector('h2').textContent==='The newsletter.'&&newsletterPoster.querySelector('.journey-poster-rail').textContent.includes('03'),'coaching reveals the newsletter as the third destination');
+  assert(newsletterPoster.querySelector('.journey-poster-credit').textContent.includes('portrait carved into a mask and scrolls added'),'the newsletter sculpture credits its source and additions');
+  const newsletterRemoval=observePosterRemoval(newsletterPoster);
+  await promote('/subscribe');
+  const newsletterHost=query('[data-armillary]');
+  assert(doc()===identity&&query('[data-journey-current="subscribe"]')?.dataset.engNext==='/feed','the newsletter joins the same document between coaching and feed');
+  assert(doc().querySelectorAll('[data-journey-curtain]').length===1,'newsletter swaps retain one live curtain');
+  assert(newsletterRemoval.state.removedAfterRender&&query('[data-journey-current="subscribe"]').dataset.journeyRendered==='true','the newsletter poster dissolves after its signup and scene are ready');
+  newsletterRemoval.disconnect();
+  assert(query('.newsletter-form').method==='post'&&query('.newsletter-form').getAttribute('action')==='/api/newsletter/subscribe'&&query('#newsletter-email').required,'newsletter promotion retains the headless native signup form');
+  assert(query('[data-armillary-sound]').getAttribute('aria-pressed')==='false','newsletter sound stays off without opt-in');
+  assert(previous()?.dataset.journeyPrevious==='coach','newsletter promotion retains coaching as its one previous window');
+  await reveal();
+  assert(query('[data-journey-next="feed"] .journey-poster-rail').textContent.includes('04'),'the feed follows the newsletter as destination four');
+  await promote('/feed');
+  assert(doc().body.classList.contains('homepage')&&previous()?.dataset.journeyPrevious==='subscribe','the newsletter completes the cycle at the feed');
+  assert(!newsletterHost.isConnected&&!query('[data-armillary]'),'leaving the newsletter disposes its old scene');
+  await click('[data-journey-resume]');await until(()=>win().location.pathname==='/subscribe'&&settled(),'resumed newsletter remounts');
+  assert(query('[data-armillary]')===newsletterHost&&doc().querySelectorAll('[data-armillary]').length===1&&query('[data-armillary-sound]').getAttribute('aria-pressed')==='false','resuming the retained newsletter creates one fresh scene without restarting sound');
+  await navigate('/coach',{source:'reveal'});await navigate('/feed',{source:'reveal'});
   await click('[data-journey-resume]');await until(()=>win().location.pathname==='/coach'&&query('[data-reader]')?.dataset.readerReady==='true'&&settled(),'resumed coach reader remounts');
   assert(query('[data-reader-pivot]')?.textContent.length===1,'resumed coaching rebuilds the speed-reader pivot');
   query('[data-reader]').scrollIntoView({behavior:'instant'});await click('[data-reader-mode-option="speed"]');
@@ -455,6 +491,21 @@ try{
   assert(visible(lowDataPoster)&&!lowDataStill.hidden&&lowDataPageRequests===0&&lowDataModelRequests===0,'Save-Data reveals a usable sculpture without next-page or model prefetches');
   await promote('/shop');
   assert(lowDataPageRequests===1&&lowDataModelRequests===0,'Save-Data Continue loads the requested page without a GLB download');
+  let lowDataNewsletterRequests=0;
+  win().fetch=(input,options)=>{
+    const path=new URL(input?.url||String(input),win().location.href).pathname;
+    if(path==='/subscribe')lowDataNewsletterRequests++;
+    if(path.endsWith('.glb'))lowDataModelRequests++;
+    return actualFetch(input,options);
+  };
+  await navigate('/coach');await reveal();
+  const lowDataNewsletter=query('[data-journey-next="subscribe"] img');
+  await until(()=>lowDataNewsletter.complete&&lowDataNewsletter.naturalWidth>0,'Save-Data newsletter sculpture decoded');
+  assert(lowDataNewsletterRequests===0&&lowDataModelRequests===0,'Save-Data newsletter preview keeps page and GLB requests deferred');
+  await promote('/subscribe');
+  assert(lowDataNewsletterRequests===1&&query('[data-armillary]').dataset.renderer==='poster'&&lowDataModelRequests===0,'Save-Data newsletter signup uses its rendered static artwork');
+  await reveal();await promote('/feed');
+  assert(lowDataModelRequests===0&&doc()===identity,'Save-Data completes coaching to newsletter to feed without model downloads');
   win().fetch=actualFetch;
   if(connectionDescriptor)Object.defineProperty(win().navigator,'connection',connectionDescriptor);else delete win().navigator.connection;
   frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after cold mobile reveal');
