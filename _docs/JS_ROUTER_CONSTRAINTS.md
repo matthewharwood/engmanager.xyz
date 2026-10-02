@@ -3,8 +3,8 @@
 > **2026-09-24: Superseded by the cyclic journey architecture.** The current
 > implementation is documented in [cyclic-navigation-plan.md](cyclic-navigation-plan.md).
 > Shop and coach now have explicit mount/dispose lifecycles; the router runs on
-> all eligible browsers and uses same-origin `/shop`, `/coach`, and `/feed`
-> aliases, one inert next preview and one retained previous page. The exclusions
+> all eligible browsers and uses same-origin `/shop`, `/coach`, `/subscribe`,
+> and `/feed` aliases, one inert next preview and one retained previous page. The exclusions
 > and Chromium dormancy decisions below describe the historical router, not the
 > current contract. Personality and checkout remain hard document boundaries.
 

@@ -1,8 +1,8 @@
 # Sculpture sources and attribution
 
-## Aristotle portrait: coaching and shop
+## Aristotle portrait: coaching, shop and subscribe
 
-The coach and shop sculptures are adapted from **[“Aristotele bust”](https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930)** by **[nicola_scaramella](https://sketchfab.com/nicola_scaramella)**, licensed under **[Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)**. The creator describes it as a bust of the philosopher Aristotle from a private collection. Attribution does not imply the creator endorses this site or the adaptations.
+The coach, shop and subscribe sculptures are adapted from **[“Aristotele bust”](https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930)** by **[nicola_scaramella](https://sketchfab.com/nicola_scaramella)**, licensed under **[Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)**. The creator describes it as a bust of the philosopher Aristotle from a private collection. Attribution does not imply the creator endorses this site or the adaptations.
 
 The original STL was downloaded on 2026-10-01 using Sketchfab's normal authenticated “Download 3D Model” action. The model page, download dialog, and public metadata identify the license as CC Attribution; the public metadata explicitly permits commercial use with author credit. `aristotele-sketchfab.json` records that public metadata. No viewer geometry was extracted.
 
@@ -18,7 +18,9 @@ Our modifications are orientation and centering, normalization to a three-unit h
 
 Shop adds an original modeled dad cap to a copy of the accepted coaching sculpture. The hidden upper scalp is compressed to fit beneath the crown; the visible lower face, beard and bust vertices are preserved. New geometry includes the crown, curved visor, panel seams, stitches, ventilation eyelets, covered button, rear opening and adjustable strap. Cavity shading is rebaked for the assembled sculpture. The accepted coaching Blender file and runtime exports are not rewritten by the shop pipeline.
 
-Each adaptation's attribution is preserved in the GLB's `asset.copyright`, the Blender object's `attribution` property, and the Blender `SOURCE AND LICENSE` text block. The website presents a source credit beside both portraits. The rendered fallbacks are images of the same licensed adaptations and require the same credit.
+Subscribe adds an original carved correspondence letter to a copy of the accepted portrait. The envelope rests against the cropped chest, with recessed diagonal folds, a scalloped seal and a small four-point stamp. All 90,002 portrait vertices remain unchanged; the letter, seal and stamp are independently closed surfaces joined into the export object. Their shallow intersections with the torso are deliberate stone relief attachments. Cavity shading is rebaked for the assembly. `rebuild_subscribe.py` does not rewrite the accepted coach, shop or feed sources or runtime assets; `subscribe-validation.json` records the unchanged coach source hash, protected portrait vertex count and topology.
+
+Each adaptation's attribution is preserved in the GLB's `asset.copyright`, the Blender object's `attribution` property, and the Blender `SOURCE AND LICENSE` text block. The website presents a source credit beside each portrait. The rendered fallbacks are images of the same licensed adaptations and require the same credit.
 
 ## Brain: Human Reference Atlas
 

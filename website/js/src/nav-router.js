@@ -10,7 +10,7 @@
     const META = 'meta[name="description"],meta[name="robots"],meta[property^="og:"],meta[property^="article:"],meta[name^="twitter:"],link[rel="canonical"],link[rel="alternate"],script[type="application/ld+json"]';
     const privatePath = (p) => p === '/articles/big-personality' || /^\/personality(?:\/|$)/.test(p);
     const eligible = (url) => url.origin === location.origin && !privatePath(url.pathname)
-        && /^(?:\/|\/feed|\/shop|\/coach|\/search|\/articles\/|\/articles\/[a-z0-9-]+|\/products\/[a-z0-9-]+)$/.test(url.pathname);
+        && /^(?:\/|\/feed|\/shop|\/coach|\/subscribe|\/search|\/articles\/|\/articles\/[a-z0-9-]+|\/products\/[a-z0-9-]+)$/.test(url.pathname);
     const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
     const saveData = () => navigator.connection?.saveData === true;
     const logicalName = (url) => url.origin === location.origin && url.pathname.startsWith('/assets/')
@@ -278,7 +278,8 @@
     const POSTERS = {
         shop: { number: '01', title: 'The shop.', detail: 'Caps for people who build.', sculpture: 'A bearded marble portrait wearing a dad cap', credit: { ...aristotleCredit, changes: 'Adapted in Blender; cap added.' } },
         coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A marble bust of Aristotle', credit: aristotleCredit },
-        feed: { number: '03', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'An anatomical marble brain with carved eyes', credit: {
+        subscribe: { number: '03', title: 'The newsletter.', detail: 'Free coaching notes. A little perspective in your inbox.', sculpture: 'A marble bust of Aristotle with a folded letter and seal', credit: { ...aristotleCredit, changes: 'Adapted in Blender; folded letter and seal added.' } },
+        feed: { number: '04', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'An anatomical marble brain with carved eyes', credit: {
             source: 'Brain by Kristen Browne & Heidi Schlehlein',
             url: 'https://doi.org/10.48539/HBM929.XKCL.339',
             changes: 'Adapted in Blender; eyes and base added.',
@@ -387,11 +388,11 @@
     }
 
     function label(kind) {
-        return ({ shop: 'the store', coach: 'coaching', feed: 'the feed', article: 'your article', articles: 'articles' })[kind] || 'the next page';
+        return ({ shop: 'the store', coach: 'coaching', subscribe: 'the newsletter', feed: 'the feed', article: 'your article', articles: 'articles' })[kind] || 'the next page';
     }
 
     function posterKind(url) {
-        return ({ '/shop': 'shop', '/coach': 'coach', '/feed': 'feed', '/': 'feed' })[new URL(url, location.href).pathname];
+        return ({ '/shop': 'shop', '/coach': 'coach', '/subscribe': 'subscribe', '/feed': 'feed', '/': 'feed' })[new URL(url, location.href).pathname];
     }
 
     // The sculpture and its small fallback are local metadata. Show them as

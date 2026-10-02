@@ -15,7 +15,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = Path(__file__).resolve().parent
 OUT = ROOT / "website/assets/journey"
-KINDS = ("shop", "coach", "feed")
+KINDS = ("shop", "coach", "subscribe", "feed")
 
 
 def package_stills():
@@ -39,7 +39,7 @@ def package_stills():
         alpha = pixels[:, :, 3:4]
         target[:] = pixels[:, :, :3] * alpha + target * (1 - alpha)
         bpy.data.images.remove(img)
-    sheet = bpy.data.images.new("Marble studies — shop, coach, feed", width=width * len(KINDS), height=height, alpha=False)
+    sheet = bpy.data.images.new("Marble studies — shop, coach, subscribe, feed", width=width * len(KINDS), height=height, alpha=False)
     sheet.pixels.foreach_set(canvas.ravel())
     sheet.filepath_raw = str(SOURCE / "contact-sheet.png")
     sheet.file_format = "PNG"
@@ -53,9 +53,9 @@ def main():
     options.add_argument("--sheet-only", action="store_true", help="Refresh the comparison without rebuilding any model.")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     if not args.sheet_only:
-        # Shop reads the accepted coach source; full rebuilds must refresh that
-        # dependency before fitting the cap. Sheet order stays shop/coach/feed.
-        for kind in ("coach", "shop", "feed"):
+        # Shop and subscribe read the accepted coach source; full rebuilds must
+        # refresh that dependency first. Sheet order follows the site journey.
+        for kind in ("coach", "shop", "subscribe", "feed"):
             if args.only and kind != args.only:
                 continue
             subprocess.run([
