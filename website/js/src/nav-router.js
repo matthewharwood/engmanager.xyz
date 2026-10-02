@@ -267,10 +267,18 @@
         } finally { clearTimeout(timer); }
     }
 
+    const aristotleCredit = {
+        source: 'Aristotele bust by nicola_scaramella',
+        url: 'https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930',
+    };
     const POSTERS = {
-        shop: { number: '01', title: 'The shop.', detail: 'Caps for people who build.', sculpture: 'A marble portrait wearing a dad cap' },
-        coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A marble bust of Aristotle' },
-        feed: { number: '03', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'A marble brain with watchful eyes' },
+        shop: { number: '01', title: 'The shop.', detail: 'Caps for people who build.', sculpture: 'A bearded marble portrait wearing a dad cap', credit: { ...aristotleCredit, changes: 'Adapted in Blender; cap added.' } },
+        coach: { number: '02', title: 'Coaching.', detail: 'Make room for a new perspective.', sculpture: 'A marble bust of Aristotle', credit: aristotleCredit },
+        feed: { number: '03', title: 'The feed.', detail: 'Follow a thought somewhere new.', sculpture: 'An anatomical marble brain with carved eyes', credit: {
+            source: 'Brain by Kristen Browne & Heidi Schlehlein',
+            url: 'https://doi.org/10.48539/HBM929.XKCL.339',
+            changes: 'Adapted in Blender; eyes and base added.',
+        } },
     };
     let rendererScript;
     function loadPosterRenderer() {
@@ -309,16 +317,16 @@
         const heading = document.createElement('h2'); heading.textContent = spec.title;
         const detail = document.createElement('p'); detail.textContent = spec.detail;
         caption.append(heading, detail);
-        if (kind === 'coach') {
+        if (spec.credit) {
             const title = document.createElement('div');
             const credit = document.createElement('small'); credit.className = 'journey-poster-credit';
             const source = document.createElement('a');
-            source.href = 'https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930';
-            source.textContent = 'Aristotele bust by nicola_scaramella';
+            source.href = spec.credit.url;
+            source.textContent = spec.credit.source;
             const license = document.createElement('a');
             license.href = 'https://creativecommons.org/licenses/by/4.0/';
             license.textContent = 'CC BY 4.0';
-            credit.append(source, ' · ', license, document.createElement('br'), 'Adapted in Blender.');
+            credit.append(source, ' · ', license, document.createElement('br'), spec.credit.changes || 'Adapted in Blender.');
             heading.replaceWith(title);
             title.append(heading, credit);
         }

@@ -1,0 +1,20 @@
+{
+  "source": "https://lod.humanatlas.io/ref-organ/brain-male/v1.3/assets/3d-vh-m-allen-brain.glb",
+  "source_sha256": "2b9ad5b53e40e9f0936da74f7be38d2eed15604e26358c3870a0ea13499b9a35",
+  "copyright": "Adapted from \"3D Reference Organ for Brain, Male v1.3\" by Kristen Browne and Heidi Schlehlein. https://doi.org/10.48539/HBM929.XKCL.339 Licensed CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Changes: anatomical surface consolidation, orientation, normalization, conservative smoothing and decimation, marble material, vertex cavity shading; original carved eyes and short bust support added.",
+  "export": {
+    "vertices": 89739,
+    "faces": 179702,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      89739
+    ],
+    "signed_volume": 5.859610620350332
+  },
+  "linear_cavity": {
+    "minimum": 0.6499999761581421,
+    "mean": 0.8204699754714966,
+    "maximum": 1.0
+  }
+}

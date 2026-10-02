@@ -26,3 +26,5 @@ For journey/navigation changes, keep the real Chrome tests for normal and reduce
 For WebGPU or glTF changes, inspect the actual exported assets in Chrome as well as running loader tests. A Blender still can hide missing geometry or inward-facing triangles because its render settings differ from the browser's back-face culling. Check all three sculptures, reduced-motion/static fallback, and resource disposal after navigation; mock GPU tests alone do not compile WGSL or prove the result is visible.
 
 For figurative sculpture, compare front, profile, and three-quarter views against real references before polishing materials. Preserve a detailed source mesh and simplify an export copy; inspect disconnected fragments and non-manifold edges instead of treating a successful export as visual acceptance. Record the source and license for any reused geometry, including attribution and modification notes.
+
+For scripted Blender builds, pass `--python-exit-code 1` before `--python` in both outer commands and child processes. Blender otherwise exits successfully after Python exceptions, which can hide failed validation and package stale assets.
