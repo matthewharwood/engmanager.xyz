@@ -107,7 +107,9 @@ fn render_reveal_card() -> HtmlFragment {
     view! {
         <aside id="article-reveal" popover="manual" class="reveal-card" data-swap-region="reveal">
             <div class="reveal-card-frame">
-                <canvas class="reveal-card-cloth" aria-hidden="true"></canvas>
+                <div class="reveal-card-decoration" aria-hidden="true">
+                    <canvas class="reveal-card-cloth" aria-hidden="true"></canvas>
+                </div>
                 <div class="reveal-card-surface">
                     <header class="reveal-card-head">
                         <span class="reveal-card-emoji" data-reveal-emoji aria-hidden="true">"⌬"</span>

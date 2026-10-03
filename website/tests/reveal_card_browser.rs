@@ -101,6 +101,9 @@ try{
   await delay(650);
   const bounds=mobileFrame.getBoundingClientRect();
   assert(bounds.left>=-1&&bounds.right<=321,'cloth modal fits a 320px mobile viewport');
+  assert(mobileFrame.scrollWidth<=mobileFrame.clientWidth+1,'shader overscan does not expand the interactive card scroll width');
+  const mobilePopover=query('#article-reveal');mobilePopover.scrollLeft=640;
+  assert(mobilePopover.scrollWidth<=mobilePopover.clientWidth+1&&Math.abs(mobilePopover.scrollLeft)<1,'shader cloth and shadow do not make the mobile popover horizontally scrollable');
   assert(content.scrollWidth<=content.clientWidth+1,'long reveal content does not cause horizontal overflow');
   assert(['auto','scroll'].includes(getComputedStyle(content).overflowY)&&content.scrollHeight>content.clientHeight,'long reveal content uses native vertical scrolling');
   const controlFits=node=>{

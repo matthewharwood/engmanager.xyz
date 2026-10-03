@@ -665,6 +665,17 @@ body[data-dragging="true"] {
     background: var(--surface-1);
 }
 
+/* Keep the shader's 24px overscan paint outside the interactive card's
+ * scrollable overflow. Clipping the frame itself would cut off its shadow. */
+.reveal-card-decoration {
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    overflow-clip-margin: 24px;
+    contain: layout paint;
+    pointer-events: none;
+}
+
 .reveal-card-cloth {
     display: none;
     position: absolute;
