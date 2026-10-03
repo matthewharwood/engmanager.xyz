@@ -107,35 +107,39 @@ fn render_reveal_card() -> HtmlFragment {
     view! {
         <aside id="article-reveal" popover="manual" class="reveal-card" data-swap-region="reveal">
             <div class="reveal-card-frame">
-                <div class="reveal-card-glint" aria-hidden="true"></div>
-                <header class="reveal-card-head">
-                    <span class="reveal-card-emoji" data-reveal-emoji aria-hidden="true">"⌬"</span>
-                    <span class="reveal-card-category" data-reveal-category>"…"</span>
-                    <button class="reveal-card-close"
-                            type="button"
-                            popovertarget="article-reveal"
-                            popovertargetaction="hide"
-                            aria-label="Close">
-                        "✕"
-                    </button>
-                </header>
-                <div class="reveal-card-content">
-                    <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
-                    <time class="reveal-card-date" data-reveal-date>"…"</time>
-                    <p class="reveal-card-summary" data-reveal-summary>"…"</p>
-                    <div class="reveal-card-tags" data-reveal-tags></div>
+                <div class="reveal-card-decoration" aria-hidden="true">
+                    <canvas class="reveal-card-cloth" aria-hidden="true"></canvas>
                 </div>
-                <footer class="reveal-card-actions">
-                    <button class="reveal-card-dismiss"
-                            type="button"
-                            popovertarget="article-reveal"
-                            popovertargetaction="hide">
-                        "Nahhh"
-                    </button>
-                    <a class="reveal-card-continue" data-reveal-continue href="#">
-                        "Read →"
-                    </a>
-                </footer>
+                <div class="reveal-card-surface">
+                    <header class="reveal-card-head">
+                        <span class="reveal-card-emoji" data-reveal-emoji aria-hidden="true">"⌬"</span>
+                        <span class="reveal-card-category" data-reveal-category>"…"</span>
+                        <button class="reveal-card-close"
+                                type="button"
+                                popovertarget="article-reveal"
+                                popovertargetaction="hide"
+                                aria-label="Close">
+                            "✕"
+                        </button>
+                    </header>
+                    <div class="reveal-card-content">
+                        <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
+                        <time class="reveal-card-date" data-reveal-date>"…"</time>
+                        <p class="reveal-card-summary" data-reveal-summary>"…"</p>
+                        <div class="reveal-card-tags" data-reveal-tags></div>
+                    </div>
+                    <footer class="reveal-card-actions">
+                        <button class="reveal-card-dismiss"
+                                type="button"
+                                popovertarget="article-reveal"
+                                popovertargetaction="hide">
+                            "Nahhh"
+                        </button>
+                        <a class="reveal-card-continue" data-reveal-continue href="#">
+                            "Read →"
+                        </a>
+                    </footer>
+                </div>
             </div>
         </aside>
     }
@@ -366,6 +370,7 @@ pub async fn index() -> Html<String> {
             view! {
                 <a class="article-fluid-link"
                    href={ format!("/articles/{}", a.slug) }
+                   aria-label={ a.title }
                    style={ format!("view-transition-name: article-{}", a.slug) }
                    data-slug={ a.slug }
                    data-category={ a.category.slug() }
@@ -413,7 +418,7 @@ pub async fn index() -> Html<String> {
                             </text>
                         </svg>
                         // Fallback rendered as HTML text when the SVG would
-                        // shrink below 16px. fit-text.js toggles .is-too-small
+                        // shrink below 20px. fit-text.js toggles .is-too-small
                         // on the SVG; CSS swaps the visible element.
                         <span class="article-fluid-fallback" aria-hidden="true">
                             { a.title.to_uppercase() }
@@ -466,6 +471,7 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/keyboard-nav.js");
     scripts.add_js("js/view-transitions.js");
     scripts.add_js("js/visited-articles.js");
+    scripts.add_js("js/reveal-cloth.js");
     scripts.add_js("js/trash-drag.js");
     scripts.add(&site_nav);
     scripts.add_inline(render_experience_urls());

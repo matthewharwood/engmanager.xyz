@@ -60,8 +60,26 @@ const win=()=>frame.contentWindow,doc=()=>frame.contentDocument,root=()=>doc().d
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(value,label)=>{if(!value)throw Error(label);checks.push(label)};
 async function until(predicate,label){for(let i=0;i<400;i++){if(predicate())return;await delay(20)}throw Error('Timed out: '+label)}
-async function ready(){await until(()=>win().__engTypography&&doc().readyState==='complete','document scripts');await win().__engTypography.ready;await win().__engTypography.displayReady;}
+async function layout(){await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));}
+async function ready(){await until(()=>win().__engTypography&&doc().readyState==='complete','document scripts');await win().__engTypography.ready;await win().__engTypography.displayReady;await layout();}
 async function reload(path){const loaded=new Promise(resolve=>frame.addEventListener('load',resolve,{once:true}));frame.src=path;await loaded;await ready();}
+function feedTitleFonts(label,expectFallback=true){
+ const rows=[...doc().querySelectorAll('.article-fluid-link')];
+ assert(rows.length>0,label+' has feed titles');
+ const fallbackRows=rows.filter(row=>row.querySelector('.article-fluid-svg').classList.contains('is-too-small'));
+ if(expectFallback)assert(fallbackRows.length>0,label+' exercises visible minimum-size title fallback');
+ for(const row of rows){
+  const svg=row.querySelector('.article-fluid-svg'),text=svg.querySelector('text'),fallback=row.querySelector('.article-fluid-fallback');
+  const svgFont=win().getComputedStyle(text),htmlFont=win().getComputedStyle(fallback);
+  assert(row.getAttribute('aria-label')&&row.getAttribute('aria-label')===svg.getAttribute('aria-label'),label+' preserves link name '+row.dataset.slug+' in both render paths');
+  assert(svgFont.fontFamily.includes('PP Monument Extended')&&svgFont.fontWeight==='900',label+' keeps SVG '+row.dataset.slug+' in Monument Black');
+  assert(htmlFont.fontFamily.includes('PP Monument Extended')&&htmlFont.fontWeight==='900',label+' keeps HTML fallback '+row.dataset.slug+' in Monument Black');
+  assert(!htmlFont.fontFamily.includes('Redacted'),label+' does not redact fallback '+row.dataset.slug);
+  if(svg.classList.contains('is-too-small'))assert(htmlFont.display!=='none'&&win().getComputedStyle(svg).display==='none',label+' shows HTML fallback '+row.dataset.slug);
+ }
+ assert([...doc().fonts].some(face=>face.family==='PP Monument Extended'&&face.weight==='900'&&face.status==='loaded'),label+' has the decoded display face');
+}
+async function resizeFeed(width){frame.style.width=width+'px';await layout();}
 const cycle=()=>doc().querySelector('[data-theme-cycle]').click();
 const loading=()=>win().__fontStates.some(state=>['loading','leaving','entering'].includes(state));
 const reset=()=>{win().__fontStates.length=0;win().__fontRequests.length=0};
@@ -73,9 +91,11 @@ try{
  assert(win().__fontRequests.length===1,'first paint downloads only one theme body font');
  assert([...doc().fonts].filter(face=>face.status==='loaded').length===3,'only display, Redacted and active body are decoded');
  assert(doc().fonts.check('16px Redacted'),'Redacted is eagerly available');
+ feedTitleFonts('desktop initial Light');
  for(const [theme,family] of Object.entries(families).slice(1)){
   reset();cycle();await until(()=>root().dataset.fontState==='loading','cold '+theme);
   assert(win().getComputedStyle(doc().body).fontFamily.includes('Redacted'),theme+' renders the Redacted face while downloading');
+  feedTitleFonts('cold '+theme);
   await win().__engTypography.ready;await delay(20);
   assert(root().dataset.fontTheme===theme,theme+' commits the requested face');
   const panel=win().getComputedStyle(doc().querySelector('.site-search-panel'));
@@ -88,6 +108,7 @@ try{
   if(theme==='cyberpunk')assert(panel.backdropFilter.includes('blur(0px)'),theme+' disables glass blur');
 
   assert(win().getComputedStyle(doc().body).fontFamily.includes(family),theme+' uses '+family);
+  feedTitleFonts('decoded '+theme);
   assert([...doc().fonts].some(face=>face.family===family&&face.status==='loaded'),theme+' is fully decoded before reveal');
   assert(win().__fontRequests.length===1,theme+' requests just its own face');
   const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -105,8 +126,16 @@ try{
  const posterHeading=doc().querySelector('.journey-poster-caption h2');
  assert(posterHeading&&win().getComputedStyle(posterHeading).fontFamily.includes('PP Eiko'),'journey poster inherits the decoded theme face');
  await win().__engNav.navigate('/feed',{source:'reveal'});
+ await layout();feedTitleFonts('retained feed after soft navigation');
  await until(()=>doc().querySelector('.journey-previous .journey-preview')?.contentDocument?.documentElement?.dataset.fontTheme==='luxury','previous preview font');
  assert(true,'the retained previous-page preview uses the same decoded theme face');
+ for(const width of [320,390,1200]){await resizeFeed(width);feedTitleFonts(width+'px feed');}
+ const thresholdTitle=doc().querySelector('.article-fluid-link[data-slug="big-personality"] .article-fluid-svg');
+ assert(thresholdTitle?.classList.contains('is-too-small'),'long title uses the readable HTML fallback at desktop width');
+ await resizeFeed(4096);await until(()=>!thresholdTitle.classList.contains('is-too-small'),'long title crosses into fitted SVG');
+ feedTitleFonts('wide SVG threshold',false);
+ await resizeFeed(390);await until(()=>thresholdTitle.classList.contains('is-too-small'),'long title returns to HTML fallback');
+ feedTitleFonts('mobile fallback after threshold resize');
  // Mobile hard-load recovery uses actual Chrome font decoding and the same
  // runtime, with only cache/network faults injected before startup.
  frame.style.width='390px';
@@ -126,6 +155,7 @@ try{
  win().__failShared=false;win().dispatchEvent(new Event('online'));await win().__engTypography.displayReady;
  await until(()=>displayFaces().some(face=>face.status==='loaded')&&refitted,'display font recovery and title refit');refitObserver.disconnect();
  assert(true,'online recovery replaces a sticky failed CSS display face and remeasures mobile SVG headings');
+ await layout();feedTitleFonts('mobile display recovery');
  result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATE: '+JSON.stringify(root()?.dataset)+'\nSTATES: '+JSON.stringify(win()?.__fontStates)+'\nREQUESTS: '+JSON.stringify(win()?.__fontRequests)+'\nDISPLAY: '+JSON.stringify([...doc().fonts].map(face=>({family:face.family,status:face.status,weight:face.weight})))+'\nBOUNDS: '+window.__fallbackBounds+' -> '+doc().querySelector('svg.fluid-display-svg')?.getAttribute('viewBox')+'\nCHECKS: '+checks.join('\n');document.body.dataset.testResult='failed'}
 </script></body></html>"##;

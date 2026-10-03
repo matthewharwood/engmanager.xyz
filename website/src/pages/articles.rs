@@ -208,6 +208,7 @@ fn layout(
         scripts.add_js("js/copy-code.js");
         scripts.add_js("js/article-taxonomy.js");
         scripts.add_js("js/article-heroes.js");
+        scripts.add_js("js/article-date-countup.js");
         // The TOC scrollspy (formerly flat js/toc-waypoints.js) keeps its
         // exact head position; its stylesheet is pinned after articles.css
         // in the assets section above, so only the script lands here.

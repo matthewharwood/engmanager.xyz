@@ -24,6 +24,9 @@ tracking −.02em. `--font-sans` aliases the active body role for existing compo
 `--font-display` is the shared heading face; `--font-mono` remains available for
 code and technical annotations. Individual components retain their existing scale.
 Stripe's isolated payment controls use their available system font stack.
+Feed titles keep the display face when they switch from a fitted SVG to the
+20px HTML fallback. Both paths use Monument Black, including while a theme's
+body face is loading.
 
 ## Loading and transitions
 
@@ -78,5 +81,7 @@ hard-reload cache hits, rapid clicks, reduced motion, and soft navigation. Mobil
 fixtures also inject corrupt cache bytes, stalled storage, and an initial network
 failure against the real font decoder, plus a failed CSS display font followed
 by an online recovery and SVG title refit.
+Feed title checks cover both SVG and visible HTML lettering across themes,
+cold body loads, soft navigation, and viewport changes through the 20px threshold.
 Rust tests verify every manifest asset resolves to a content-hashed URL and only
 the two shared faces are preloaded.

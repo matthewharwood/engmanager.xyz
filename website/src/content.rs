@@ -312,6 +312,21 @@ pub struct Article {
 
 const ARTICLE_LIST: &[Article] = &[
     Article {
+        slug: "your-gmail-avatar-is-part-of-your-job-search",
+        title: "Your Gmail Avatar Is Part of Your Job Search",
+        title_alias: None,
+        date: ArticleDate::new(2026, 10, 2),
+        summary: "Notes from live engineering coaching: make yourself recognizable, give people one piece of work they can inspect, and turn a five-minute explanation into a repeatable way to share it.",
+        indexed: true,
+        category: Category::EngineeringLeadership,
+        tags: &[
+            Tag::Community,
+            Tag::Mentorship,
+            Tag::Workflow,
+            Tag::Automation,
+        ],
+    },
+    Article {
         slug: "big-personality",
         title: "The Big Six-Seven: Understand Yourself Before You Perform Yourself",
         title_alias: None,

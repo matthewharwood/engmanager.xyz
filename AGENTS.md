@@ -31,6 +31,8 @@ Exercise automatic reveals by scrolling instead of calling `prepareNext` from th
 
 For mobile interstitials, exercise the initiating click/focus and sample horizontal overflow throughout entrance animations. Checking only the settled modal can miss overflow from the underlying row's hover zoom or overshooting decoration. Keep keyboard focus from panning the page while the card animates.
 
+Keep oversized decorative canvases in a separate layer with layout and paint containment so their overscan cannot enlarge the interactive card's scrollable area. Verify card and popover scroll widths with native WebGL: GPU-disabled Chrome can still expose software WebGL on Linux, even when the same local configuration uses a CSS fallback.
+
 For WebGPU or glTF changes, inspect the actual exported assets in Chrome as well as running loader tests. A Blender still can hide missing geometry or inward-facing triangles because its render settings differ from the browser's back-face culling. Check every journey sculpture, reduced-motion/static fallback, and resource disposal after navigation; mock GPU tests alone do not compile WGSL or prove the result is visible.
 
 For figurative sculpture, compare front, profile, and three-quarter views against real references before polishing materials. Preserve a detailed source mesh and simplify an export copy; inspect disconnected fragments and non-manifold edges instead of treating a successful export as visual acceptance. Record the source and license for any reused geometry, including attribution and modification notes.
