@@ -164,6 +164,9 @@
 }
 
 .article-meta-date {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     margin-inline-start: auto;
     display: inline-flex;
     align-items: center;
@@ -181,6 +184,39 @@
     white-space: nowrap;
     letter-spacing: 0.02em;
     text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+}
+
+.article-meta-date[data-date-countup] {
+    min-inline-size: calc(12ch + 0.6875rem);
+}
+
+.article-date-countup-label {
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+    inline-size: 12ch;
+}
+
+.article-meta-date[data-date-countup="running"] {
+    color: var(--brand);
+    border-color: color-mix(in oklab, var(--brand) 45%, var(--ctp-surface0));
+    background: color-mix(in oklab, var(--brand) 8%, var(--ctp-mantle));
+}
+
+.article-meta-date[data-date-countup="running"]::before {
+    background: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--brand) 15%, transparent);
+}
+
+.article-meta-date[data-date-countup="running"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 20%, color-mix(in oklab, var(--brand) 18%, transparent) 50%, transparent 80%);
+    transform: translateX(var(--date-countup-sweep, -130%));
 }
 
 .article-meta-date::before {

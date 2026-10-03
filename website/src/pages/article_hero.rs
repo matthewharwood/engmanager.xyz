@@ -79,6 +79,12 @@ pub const HEROES: &[HeroSpec] = &[
         description: "A product grid gives way to one focused cap and a complete checkout",
         poster: r#"<g fill="none" stroke="currentColor" stroke-width="3"><rect x="90" y="78" width="250" height="192" rx="9"/><path d="M173 78v192m84-192v192M90 142h250M90 206h250" opacity=".5"/><rect x="173" y="142" width="84" height="64" fill="currentColor" fill-opacity=".12"/><path d="M215 181q-16-18 0-28 16 10 0 28"/><path d="M345 115 482 65m-137 180 137 50" stroke-dasharray="7 8" opacity=".6"/><rect x="480" y="55" width="74" height="240" rx="10"/><path d="M495 185q0-50 22-50t22 50m-44 0q22 11 44 0"/></g>"#,
     },
+    HeroSpec {
+        slug: "your-gmail-avatar-is-part-of-your-job-search",
+        name: "IN REGISTER",
+        description: "Repeated impressions of one angular signature align into a recognizable mark",
+        poster: r#"<g fill="none" stroke="currentColor" stroke-width="2" opacity=".5"><path d="M94 60h24m-12-12v24m376-12h24m-12-12v24M94 280h24m-12-12v24m376-12h24m-12-12v24"/></g><g transform="translate(300 170) rotate(-25)"><g transform="translate(-14 -8)" fill="none" stroke="currentColor" stroke-width="2" opacity=".42"><path d="M-96-40h12v80h-12zm24-25h12v130h-12zm24 17h12v96h-12zm24-44h12v184h-12zm24 34h12v116H0zm24-20h12v156H24zm24 48h12v60H48zm24-32h12v124H72zm24 18h12v88H96z"/></g><g transform="translate(14 8)" fill="none" stroke="currentColor" stroke-width="2" opacity=".42"><path d="M-96-40h12v80h-12zm24-25h12v130h-12zm24 17h12v96h-12zm24-44h12v184h-12zm24 34h12v116H0zm24-20h12v156H24zm24 48h12v60H48zm24-32h12v124H72zm24 18h12v88H96z"/></g><path d="M-96-40h12v80h-12zm24-25h12v130h-12zm24 17h12v96h-12zm24-44h12v184h-12zm24 34h12v116H0zm24-20h12v156H24zm24 48h12v60H48zm24-32h12v124H72zm24 18h12v88H96z" fill="currentColor" opacity=".72"/></g>"#,
+    },
 ];
 
 pub fn render(slug: &str) -> HtmlFragment {

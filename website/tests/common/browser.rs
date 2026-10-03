@@ -176,6 +176,24 @@ pub async fn dump_dom_with_blink_features(
     enabled: &[&str],
     disabled: &[&str],
 ) -> String {
+    dump_dom_with_options(chrome, url, reduced_motion, enabled, disabled, false).await
+}
+
+/// Use Chrome's native software WebGL renderer for shader integration checks.
+/// Other browser suites keep their existing GPU-disabled configuration.
+#[allow(dead_code)]
+pub async fn dump_dom_with_webgl(chrome: PathBuf, url: &str, reduced_motion: bool) -> String {
+    dump_dom_with_options(chrome, url, reduced_motion, &[], &[], true).await
+}
+
+async fn dump_dom_with_options(
+    chrome: PathBuf,
+    url: &str,
+    reduced_motion: bool,
+    enabled: &[&str],
+    disabled: &[&str],
+    webgl: bool,
+) -> String {
     let experimental = !enabled.is_empty() || !disabled.is_empty();
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -188,7 +206,6 @@ pub async fn dump_dom_with_blink_features(
     let mut command = Command::new(chrome);
     command.args([
         "--headless=new",
-        "--disable-gpu",
         "--no-sandbox",
         "--no-first-run",
         "--no-default-browser-check",
@@ -196,6 +213,11 @@ pub async fn dump_dom_with_blink_features(
         "--window-size=1400,1200",
         "--remote-debugging-port=0",
     ]);
+    if webgl {
+        command.args(["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]);
+    } else {
+        command.arg("--disable-gpu");
+    }
     if reduced_motion {
         command.arg("--force-prefers-reduced-motion=reduce");
     }

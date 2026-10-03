@@ -64,7 +64,7 @@ cp "$TPL/card.html" "$WORK/"
 cp "$ROOT/website/assets/fonts/monumentextended-black-webfont.woff2" "$WORK/"
 cp "$ROOT/website/assets/coach/"*.webp "$WORK/" 2>/dev/null || true
 cp "$ROOT/website/assets/auteurs/discord-qr.png" "$WORK/"
-cp "$ROOT/website/js/src/auteurs-shader.js" "$WORK/"
+cp "$ROOT/website/js/src/article-heroes.js" "$WORK/"
 
 # The author avatar lives in Cloudflare Images; pull it once for the byline.
 echo "→ fetching the author avatar"

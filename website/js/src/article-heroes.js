@@ -1,4 +1,4 @@
-// Eleven mechanisms, one renderer. See _docs/article-hero-atlas.md for the
+// Twelve mechanisms, one renderer. See _docs/article-hero-atlas.md for the
 // content/algorithm/treatment matrix. None of these are personality scores or
 // live business data; they are deterministic editorial abstractions.
 (() => {
@@ -6,7 +6,7 @@
         'auteurs', 'autonomous-av-studio', 'big-personality', 'claude-code-lsp',
         'jsx-like-rust-macro', 'mcp-blender-library-3d-print', 'project-foottraffic',
         'talking-not-typing', 'the-casino-hypothesis', 'the-execution-marketplace',
-        'vibe-coding-a-shop',
+        'vibe-coding-a-shop', 'your-gmail-avatar-is-part-of-your-job-search',
     ];
     const VERTEX = `#version 300 es
     in vec2 a_position;
@@ -51,6 +51,41 @@
         if (i < 3) return 1;
         if (i < 5) return 2;
         return 3;
+    }
+    float identitySample(int i) {
+        if (i < 0 || i > 8) return 0.0;
+        if (i == 0) return 0.12;
+        if (i == 1) return 0.19;
+        if (i == 2) return 0.14;
+        if (i == 3) return 0.27;
+        if (i == 4) return 0.17;
+        if (i == 5) return 0.23;
+        if (i == 6) return 0.09;
+        if (i == 7) return 0.18;
+        return 0.13;
+    }
+    float identityCorrelation(float lag) {
+        // A shifted encounter is compared with the same nine-sample identity.
+        // Interpolation makes the normalized discrete correlation continuous.
+        float product = 0.0, referenceEnergy = 0.0, encounterEnergy = 0.0;
+        for (int i = 0; i < 9; i++) {
+            float sampleAt = float(i) + lag;
+            int index = int(floor(sampleAt));
+            float encounter = mix(identitySample(index), identitySample(index + 1), fract(sampleAt));
+            float reference = identitySample(i);
+            product += reference * encounter;
+            referenceEnergy += reference * reference;
+            encounterEnergy += encounter * encounter;
+        }
+        return product / sqrt(max(referenceEnergy * encounterEnergy, 0.0001));
+    }
+    float identityMark(vec2 p) {
+        float distanceToMark = 10.0;
+        for (int i = 0; i < 9; i++) {
+            vec2 center = vec2((float(i) - 4.0) * 0.065, 0.0);
+            distanceToMark = min(distanceToMark, box(p - center, vec2(0.018, identitySample(i))));
+        }
+        return distanceToMark;
     }
     void main() {
         float aspect = u_resolution.x / u_resolution.y;
@@ -217,6 +252,27 @@
             a += stroke(box(p - center, size), 0.005);
             a += fill(box(p - center, size - 0.012)) * 0.19;
             b += stroke(segment(p, vec2(-0.10, 0.12), center + vec2(-size.x, size.y)), 0.001) * progress;
+        } else if (u_scene == 11) {
+            // Normalized cross-correlation / print registration: repeated
+            // impressions of one signature cohere when their identity aligns.
+            // This is an editorial analogy, not a score of a person's value.
+            float angle = 0.43;
+            vec2 q = mat2(cos(angle), -sin(angle), sin(angle), cos(angle)) * p;
+            float lag = 1.2 * sin(t * 0.32);
+            float matchStrength = identityCorrelation(lag);
+            vec2 offset = vec2(lag * 0.065, 0.042 * sin(t * 0.32));
+            float reference = identityMark(q);
+            float firstImpression = identityMark(q - offset);
+            float nextImpression = identityMark(q + offset);
+            a = fill(firstImpression) * (0.32 + 0.30 * matchStrength);
+            b = fill(nextImpression) * (0.30 + 0.26 * matchStrength);
+            c = fill(reference) * (0.12 + 0.70 * pow(matchStrength, 9.0));
+            // Unmoving register marks keep the drifting impressions legible.
+            for (int x = -1; x <= 1; x += 2) for (int y = -1; y <= 1; y += 2) {
+                vec2 corner = vec2(float(x) * 0.49, float(y) * 0.34);
+                c += stroke(segment(p, corner - vec2(0.026, 0.0), corner + vec2(0.026, 0.0)), 0.0015) * 0.45;
+                c += stroke(segment(p, corner - vec2(0.0, 0.026), corner + vec2(0.0, 0.026)), 0.0015) * 0.45;
+            }
         }
 
         color = mix(color, u_secondary, clamp(b * 0.65, 0.0, 1.0));
@@ -235,6 +291,11 @@
         }
         if (u_scene == 1 || u_scene == 8) {
             color *= 0.97 + 0.03 * sin(gl_FragCoord.y * 1.2); // TV raster
+        }
+        if (u_scene == 11) {
+            // A diagonal engraved register distinguishes each overprinted bar.
+            float hatch = stroke(fract((p.x + p.y) * 92.0) - 0.5, 0.06);
+            color = mix(color, u_paper, hatch * clamp(a + b, 0.0, 1.0) * 0.20);
         }
         color += (valueNoise(gl_FragCoord.xy * 0.35 + t * 0.3) - 0.5) * 0.018;
         outColor = vec4(clamp(color, 0.0, 1.0), 1.0);

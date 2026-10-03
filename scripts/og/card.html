@@ -27,6 +27,13 @@
     --muted: oklch(94% 0.005 270 / 0.55);
     --border: oklch(94% 0.005 270 / 0.14);
 
+    /* The shared article renderer reads the same five theme channels. */
+    --paper: oklch(22% 0.012 270);
+    --ink: oklch(94% 0.005 270);
+    --accent: oklch(70% 0.20 270);
+    --ink-soft: oklch(72% 0.15 240);
+    --plum: oklch(72% 0.17 330);
+
     --font-display: "Monument Extended", "Archivo", sans-serif;
     --font-sans: "Archivo", system-ui, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
@@ -213,6 +220,8 @@
     width: 620px;
     height: 620px;
     transform: translateY(-50%);
+    border-radius: 50%;
+    overflow: hidden;
   }
 
   .orb canvas { width: 100%; height: 100%; display: block; }
@@ -289,7 +298,7 @@
   </div>
 
   <div class="auteurs-wrap" id="auteurs-wrap" hidden>
-    <div class="orb"><canvas class="auteurs-shader"></canvas></div>
+    <div class="orb" data-article-hero="auteurs"><canvas class="article-hero-canvas"></canvas></div>
     <div class="auteurs-copy">
       <div>
         <span class="kicker" id="a-kicker"></span>
@@ -380,7 +389,7 @@
     // what the page actually renders.
     await new Promise((res) => {
       const tag = document.createElement('script');
-      tag.src = './auteurs-shader.js';
+      tag.src = './article-heroes.js';
       tag.onload = tag.onerror = res;
       document.head.append(tag);
     });
