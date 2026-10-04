@@ -51,6 +51,8 @@ The timeout baseline recorded 6,619,810 encoded front bytes/22 requests. Each ca
 
 Scroll uses ResizeObserver geometry caches, batched reads, local transform/opacity, static clipping/shadows, bounded title caches, and one completion write. Destination bundles preload without execution. Idle previous-page snapshots cancel on navigation, load fonts/styles before insertion, pause SVG timelines, remove compositor hints, and scale before insertion while retaining viewport/scroll.
 
+Cache assertions wait for native font/resize stability: next-up/coach content-visibility expansion adds 417.625 px after scrolling. Strict twelve-scroll zero-read/storage checks then pass; causal evidence is `/tmp/engmanager-reading-geometry-diagnostic/geometry-cause.json`.
+
 Strict GLB decoding uses a bounded cancellable worker and validated cooperative fallback. Settled/hidden/offscreen/reduced/disposed/covered decoration stops scheduling. GLBs, marble shading, shadows, geometry, antialiasing, and the 800 px/DPR 1.5 cap remain intact. Primary SVGs accompany asynchronous scene-specific WebGL compilation and once-per-frame shader invariants. Byte-identical armillary packing reduces focused native construction 64.2→8.5 ms cold/5.7 HTTP-warm; retained-document cache revisits take 0–0.4 ms.
 
 Mermaid enhances one visible figure per idle turn, suspends during input/navigation, rechecks import/font readiness, cleans disposed scratch nodes, and uses unclipped SVG labels. The earlier long cohort passed narrower gates despite 93/58 ms settled tasks; the new gate covers them. Visible first-time graph layout is not benchmarked at 60 Hz.
