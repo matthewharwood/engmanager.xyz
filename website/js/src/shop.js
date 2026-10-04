@@ -1277,32 +1277,33 @@ function cancelActiveDrags() {
     }
 }
 
-// --- eager image loading ----------------------------------------------------
-// Warm the browser cache so navigating images / paginating products snaps in
-// without a flash. Cheap — just detached Image() objects warming HTTP cache.
+// Warm only the requested view, using the same responsive candidate as the
+// carousel. Full-resolution catalog preloads can monopolize a mobile connection.
 const preloadedImages = new Set();
+const PRODUCT_IMAGE_SIZES = "(min-width: 44rem) 28rem, calc(100vw - 6rem)";
 
-function preloadImage(url) {
-    if (!url || preloadedImages.has(url)) return;
-    preloadedImages.add(url);
+function preloadImage(image) {
+    if (!image?.url || preloadedImages.has(image.url)) return;
+    preloadedImages.add(image.url);
     const img = new Image();
     img.decoding = "async";
-    img.src = url;
+    img.fetchPriority = "low";
+    img.sizes = PRODUCT_IMAGE_SIZES;
+    if (image.srcset) img.srcset = image.srcset;
+    img.src = image.url;
 }
 
-function preloadProductImages(product) {
-    product?.images?.forEach((image) => preloadImage(image.url));
+function preloadProductImages(product, index = 0) {
+    preloadImage(product?.images?.[index]);
 }
 
 function preloadNeighborProducts() {
-    // Front image of every product a swipe could jump to, so the first
-    // pagination snaps clean even before the in-swipe preload kicks in.
+    const connection = navigator.connection;
+    if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || "")) return;
     [
         productByIndexDelta(1),
         productByIndexDelta(-1),
-        productByGridRows(1),
-        productByGridRows(-1),
-    ].forEach((product) => preloadImage(product?.images?.[0]?.url));
+    ].forEach((product) => preloadImage(product?.images?.[0]));
 }
 
 function openProduct(product, imageId = "front", options = {}) {
@@ -1313,8 +1314,7 @@ function openProduct(product, imageId = "front", options = {}) {
     selectedSize = selectedSize || "ONE SIZE";
     quantity = 1;
 
-    // Eagerly warm this product's full image set + neighbors' front images.
-    preloadProductImages(product);
+    preloadProductImages(product, currentImageIndex);
     preloadNeighborProducts();
 
     renderProduct(product);
@@ -1386,7 +1386,7 @@ function renderThumbs(product) {
         button.setAttribute("aria-selected", index === currentImageIndex ? "true" : "false");
 
         const thumb = document.createElement("img");
-        thumb.src = image.url;
+        thumb.src = image.thumbnailUrl || image.url;
         thumb.alt = "";
         thumb.width = 180;
         thumb.height = 180;
@@ -1424,10 +1424,13 @@ function imageIndex(product, imageId) {
 function setCell(cell, image) {
     if (!cell) return;
     if (image) {
+        cell.sizes = PRODUCT_IMAGE_SIZES;
+        cell.srcset = image.srcset || "";
         if (cell.getAttribute("src") !== image.url) cell.src = image.url;
         cell.style.visibility = "visible";
     } else {
         cell.removeAttribute("src");
+        cell.removeAttribute("srcset");
         cell.style.visibility = "hidden";
     }
 }
@@ -1446,6 +1449,8 @@ function selectImage(index, options = {}) {
     // paginates to an adjacent product instead (handled by the gesture logic).
     currentImageIndex = Math.max(0, Math.min(index, images.length - 1));
     const image = images[currentImageIndex];
+    selectors.productImage.sizes = PRODUCT_IMAGE_SIZES;
+    selectors.productImage.srcset = image.srcset || "";
     selectors.productImage.src = image.url;
     selectors.productImage.alt = `${currentProduct.name} embroidered dad cap ${image.label.toLowerCase()} view`;
     selectors.productImage.style.visibility = "visible";
@@ -2202,7 +2207,7 @@ function recommendationCard() {
 
     const img = document.createElement("img");
     img.className = "shop-cart-reco-img";
-    img.src = product.images?.[0]?.url || "";
+    img.src = product.images?.[0]?.thumbnailUrl || product.images?.[0]?.url || "";
     img.alt = "";
     img.width = 900;
     img.height = 1100;
@@ -2688,16 +2693,31 @@ function scheduleEagerCheckoutMount() {
     }
 }
 
-function mountCheckout() {
+async function mountCheckout() {
     if (disposed || checkoutMounted) return;
 
-    if (!CHECKOUT.enabled || !CHECKOUT.publishableKey || typeof window.Stripe !== "function") {
+    const returnSecret = new URLSearchParams(window.location.search).get("payment_intent_client_secret");
+    if (returnSecret) {
+        const status = await finalizeCheckoutReturn(returnSecret);
+        if (disposed || checkoutMounted || status !== "checkout") return;
+    }
+
+    if (!CHECKOUT.enabled || !CHECKOUT.publishableKey) {
         const notice = coEl("[data-checkout-disabled]");
         if (notice) notice.hidden = false;
         const form = coEl("[data-checkout-form]");
         if (form) form.hidden = true;
         return;
     }
+
+    try {
+        await window.__engPayments.loadStripe();
+    } catch {
+        if (!disposed) showCheckoutError("The payment form could not load. Open checkout again to retry.");
+        return;
+    }
+    if (disposed || checkoutMounted) return;
+    clearCheckoutError();
 
     checkoutMounted = true;
     const notice = coEl("[data-checkout-disabled]");
@@ -2865,22 +2885,42 @@ function onCheckoutPaid(paymentIntent, email) {
 }
 
 let checkoutReturnSecret = null;
+let checkoutReturnAttempt = null;
 async function finalizeCheckoutReturn(clientSecret) {
-    if (!clientSecret) return;
-    if (typeof window.Stripe !== "function" || !CHECKOUT.publishableKey) return;
-    if (checkoutReturnSecret === clientSecret) return;
+    if (!clientSecret) return "checkout";
+    // Recover an existing intent even if the server has disabled new orders.
+    if (!CHECKOUT.publishableKey) return "checkout";
+    if (checkoutReturnSecret === clientSecret) return checkoutReturnAttempt;
     checkoutReturnSecret = clientSecret;
-    if (!stripe) stripe = window.Stripe(CHECKOUT.publishableKey);
-    try {
-        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
-        if (disposed) return;
-        if (
-            paymentIntent &&
-            (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")
-        ) {
-            onCheckoutPaid(paymentIntent, paymentIntent.receipt_email || "");
+    checkoutReturnAttempt = (async () => {
+        try {
+            await window.__engPayments.loadStripe();
+            if (disposed) return "disposed";
+            if (!stripe) stripe = window.Stripe(CHECKOUT.publishableKey);
+            const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+            if (disposed) return "disposed";
+            if (
+                paymentIntent &&
+                (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")
+            ) {
+                clearCheckoutError();
+                const notice = coEl("[data-checkout-disabled]");
+                if (notice) notice.hidden = true;
+                onCheckoutPaid(paymentIntent, paymentIntent.receipt_email || "");
+                return "confirmed";
+            }
+            showCheckoutError(CHECKOUT.enabled
+                ? "Your payment was not completed. You can try checkout again."
+                : "Your payment was not completed. New orders are currently unavailable.");
+            return "checkout";
+        } catch {
+            checkoutReturnSecret = null;
+            checkoutReturnAttempt = null;
+            if (!disposed) showCheckoutError("Your payment confirmation could not load. Open checkout again to retry.");
+            return "failed";
         }
-    } catch { checkoutReturnSecret = null; }
+    })();
+    return checkoutReturnAttempt;
 }
 
 listen(window, "engmanager:themechange", () => {
@@ -2899,15 +2939,6 @@ listen(window, "engmanager:themechange", () => {
     if (bag) applyBag(bag);
     if (clientSecret) finalizeCheckoutReturn(clientSecret);
 })();
-
-// Optional CDN assets may arrive after the page is interactive. Resume only
-// this mounted storefront's requested checkout work when Stripe becomes ready.
-listen(window, "eng:optionalasset", () => {
-    if (typeof window.Stripe !== "function") return;
-    if (isCartOpen()) scheduleEagerCheckoutMount();
-    const secret = new URLSearchParams(location.search).get("payment_intent_client_secret");
-    if (secret) finalizeCheckoutReturn(secret);
-});
 
 active = { surface, dispose() {
     if (disposed) return;

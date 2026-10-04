@@ -17,6 +17,7 @@
     uniform vec2 u_pointer;
     uniform float u_time;
     uniform int u_scene;
+    uniform float u_identity_strength;
     uniform vec3 u_paper, u_ink, u_accent, u_secondary, u_tertiary;
     out vec4 outColor;
 
@@ -63,21 +64,6 @@
         if (i == 6) return 0.09;
         if (i == 7) return 0.18;
         return 0.13;
-    }
-    float identityCorrelation(float lag) {
-        // A shifted encounter is compared with the same nine-sample identity.
-        // Interpolation makes the normalized discrete correlation continuous.
-        float product = 0.0, referenceEnergy = 0.0, encounterEnergy = 0.0;
-        for (int i = 0; i < 9; i++) {
-            float sampleAt = float(i) + lag;
-            int index = int(floor(sampleAt));
-            float encounter = mix(identitySample(index), identitySample(index + 1), fract(sampleAt));
-            float reference = identitySample(i);
-            product += reference * encounter;
-            referenceEnergy += reference * reference;
-            encounterEnergy += encounter * encounter;
-        }
-        return product / sqrt(max(referenceEnergy * encounterEnergy, 0.0001));
     }
     float identityMark(vec2 p) {
         float distanceToMark = 10.0;
@@ -259,7 +245,7 @@
             float angle = 0.43;
             vec2 q = mat2(cos(angle), -sin(angle), sin(angle), cos(angle)) * p;
             float lag = 1.2 * sin(t * 0.32);
-            float matchStrength = identityCorrelation(lag);
+            float matchStrength = u_identity_strength;
             vec2 offset = vec2(lag * 0.065, 0.042 * sin(t * 0.32));
             float reference = identityMark(q);
             float firstImpression = identityMark(q - offset);
@@ -323,107 +309,175 @@
         secondary: color(['--ctp-blue', '--ink-soft'], '#6480a2'),
         tertiary: color(['--ctp-pink', '--plum'], '#b56b93'),
     });
+    // This correlation depends only on time, not a fragment coordinate. Its
+    // nine samples are evaluated once per frame instead of for every pixel.
+    const identitySamples = [0.12, 0.19, 0.14, 0.27, 0.17, 0.23, 0.09, 0.18, 0.13];
+    function identityStrength(time) {
+        const lag = 1.2 * Math.sin(time * 0.00032);
+        const sample = index => identitySamples[index] || 0;
+        let product = 0, referenceEnergy = 0, encounterEnergy = 0;
+        for (let i = 0; i < identitySamples.length; i++) {
+            const at = i + lag, index = Math.floor(at), fraction = at - index;
+            const encounter = sample(index) * (1 - fraction) + sample(index + 1) * fraction;
+            const reference = sample(i);
+            product += reference * encounter;
+            referenceEnergy += reference * reference;
+            encounterEnergy += encounter * encounter;
+        }
+        return product / Math.sqrt(Math.max(referenceEnergy * encounterEnergy, 0.0001));
+    }
     function shader(gl, kind, source) {
         const part = gl.createShader(kind);
         gl.shaderSource(part, source);
         gl.compileShader(part);
-        if (gl.getShaderParameter(part, gl.COMPILE_STATUS)) return part;
-        console.warn('Article hero shader:', gl.getShaderInfoLog(part));
-        gl.deleteShader(part);
-        return null;
+        // COMPILE_STATUS immediately after compileShader synchronizes the
+        // driver. The linked program is checked after the nonblocking poll.
+        return part;
     }
     function setup(figure) {
         if (instances.has(figure)) return;
         const canvas = figure.querySelector('.article-hero-canvas');
         const scene = SLUGS.indexOf(figure.dataset.articleHero);
-        if (scene < 0) return;
-        const gl = canvas.getContext('webgl2', { alpha: false, powerPreference: 'low-power' });
-        if (!gl) return; // The server-rendered SVG remains visible.
-        const vs = shader(gl, gl.VERTEX_SHADER, VERTEX);
-        const fs = shader(gl, gl.FRAGMENT_SHADER, FRAGMENT);
-        if (!vs || !fs) { if (vs) gl.deleteShader(vs); if (fs) gl.deleteShader(fs); return; }
-        const program = gl.createProgram();
-        gl.attachShader(program, vs);
-        gl.attachShader(program, fs);
-        gl.linkProgram(program);
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.warn('Article hero program:', gl.getProgramInfoLog(program));
-            gl.deleteProgram(program);
-            return;
-        }
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-        const aPosition = gl.getAttribLocation(program, 'a_position');
-        const uniforms = Object.fromEntries(['resolution', 'pointer', 'time', 'scene', 'paper', 'ink', 'accent', 'secondary', 'tertiary']
-            .map(name => [name, gl.getUniformLocation(program, `u_${name}`)]));
+        if (scene < 0 || !canvas) return;
+        const lifetime = new AbortController(), signal = lifetime.signal;
+        let gl, program, buffer, uniforms, extension;
+        let raf = 0, compileTimer = 0, visible = false, disposed = false, ready = false;
+        let compiling = false, compileStarted = 0, contextLost = false;
+        let colors = palette(), colorsDirty = true;
+        let size = { width: figure.clientWidth, height: figure.clientHeight };
         const pointer = [0.5, 0.5];
-        let raf = 0, visible = false, disposed = false, last = -Infinity;
-        let colors = palette();
-        const resize = () => {
-            const dpr = Math.min(devicePixelRatio || 1, 1.5);
-            const scale = Math.min(1, 960 / Math.max(figure.clientWidth * dpr, figure.clientHeight * dpr));
-            const w = Math.max(1, Math.round(figure.clientWidth * dpr * scale));
-            const h = Math.max(1, Math.round(figure.clientHeight * dpr * scale));
-            if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-        };
-        const draw = (time) => {
-            if (disposed || !figure.isConnected || gl.isContextLost()) return;
+        const suspended = () => contextLost || document.hidden || window.__engNav?.busy
+            || document.body.classList.contains('journey-revealing');
+        const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+        function resize() {
+            const phone = matchMedia('(pointer: coarse)').matches && innerWidth <= 672;
+            const dpr = Math.min(devicePixelRatio || 1, phone ? 1 : 1.5);
+            const scale = Math.min(1, (phone ? 640 : 960) / Math.max(size.width * dpr, size.height * dpr, 1));
+            const width = Math.max(1, Math.round(size.width * dpr * scale));
+            const height = Math.max(1, Math.round(size.height * dpr * scale));
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width; canvas.height = height;
+                gl.viewport(0, 0, width, height);
+                gl.uniform2f(uniforms.resolution, width, height);
+            }
+        }
+        function draw(time) {
+            if (!ready || disposed || !figure.isConnected || gl.isContextLost()) return;
             resize();
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.useProgram(program);
-            gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+            if (colorsDirty) {
+                for (const key of ['paper', 'ink', 'accent', 'secondary', 'tertiary']) gl.uniform3f(uniforms[key], ...colors[key]);
+                colorsDirty = false;
+            }
+            const instant = reduced.matches ? 0 : time;
             gl.uniform2f(uniforms.pointer, ...pointer);
-            gl.uniform1f(uniforms.time, reduced.matches ? 0 : time * 0.001);
-            gl.uniform1i(uniforms.scene, scene);
-            for (const key of ['paper', 'ink', 'accent', 'secondary', 'tertiary']) gl.uniform3f(uniforms[key], ...colors[key]);
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.enableVertexAttribArray(aPosition);
-            gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(uniforms.time, instant * 0.001);
+            if (scene === 11) gl.uniform1f(uniforms.identity_strength, identityStrength(instant));
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            figure.dataset.renderer = 'webgl';
-        };
-        const tick = (time) => {
-            if (disposed || !visible || document.hidden) { raf = 0; return; }
-            if (time - last >= 40 || reduced.matches) { draw(time); last = time; }
-            raf = reduced.matches ? 0 : requestAnimationFrame(tick);
-        };
-        const start = () => {
-            if (disposed || !visible || document.hidden) return;
+            if (figure.dataset.renderer !== 'webgl') figure.dataset.renderer = 'webgl';
+        }
+        function tick(time) {
+            raf = 0;
+            if (disposed || !visible || suspended()) return;
+            draw(time);
+            if (!reduced.matches) raf = requestAnimationFrame(tick);
+        }
+        function finishProgram() {
+            compileTimer = 0;
+            if (disposed || !figure.isConnected) return;
+            if (suspended() || !visible) return;
+            if (!gl.getProgramParameter(program, extension.COMPLETION_STATUS_KHR)) {
+                if (performance.now() - compileStarted < 8000) compileTimer = setTimeout(finishProgram, 32);
+                return;
+            }
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.warn('Article hero program:', gl.getProgramInfoLog(program));
+                return;
+            }
+            buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+            gl.useProgram(program);
+            const position = gl.getAttribLocation(program, 'a_position');
+            gl.enableVertexAttribArray(position);
+            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+            uniforms = Object.fromEntries(['resolution', 'pointer', 'time', 'identity_strength', 'paper', 'ink', 'accent', 'secondary', 'tertiary']
+                .map(name => [name, gl.getUniformLocation(program, `u_${name}`)]));
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.uniform2f(uniforms.resolution, canvas.width, canvas.height);
+            ready = true;
+            start();
+        }
+        function prepare() {
+            compiling = true;
+            gl = canvas.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'low-power' });
+            if (!gl) return;
+            extension = gl.getExtension('KHR_parallel_shader_compile');
+            // A browser without nonblocking compilation keeps the authored SVG.
+            // Modern Chrome can enhance it without freezing the handoff.
+            if (!extension) return;
+            const vertex = shader(gl, gl.VERTEX_SHADER, VERTEX);
+            // Constant selection lets the compiler remove the other eleven
+            // editorial mechanisms instead of compiling one giant branch tree.
+            const fragment = shader(gl, gl.FRAGMENT_SHADER,
+                FRAGMENT.replace('uniform int u_scene;', `const int u_scene = ${scene};`));
+            program = gl.createProgram();
+            gl.attachShader(program, vertex); gl.attachShader(program, fragment);
+            gl.linkProgram(program);
+            gl.deleteShader(vertex); gl.deleteShader(fragment);
+            compileStarted = performance.now();
+            finishProgram();
+        }
+        function start() {
+            if (disposed || !visible || suspended()) return;
+            if (!compiling) { prepare(); return; }
+            if (!ready) { if (!compileTimer && program) finishProgram(); return; }
             if (reduced.matches) draw(0);
             else if (!raf) raf = requestAnimationFrame(tick);
-        };
-        const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+        }
         const observer = new IntersectionObserver(([entry]) => {
             visible = entry.isIntersecting;
-            if (visible) start(); else stop();
-        }, { rootMargin: '100px' });
+            if (visible) start(); else { stop(); clearTimeout(compileTimer); compileTimer = 0; }
+        });
         observer.observe(figure);
-        const resizeObserver = new ResizeObserver(() => { if (visible && reduced.matches) draw(0); });
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            size = { width: entry.contentRect.width, height: entry.contentRect.height };
+            if (visible && reduced.matches && !suspended()) start();
+        });
         resizeObserver.observe(figure);
-        const lifetime = new AbortController();
-        const signal = lifetime.signal;
         figure.addEventListener('pointermove', event => {
             const rect = figure.getBoundingClientRect();
             pointer[0] = (event.clientX - rect.left) / rect.width;
             pointer[1] = 1 - (event.clientY - rect.top) / rect.height;
         }, { passive: true, signal });
-        window.addEventListener('engmanager:themechange', () => { colors = palette(); if (visible && reduced.matches) draw(0); }, { signal });
+        window.addEventListener('engmanager:themechange', () => {
+            colors = palette(); colorsDirty = true;
+            if (visible && reduced.matches && !suspended()) start();
+        }, { signal });
         window.addEventListener('pageshow', start, { signal });
-        document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else start(); }, { signal });
+        window.addEventListener('eng:journeysettled', start, { signal });
+        window.addEventListener('eng:journeyexposure', event => {
+            if (event.detail?.active) { stop(); clearTimeout(compileTimer); compileTimer = 0; }
+            else start();
+        }, { signal });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { stop(); clearTimeout(compileTimer); compileTimer = 0; }
+            else start();
+        }, { signal });
         reduced.addEventListener('change', () => { stop(); start(); }, { signal });
-        canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); stop(); delete figure.dataset.renderer; }, { signal });
+        canvas.addEventListener('webglcontextlost', event => {
+            event.preventDefault(); contextLost = true; stop(); clearTimeout(compileTimer); compileTimer = 0;
+            delete figure.dataset.renderer;
+        }, { signal });
         canvas.addEventListener('webglcontextrestored', () => {
             const dispose = instances.get(figure);
             if (dispose) { dispose(); instances.delete(figure); }
             setup(figure);
         }, { signal });
         instances.set(figure, () => {
-            disposed = true;
-            stop(); observer.disconnect(); resizeObserver.disconnect(); lifetime.abort();
-            gl.deleteBuffer(buffer); gl.deleteProgram(program);
+            disposed = true; stop(); clearTimeout(compileTimer);
+            observer.disconnect(); resizeObserver.disconnect(); lifetime.abort();
+            if (buffer) gl.deleteBuffer(buffer);
+            if (program) gl.deleteProgram(program);
             delete figure.dataset.renderer;
         });
     }

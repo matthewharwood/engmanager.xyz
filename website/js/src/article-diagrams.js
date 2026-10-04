@@ -3,6 +3,7 @@
 (() => {
     const MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs";
     const sources = new WeakMap();
+    const renderedKeys = new WeakMap();
     let active = null;
     let modulePromise = null;
     let renderQueue = Promise.resolve();
@@ -72,9 +73,15 @@
         if (!surface || !nodes.length) return;
         const lifetime = new AbortController();
         const scratchNodes = new Set();
+        const pending = new Set(nodes), visible = new Set(), prepared = new Map();
         let disposed = false;
         let revision = 0;
+        let idle = 0, retry = 0, rendering = false, observer;
+        let activityAt = performance.now(), touching = false;
         const compact = matchMedia("(max-width: 42rem)");
+        const dark = matchMedia("(prefers-color-scheme: dark)");
+        const appearanceKey = () => [document.documentElement.getAttribute("data-theme") || "", dark.matches, compact.matches,
+            getComputedStyle(document.documentElement).getPropertyValue("--font-mono")].join("|");
         const viewer = document.createElement("dialog");
         viewer.className = "diagram-viewer";
         viewer.setAttribute("aria-label", "Expanded diagram");
@@ -110,6 +117,31 @@
             if (!sources.has(node)) sources.set(node, node.textContent);
         });
 
+        function bindExpand(node) {
+            if (!node.querySelector("svg") || node.parentElement.querySelector(".diagram-expand")) return;
+            const expand = document.createElement("button");
+            expand.type = "button";
+            expand.className = "diagram-expand";
+            expand.textContent = "Expand diagram ↗";
+            node.after(expand);
+            expand.addEventListener("click", () => {
+                const diagram = node.querySelector("svg");
+                if (!diagram) return;
+                opener = expand;
+                selectedNode = node;
+                canvas.replaceChildren(diagram.cloneNode(true));
+                zoomIndex = 0;
+                canvas.style.removeProperty("--diagram-zoom");
+                viewport.scrollTo(0, 0);
+                viewer.showModal();
+                setZoom(0);
+            }, { signal: lifetime.signal });
+        }
+        nodes.forEach((node) => {
+            bindExpand(node);
+            if (node.querySelector("svg") && renderedKeys.get(node) === appearanceKey()) pending.delete(node);
+        });
+
         const showFallback = () => {
             if (disposed) return;
             nodes.forEach((node) => {
@@ -120,63 +152,91 @@
         };
         const fallbackTimer = setTimeout(showFallback, 4000);
 
-        async function render(version) {
-            if (disposed || version !== revision) return;
+        function intersects(node) {
+            if (observer) return visible.has(node);
+            // Older browsers still enhance visible diagrams, without measuring
+            // their layout in every scroll handler.
+            const bounds = node.getBoundingClientRect();
+            return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
+        }
+        const suspended = () => document.hidden || touching || window.__engNav?.busy
+            || document.body.classList.contains("journey-revealing");
+        const eligible = (node, version) => !disposed && version === revision && node.isConnected
+            && intersects(node) && !suspended() && performance.now() - activityAt >= 180;
+
+        function commit(node, svg, version) {
+            if (!eligible(node, version)) return;
+            node.innerHTML = svg;
+            node.dataset.processed = "true";
+            node.style.visibility = "";
+            renderedKeys.set(node, appearanceKey());
+            pending.delete(node); prepared.delete(node);
+            bindExpand(node);
+            if (viewer.open && selectedNode === node) canvas.replaceChildren(node.querySelector("svg").cloneNode(true));
+        }
+
+        function waitFor(promise) {
+            if (disposed) return Promise.resolve();
+            return new Promise((resolve, reject) => {
+                const finish = (error, value) => {
+                    lifetime.signal.removeEventListener("abort", abort);
+                    error ? reject(error) : resolve(value);
+                };
+                const abort = () => finish();
+                lifetime.signal.addEventListener("abort", abort, { once: true });
+                Promise.resolve(promise).then((value) => finish(null, value), (error) => finish(error));
+            });
+        }
+
+        async function render(node, version) {
+            if (!eligible(node, version)) return;
             try {
-                const { default: mermaid } = await loadMermaid();
-                await document.fonts?.ready;
+                if (prepared.has(node)) { commit(node, prepared.get(node), version); return; }
+                const module = await waitFor(loadMermaid());
                 if (disposed || version !== revision) return;
+                const typography = window.__engTypography;
+                await waitFor(typography ? Promise.all([typography.ready, typography.displayReady]) : document.fonts?.ready);
+                // An import/font download may finish during a later gesture
+                // or handoff. Do not let its continuation start graph layout.
+                if (!eligible(node, version)) return;
+                const { default: mermaid } = module;
+                const variables = themeVariables();
                 mermaid.initialize({
                     startOnLoad: false,
                     securityLevel: "strict",
                     theme: "base",
-                    flowchart: { curve: "basis", useMaxWidth: true },
-                    themeVariables: themeVariables(),
+                    // Plain authored labels use SVG text. Mermaid 11.16's
+                    // HTML wrapping uses exact fractional-width equality and
+                    // can clip long labels during transformed section reveals.
+                    htmlLabels: false,
+                    fontFamily: variables.fontFamily,
+                    flowchart: { curve: "basis", useMaxWidth: true, htmlLabels: false },
+                    themeVariables: variables,
                 });
-                for (const node of nodes) {
-                    if (disposed || version !== revision || !node.isConnected) return;
+                if (eligible(node, version)) {
                     // Supply a page-owned rendering container: an in-flight
                     // render can never append runtime nodes to a later page.
                     const scratch = document.createElement("div");
                     scratch.setAttribute("aria-hidden", "true");
                     scratch.style.cssText = `position:absolute;left:-100000px;visibility:hidden;width:${node.getBoundingClientRect().width}px`;
+                    scratch.style.fontFamily = variables.fontFamily;
+                    scratch.style.fontSize = variables.fontSize;
                     node.parentElement.append(scratch);
                     scratchNodes.add(scratch);
                     try {
                         const source = sources.get(node).replace(/^\s*(flowchart|graph)\s+LR\b/m, (match, kind) => compact.matches ? `${kind} TD` : match);
                         const { svg } = await mermaid.render(`article-diagram-${++diagramId}`, source, scratch);
                         if (disposed || version !== revision || !node.isConnected) return;
-                        node.innerHTML = svg;
-                        node.dataset.processed = "true";
-                        node.style.visibility = "";
-                        let expand = node.parentElement.querySelector(".diagram-expand");
-                        if (!expand) {
-                            expand = document.createElement("button");
-                            expand.type = "button";
-                            expand.className = "diagram-expand";
-                            expand.textContent = "Expand diagram ↗";
-                            node.after(expand);
-                            expand.addEventListener("click", () => {
-                                const diagram = node.querySelector("svg");
-                                if (!diagram) return;
-                                opener = expand;
-                                selectedNode = node;
-                                canvas.replaceChildren(diagram.cloneNode(true));
-                                zoomIndex = 0;
-                                canvas.style.removeProperty("--diagram-zoom");
-                                viewport.scrollTo(0, 0);
-                                viewer.showModal();
-                                setZoom(0);
-                            }, { signal: lifetime.signal });
-                        }
-                        if (viewer.open && selectedNode === node) {
-                            canvas.replaceChildren(node.querySelector("svg").cloneNode(true));
-                        }
+                        // A completed graph can wait for the next quiet turn
+                        // without repeating its expensive layout after input.
+                        prepared.set(node, svg);
+                        commit(node, svg, version);
                     } catch {
                         if (!disposed && version === revision && !node.querySelector("svg")) {
                             node.textContent = sources.get(node);
                             node.style.visibility = "visible";
                         }
+                        if (!disposed && version === revision) pending.delete(node);
                     } finally {
                         scratch.remove();
                         scratchNodes.delete(scratch);
@@ -184,21 +244,81 @@
                 }
             } catch {
                 showFallback();
+                if (!disposed && version === revision) pending.delete(node);
             }
         }
 
-        const schedule = () => {
-            const version = ++revision;
-            // Mermaid's shared configuration must not overlap another render,
-            // including one started on the page we just left.
-            renderQueue = renderQueue.then(() => render(version), () => render(version));
+        function cancelScheduled() {
+            if (idle) cancelIdleCallback(idle);
+            idle = 0; clearTimeout(retry); retry = 0;
+        }
+        function work(deadline) {
+            idle = retry = 0;
+            if (disposed) return;
+            const node = [...pending].find((node) => node.isConnected && intersects(node));
+            if (!node) return;
+            const quiet = 180 - (performance.now() - activityAt);
+            if (suspended() || quiet > 0 || (deadline && deadline.timeRemaining() < 10)) {
+                retry = setTimeout(() => { retry = 0; schedule(); }, Math.max(120, quiet));
+                return;
+            }
+            rendering = true;
+            const version = revision;
+            // Mermaid's configuration and scratch layout remain serialized
+            // across pages, but each idle turn handles only one visible figure.
+            renderQueue = renderQueue.then(() => render(node, version), () => render(node, version))
+                .finally(() => { rendering = false; schedule(); });
+        }
+        function schedule() {
+            if (disposed || rendering || idle || retry || !pending.size) return;
+            if (observer && ![...pending].some((node) => visible.has(node))) return;
+            if (window.requestIdleCallback) idle = requestIdleCallback(work);
+            else retry = setTimeout(() => work(null), 32);
+        }
+        const activity = () => { activityAt = performance.now(); schedule(); };
+        window.addEventListener("scroll", activity, { passive: true, signal: lifetime.signal });
+        window.addEventListener("wheel", activity, { passive: true, signal: lifetime.signal });
+        window.addEventListener("touchstart", (event) => { touching = event.touches.length > 0; activity(); }, { passive: true, signal: lifetime.signal });
+        window.addEventListener("touchmove", activity, { passive: true, signal: lifetime.signal });
+        const touchEnd = (event) => { touching = event.touches.length > 0; activity(); };
+        window.addEventListener("touchend", touchEnd, { passive: true, signal: lifetime.signal });
+        window.addEventListener("touchcancel", touchEnd, { passive: true, signal: lifetime.signal });
+        window.addEventListener("keydown", (event) => {
+            if (["PageDown", "PageUp", "Home", "End", "ArrowDown", "ArrowUp", " "].includes(event.key)) activity();
+        }, { signal: lifetime.signal });
+        window.addEventListener("eng:journeyexposure", (event) => {
+            if (event.detail?.active) cancelScheduled(); else schedule();
+        }, { signal: lifetime.signal });
+        window.addEventListener("eng:journeysettled", schedule, { signal: lifetime.signal });
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) cancelScheduled(); else activity();
+        }, { signal: lifetime.signal });
+        if (typeof IntersectionObserver !== "undefined") {
+            observer = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) visible.add(entry.target); else visible.delete(entry.target);
+                }
+                schedule();
+            });
+            nodes.forEach((node) => observer.observe(node));
+        }
+        const invalidate = () => {
+            revision++; prepared.clear();
+            nodes.forEach((node) => pending.add(node));
+            schedule();
         };
-        window.addEventListener("engmanager:themechange", schedule, { signal: lifetime.signal });
-        matchMedia("(prefers-color-scheme: dark)").addEventListener("change", schedule, { signal: lifetime.signal });
-        compact.addEventListener("change", schedule, { signal: lifetime.signal });
+        window.addEventListener("engmanager:themechange", invalidate, { signal: lifetime.signal });
+        window.addEventListener("engmanager:fontchange", () => {
+            const key = appearanceKey();
+            if (nodes.some((node) => node.querySelector("svg") && renderedKeys.get(node) !== key)) invalidate();
+        }, { signal: lifetime.signal });
+        dark.addEventListener("change", invalidate, { signal: lifetime.signal });
+        compact.addEventListener("change", invalidate, { signal: lifetime.signal });
         active = { surface, dispose() {
             disposed = true;
             lifetime.abort();
+            cancelScheduled(); observer?.disconnect();
+            pending.clear(); visible.clear(); prepared.clear();
             clearTimeout(fallbackTimer);
             viewer.remove();
             nodes.forEach((node) => node.parentElement?.querySelector(".diagram-expand")?.remove());

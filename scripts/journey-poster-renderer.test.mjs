@@ -43,10 +43,10 @@ function fixture(edit = () => {}) {
     new Uint8Array(result, 28 + padded).set(binary);
     return result;
 }
-function harness({ data = fixture(), deviceRequest, submission, reducedMotion = false } = {}) {
+function harness({ data = fixture(), deviceRequest, submission, reducedMotion = false, worker = false, phone = false } = {}) {
     const lost = deferred();
     const state = { buffers: [], textures: [], writes: [], passes: [], submissions: 0, destroyed: 0, unconfigured: 0,
-        frames: new Map(), events: new Map(), gpuEvents: new Map() };
+        frames: new Map(), events: new Map(), gpuEvents: new Map(), workers: [], workerTimers: new Map(), layouts: 0, pipelines: [] };
     const device = {
         lost: lost.promise,
         addEventListener(name, callback) { state.gpuEvents.set(name, callback); },
@@ -54,7 +54,7 @@ function harness({ data = fixture(), deviceRequest, submission, reducedMotion = 
         destroy() { state.destroyed++; },
         pushErrorScope() {}, async popErrorScope() { return null; },
         createShaderModule() { return {}; },
-        async createRenderPipelineAsync() { return { getBindGroupLayout() { return {}; } }; },
+        async createRenderPipelineAsync(spec) { state.pipelines.push(spec); return { getBindGroupLayout() { return {}; } }; },
         createBuffer({ size, usage }) {
             const data = new ArrayBuffer(size);
             const buffer = { usage, data, destroyed: 0, getMappedRange: () => data, unmap() {}, destroy() { this.destroyed++; } };
@@ -85,21 +85,48 @@ function harness({ data = fixture(), deviceRequest, submission, reducedMotion = 
     };
     const context = { configure() {}, unconfigure() { state.unconfigured++; },
         getCurrentTexture: () => ({ createView: () => ({}) }) };
-    const canvas = { getContext: () => context, getBoundingClientRect: () => ({ width: 800, height: 800 }), width: 0, height: 0 };
+    const canvas = { getContext: () => context, getBoundingClientRect: () => { state.layouts++; return { width: 800, height: 800 }; }, width: 0, height: 0 };
     const motion = { matches: reducedMotion, addEventListener(name, callback) { this.change = callback; }, removeEventListener() {} };
-    const window = { devicePixelRatio: 3, matchMedia: () => motion };
-    const document = { hidden: false, addEventListener(name, callback) { state.events.set(name, callback); },
+    const window = { devicePixelRatio: 3, innerWidth: phone ? 390 : 1280,
+        matchMedia: query => query === '(pointer: coarse)' ? { matches: phone } : motion };
+    const document = { currentScript: worker ? { src: '/assets/js/journey-poster-renderer.hash.js' } : null, hidden: false, addEventListener(name, callback) { state.events.set(name, callback); },
         removeEventListener(name) { state.events.delete(name); } };
-    let frameId = 0;
+    let frameId = 0, timerId = 0;
+    class DecoderWorker {
+        constructor(url) {
+            if (worker === 'denied') throw new Error('Worker construction denied');
+            this.url = url; this.terminated = 0; this.posts = [];
+            state.workers.push(this);
+            this.context = vm.createContext({ TextDecoder,
+                postMessage: (result, transfers) => {
+                    this.result = result; this.transfers = transfers;
+                    queueMicrotask(() => { if (!this.terminated) this.onmessage?.({ data: result }); });
+                },
+            });
+            vm.runInContext(source, this.context);
+        }
+        postMessage(message, transfers) {
+            this.posts.push({ message, transfers });
+            if (worker === 'stalled') return;
+            if (worker === 'error') { queueMicrotask(() => this.onerror?.()); return; }
+            this.context.onmessage({ data: message });
+        }
+        terminate() { this.terminated++; }
+    }
     const sandbox = vm.createContext({ window, document, navigator: { gpu: {
         async requestAdapter() { return { requestDevice: deviceRequest ?? (async () => device) }; },
         getPreferredCanvasFormat: () => 'bgra8unorm',
     } }, AbortController, DOMException, TextDecoder,
     GPUBufferUsage: { UNIFORM: 1, COPY_DST: 2, VERTEX: 4, INDEX: 8 },
     GPUTextureUsage: { RENDER_ATTACHMENT: 1, TEXTURE_BINDING: 2 },
+    ...(worker ? { Worker: DecoderWorker,
+        setTimeout(fn, delay) { const id = ++timerId; state.workerTimers.set(id, { fn, delay }); return id; },
+        clearTimeout(id) { state.workerTimers.delete(id); },
+        ...(worker === 'denied' ? { scheduler: { async yield() { state.yields = (state.yields || 0) + 1; } } } : {}),
+    } : {}),
     requestAnimationFrame(callback) { const id = ++frameId; state.frames.set(id, callback); return id; },
     cancelAnimationFrame(id) { state.frames.delete(id); },
-    fetch: async () => ({ ok: true, headers: { get: () => null }, arrayBuffer: async () => data }),
+    fetch: async (_url, options) => { state.fetchOptions = options; return { ok: true, headers: { get: () => null }, arrayBuffer: async () => data }; },
     IntersectionObserver: class {
         constructor(callback) { state.intersection = callback; }
         observe() {} disconnect() { state.intersection = null; }
@@ -177,7 +204,7 @@ test('reduced motion is static and responds to preference changes while mounted'
     h.motion.change();
     h.advance(100);
     assert.ok(h.state.writes.at(-1)[0] > 0.7);
-    assert.equal(h.state.frames.size, 1);
+    assert.equal(h.state.frames.size, 0, 'the dynamic pose settles without an idle frame loop');
     h.motion.matches = true;
     h.motion.change();
     h.advance(150);
@@ -398,3 +425,140 @@ for (const name of ['shop', 'coach', 'subscribe', 'feed', 'article']) {
         }
     });
 }
+
+
+test('scroll rotation submits each changed 60 Hz pose and settles without background work', async () => {
+    const h = harness();
+    const renderer = await h.mount();
+    const initial = h.state.submissions;
+    const layoutReads = h.state.layouts;
+    for (let i = 1; i <= 8; i++) {
+        renderer.setProgress(i / 10);
+        h.advance(i * 1000 / 60);
+        assert.equal(h.state.submissions, initial + i, 'each changed input pose receives its own vsync frame');
+    }
+    assert.equal(h.state.frames.size, 0, 'a settled sculpture leaves no scheduled animation');
+    renderer.setProgress(0.8);
+    h.advance(200);
+    assert.equal(h.state.submissions, initial + 8, 'unchanged progress does not redraw');
+    assert.equal(h.state.layouts, layoutReads, 'scroll frames never read canvas layout');
+    h.state.resize(); h.advance(220);
+    assert.equal(h.state.layouts, layoutReads + 1, 'a ResizeObserver event refreshes dimensions once');
+    renderer.destroy();
+});
+
+test('one reusable same-origin worker validates meshes and transfers only packed GPU arrays', async () => {
+    const h = harness({ worker: true });
+    const first = await h.mount(); first.destroy();
+    const second = await h.mount();
+    assert.equal(h.state.workers.length, 1, 'sequential service posters reuse one decoder worker');
+    const worker = h.state.workers[0];
+    assert.equal(worker.url, '/assets/js/journey-poster-renderer.hash.js');
+    assert.equal(worker.posts.length, 2);
+    assert.equal(worker.posts[0].transfers[0], worker.posts[0].message.buffer);
+    assert.equal(worker.transfers.length, 2, 'the decoded vertices and indices transfer back without cloning');
+    assert.equal(worker.transfers[0].byteLength, 27 * 4);
+    assert.equal(worker.transfers[1].byteLength, 3 * 4);
+    second.destroy();
+    const idle = [...h.state.workerTimers.values()].find(timer => timer.delay === 30000);
+    assert.ok(idle, 'an idle worker has a bounded lifetime'); idle.fn();
+    assert.equal(worker.terminated, 1);
+    assert.equal(h.state.workerTimers.size, 0);
+});
+
+test('worker validation rejects malformed assets with the same strict decoder contract', async () => {
+    const h = harness({ worker: true, data: fixture((json) => { json.nodes[0].children = [0]; }) });
+    await assert.rejects(h.mount(), /duplicate or cyclic node/);
+    assert.equal(h.state.submissions, 0);
+    assert.equal(h.state.destroyed, 1);
+    for (const timer of [...h.state.workerTimers.values()]) timer.fn();
+});
+
+test('aborting decoding terminates the unneeded worker and destroys acquired GPU resources', async () => {
+    const h = harness({ worker: 'stalled' });
+    const controller = new AbortController();
+    const mounting = h.mount({ signal: controller.signal });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(h.state.workers[0].posts.length, 1);
+    controller.abort();
+    await assert.rejects(mounting, { name: 'AbortError' });
+    assert.equal(h.state.workers[0].terminated, 1);
+    assert.equal(h.state.workerTimers.size, 0);
+    assert.equal(h.state.destroyed, 1);
+});
+
+for (const failure of ['error', 'stalled']) {
+    test(`a ${failure} decoder cannot hold the poster or its resources indefinitely`, async () => {
+        const h = harness({ worker: failure });
+        const mounting = h.mount();
+        if (failure === 'stalled') {
+            await new Promise(resolve => setImmediate(resolve));
+            const deadline = [...h.state.workerTimers.values()].find(timer => timer.delay === 8000);
+            assert.ok(deadline); deadline.fn();
+        }
+        await assert.rejects(mounting, failure === 'stalled' ? /timed out/ : /worker failed/);
+        assert.equal(h.state.workers[0].terminated, 1);
+        assert.equal(h.state.workerTimers.size, 0);
+        assert.equal(h.state.destroyed, 1);
+        assert.equal(h.state.frames.size, 0);
+    });
+}
+
+test('denied worker construction cooperatively validates a real sculpture without changing its mesh', async () => {
+    const file = await readFile(new URL('../website/assets/journey/article.glb', import.meta.url));
+    const h = harness({ worker: 'denied', data: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) });
+    const renderer = await h.mount();
+    assert.ok(h.state.yields > 20, 'large validation yields back to input between bounded chunks');
+    assert.equal(h.state.workers.length, 0);
+    assert.equal(h.state.submissions, 1);
+    assert.equal(h.state.buffers.find(buffer => buffer.usage === 4).data.byteLength, 87546 * 36);
+    renderer.destroy();
+});
+
+test('phone backing stores bound fill and allocation without dropping MSAA or geometry', async () => {
+    const h = harness({ phone: true });
+    h.canvas.clientWidth = 390; h.canvas.clientHeight = 700;
+    const renderer = await h.mount();
+    assert.equal(h.canvas.height, 800);
+    assert.equal(h.canvas.width, 446);
+    assert.equal(h.state.pipelines[0].multisample.count, 4, 'mobile retains antialiased native geometry');
+    assert.deepEqual(h.state.passes, [[3], [3]], 'mobile still renders both self-shadow and full surface');
+    renderer.destroy();
+});
+
+test('uniform rotations preserve the pose while removing repeated vertex trigonometry', async () => {
+    const h = harness(); const renderer = await h.mount();
+    renderer.setProgress(0.63); h.advance(1000 / 60);
+    const scene = h.state.writes.at(-1);
+    assert.equal(scene.length, 12);
+    assert.equal(scene[8], Math.fround(Math.cos(scene[0])));
+    assert.equal(scene[9], Math.fround(Math.sin(scene[0])));
+    assert.equal(scene[10], Math.fround(Math.cos(scene[1])));
+    assert.equal(scene[11], Math.fround(Math.sin(scene[1])));
+    assert.equal(h.state.fetchOptions.priority, 'low', 'optional model traffic yields to real destination resources');
+    renderer.destroy();
+});
+
+test('cancelling one job preserves another queued poster and late retired-worker errors stay isolated', async () => {
+    const h = harness({ worker: 'stalled' });
+    const firstController = new AbortController(), secondController = new AbortController();
+    const first = h.mount({ signal: firstController.signal });
+    const second = h.mount({ signal: secondController.signal });
+    await new Promise(resolve => setImmediate(resolve));
+    const oldWorker = h.state.workers[0];
+    assert.equal(oldWorker.posts.length, 2);
+    firstController.abort();
+    await assert.rejects(first, { name: 'AbortError' });
+    assert.equal(oldWorker.terminated, 0, 'the other poster retains the single worker');
+    oldWorker.context.onmessage({ data: oldWorker.posts[1].message });
+    const remaining = await second; remaining.destroy();
+    const idle = [...h.state.workerTimers.values()].find(timer => timer.delay === 30000); idle.fn();
+    const thirdController = new AbortController();
+    const third = h.mount({ signal: thirdController.signal });
+    await new Promise(resolve => setImmediate(resolve));
+    const freshWorker = h.state.workers[1];
+    oldWorker.onerror();
+    assert.equal(freshWorker.terminated, 0, 'an already retired worker cannot tear down its replacement');
+    thirdController.abort(); await assert.rejects(third, { name: 'AbortError' });
+    assert.equal(freshWorker.terminated, 1);
+});

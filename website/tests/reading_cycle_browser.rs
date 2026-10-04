@@ -32,10 +32,37 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate,label){const deadline=performance.now()+12000;while(performance.now()<deadline){if(predicate())return;await delay(40);}throw new Error('Timed out: '+label);}
 async function hard(path){const old=doc();frame.src=path;await until(()=>doc()!==old&&win().location.pathname===path.split('?')[0]&&doc().readyState==='complete'&&settled(),'hard load '+path);}
 async function navigate(path){await win().__engNav.navigate(path);await until(()=>win().location.pathname===path&&settled(),'navigate '+path);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');}
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
+  if(query('[data-journey-current="feed"]')){
+    assert(!visible(query('.trash'))&&!visible(query('.avatar-button')),'feed controls yield to the revealed article cover');
+    const link=query('[data-journey-promote]'),box=link.getBoundingClientRect(),hit=doc().elementFromPoint(box.left+12,box.top+box.height/2);
+    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile');
+  }
+}
 async function promote(path){const link=query('[data-journey-promote]');assert(link&&new URL(link.href).pathname===path,'Continue points to '+path);link.click();await until(()=>win().location.pathname===path&&settled(),'promote '+path);}
 async function articleBottom(slug){const article=query('[data-article-slug="'+slug+'"]');assert(article,'the intended article is mounted');const rect=article.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.bottom-win().innerHeight+20,behavior:'instant'});await until(()=>win().__engReading.snapshot().completed.includes(slug),'actual article bottom completes '+slug);}
 async function fonts(){const typography=win().__engTypography;if(typography){await typography.ready;await typography.displayReady;}else await doc().fonts.ready;}
+async function stableGeometry(nodes){
+  const sizes=new Map(),events=[];let epoch=0,previous=-1,stable=0,facesReady=false,fontError;
+  const record=(kind,detail={})=>{epoch++;events.push({kind,time:performance.now(),...detail});if(events.length>64)events.shift();};
+  const observer=new (win().ResizeObserver)(entries=>{for(const entry of entries){sizes.set(entry.target,[entry.contentRect.width,entry.contentRect.height]);record('resize-observer',{node:nodes.indexOf(entry.target),size:sizes.get(entry.target)});}});
+  const changed=event=>record(event.type,{detail:event.detail});
+  const types=['engmanager:fontchange','resize'];for(const type of types)win().addEventListener(type,changed);
+  const fontTypes=['loading','loadingdone','loadingerror'];for(const type of fontTypes)doc().fonts.addEventListener(type,changed);
+  const dispose=()=>{observer.disconnect();for(const type of types)win().removeEventListener(type,changed);for(const type of fontTypes)doc().fonts.removeEventListener(type,changed);};
+  nodes.forEach(node=>observer.observe(node));fonts().then(()=>{facesReady=true;record('managed-fonts-ready');},error=>{fontError=error;});
+  const deadline=performance.now()+12000;
+  try{
+    while(performance.now()<deadline){
+      await new Promise(resolve=>win().requestAnimationFrame(resolve));
+      if(fontError)throw fontError;
+      stable=facesReady&&doc().fonts.status==='loaded'&&sizes.size===nodes.length&&epoch===previous?stable+1:0;
+      previous=epoch;
+      if(stable>=6)return {events,dispose};
+    }
+    throw new Error('Geometry did not become stable: '+JSON.stringify({facesReady,fontStatus:doc().fonts.status,sizes:[...sizes.values()],events}));
+  }catch(error){dispose();throw error;}
+}
 async function titleFits(width,title){frame.style.width=width+'px';await until(()=>win().innerWidth===width,'article cover width '+width);await fonts();await until(()=>{const h=query('.journey-poster-title-article');return h&&h.style.fontSize&&h.scrollWidth<=h.clientWidth+1&&h.scrollHeight<=h.clientHeight+1;},'full title fits at '+width);const h=query('.journey-poster-title-article');assert(h.textContent===title,'the cover preserves the complete article title at '+width);assert(doc().documentElement.scrollWidth<=width+1,'article cover has no horizontal overflow at '+width);}
 async function nativeKey(node,key){node.focus({preventScroll:true});assert(doc().activeElement===node,'cleanup action receives keyboard focus');window.__journeyKey=key;await until(()=>!window.__journeyKey,'native '+key+' dispatched');}
 async function nativeDrop(node){node.scrollIntoView({block:'center',behavior:'instant'});await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));const start=node.getBoundingClientRect(),bin=query('.trash-can').getBoundingClientRect(),outer=frame.getBoundingClientRect();assert(start.width>0&&start.height>0&&start.top>=0&&start.bottom<=win().innerHeight,'native drag begins on an onscreen control');window.__journeyGesture={x:outer.left+start.left+start.width/2,y:outer.top+start.top+start.height/2,toX:outer.left+bin.left+bin.width/2,toY:outer.top+bin.top+bin.height/2};await until(()=>!window.__journeyGesture,'native pointer drop dispatched');}
@@ -62,6 +89,10 @@ try{
   const poster=query('[data-journey-next="article"]'),still=poster.querySelector('.journey-poster-art img');
   await still.decode();
   assert(still.complete&&still.naturalWidth>0&&visible(poster),'the carved folio remains visible while article HTML stalls');
+  win().scrollTo({top:0,behavior:'instant'});
+  await until(()=>!doc().body.classList.contains('journey-revealing'),'scrolling back closes the article cover');
+  assert(visible(query('.trash'))&&visible(query('.avatar-button')),'returning to the feed restores its controls');
+  await reveal();
   await titleFits(390,first.title);await titleFits(320,first.title);
   rejectPrefetch();await until(()=>query('[data-journey-runway]').dataset.failed==='true','failed prefetch offers Continue');
   assert(visible(poster)&&still.naturalWidth>0,'failed article fetch retains the complete cover');
@@ -69,6 +100,21 @@ try{
   await promote(first.path);
   assert(win().__engReading.snapshot().completed.length===0,'entering through Continue still requires reading to the bottom');
   await articleBottom(first.slug);
+  // Once read, the reveal's hot scroll path must not query page geometry or
+  // revisit synchronous progress storage on each subsequent touch frame.
+  const readArticle=query('[data-article-slug="'+first.slug+'"]'),readRunway=query('[data-journey-runway]');
+  const geometry=await stableGeometry([query('[data-journey-current]'),readArticle]);
+  const articleRect=readArticle.getBoundingClientRect,runwayRect=readRunway.getBoundingClientRect,complete=win().__engReading.complete;
+  let geometryReads=0,repeatReads=0;const reads=[];
+  const measured=(node,original)=>{geometryReads++;const rect=original.call(node);reads.push({node:node===readArticle?'article':'runway',time:performance.now(),width:rect.width,height:rect.height,stack:new Error().stack});return rect;};
+  readArticle.getBoundingClientRect=function(){return measured(this,articleRect);};
+  readRunway.getBoundingClientRect=function(){return measured(this,runwayRect);};
+  win().__engReading.complete=function(...args){repeatReads++;return complete.apply(this,args);};
+  try{
+    for(let i=0;i<12;i++){win().scrollBy({top:2,behavior:'instant'});await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));}
+    assert(geometryReads===0,'stable article reveal frames reuse measured geometry: '+JSON.stringify({geometryReads,reads,events:geometry.events,fontStatus:doc().fonts.status}));
+    assert(repeatReads===0,'an already-read article never touches completion storage during reveal frames');
+  }finally{delete readArticle.getBoundingClientRect;delete readRunway.getBoundingClientRect;win().__engReading.complete=complete;geometry.dispose();}
   await reveal();await promote('/shop');
   await reveal();await promote('/coach');
   await reveal();await promote('/subscribe');
