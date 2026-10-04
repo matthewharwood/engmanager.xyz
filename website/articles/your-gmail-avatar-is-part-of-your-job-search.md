@@ -1,85 +1,72 @@
-Here’s a tiny piece of career advice: put a recognizable photo on the Gmail account you use for your job search.
+Put a recognizable photo on the Gmail account you use for your job search. Then follow the link in your signature and ask whether it leads to work you're proud to explain.
 
-I’ve started doing one-on-one coaching with engineers in our Discord. We go through the resume, the Icebreaker, the projects, and the person behind all of it. Nikhil’s story stayed with me.
+I've been coaching engineers one-on-one in our Discord. We look at the resume, the Icebreaker, the projects, and the person behind them. Nikhil's story stayed with me.
 
-He has worked on Amazon Connect and Walmart Marketplace. He’s trying to establish his career after the COVID years, in a market shaped by layoffs. His Walmart contract ended in one. The names on his resume make the path look cleaner than it felt to live.
+He has worked on Amazon Connect and Walmart Marketplace. He's trying to establish his career after the COVID years, in a market shaped by layoffs. His Walmart contract ended in a layoff. The names on his resume make the path look cleaner than it felt to live.
 
-Those gigs gave him experience. They haven’t yet added up to the sustained shot he wants.
+He described expecting his work to speak for itself inside his team. He would do the work, and people would see it. That expectation hadn't worked in his favor.
 
-In our conversation, he described expecting his work to speak for itself inside his team. He would do the work, and people would see it. That expectation hadn’t worked in his favor.
+I understand it. You're already working hard. Packaging yourself can feel like time stolen from becoming a better engineer. But someone who hasn't worked beside you needs a way to recognize you, understand your contribution, and inspect it.
 
-I understand the instinct. You want to get better at engineering. Spending the afternoon packaging yourself feels like time stolen from the thing you’re trying to become good at.
+## Put One Small Thing in Order
 
-But somebody has to be able to find the work before they can care about it.
+Choosing an avatar is a little like making your bed. It puts one small thing in order and gives you a place to begin. You don't remake your profile every morning; you build the habit of noticing what needs care.
+
+[Google says your picture can appear beside your name and in notifications to other Gmail users](https://support.google.com/mail/answer/35529?hl=en). Use a recent, recognizable photo, a consistent name, and a signature with one useful link.
+
+A missing avatar tells me very little about your engineering. It does give us a useful prompt: where else might the introduction be unfinished? A broken demo? A README that never explains what the project does? A portfolio describing who you were two years ago?
+
+Fixing the picture won't get you hired. Following that thread can make the work you've already done easier to discover and evaluate.
+
+In [a small experiment with mock LinkedIn profiles](https://www.ojcmt.net/download/social-presence-on-linkedin-perceived-credibility-and-interpersonal-attractiveness-based-on-user.pdf), people rated profiles with a photo as more competent. It measured impressions, not engineering ability or job offers. Presentation can open a conversation; the work has to sustain it.
 
 <aside class="article-callout">
   <strong>Creating value and communicating value are different skills.</strong>
-  Your profile should give somebody a way into the work: a recognizable person, a clear problem, and something they can inspect.
+  Practice both. Give people a recognizable person, an honest account, and something they can inspect.
 </aside>
 
-## Start With the Avatar
+## Turn Care Into a Routine
 
-The Gmail avatar is my smallest example of this.
+Personal branding starts with a question: what do you want people to be able to count on you for?
 
-[Google says your profile picture can appear beside your name and in notifications to other Gmail users](https://support.google.com/mail/answer/35529?hl=en). That little circle is one place a person may encounter you before opening your resume.
+If the answer is thoughtful engineering, make that visible in ordinary choices. Keep your links working. Explain a tradeoff. Correct an outdated claim. Each small action gives you another reason to believe you're becoming the engineer you want to be.
 
-Use a recognizable picture. Keep your name consistent. Give your signature a useful link. Then make sure that link leads somewhere worth visiting.
+Give the profiles you use a clear job:
 
-My bet is that these small choices compound through recognition. Someone sees your name in an email, recognizes it in a useful comment, and later opens a project you shared. Each encounter has a little more context than the last.
+- **LinkedIn:** a recognizable photo, a clear direction, and a concrete contribution.
+- **GitHub:** a complete profile and a few pinned projects with readable READMEs and working examples.
+- **Portfolio:** one strong story showing the problem, your decisions, and the evidence.
+- **Gmail:** a consistent identity and a short path to that story.
 
-The avatar is a starting point. The work gives people something to evaluate.
+Set aside fifteen minutes after your weekly project review. Open those links as a stranger would. Repair one gap and record one improvement. Attach the routine to something you already do so it survives the weeks when motivation doesn't.
 
-## Make Your Profiles Tell the Same Story
+Compare this week's work with your own last week. Someone else's polished career is a poor measure of your progress. A clearer explanation, a working example, or a corrected mistake is something you can actually build on.
 
-This is part of what I mean when I tell an engineer they need to have game. Learn how to make your contribution understandable to somebody who hasn’t worked beside you.
+## Give the Habit Something Worth Showing
 
-Give every public professional profile you use a job:
+Keeping everything tidy can become a comfortable way to avoid difficult work. Your portfolio needs to grow because your ability is growing.
 
-- **Gmail:** a recognizable identity and a signature pointing to your work.
-- **LinkedIn:** a clear direction and a specific example of a problem you solved.
-- **GitHub:** a pinned project with a readable README, a working example, and your decisions explained.
-- **Portfolio:** one writeup on your best piece of work. Explain the situation, your actions, the tradeoffs, and the result.
-- **Other social accounts:** share useful pieces of that work and point back to the full story.
+Choose a problem you care enough about to stay with when it gets awkward. Then practice the thing you want to become good at. If you want to improve at debugging, reproduce a failure and investigate it. If you want to learn system design, build a small system and test where it breaks.
 
-Across both resume reviews, I kept returning to the same questions: what did you build, why did it matter, and where can I see it?
+For Nikhil, I'd start with one contribution he can explain from experience. A list of technologies gives me ingredients. I want to know what he made with them.
 
-An introverted engineer can answer those questions in writing. Publish a short investigation. Explain a bug. Show a decision you changed your mind about. Practice being outward-facing in a way you can sustain.
+Write one page:
 
-You need a voice people can hear.
+1. **The situation:** who had the problem, and what happened before you started?
+2. **Your contribution:** what did you personally change? Credit the team for the rest.
+3. **The decision:** what alternatives did you consider, and what did your choice cost?
+4. **The evidence:** show a demo, diagram, test, or measurement with its baseline.
+5. **The limit:** what remains unfinished, and what would you try next?
 
-I am comfortable talking. That makes it easy for me to confuse enthusiasm with evidence when I’m giving feedback. A quieter engineer should be able to put a good explanation in front of me and have it count. The question is whether I can understand the contribution.
+For private work, use an anonymized diagram or recreate a small example. Label what you recreated and what you shipped.
 
-## Give Me One Piece of Work I Can Inspect
+Now give the page to another engineer. Can they run the example? Can they explain your decision back to you? Where do they stop understanding? Use that feedback to choose your next practice session. Fix the weak point, test again, and update the story.
 
-The most useful thing to come out of these reviews was a smaller assignment: pick one contribution and make it understandable.
+That's how a portfolio becomes a record of learning. You have something specific to say because you've done something specific and let it be questioned. A quiet engineer can do this in writing. I'm comfortable talking, so I have to watch my own tendency to confuse enthusiasm with evidence.
 
-A list of technologies gives me ingredients. I want to know what you made with them.
+## Let AI Help You Keep the Habit
 
-Choose a bug you investigated, a migration you helped ship, a slow query you improved, or a feature somebody uses. Write one page:
-
-1. **The situation.** Who had the problem? What was happening before you started?
-2. **Your contribution.** What did you personally change? Give the team credit for the rest.
-3. **The decision.** What alternatives did you consider? What did your choice cost?
-4. **The evidence.** Show a demo, a diagram, a test, or a before-and-after measurement. If you give a percentage, explain the baseline.
-5. **The limit.** What is still unfinished? What would you change with another week?
-
-That page can become a resume bullet and a sixty-second interview answer. It also gives somebody a reason to follow the link in your email signature.
-
-Professional work is often private. You can describe the decision without publishing your employer’s code or customer data. Use an anonymized diagram or recreate a small example. Label what you recreated and what you actually shipped.
-
-If you already have a project, open the link as somebody seeing it for the first time. Can they run it? Can they tell what it does? Can they find your contribution? A project buried three clicks deep may need a better entrance before it needs another feature.
-
-Choose work you care enough about to keep improving. Make a small change, ship it, and explain it. The next writeup gets easier because you have something new to say.
-
-<aside class="article-callout">
-  <strong>The next assignment:</strong> make one existing piece of work easy to open and easy to explain. Bring that page to the next conversation.
-</aside>
-
-## Automate the Distribution
-
-Here is the routine I want to help people build.
-
-Finish something. Record yourself explaining it for five minutes. Use that transcript to draft a project writeup, a LinkedIn post, and a short email. Check the facts, add the evidence, and schedule the pieces.
+AI makes the housekeeping cheaper. Use it to check links, suggest README structure, or turn a five-minute explanation into a draft. Build a workflow you can repeat:
 
 <div class="workflow">
   <div class="workflow-stage workflow-stage-single">Real Work</div>
@@ -91,20 +78,24 @@ Finish something. Record yourself explaining it for five minutes. Use that trans
   <div class="workflow-stage workflow-stage-single">Share It</div>
 </div>
 
-One piece of real work gives you several ways to share it. You spend less time staring at empty posting boxes and more time improving the work underneath them.
+The tension is that AI can make the story sound finished before the work is. A polished draft can hide the very gap you need to practice.
 
-The transcript is raw material. Read the draft against the artifact. Fix anything that overstates your role, invents a result, or turns a prototype into a production system. Keep the interesting decision and the rough edge. Those are usually the parts I want to ask about.
+Read it against the artifact. Remove invented results, exaggerated ownership, and explanations you can't defend. Keep the decision you struggled with, the mistake you corrected, and the limit you still haven't solved. Those details give us a real conversation to have.
 
-Keep most of your time for engineering and interview practice. Give visibility a small, regular place in the week. Let automation handle the repetitive preparation, while you stay responsible for the claims and the conversations.
+Use AI during learning, too: ask for a critique or an unfamiliar failure case. Then make a prediction, run the experiment, and explain what changed your mind. If you can't explain a generated solution, investigating it is your next assignment.
 
-That’s also how I’m building this coaching newsletter: conversations become notes, notes become something useful, and the useful thing gets shared where people can find it.
+Working smarter should leave you more energy for the hard parts: judgment, experiments, feedback, and revision. A profile that makes promises your work can support is a brand you can keep improving.
 
-## Work on This With Me
+## Start With One Thing
 
-If your experience is stronger than the story your profiles tell, [book a one-on-one coaching session](https://coach.engmanager.xyz/). We’ll look at the evidence and make a plan for what to show next.
+If your experience is stronger than the story your profiles tell, [book a one-on-one coaching session](https://coach.engmanager.xyz/). Bring one piece of work we can inspect.
 
-You can also [join Auteurs, our free Discord](https://discord.gg/sTzQBrbnBM), and start with the submission guidelines in **resume-crit**. For a reflection before we talk, try [Big Personality](/articles/big-personality). Allow about 30 minutes and use it to think about how you like to work.
+You can also [join Auteurs, our free Discord](https://discord.gg/sTzQBrbnBM), and start with **resume-crit**, or [get the free coaching notes by email](/subscribe).
 
-[Get the free coaching notes by email](/subscribe) if you want more of these conversations as I learn from them.
+Start with the avatar. Follow the link. Fix one gap. Learn something difficult enough to give you a new story. Come back next week and do it again.
 
-Start with the avatar. Then give the person who recognizes you something worth opening.
+## Further Reading
+
+- [*12 Rules for Life: An Antidote to Chaos* — Jordan B. Peterson](https://www.penguin.co.uk/books/309610/12-rules-for-life-by-peterson-jordan-b/9780241351659): personal responsibility, progress against your previous self, and truthful speech.
+- [*Atomic Habits* — James Clear](https://jamesclear.com/atomic-habits): small routines that reinforce the person you want to become.
+- [*Ultralearning* — Scott H. Young](https://www.scotthyoung.com/blog/ultralearning/): direct practice, feedback, and taking responsibility for your learning.
