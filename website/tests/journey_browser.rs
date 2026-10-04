@@ -308,9 +308,14 @@ try{
   await checkVisibleDiagrams(article);
   const hero=query('[data-article-hero="the-execution-marketplace"]');
   assert(hero&&hero.querySelector('svg.article-hero-poster')&&hero.querySelector('canvas.article-hero-canvas'),'execution article has an accessible static hero and canvas');
-  hero.scrollIntoView({behavior:'instant'});
+  await doc().fonts.ready;
+  hero.scrollIntoView({block:'center',behavior:'instant'});await scrollSettled();
+  await until(()=>{const rect=hero.getBoundingClientRect();return visible(hero)&&rect.bottom>0&&rect.top<win().innerHeight;},'hero is visible after diagram checks');
   const heroCanvas=hero.querySelector('canvas');
-  if(heroCanvas.getContext('webgl2')){
+  const heroGl=heroCanvas.getContext('webgl2',{alpha:false,antialias:false,powerPreference:'low-power'});
+  const asynchronousCompile=heroGl?.getExtension('KHR_parallel_shader_compile');
+  checks.push('article hero capabilities: '+JSON.stringify({webgl:!!heroGl,asynchronousCompile:!!asynchronousCompile,contextLost:heroGl?.isContextLost(),bounds:hero.getBoundingClientRect().toJSON(),hidden:doc().hidden,busy:win().__engNav?.busy,revealing:doc().body.classList.contains('journey-revealing')}));
+  if(asynchronousCompile){
     await until(()=>hero.dataset.renderer==='webgl','article hero draws its WebGL2 scene');
     // The default framebuffer may clear after presentation; inspect the
     // actual accent uniform sent to the shader instead of a stale pixel.
@@ -320,6 +325,12 @@ try{
     for(let i=0;i<10&&doc().documentElement.dataset.theme!==targetTheme;i++)await click('[data-theme-cycle]');
     assert(doc().documentElement.dataset.theme===targetTheme,'theme cycle reaches a distinct palette');
     await until(()=>accentUniform()!==initialAccent,'article hero repaints with the theme palette');
+  }else{
+    // Software WebGL2 can exist without the nonblocking compilation extension.
+    // In that case the runtime deliberately retains its authored primary SVG.
+    const poster=hero.querySelector('svg.article-hero-poster'),bounds=poster.getBoundingClientRect();
+    assert(poster.isConnected&&poster.querySelector('path,circle,line,rect')&&bounds.width>0&&bounds.height>0&&visible(poster)&&Number(win().getComputedStyle(poster).opacity)>0,'unsupported asynchronous compilation retains visible authored SVG graphics');
+    assert(hero.dataset.renderer!=='webgl'&&Number(win().getComputedStyle(heroCanvas).opacity)===0,'unsupported asynchronous compilation keeps the unused canvas hidden');
   }
   for(const width of [320,390]){
     frame.style.width=width+'px';await until(()=>win().innerWidth===width,'diagram viewport '+width);
