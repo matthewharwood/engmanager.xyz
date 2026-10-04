@@ -886,7 +886,12 @@ mod tests {
         let router = test_router().await;
         for host in [SITE_HOST, SHOP_HOST, COACH_HOST] {
             for (path, kind, next, title) in [
-                ("/feed", "feed", None, "<title>ENG MANAGER</title>"),
+                (
+                    "/feed",
+                    "feed",
+                    Some("/articles/your-gmail-avatar-is-part-of-your-job-search"),
+                    "<title>ENG MANAGER</title>",
+                ),
                 (
                     "/shop",
                     "shop",

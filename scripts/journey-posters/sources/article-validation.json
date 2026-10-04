@@ -1,0 +1,444 @@
+{
+  "source": "Original procedural geometry: rebuild_article.py",
+  "copyright": "The Open Folio \u2014 original procedural sculpture for engmanager.xyz, 2026. Authored in Blender: layered curved stone pages, two covers, a rounded binding and one rising turned leaf. No third-party geometry. Shared honed ivory material and portrait studio from the journey series.",
+  "intentional_closed_components": {
+    "Left curved stone cover": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.2231250034247159
+    },
+    "Left folio leaf 1": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04694039871217393
+    },
+    "Left folio leaf 2": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04641998655807726
+    },
+    "Left folio leaf 3": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.045901835675763426
+    },
+    "Left folio leaf 4": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04538595783688123
+    },
+    "Left folio leaf 5": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.044872341359091815
+    },
+    "Left folio leaf 6": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.044360997741840255
+    },
+    "Left folio leaf 7": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04385192329074535
+    },
+    "Left folio leaf 8": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.043345109990388264
+    },
+    "Right curved stone cover": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.2231250034247162
+    },
+    "Right folio leaf 1": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04694039875777141
+    },
+    "Right folio leaf 2": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.0464199866259165
+    },
+    "Right folio leaf 3": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04590183567576306
+    },
+    "Right folio leaf 4": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04538595785912288
+    },
+    "Right folio leaf 5": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04487234142525992
+    },
+    "Right folio leaf 6": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04436099778558076
+    },
+    "Right folio leaf 7": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04385192322569153
+    },
+    "Right folio leaf 8": {
+      "vertices": 22050,
+      "faces": 22048,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        22050
+      ],
+      "signed_volume": 0.04334512079139555
+    },
+    "Rising turned stone leaf": {
+      "vertices": 35378,
+      "faces": 35376,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        35378
+      ],
+      "signed_volume": 0.02973505259796812
+    },
+    "Rounded carved folio binding": {
+      "vertices": 5058,
+      "faces": 5120,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        5058
+      ],
+      "signed_volume": 0.09170822239823885
+    }
+  },
+  "simplified_closed_components": {
+    "Left curved stone cover": {
+      "vertices": 6175,
+      "faces": 6641,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6175
+      ],
+      "signed_volume": 0.23112026493274063
+    },
+    "Left folio leaf 1": {
+      "vertices": 4191,
+      "faces": 4302,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04862241782814779
+    },
+    "Left folio leaf 2": {
+      "vertices": 4191,
+      "faces": 4343,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.048083359430066426
+    },
+    "Left folio leaf 3": {
+      "vertices": 4191,
+      "faces": 4323,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04754663795211911
+    },
+    "Left folio leaf 4": {
+      "vertices": 4191,
+      "faces": 4358,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04701228069778194
+    },
+    "Left folio leaf 5": {
+      "vertices": 4191,
+      "faces": 4380,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.046480254528247486
+    },
+    "Left folio leaf 6": {
+      "vertices": 4191,
+      "faces": 4357,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04595058902424043
+    },
+    "Left folio leaf 7": {
+      "vertices": 4191,
+      "faces": 4379,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.045423274106429705
+    },
+    "Left folio leaf 8": {
+      "vertices": 4191,
+      "faces": 6059,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04490116778138991
+    },
+    "Right curved stone cover": {
+      "vertices": 6175,
+      "faces": 6498,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6175
+      ],
+      "signed_volume": 0.23112026393460844
+    },
+    "Right folio leaf 1": {
+      "vertices": 4191,
+      "faces": 4579,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04862241824331048
+    },
+    "Right folio leaf 2": {
+      "vertices": 4191,
+      "faces": 4481,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.048083359752766654
+    },
+    "Right folio leaf 3": {
+      "vertices": 4191,
+      "faces": 4448,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.047546637863902265
+    },
+    "Right folio leaf 4": {
+      "vertices": 4191,
+      "faces": 4526,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.04701228080132863
+    },
+    "Right folio leaf 5": {
+      "vertices": 4191,
+      "faces": 4536,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.046480254658041203
+    },
+    "Right folio leaf 6": {
+      "vertices": 4191,
+      "faces": 4531,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.045950588964389624
+    },
+    "Right folio leaf 7": {
+      "vertices": 4191,
+      "faces": 4377,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.045423274663993894
+    },
+    "Right folio leaf 8": {
+      "vertices": 4191,
+      "faces": 6250,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        4191
+      ],
+      "signed_volume": 0.044898400560535415
+    },
+    "Rising turned stone leaf": {
+      "vertices": 6723,
+      "faces": 11417,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6723
+      ],
+      "signed_volume": 0.03079587231192808
+    },
+    "Rounded carved folio binding": {
+      "vertices": 1417,
+      "faces": 2149,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        1417
+      ],
+      "signed_volume": 0.09481986123329116
+    }
+  },
+  "export": {
+    "vertices": 87546,
+    "faces": 100934,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      6723,
+      6175,
+      6175,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      4191,
+      1417
+    ],
+    "signed_volume": 1.3358934592692728
+  },
+  "linear_cavity": {
+    "minimum": 0.6499999761581421,
+    "mean": 0.7275319695472717,
+    "maximum": 1.0
+  },
+  "source_preserved": true,
+  "export_simplified_separately": true
+}

@@ -39,3 +39,11 @@ Our adaptation selects solid anatomical structures rather than empty-space label
 The source creators and CC BY 4.0 license are credited in the GLB, editable Blender source and visible feed poster. Modifications are disclosed; neither the creators nor NIH/HuBMAP endorse this artistic adaptation. This stylized sculpture is not presented as a medical model.
 
 Reference screenshots used during visual comparison are local study material, are not packed into the Blender file, and are not redistributed here.
+
+## Article: The Open Folio
+
+The article sculpture is original procedural geometry authored in Blender for engmanager.xyz on 2026-10-04. No scan, downloaded model, font outlines or third-party geometry is reused. `rebuild_article.py` constructs two thick curved covers, sixteen layered pages, a rounded central binding and one sweeping turned leaf. Shallow scored paragraph blocks evoke writing without imitating a specific book or text.
+
+The shared honed ivory material, local cavity bake, scale, portrait camera and lighting come from the existing journey studio. `article.blend` retains all detailed authoring surfaces separately from the simplified display/export copy. The twenty interlocking parts are intentionally closed solids attached through the central binding; each is checked for positive signed volume and outward normals. `article-validation.json` records source component counts, export topology, intentional islands and baked color range. Extra disconnected fragments, open boundaries and nonmanifold edges fail the build.
+
+The original model's provenance is included in the GLB's `asset.copyright`, the Blender object's `attribution` property and the `ARTICLE SOURCE AND PROVENANCE` text block. The folio does not carry the Aristotle or HRA license because it does not contain their geometry. The front, profile and three-quarter study renders are written to the system temporary directory under `article-study/final` before packaging the transparent WebP fallback.

@@ -1,4 +1,4 @@
-"""Rebuild the marble portrait series with Blender 5.1+.
+"""Rebuild the marble journey sculpture series with Blender 5.1+.
 
 Each sculpture has its own editable source and authoring pipeline. See README.md
 and sources/ATTRIBUTION.md before modifying or redistributing licensed geometry.
@@ -15,7 +15,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = Path(__file__).resolve().parent
 OUT = ROOT / "website/assets/journey"
-KINDS = ("shop", "coach", "subscribe", "feed")
+KINDS = ("shop", "coach", "subscribe", "feed", "article")
 
 
 def package_stills():
@@ -39,7 +39,7 @@ def package_stills():
         alpha = pixels[:, :, 3:4]
         target[:] = pixels[:, :, :3] * alpha + target * (1 - alpha)
         bpy.data.images.remove(img)
-    sheet = bpy.data.images.new("Marble studies — shop, coach, subscribe, feed", width=width * len(KINDS), height=height, alpha=False)
+    sheet = bpy.data.images.new("Marble studies — shop, coach, subscribe, feed, article", width=width * len(KINDS), height=height, alpha=False)
     sheet.pixels.foreach_set(canvas.ravel())
     sheet.filepath_raw = str(SOURCE / "contact-sheet.png")
     sheet.file_format = "PNG"
@@ -55,7 +55,7 @@ def main():
     if not args.sheet_only:
         # Shop and subscribe read the accepted coach source; full rebuilds must
         # refresh that dependency first. Sheet order follows the site journey.
-        for kind in ("coach", "shop", "subscribe", "feed"):
+        for kind in ("coach", "shop", "subscribe", "feed", "article"):
             if args.only and kind != args.only:
                 continue
             subprocess.run([

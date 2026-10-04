@@ -32,6 +32,7 @@ function harness({ reduced = false, next = true, observer = true } = {}) {
         step(dt = 16.667) { now += dt; const entries = [...callbacks.values()]; callbacks.clear(); for (const fn of entries) fn(now); },
         settle(dt = 16.667) { let frames = 0; while (callbacks.size && frames++ < 500) this.step(dt); assert.equal(callbacks.size, 0, 'spring must stop scheduling frames'); return frames; },
         outside() { top = 1300; observed?.fn([{ isIntersecting: false }]); }, inside() { top = 400; observed?.fn([{ isIntersecting: true }]); },
+        destination(value) { next = value; window.emit('eng:journeytarget'); },
     };
 }
 test('torn edge bends with scroll, settles to the exact cut, and stops all frame work', () => {
@@ -65,4 +66,15 @@ test('navigation disposes the old curtain and remounts just one', () => {
 test('terminal pages create no curtain; visibility fallback works without observer', () => {
     const terminal = harness({ next: false }); terminal.scroll(300); assert.equal(terminal.pending, 0);
     const h = harness({ observer: false }); h.outside(); h.scroll(100); assert.equal(h.pending, 0); h.inside(); h.scroll(100); assert.equal(h.pending, 1); h.settle();
+});
+test('finishing or restarting a reading cycle removes or restores exactly one curtain', () => {
+    const h = harness();
+    h.scroll(100); h.step();
+    h.destination(false);
+    assert.equal(h.page.children.length, 0);
+    assert.equal(h.pending, 0);
+    h.destination(true); h.destination(true);
+    assert.equal(h.page.children.length, 1);
+    h.scroll(100); h.settle();
+    assert.equal(h.pending, 0);
 });

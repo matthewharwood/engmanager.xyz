@@ -241,7 +241,7 @@ test('device loss reports once and stops frames so the poster can use its still'
     assert.equal(h.state.frames.size, 0);
 });
 
-for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
+for (const name of ['shop', 'coach', 'subscribe', 'feed', 'article']) {
     test(`real Blender ${name} export satisfies the runtime GLB contract`, async () => {
         const file = await readFile(new URL(`../website/assets/journey/${name}.glb`, import.meta.url));
         const h = harness({ data: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) });
@@ -312,7 +312,7 @@ test('an explicitly hidden fixed poster stays ready without animating in the bac
     renderer.destroy();
 });
 
-for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
+for (const name of ['shop', 'coach', 'subscribe', 'feed', 'article']) {
     test(`${name} retains its vertex cavity shading and source attribution through export and upload`, async () => {
         const file = await readFile(new URL(`../website/assets/journey/${name}.glb`, import.meta.url));
         const jsonLength = file.readUInt32LE(12);
@@ -320,16 +320,20 @@ for (const name of ['shop', 'coach', 'subscribe', 'feed']) {
         const binaryOffset = 28 + jsonLength;
         const binary = new DataView(file.buffer, file.byteOffset + binaryOffset, file.length - binaryOffset);
         const attribution = gltf.asset.copyright;
-        const sourceCredits = name === 'feed'
+        const sourceCredits = name === 'article'
+            ? ['The Open Folio', 'original procedural sculpture', 'No third-party geometry']
+            : name === 'feed'
             ? ['3D Reference Organ for Brain, Male v1.3', 'Kristen Browne', 'Heidi Schlehlein',
                 'https://doi.org/10.48539/HBM929.XKCL.339']
             : ['Aristotele bust', 'nicola_scaramella',
                 'https://sketchfab.com/3d-models/aristotele-bust-8717fddd94c44498a5f91d652f866930'];
         assert.equal(typeof attribution, 'string', 'the redistributed asset carries its source attribution');
         for (const credit of sourceCredits) assert.ok(attribution.includes(credit), `source credit retained: ${credit}`);
-        assert.match(attribution, /CC BY 4\.0/);
-        assert.ok(attribution.includes('https://creativecommons.org/licenses/by/4.0/'));
-        assert.match(attribution, /Changes:/, 'adaptations remain disclosed in the redistributed asset');
+        if (name !== 'article') {
+            assert.match(attribution, /CC BY 4\.0/);
+            assert.ok(attribution.includes('https://creativecommons.org/licenses/by/4.0/'));
+            assert.match(attribution, /Changes:/, 'adaptations remain disclosed in the redistributed asset');
+        }
         if (name === 'shop') assert.match(attribution, /cap/, 'the added cap remains disclosed');
         if (name === 'feed') assert.match(attribution, /eyes/, 'the added eyes remain disclosed');
         if (name === 'subscribe') {

@@ -472,6 +472,7 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/view-transitions.js");
     scripts.add_js("js/visited-articles.js");
     scripts.add_js("js/reveal-cloth.js");
+    scripts.add_js("js/reading-completion.js");
     scripts.add_js("js/trash-drag.js");
     scripts.add(&site_nav);
     scripts.add_inline(render_experience_urls());
@@ -527,6 +528,17 @@ pub async fn index() -> Html<String> {
                 <EngHeadline />
                 { render_topic_marquees() }
                 { article_links }
+
+                <section class="feed-afterword" aria-label="Keep exploring">
+                    <div class="reading-completion" data-reading-completion hidden>
+                        <p class="reading-completion-eyebrow">"THE END, FOR NOW"</p>
+                        <h2 data-reading-completion-title>"You've read all my work."</h2>
+                        <p data-reading-completion-copy></p>
+                        <p class="reading-completion-count" data-reading-completion-count role="status" aria-live="polite"></p>
+                        <div class="reading-completion-tags" data-reading-completion-tags></div>
+                        <button class="reading-completion-reset" data-reading-completion-reset type="button">"Start another lap"</button>
+                    </div>
+                </section>
 
                 // Avatar is a popover trigger via the native HTML Popover API.
                 // Clicking toggles the #bio popover.
@@ -597,7 +609,13 @@ pub async fn index() -> Html<String> {
             .scripts(scripts)
             .speculation_rules(true)
             .nav_router(true)
-            .journey("feed", None)
+            .journey(
+                "feed",
+                public_articles()
+                    .find(|article| article.slug != "big-personality")
+                    .map(|article| format!("/articles/{}", article.slug))
+                    .as_deref(),
+            )
             .render(body),
     )
 }

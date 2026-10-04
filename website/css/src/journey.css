@@ -212,3 +212,49 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     .journey-runtime, .home-services, .journey-next, .journey-curtain { display: none !important; }
     [data-journey-current] { box-shadow: none; }
 }
+
+/* Essay sentences read as a cover: a fitted headline over the stone folio. */
+.journey-poster-article .journey-poster { display: block; }
+.journey-poster-article .journey-poster::before { inset: 19% 24% 18% 43%; }
+.journey-poster-article .journey-poster-art {
+    position: absolute;
+    inset: 24% 0 11% auto;
+    inline-size: 66%;
+    block-size: 65%;
+    contain: layout paint;
+}
+.journey-poster-article .journey-poster-caption { position: static; display: block; }
+.journey-poster-article .journey-poster-title-article {
+    position: absolute;
+    z-index: 2;
+    inset: 16% auto auto clamp(1.25rem, 4vw, 4rem);
+    inline-size: min(78%, 66rem);
+    block-size: 47%;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 7vw, 7rem);
+    font-weight: 900;
+    line-height: 1.03;
+    letter-spacing: -.045em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+    text-shadow: 0 1px 1px var(--surface-1);
+}
+.journey-poster-article .journey-poster-caption > p {
+    position: absolute;
+    inset: auto auto 13% clamp(1.25rem, 4vw, 4rem);
+    inline-size: min(36%, 22rem);
+    max-inline-size: none;
+    text-align: start;
+}
+@media (max-width: 42rem) {
+    .journey-poster-article .journey-poster-title-article { inline-size: calc(100% - 2.5rem); block-size: 41%; inset-block-start: 15%; }
+    .journey-poster-article .journey-poster-art { inset: 34% -8% 13% auto; inline-size: 100%; block-size: 51%; }
+    .journey-poster-article .journey-poster-caption > p { inset-block-end: 13%; inline-size: calc(100% - 2.5rem); font-size: .68rem; }
+}
+@media (max-height: 520px) and (min-width: 42rem) {
+    .journey-poster-article .journey-poster-title-article { inset-block-start: 24%; inline-size: 65%; block-size: 40%; }
+    .journey-poster-article .journey-poster-art { inset-block-start: 18%; block-size: 67%; inline-size: 55%; }
+    .journey-poster-article .journey-poster-caption > p { inset-block-end: 16%; inline-size: 44%; font-size: .65rem; }
+}
