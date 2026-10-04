@@ -84,8 +84,9 @@ function startDrag(event) {
 }
 
 function isDvdCatch(event) {
+    if (dvdState?.exposed || dvdState?.paused || document.hidden || window.__engNav?.busy) return false;
     const logo = dvdState?.node || document.querySelector(DVD_SELECTOR);
-    if (!logo || logo.dataset.trashed === "true") return false;
+    if (!logo || logo.hidden || logo.dataset.trashed === "true") return false;
     const rect = logo.getBoundingClientRect();
     return (
         event.clientX >= rect.left - DVD_CATCH_PAD_PX &&
@@ -487,9 +488,39 @@ function bindDvdListeners() {
     dvdListenersBound = true;
 
     window.addEventListener("resize", () => {
+        if (!dvdState) return;
+        dvdState.viewportWidth = window.innerWidth;
+        dvdState.viewportHeight = window.innerHeight;
         clampDvdBouncer();
         setDvdPosition();
     }, { passive: true });
+
+    document.addEventListener("visibilitychange", () => {
+        if (!dvdState) return;
+        cancelAnimationFrame(dvdState.raf);
+        dvdState.raf = 0;
+        dvdState.last = performance.now();
+        queueDvdFrame();
+    });
+    window.addEventListener("eng:journeyexposure", (event) => {
+        if (!dvdState) return;
+        dvdState.exposed = event.detail?.active === true;
+        cancelAnimationFrame(dvdState.raf);
+        dvdState.raf = 0;
+        dvdState.last = performance.now();
+        queueDvdFrame();
+    });
+    window.addEventListener("eng:journeysettled", () => {
+        if (!dvdState) return;
+        dvdState.last = performance.now();
+        queueDvdFrame();
+    });
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").addEventListener?.("change", () => {
+        stopDvdBouncer();
+        dvdState?.observer?.disconnect();
+        dvdState = null;
+        initDvdBouncer();
+    });
 
     document.addEventListener("pointermove", updateDvdCatchState, { passive: true });
     document.addEventListener("pointerleave", () => {
@@ -500,13 +531,20 @@ function bindDvdListeners() {
 function initDvdBouncer() {
     const node = document.querySelector(DVD_SELECTOR);
     if (!node) return;
+    bindDvdListeners();
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
         node.hidden = true;
         return;
     }
+    node.hidden = false;
 
+    const rect = node.getBoundingClientRect();
     dvdState = {
         node,
+        width: rect.width,
+        height: rect.height,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
         x: Math.max(20, window.innerWidth * 0.16),
         y: Math.max(20, window.innerHeight * 0.18),
         vx: DVD_SPEED_X,
@@ -515,22 +553,36 @@ function initDvdBouncer() {
         raf: 0,
         paused: false,
         tone: 0,
+        exposed: document.body.classList.contains("journey-revealing"),
+        observer: null,
     };
+
+    if (typeof ResizeObserver !== "undefined") {
+        dvdState.observer = new ResizeObserver(([entry]) => {
+            if (!dvdState || dvdState.node !== node) return;
+            const box = entry.borderBoxSize?.[0];
+            const width = box?.inlineSize ?? entry.contentRect.width;
+            const height = box?.blockSize ?? entry.contentRect.height;
+            // Bounds include the same fixed two-degree tilt as the artwork.
+            const angle = 2 * Math.PI / 180;
+            dvdState.width = width * Math.cos(angle) + height * Math.sin(angle);
+            dvdState.height = height * Math.cos(angle) + width * Math.sin(angle);
+            clampDvdBouncer();
+            setDvdPosition();
+        });
+        dvdState.observer.observe(node);
+    }
 
     clampDvdBouncer();
     setDvdPosition();
-    dvdState.raf = requestAnimationFrame(tickDvdBouncer);
+    queueDvdFrame();
 
-    bindDvdListeners();
 }
 
 function tickDvdBouncer(now) {
+    if (dvdState) dvdState.raf = 0;
     if (!dvdState || dvdState.node.dataset.trashed === "true") return;
-    if (dvdState.paused || document.hidden) {
-        dvdState.last = now;
-        dvdState.raf = requestAnimationFrame(tickDvdBouncer);
-        return;
-    }
+    if (dvdState.paused || dvdState.exposed || document.hidden) return;
 
     const dt = Math.min(0.05, (now - dvdState.last) / 1000);
     dvdState.last = now;
@@ -553,14 +605,19 @@ function tickDvdBouncer(now) {
 
     if (bounced) bumpDvdTone();
     setDvdPosition();
+    queueDvdFrame();
+}
+
+function queueDvdFrame() {
+    if (!dvdState || dvdState.raf || dvdState.paused || dvdState.exposed
+        || window.__engNav?.busy || document.hidden || dvdState.node.dataset.trashed === "true") return;
     dvdState.raf = requestAnimationFrame(tickDvdBouncer);
 }
 
 function dvdLimits() {
-    const rect = dvdState.node.getBoundingClientRect();
     return {
-        maxX: Math.max(0, window.innerWidth - rect.width),
-        maxY: Math.max(0, window.innerHeight - rect.height),
+        maxX: Math.max(0, dvdState.viewportWidth - dvdState.width),
+        maxY: Math.max(0, dvdState.viewportHeight - dvdState.height),
     };
 }
 
@@ -573,12 +630,7 @@ function clampDvdBouncer() {
 
 function setDvdPosition() {
     if (!dvdState) return;
-    dvdState.node.style.setProperty("--dvd-x", `${Math.round(dvdState.x)}px`);
-    dvdState.node.style.setProperty("--dvd-y", `${Math.round(dvdState.y)}px`);
-    dvdState.node.style.setProperty(
-        "--dvd-tilt",
-        `${dvdState.vx > 0 ? -2 : 2}deg`,
-    );
+    dvdState.node.style.transform = `translate3d(${Math.round(dvdState.x)}px, ${Math.round(dvdState.y)}px, 0) rotate(${dvdState.vx > 0 ? -2 : 2}deg)`;
 }
 
 function bumpDvdTone() {
@@ -590,6 +642,8 @@ function bumpDvdTone() {
 function pauseDvdBouncer() {
     if (!dvdState) return;
     dvdState.paused = true;
+    cancelAnimationFrame(dvdState.raf);
+    dvdState.raf = 0;
     dvdState.node.removeAttribute("data-caught");
 }
 
@@ -602,17 +656,19 @@ function resumeDvdBouncer(origin, expectedNode) {
     dvdState.node.removeAttribute("data-caught");
     dvdState.last = performance.now();
     dvdState.paused = false;
+    queueDvdFrame();
 }
 
 function stopDvdBouncer() {
     if (!dvdState) return;
     dvdState.paused = true;
     cancelAnimationFrame(dvdState.raf);
+    dvdState.raf = 0;
     dvdState.node.removeAttribute("data-caught");
 }
 
 function updateDvdCatchState(event) {
-    if (!dvdState || dvdState.node.dataset.trashed === "true" || dvdState.paused) return;
+    if (!dvdState || dvdState.node.dataset.trashed === "true" || dvdState.paused || dvdState.exposed) return;
     dvdState.node.toggleAttribute("data-caught", isDvdCatch(event));
 }
 
@@ -688,10 +744,12 @@ window.__engNav?.onBeforeSwap?.(() => {
     document.documentElement.style.removeProperty("--trash-glow");
     suppressNextArticleClick = false;
     stopDvdBouncer();
+    dvdState?.observer?.disconnect();
     dvdState = null;
 });
 window.__engNav?.onSwap?.(() => {
     stopDvdBouncer();
+    dvdState?.observer?.disconnect();
     dvdState = null;
     initDvdBouncer();
 });

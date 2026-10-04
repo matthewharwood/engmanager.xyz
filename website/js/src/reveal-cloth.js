@@ -34,10 +34,14 @@
         p -= wave(p);
         // Independent, fixed noise along each edge reads as torn threads,
         // rather than an outline that boils or changes its tear every frame.
-        vec4 edges = vec4(
-            -p.x + fray(p.y, 13.0), p.x - u_size.x + fray(p.y, 71.0),
-            -p.y + fray(p.x, 37.0), p.y - u_size.y + fray(p.x, 97.0)
-        );
+        vec4 edges = vec4(-p.x, p.x - u_size.x, -p.y, p.y - u_size.y);
+        // Fraying only changes pixels close to an edge. Interior fragments
+        // keep exactly the same fully opaque paper without evaluating all
+        // twenty-four trigonometric hashes for an invisible torn outline.
+        if (p.x < 8.0) edges.x += fray(p.y, 13.0);
+        if (p.x > u_size.x - 8.0) edges.y += fray(p.y, 71.0);
+        if (p.y < 8.0) edges.z += fray(p.x, 37.0);
+        if (p.y > u_size.y - 8.0) edges.w += fray(p.x, 97.0);
         return max(max(edges.x, edges.y), max(edges.z, edges.w));
     }
     void main() {
@@ -47,7 +51,9 @@
         vec2 shadowOffset = vec2(u_shadow + 2.4 * sin(u_time * 1.4),
                                  u_shadow + 2.0 * cos(u_time * 1.1));
         float d = sheet(p);
-        float sd = sheet(p - shadowOffset);
+        // Deep inside the fabric the shifted shadow is also opaque and cannot
+        // affect color/alpha. Keep its exact distance only near the torn edge.
+        float sd = d < -u_shadow - 16.0 ? d : sheet(p - shadowOffset);
         float aa = max(fwidth(d), 0.55);
         float cloth = 1.0 - smoothstep(-aa, aa, d);
         float shadow = 1.0 - smoothstep(-aa, aa, sd);
@@ -99,7 +105,7 @@
         if (!canvas || !content) return;
         const lifetime = new AbortController(), { signal } = lifetime;
         let gl, program, buffer, position, uniforms;
-        let raf = 0, last = -Infinity, elapsed = 0, previous = 0, disposed = false;
+        let raf = 0, elapsed = 0, previous = 0, disposed = false;
         let width = 1, height = 1, shadow = 10, paper, ink, rows = [];
         const isOpen = () => modal.isConnected && modal.matches(':popover-open');
         const resetPose = () => {
@@ -178,12 +184,13 @@
             gl.enableVertexAttribArray(position);
             gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            frame.dataset.clothRenderer = 'webgl';
+            if (frame.dataset.clothRenderer !== 'webgl') frame.dataset.clothRenderer = 'webgl';
             if (reduced.matches) { resetPose(); return; }
             frame.style.translate = `${(Math.sin(time * 0.7) * 1.5).toFixed(2)}px ${(Math.sin(time * 0.9) * 1.2).toFixed(2)}px`;
             frame.style.rotate = `${(Math.sin(time * 0.8) * 0.35).toFixed(3)}deg`;
+            const scrollTop = content.scrollTop;
             for (const { node, y } of rows) {
-                const v = Math.min(1, Math.max(0, (y - content.scrollTop) / height));
+                const v = Math.min(1, Math.max(0, (y - scrollTop) / height));
                 const x = (1.8 + 4.4 * v) * Math.sin(v * 7 - time * 1.4) + 1.6 * Math.sin(v * 14 + time * 1.1);
                 const dy = (1 + 1.4 * v) * Math.sin(4 - time * 1.7 + v * 3);
                 node.style.transform = `translate(${x.toFixed(2)}px, ${dy.toFixed(2)}px)`;
@@ -194,7 +201,8 @@
             if (disposed || !isOpen() || document.hidden || gl?.isContextLost()) { stop(); return; }
             if (previous) elapsed += Math.min(now - previous, 80) * 0.001;
             previous = now;
-            if (now - last >= 32) { draw(); last = now; }
+            // Animated controls and cloth share the display's vsync cadence.
+            draw();
             raf = requestAnimationFrame(tick);
         };
         const start = () => {
@@ -206,7 +214,7 @@
             if (!reduced.matches && !raf) raf = requestAnimationFrame(tick);
         };
         modal.addEventListener('toggle', event => {
-            if (event.newState === 'open') { elapsed = 0; last = -Infinity; start(); }
+            if (event.newState === 'open') { elapsed = 0; start(); }
             else { stop(); resetPose(); }
         }, { signal });
         const resize = new ResizeObserver(() => { if (isOpen() && program) { measure(); draw(); } });

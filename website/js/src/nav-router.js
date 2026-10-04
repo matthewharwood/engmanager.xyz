@@ -11,7 +11,8 @@
     const privatePath = (p) => p === '/articles/big-personality' || /^\/personality(?:\/|$)/.test(p);
     const eligible = (url) => url.origin === location.origin && !privatePath(url.pathname)
         && /^(?:\/|\/feed|\/shop|\/coach|\/subscribe|\/search|\/articles\/|\/articles\/[a-z0-9-]+|\/products\/[a-z0-9-]+)$/.test(url.pathname);
-    const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+    const reducedMotion = () => motionPreference.matches;
     const saveData = () => navigator.connection?.saveData === true;
     const logicalName = (url) => url.origin === location.origin && url.pathname.startsWith('/assets/')
         ? url.pathname.replace(/\.[0-9a-f]{8}(\.[a-z0-9]+)$/i, '$1') : url.href;
@@ -23,6 +24,10 @@
     let request = null, preload = null, observer = null, runway = null, stage = null, previousCard = null;
     let generation = 0, committing = false, queuedNavigation = null, scrollFrame = 0, scrollTimer = 0;
     let lastScroll = scrollY, inputAt = -Infinity, allowPromotionAt = Infinity;
+    let geometryObserver = null, geometryFrame = 0, runwayTop = Infinity, articleBottom = Infinity;
+    let articleSlug = null, articleComplete = false, overlayActive = false, revealExposure = false;
+    const titleFits = new Map();
+    let titleMeasure;
     const pendingStyles = new Map();
     const pendingScripts = new Map();
 
@@ -81,11 +86,14 @@
     }
 
     function syncOverlay() {
-        const open = overlayOpen();
+        const open = overlayOpen(), changed = open !== overlayActive;
+        overlayActive = open;
         if (previousCard) previousCard.hidden = open || committing;
         if (stage) { stage.hidden = open; stage._posterVisible(); }
         if (open) inputAt = -Infinity;
+        if (changed && !committing) updateScroll(false);
     }
+    syncOverlay();
     new MutationObserver(syncOverlay).observe(document.body, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('eng:overlaychange', syncOverlay);
     document.addEventListener('toggle', syncOverlay, true);
@@ -185,47 +193,101 @@
         return rec;
     }
 
-    // Sandboxed, script-free documents keep preview IDs, page styles and form
-    // controls completely outside the active document. They cannot hydrate or pay.
+    // Build the resume snapshot once, inside its script-free sandbox. The old
+    // path cloned into a temporary document, serialized the entire page, then
+    // parsed and laid it out a second time immediately after every handoff.
     function preview(rec, scroll = 0) {
-        const doc = document.implementation.createHTMLDocument(rec.title);
-        const base = doc.createElement('base');
-        base.href = rec.url;
-        doc.head.append(base);
-        doc.head.append(...rec.inlineStyles.map((tag) => tag.cloneNode(true)));
-        for (const tag of rec.assets) if (tag.tagName === 'LINK') {
-            const link = tag.cloneNode(true);
-            link.media = 'all'; link.removeAttribute('onload');
-            doc.head.append(link);
-        }
-        doc.body.className = rec.bodyClass;
-        doc.body.append(rec.page.cloneNode(true));
-        doc.querySelectorAll('script,iframe,object,embed,audio,video,[data-journey-fallback]').forEach((node) => node.remove());
-        for (const node of doc.querySelectorAll('*')) {
-            for (const attr of [...node.attributes]) if (/^on/i.test(attr.name)) node.removeAttribute(attr.name);
-            node.removeAttribute('autofocus');
-        }
-        const theme = document.documentElement.getAttribute('data-theme');
-        if (theme) doc.documentElement.setAttribute('data-theme', theme);
-        const css = doc.createElement('style');
-        css.textContent = 'html{scroll-behavior:auto!important}body{pointer-events:none!important}*{animation:none!important;transition:none!important;caret-color:transparent!important}::-webkit-scrollbar{display:none}.shop-card-meta{opacity:1!important;transform:none!important}[data-journey-current]{box-shadow:none!important}';
-        doc.head.append(css);
         const iframe = document.createElement('iframe');
+        const cancelled = new Set();
+        iframe._dispose = () => { for (const finish of [...cancelled]) finish(); cancelled.clear(); };
         iframe.className = 'journey-preview';
         iframe.setAttribute('sandbox', 'allow-same-origin');
         iframe.setAttribute('tabindex', '-1');
         iframe.setAttribute('aria-hidden', 'true');
         iframe.title = `Preview of ${rec.title}`;
-        iframe.addEventListener('load', () => {
+        function idlePopulation() {
+            return new Promise((resolve) => {
+                let idle = 0, retry = 0;
+                const finish = (ready = false) => {
+                    if (idle) cancelIdleCallback(idle);
+                    clearTimeout(retry); cancelled.delete(finish); resolve(ready);
+                };
+                function run(deadline) {
+                    idle = 0;
+                    if (!iframe.isConnected) { finish(); return; }
+                    if (nav.busy || revealExposure || overlayActive || document.hidden || (deadline && deadline.timeRemaining() < 10)) {
+                        retry = setTimeout(schedule, 120); return;
+                    }
+                    finish(true);
+                }
+                function schedule() {
+                    retry = 0;
+                    if (window.requestIdleCallback) idle = requestIdleCallback(run);
+                    else retry = setTimeout(() => run(null), 32);
+                }
+                cancelled.add(finish); schedule();
+            });
+        }
+        iframe.addEventListener('load', async () => {
+            if (!iframe.isConnected || !await idlePopulation()) return;
             try {
-                window.__engTypography?.syncDocument(iframe.contentDocument);
+                const doc = iframe.contentDocument;
+                const base = doc.createElement('base'); base.href = rec.url; doc.head.append(base);
+                doc.title = rec.title;
+                doc.head.append(...rec.inlineStyles.map((tag) => tag.cloneNode(true)));
+                const sheets = [];
+                for (const tag of rec.assets) if (tag.tagName === 'LINK') {
+                    const link = tag.cloneNode(true);
+                    link.media = 'all'; link.removeAttribute('onload');
+                    sheets.push(new Promise((resolve) => {
+                        const finish = () => { clearTimeout(timer); cancelled.delete(finish); link.onload = link.onerror = null; resolve(); };
+                        const timer = setTimeout(finish, 5000);
+                        cancelled.add(finish); link.onload = link.onerror = finish;
+                    }));
+                    doc.head.append(link);
+                }
+                const theme = document.documentElement.getAttribute('data-theme');
+                if (theme) doc.documentElement.setAttribute('data-theme', theme);
+                const css = doc.createElement('style');
+                css.textContent = 'html{scroll-behavior:auto!important}body{pointer-events:none!important}*{animation:none!important;transition:none!important;will-change:auto!important;caret-color:transparent!important}.liquid-title{transform:none!important}::-webkit-scrollbar{display:none}.shop-card-meta{opacity:1!important;transform:none!important}[data-journey-current]{box-shadow:none!important}';
+                doc.head.append(css);
+                await Promise.all(sheets);
+                if (!iframe.isConnected || !await idlePopulation()) return;
+                // Reuse decoded faces before the snapshot enters layout. An
+                // unstyled body followed by stylesheet/font/scroll changes
+                // paints the thumbnail repeatedly while its assets settle.
+                window.__engTypography?.syncDocument(doc);
+                doc.body.className = rec.bodyClass;
+                const copy = rec.page.cloneNode(true);
+                // A resume preview has no interactive overlays. Excluding the
+                // hidden receipt/search/product trees also keeps it small.
+                copy.querySelectorAll('script,iframe,object,embed,audio,video,dialog,[popover],[role="dialog"][aria-modal="true"],[data-journey-fallback]').forEach((node) => node.remove());
+                copy.querySelectorAll('[autofocus]').forEach((node) => node.removeAttribute('autofocus'));
+                doc.body.append(copy);
+                // CSS animation:none does not stop SVG's own timeline. Keep
+                // the full authored snapshot, but stop its decorative SMIL
+                // filters from repainting the thumbnail every display frame.
+                doc.querySelectorAll('svg').forEach((svg) => svg.pauseAnimations?.());
                 iframe.contentWindow.scrollTo(0, scroll);
-                iframe.contentDocument.fonts?.ready.then(() => {
-                    if (iframe.isConnected) iframe.contentWindow.scrollTo(0, scroll);
+                await doc.fonts?.ready;
+                if (!iframe.isConnected) return;
+                iframe.contentWindow.scrollTo(0, scroll);
+                const viewport = iframe.contentWindow;
+                const images = [...doc.images].filter((image) => {
+                    const rect = image.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0 && rect.bottom > 0
+                        && rect.top < viewport.innerHeight && rect.right > 0 && rect.left < viewport.innerWidth;
                 });
-            } catch {}
+                await Promise.all(images.map((image) => {
+                    image.loading = 'eager'; image.fetchPriority = 'low';
+                    return image.decode?.().catch(() => {}) || Promise.resolve();
+                }));
+                if (iframe.isConnected) iframe.dataset.previewReady = 'true';
+            } catch { /* A resume button remains useful if the optional snapshot fails. */ }
         }, { once: true });
-        iframe.srcdoc = `<!doctype html>${doc.documentElement.outerHTML}`;
+        // Inline handlers on the cloned nodes cannot run: allow-scripts is
+        // intentionally absent. Scripts/embeds/forms never activate here.
+        iframe.srcdoc = '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>';
         return iframe;
     }
 
@@ -236,10 +298,12 @@
         const images = [...doc.querySelectorAll('[data-journey-current] img')].filter((img) => {
             const rect = img.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 && rect.bottom > 0
-                && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth;
+                && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth
+                && getComputedStyle(img).visibility === 'visible';
         });
         await Promise.all(images.map((img) => {
             img.loading = 'eager';
+            img.fetchPriority = 'high';
             return img.decode?.().catch(() => {}) || Promise.resolve();
         }));
     }
@@ -355,21 +419,61 @@
         card.append(viewport, promote);
         runtime.append(card);
         const lifetime = new AbortController();
-        let titleObserver, titleFrame = 0;
+        let titleObserver, titleFrame = 0, titleKey = '', titleFaceReady = false;
         function fitTitle() {
             titleFrame = 0;
-            if (lifetime.signal.aborted || !heading.clientWidth || !heading.clientHeight) return;
-            // A sentence keeps its natural line breaks. Fit the actual face in
-            // its bounded box rather than treating a headline as a single word.
-            let low = 20, high = Math.min(180, innerWidth * .14), fitted = low;
-            for (let step = 0; step < 10; step++) {
-                const size = (low + high) / 2;
-                heading.style.fontSize = `${size}px`;
-                if (heading.scrollWidth <= heading.clientWidth + 1 && heading.scrollHeight <= heading.clientHeight + 1) {
-                    fitted = size; low = size;
-                } else high = size;
-            }
-            heading.style.fontSize = `${fitted}px`;
+            if (lifetime.signal.aborted) return;
+            // Read the bounded box and face once. Estimate wrapping in canvas
+            // before changing CSS, then verify the actual balanced headline.
+            // The old font-size binary search forced ten page layouts per fit.
+            const width = heading.clientWidth, height = heading.clientHeight;
+            if (!width || !height) return;
+            const face = getComputedStyle(heading);
+            const fontSize = parseFloat(face.fontSize) || 20;
+            const spacing = (parseFloat(face.letterSpacing) || 0) / fontSize;
+            const lineHeight = (parseFloat(face.lineHeight) || fontSize * 1.03) / fontSize;
+            const key = [heading.textContent, width, height, face.fontFamily, face.fontWeight, spacing.toFixed(4), lineHeight.toFixed(4), titleFaceReady].join('|');
+            if (key === titleKey) return;
+            titleKey = key;
+            let fitted = titleFits.get(key);
+            if (fitted === undefined) {
+                titleMeasure ||= document.createElement('canvas').getContext('2d');
+                const measure = titleMeasure;
+                let low = 20, high = Math.min(180, innerWidth * .14);
+                if (measure) {
+                    measure.font = `${face.fontStyle} ${face.fontWeight} 100px ${face.fontFamily}`;
+                    const text = face.textTransform === 'uppercase' ? heading.textContent.toUpperCase() : heading.textContent;
+                    const unit = (word) => Math.max(0, measure.measureText(word).width / 100 + spacing * word.length);
+                    const words = text.trim().split(/\s+/).map(unit), space = unit(' ');
+                    const fits = (size) => {
+                        let lines = 1, used = 0;
+                        for (const word of words) {
+                            const next = word * size;
+                            if (used && used + space * size + next > width) { lines++; used = 0; }
+                            // overflow-wrap:anywhere also wraps a single long word.
+                            if (next > width) { lines += Math.ceil(next / width) - 1; used = next % width; }
+                            else used += (used ? space * size : 0) + next;
+                        }
+                        return lines * size * lineHeight <= height;
+                    };
+                    for (let step = 0; step < 12; step++) {
+                        const size = (low + high) / 2;
+                        if (fits(size)) low = size; else high = size;
+                    }
+                }
+                fitted = low;
+                heading.style.fontSize = `${fitted}px`;
+                // Canvas cannot reproduce every kerning/balancing decision.
+                // A bounded correction uses the actual face and CSS layout.
+                for (let step = 0; step < 4; step++) {
+                    const overflowWidth = heading.scrollWidth, overflowHeight = heading.scrollHeight;
+                    if (overflowWidth <= width + 1 && overflowHeight <= height + 1) break;
+                    fitted = Math.max(12, fitted * Math.min(width / overflowWidth, height / overflowHeight) * .98);
+                    heading.style.fontSize = `${fitted}px`;
+                }
+                titleFits.set(key, fitted);
+                if (titleFits.size > 24) titleFits.delete(titleFits.keys().next().value);
+            } else heading.style.fontSize = `${fitted}px`;
         }
         function queueTitle() {
             if (!titleFrame && !lifetime.signal.aborted) titleFrame = requestAnimationFrame(fitTitle);
@@ -377,12 +481,16 @@
         if (kind === 'article') {
             titleObserver = new ResizeObserver(queueTitle);
             titleObserver.observe(heading);
-            window.addEventListener('engmanager:fontchange', queueTitle, { signal: lifetime.signal });
+            const invalidateTitle = (event) => {
+                if (event.detail && event.detail.role !== 'display') return;
+                titleKey = ''; titleFits.clear(); queueTitle();
+            };
+            window.addEventListener('engmanager:fontchange', invalidateTitle, { signal: lifetime.signal });
             (async () => {
                 const typography = window.__engTypography;
                 if (typography) { await typography.ready; await typography.displayReady; }
                 else await document.fonts?.ready;
-                queueTitle();
+                titleFaceReady = true; titleKey = ''; queueTitle();
             })().catch(() => {});
         }
         let renderer, progress = 0;
@@ -391,6 +499,17 @@
             still.decode().catch(() => { still.hidden = true; }),
             new Promise((resolve) => { stillTimer = setTimeout(resolve, 1200); }),
         ]).finally(() => clearTimeout(stillTimer));
+        let shownProgress = -1, shownReduced = null;
+        card._reveal = (value) => {
+            const reduced = reducedMotion();
+            if (shownProgress === value && shownReduced === reduced) return;
+            shownProgress = value; shownReduced = reduced;
+            // Local compositor properties avoid inherited custom-property
+            // invalidation and a changing full-screen rounded clipping mask.
+            viewport.style.transform = `scale(${reduced ? 1 : .82 + .18 * value})`;
+            viewport.style.opacity = reduced ? '1' : String(value);
+            card._posterProgress(value);
+        };
         card._posterVisible = () => renderer?.setVisible(!card.hidden && (progress > 0 || card.hasAttribute('data-committing')));
         card._posterProgress = (value) => { progress = value; renderer?.setProgress(value); card._posterVisible(); };
         card._dispose = () => { lifetime.abort(); titleObserver?.disconnect(); cancelAnimationFrame(titleFrame); renderer?.destroy(); card.remove(); };
@@ -416,11 +535,14 @@
 
     function clearNext() {
         observer?.disconnect(); observer = null;
+        geometryObserver?.disconnect(); geometryObserver = null;
+        cancelAnimationFrame(geometryFrame); geometryFrame = 0;
+        runwayTop = articleBottom = Infinity; articleSlug = null; articleComplete = false;
         preload?.abort(); preload = null;
         next = null; stagedPromise = null;
         runway?.remove(); runway = null;
         stage?._dispose(); stage = null;
-        document.body.classList.remove('journey-revealing');
+        if (!committing) setRevealExposure(false);
     }
 
     function label(kind) {
@@ -467,6 +589,27 @@
             const hint = document.createElement('link');
             hint.rel = 'preload'; hint.as = tag.tagName === 'SCRIPT' ? 'script' : 'style';
             hint.href = url.href;
+            const cleanup = () => { hint.remove(); signal.removeEventListener('abort', cleanup); };
+            hint.onload = hint.onerror = cleanup;
+            signal.addEventListener('abort', cleanup, { once: true });
+            document.head.append(hint);
+        }
+        // Public pages identify only their critical first images. Responsive
+        // image hints choose the same candidate as the eventual live img, so
+        // warming a phone's 384px card never downloads its 900px original.
+        const images = [...rec.page.querySelectorAll('img[data-journey-image="true"],img[loading="eager"],img[fetchpriority="high"]')].slice(0, 6);
+        for (const img of images) {
+            const source = img.getAttribute('src');
+            if (!source) continue;
+            const url = new URL(source, rec.url);
+            if (url.origin !== location.origin) continue;
+            const hint = document.createElement('link');
+            hint.rel = 'preload'; hint.as = 'image'; hint.href = url.href;
+            hint.fetchPriority = 'low';
+            if (img.srcset) {
+                hint.setAttribute('imagesrcset', img.getAttribute('srcset'));
+                if (img.sizes) hint.setAttribute('imagesizes', img.getAttribute('sizes'));
+            }
             const cleanup = () => { hint.remove(); signal.removeEventListener('abort', cleanup); };
             hint.onload = hint.onerror = cleanup;
             signal.addEventListener('abort', cleanup, { once: true });
@@ -525,6 +668,7 @@
             window.dispatchEvent(new CustomEvent('eng:journeytarget', { detail: { kind: current.kind, path: current.nextUrl } }));
             if (window.__engReading?.snapshot().allComplete) window.dispatchEvent(new CustomEvent('eng:readingcomplete'));
         }
+        watchGeometry();
         if (!current.nextUrl) return;
         runway = document.createElement('section');
         runway.className = 'journey-runway';
@@ -550,19 +694,23 @@
         allowPromotionAt = performance.now() + 800;
         inputAt = -Infinity;
         lastScroll = scrollY;
+        measureGeometry();
         updateScroll(false);
     }
 
-    function dismissPrevious() {
-        previousCard?._resize?.disconnect();
-        previous = null;
+    function removePreviousCard() {
+        previousCard?._dispose?.();
         previousCard?.remove(); previousCard = null;
+    }
+
+    function dismissPrevious() {
+        removePreviousCard();
+        previous = null;
         status.textContent = 'Previous page dismissed.';
     }
 
     function showPrevious() {
-        previousCard?._resize?.disconnect();
-        previousCard?.remove(); previousCard = null;
+        removePreviousCard();
         if (!previous) return;
         const rec = previous;
         const card = document.createElement('aside');
@@ -573,9 +721,37 @@
         resume.type = 'button'; resume.className = 'journey-resume'; resume.dataset.journeyResume = '';
         resume.setAttribute('aria-label', `Resume ${rec.title} where you left off`);
         const viewport = document.createElement('span'); viewport.className = 'journey-previous-viewport'; viewport.inert = true;
-        const thumbnail = preview(rec, rec.scroll);
-        thumbnail.style.width = `${rec.width}px`; thumbnail.style.height = `${rec.height}px`;
-        viewport.append(thumbnail);
+        // The small semantic card is immediate. Its optional full-page snapshot
+        // waits for idle time, away from the poster fade and first input frame.
+        let thumbnail, resize, idle = 0, retry = 0, disposed = false;
+        function hydrate(deadline) {
+            idle = 0;
+            if (disposed || !card.isConnected) return;
+            if (nav.busy || revealExposure || overlayActive || document.hidden || (deadline && deadline.timeRemaining() < 10)) {
+                retry = setTimeout(schedule, 120);
+                return;
+            }
+            thumbnail = preview(rec, rec.scroll);
+            thumbnail.style.width = `${rec.width}px`; thumbnail.style.height = `${rec.height}px`;
+            // Set the captured viewport and thumbnail transform together,
+            // before attachment. CSS zoom changes an iframe's internal CSS
+            // viewport in Chrome and would alter its typography and scroll.
+            thumbnail.style.transform = `scale(${viewport.clientWidth / rec.width})`;
+            viewport.append(thumbnail);
+            resize = new ResizeObserver(() => thumbnail.style.transform = `scale(${viewport.clientWidth / rec.width})`);
+            resize.observe(viewport);
+        }
+        function schedule() {
+            retry = 0;
+            if (disposed) return;
+            if (window.requestIdleCallback) idle = requestIdleCallback(hydrate);
+            else retry = setTimeout(() => hydrate(null), 32);
+        }
+        card._dispose = () => {
+            disposed = true;
+            if (idle) cancelIdleCallback(idle);
+            clearTimeout(retry); resize?.disconnect(); thumbnail?._dispose?.();
+        };
         const caption = document.createElement('span'); caption.className = 'journey-previous-caption';
         const name = document.createElement('strong'); name.textContent = rec.title.replace(/\s*[·|]\s*ENGMANAGER\.XYZ.*$/i, '');
         const hint = document.createElement('span'); hint.textContent = '↖ Resume where you left off';
@@ -611,34 +787,60 @@
         }
         card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
         previousCard = card; runtime.append(card);
-        const resize = new ResizeObserver(() => thumbnail.style.transform = `scale(${viewport.clientWidth / rec.width})`);
-        resize.observe(viewport);
-        card._resize = resize;
+        schedule();
         syncOverlay();
     }
 
-    function updateScroll(userScrolled) {
-        if (userScrolled && !nav.busy && !overlayOpen() && current.kind === 'article') {
+    function measureGeometry() {
+        geometryFrame = 0;
+        runwayTop = runway?.isConnected ? runway.getBoundingClientRect().top + scrollY : Infinity;
+        const article = current.kind === 'article' ? current.page.querySelector('[data-article-slug]') : null;
+        articleSlug = article?.dataset.articleSlug || null;
+        articleBottom = article ? article.getBoundingClientRect().bottom + scrollY : Infinity;
+        articleComplete = !!articleSlug && !!window.__engReading?.snapshot().completed.includes(articleSlug);
+    }
+
+    function queueGeometry() {
+        if (!geometryFrame) geometryFrame = requestAnimationFrame(() => { measureGeometry(); updateScroll(false); });
+    }
+
+    function watchGeometry() {
+        if ('ResizeObserver' in window) {
+            geometryObserver = new ResizeObserver(queueGeometry);
+            geometryObserver.observe(current.page);
             const article = current.page.querySelector('[data-article-slug]');
-            if (article && article.getBoundingClientRect().bottom <= innerHeight + 2) {
-                window.__engReading?.complete(article.dataset.articleSlug);
-            }
+            if (article) geometryObserver.observe(article);
+        }
+        measureGeometry();
+    }
+
+    function setRevealExposure(active) {
+        if (revealExposure === active) return;
+        revealExposure = active;
+        document.body.classList.toggle('journey-revealing', active);
+        window.dispatchEvent(new CustomEvent('eng:journeyexposure', { detail: { active } }));
+    }
+
+    function updateScroll(userScrolled) {
+        if (userScrolled && !nav.busy && !overlayActive && articleSlug && !articleComplete && articleBottom - scrollY <= innerHeight + 2) {
+            // Reading completion touches localStorage. Do it once per lap,
+            // never on every subsequent frame of the curtain reveal.
+            articleComplete = true;
+            window.__engReading?.complete(articleSlug);
         }
         if (!runway || committing || stage?.hasAttribute('data-committing')) return;
-        const top = runway.getBoundingClientRect().top;
+        const top = runwayTop - scrollY;
         // Fast touch scrolling, restored positions, and viewport changes can
         // reach the runway before IntersectionObserver delivers its callback.
         if (!stage && top < innerHeight + (saveData() ? 0 : 1200)) prepareNext();
         const progress = Math.max(0, Math.min(1, (innerHeight - top) / innerHeight));
-        document.body.classList.toggle('journey-revealing', progress > 0 && !!stage && !overlayOpen());
+        setRevealExposure(progress > 0 && !!stage && !overlayActive);
         if (stage) {
-            stage.style.setProperty('--journey-progress', reducedMotion() ? '1' : String(progress));
-            stage.style.setProperty('--journey-scale', reducedMotion() ? '1' : String(.82 + .18 * progress));
-            stage.style.setProperty('--journey-corner', `${1 - progress}rem`);
-            stage._posterProgress(progress);
-            stage.inert = progress < .08 || overlayOpen();
+            stage._reveal(progress);
+            const inert = progress < .08 || overlayActive;
+            if (stage.inert !== inert) stage.inert = inert;
         }
-        if (userScrolled && top <= 2 && next && stage?.dataset.previewReady && !saveData() && !nav.busy && !overlayOpen()
+        if (userScrolled && top <= 2 && next && stage?.dataset.previewReady && !saveData() && !nav.busy && !overlayActive
             && performance.now() > allowPromotionAt && performance.now() - inputAt < 1800) {
             inputAt = -Infinity;
             navigate(next.url, { source: 'reveal' });
@@ -697,10 +899,7 @@
                     stage ||= createStage(kind, dest.href);
                     stage.dataset.committing = '';
                     stage.inert = true;
-                    stage.style.setProperty('--journey-progress', '1');
-                    stage.style.setProperty('--journey-scale', '1');
-                    stage.style.setProperty('--journey-corner', '0rem');
-                    stage._posterProgress(1);
+                    stage._reveal(1);
                     await frame();
                 }
             }
@@ -754,17 +953,13 @@
             if (handoff) {
                 handoff.dataset.committing = '';
                 handoff.inert = true;
-                handoff.style.setProperty('--journey-progress', '1');
-                handoff.style.setProperty('--journey-scale', '1');
-                handoff.style.setProperty('--journey-corner', '0rem');
-                handoff._posterProgress(1);
+                handoff._reveal(1);
                 stage = null;
             }
             nav._before?.(document.body);
             document.querySelectorAll('[popover]:popover-open:not([data-cursor-overlay])').forEach((node) => node.hidePopover());
             clearNext();
-            previousCard?._resize?.disconnect();
-            previousCard?.remove(); previousCard = null;
+            removePreviousCard();
             outgoing.page.inert = true;
             outgoing.page.removeAttribute('data-journey-current');
             outgoing.page.replaceWith(rec.page);
@@ -816,6 +1011,7 @@
             }
             current.page.inert = false;
             nav.busy = false; committing = false;
+            setRevealExposure(false);
             setupNext();
             showPrevious();
             focusPage(rec, source === 'resume');
@@ -838,6 +1034,7 @@
             scrollLock.abort();
             if (version === generation) {
                 request = null; nav.busy = false; committing = false;
+                setRevealExposure(false);
                 delete document.documentElement.dataset.journeyLoading;
                 current.page.inert = false;
                 if (queuedNavigation) {
@@ -918,7 +1115,7 @@
             scrollTimer = setTimeout(() => { if (!nav.busy) remember(); }, 150);
         });
     }, { passive: true });
-    window.addEventListener('resize', () => updateScroll(false), { passive: true });
+    window.addEventListener('resize', queueGeometry, { passive: true });
     window.addEventListener('engmanager:themechange', () => {
         const theme = document.documentElement.getAttribute('data-theme');
         runtime.querySelectorAll('iframe').forEach((iframe) => {
@@ -929,12 +1126,14 @@
         });
     });
     window.addEventListener('engmanager:fontchange', () => {
+        queueGeometry();
         runtime.querySelectorAll('iframe').forEach((iframe) => {
             try { window.__engTypography?.syncDocument(iframe.contentDocument); } catch {}
         });
     });
     window.addEventListener('pagehide', () => { if (!nav.busy) remember(); });
-    window.addEventListener('eng:readingprogress', () => {
+    window.addEventListener('eng:readingprogress', (event) => {
+        if (articleSlug) articleComplete = !!event.detail?.completed?.includes(articleSlug);
         if (nav.ready && !nav.busy && !committing && current.kind === 'feed') setupNext();
     });
 

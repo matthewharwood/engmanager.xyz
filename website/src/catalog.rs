@@ -267,6 +267,37 @@ pub(crate) fn product_image_path(product: &ShopProduct, view: &CapView) -> Strin
     format!("shop/caps/{}-{}.webp", product.slug, view.id)
 }
 
+pub(crate) const CAP_IMAGE_WIDTHS: [u16; 3] = [160, 384, 640];
+
+pub(crate) fn product_image_variant_url(
+    product: &ShopProduct,
+    view: &CapView,
+    width: u16,
+) -> String {
+    asset_url(&product_image_variant_path(product, view, width))
+}
+
+fn product_image_variant_path(product: &ShopProduct, view: &CapView, width: u16) -> String {
+    format!("shop/caps/{}-{}-{width}.webp", product.slug, view.id)
+}
+
+pub(crate) fn product_image_srcset(product: &ShopProduct, view: &CapView) -> String {
+    CAP_IMAGE_WIDTHS
+        .into_iter()
+        .map(|width| {
+            format!(
+                "{} {width}w",
+                product_image_variant_url(product, view, width)
+            )
+        })
+        .chain(std::iter::once(format!(
+            "{} 900w",
+            product_image_url(product, view)
+        )))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,6 +326,22 @@ mod tests {
                     "missing generated cap asset: {}",
                     path.display()
                 );
+                for width in CAP_IMAGE_WIDTHS {
+                    let path = assets_root.join(product_image_variant_path(product, view, width));
+                    let bytes = std::fs::metadata(&path)
+                        .expect("responsive cap image missing")
+                        .len();
+                    let budget = match width {
+                        160 => 16_000,
+                        384 => 60_000,
+                        _ => 140_000,
+                    };
+                    assert!(
+                        bytes < budget,
+                        "responsive cap exceeds transfer budget: {} ({bytes})",
+                        path.display()
+                    );
+                }
             }
         }
     }

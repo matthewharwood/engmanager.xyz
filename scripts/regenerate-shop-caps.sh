@@ -252,6 +252,7 @@ main() {
   done
 
   generate_model_views
+  "$ROOT/scripts/resize-shop-images.sh"
   verify_assets
   echo "Regenerated shop cap assets in $ASSET_DIR"
 }

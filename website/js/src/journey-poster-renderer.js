@@ -11,6 +11,7 @@
         struct Scene {
             motion: vec4f,
             projection: vec4f,
+            rotation: vec4f,
         };
         @group(0) @binding(0) var<uniform> scene: Scene;
         @group(0) @binding(1) var shadowMap: texture_depth_2d;
@@ -30,10 +31,12 @@
         };
 
         fn rotate(p: vec3f) -> vec3f {
-            let cy = cos(scene.motion.x);
-            let sy = sin(scene.motion.x);
-            let cx = cos(scene.motion.y);
-            let sx = sin(scene.motion.y);
+            // Four CPU-computed uniform values replace repeated sine/cosine
+            // work in every surface, normal and self-shadow vertex invocation.
+            let cy = scene.rotation.x;
+            let sy = scene.rotation.y;
+            let cx = scene.rotation.z;
+            let sx = scene.rotation.w;
             let q = vec3f(cy * p.x + sy * p.z, p.y, -sy * p.x + cy * p.z);
             return vec3f(q.x, cx * q.y - sx * q.z, sx * q.y + cx * q.z);
         }
@@ -146,7 +149,7 @@
             ...t, 1];
     }
 
-    function decodeGlb(data) {
+    function* decodeGlb(data) {
         check(data.byteLength >= 28 && data.byteLength <= MAX_BYTES, 'invalid size');
         const view = new DataView(data);
         check(view.getUint32(0, true) === 0x46546c67, 'invalid signature');
@@ -174,7 +177,7 @@
         check(json.buffers?.length === 1 && !json.buffers[0].uri, 'expected embedded buffer');
         check(Number.isInteger(json.buffers[0].byteLength) && json.buffers[0].byteLength <= binary.byteLength,
             'truncated binary buffer');
-        function accessor(index, type, kind = 'float') {
+        function* accessor(index, type, kind = 'float') {
             const a = json.accessors?.[index];
             const b = json.bufferViews?.[a?.bufferView];
             check(a && b && b.buffer === 0 && !a.sparse && a.type === type, 'unsupported accessor');
@@ -187,22 +190,27 @@
             const stride = b.byteStride ?? bytes * components;
             const offset = a.byteOffset ?? 0;
             const start = (b.byteOffset ?? 0) + offset;
-            check(Number.isInteger(a.count) && a.count > 0 && a.count <= MAX_VERTICES * 6, 'invalid accessor count');
+            check(Number.isInteger(a.count) && a.count > 0 && a.count <= (kind === 'index' ? MAX_VERTICES * 6 : MAX_VERTICES), 'invalid accessor count');
             const end = start + (a.count - 1) * stride + bytes * components;
             check(Number.isInteger(start) && Number.isInteger(offset) && offset >= 0 && start >= 0 &&
                 Number.isInteger(stride) && stride >= bytes * components && stride % bytes === 0 &&
                 Number.isInteger(b.byteLength) && end <= (b.byteOffset ?? 0) + b.byteLength &&
                 end <= json.buffers[0].byteLength, 'accessor outside buffer');
-            const values = kind === 'index' ? new Uint32Array(a.count) : new Float32Array(a.count * components);
+            // The authoring pipeline writes aligned, contiguous float attributes.
+            // Read those in place instead of copying every position/normal twice.
+            const packed = isFloat && stride === bytes * components && (binary.byteOffset + start) % 4 === 0;
+            const values = packed ? new Float32Array(binary.buffer, binary.byteOffset + start, a.count * components)
+                : kind === 'index' ? new Uint32Array(a.count) : new Float32Array(a.count * components);
             for (let i = 0; i < a.count; i++) {
                 for (let j = 0; j < components; j++) {
                     const at = start + i * stride + j * bytes;
-                    let value = isFloat ? binary.getFloat32(at, true) : bytes === 1 ? binary.getUint8(at)
+                    let value = packed ? values[i * components + j] : isFloat ? binary.getFloat32(at, true) : bytes === 1 ? binary.getUint8(at)
                         : bytes === 2 ? binary.getUint16(at, true) : binary.getUint32(at, true);
                     if (a.normalized) value /= bytes === 1 ? 255 : 65535;
                     check(Number.isFinite(value), 'non-finite vertex');
-                    values[i * components + j] = value;
+                    if (!packed) values[i * components + j] = value;
                 }
+                if ((i & 4095) === 4095) yield;
             }
             return values;
         }
@@ -212,7 +220,7 @@
         let indexCount = 0;
         const minimum = [Infinity, Infinity, Infinity];
         const maximum = [-Infinity, -Infinity, -Infinity];
-        function visit(index, parent) {
+        function* visit(index, parent) {
             check(Number.isInteger(index) && !seen.has(index), 'duplicate or cyclic node');
             seen.add(index);
             const node = json.nodes?.[index];
@@ -231,20 +239,24 @@
                 for (const primitive of mesh.primitives) {
                     check((primitive.mode ?? 4) === 4 && !primitive.extensions && !primitive.targets,
                         'expected uncompressed static triangles');
-                    const positions = accessor(primitive.attributes?.POSITION, 'VEC3');
-                    const normals = accessor(primitive.attributes?.NORMAL, 'VEC3');
+                    const positions = yield* accessor(primitive.attributes?.POSITION, 'VEC3');
+                    const normals = yield* accessor(primitive.attributes?.NORMAL, 'VEC3');
                     const count = positions.length / 3;
-                    const indices = primitive.indices === undefined ? Uint32Array.from({ length: count }, (_, i) => i)
-                        : accessor(primitive.indices, 'SCALAR', 'index');
-                    check(normals.length === positions.length && indices.length % 3 === 0 &&
-                        indices.every((i) => i < count), 'invalid triangles');
+                    const indices = primitive.indices === undefined ? new Uint32Array(count)
+                        : yield* accessor(primitive.indices, 'SCALAR', 'index');
+                    check(normals.length === positions.length && indices.length % 3 === 0, 'invalid triangles');
+                    for (let i = 0; i < indices.length; i++) {
+                        if (primitive.indices === undefined) indices[i] = i;
+                        check(indices[i] < count, 'invalid triangles');
+                        if ((i & 8191) === 8191) yield;
+                    }
                     vertexCount += count;
                     indexCount += indices.length;
                     check(vertexCount <= MAX_VERTICES && indexCount <= MAX_VERTICES * 6, 'scene exceeds geometry limit');
                     const colorIndex = primitive.attributes?.COLOR_0;
                     const colorType = json.accessors?.[colorIndex]?.type;
                     check(colorIndex === undefined || colorType === 'VEC3' || colorType === 'VEC4', 'invalid color accessor');
-                    const colors = colorIndex === undefined ? null : accessor(colorIndex, colorType, 'color');
+                    const colors = colorIndex === undefined ? null : yield* accessor(colorIndex, colorType, 'color');
                     const colorSize = colorType === 'VEC4' ? 4 : 3;
                     check(!colors || colors.length === count * colorSize, 'invalid color count');
                     const material = json.materials?.[primitive.material];
@@ -255,31 +267,36 @@
                     check(color.length === 4 && color.every((n) => Number.isFinite(n) && n >= 0 && n <= 1), 'invalid material color');
                     const vertices = new Float32Array(count * 9);
                     for (let i = 0; i < count; i++) {
-                        const p = positions.subarray(i * 3, i * 3 + 3);
-                        const n = normals.subarray(i * 3, i * 3 + 3);
+                        const offset = i * 3;
+                        const px = positions[offset], py = positions[offset + 1], pz = positions[offset + 2];
+                        const nx = normals[offset], ny = normals[offset + 1], nz = normals[offset + 2];
                         for (let j = 0; j < 3; j++) {
-                            const value = m[j] * p[0] + m[j + 4] * p[1] + m[j + 8] * p[2] + m[j + 12];
+                            const value = m[j] * px + m[j + 4] * py + m[j + 8] * pz + m[j + 12];
                             check(Number.isFinite(value), 'invalid transformed position');
                             vertices[i * 9 + j] = value;
                             minimum[j] = Math.min(minimum[j], value);
                             maximum[j] = Math.max(maximum[j], value);
-                            vertices[i * 9 + 3 + j] = (cof[j] * n[0] + cof[j + 3] * n[1] + cof[j + 6] * n[2]) / determinant;
+                            vertices[i * 9 + 3 + j] = (cof[j] * nx + cof[j + 3] * ny + cof[j + 6] * nz) / determinant;
                             const shade = colors?.[i * colorSize + j] ?? 1;
                             check(shade >= 0 && shade <= 1, 'invalid vertex color');
                             vertices[i * 9 + 6 + j] = color[j] * shade;
                         }
+                        if ((i & 4095) === 4095) yield;
                     }
                     if (determinant < 0) {
-                        for (let i = 0; i < indices.length; i += 3) [indices[i + 1], indices[i + 2]] = [indices[i + 2], indices[i + 1]];
+                        for (let i = 0; i < indices.length; i += 3) {
+                            const swap = indices[i + 1]; indices[i + 1] = indices[i + 2]; indices[i + 2] = swap;
+                            if (i % 8190 === 0) yield;
+                        }
                     }
                     pieces.push({ vertices, indices });
                 }
             }
-            for (const child of node.children ?? []) visit(child, m);
+            for (const child of node.children ?? []) yield* visit(child, m);
         }
         const roots = json.scenes?.[json.scene ?? 0]?.nodes;
         check(Array.isArray(roots) && roots.length, 'missing scene');
-        roots.forEach((root) => visit(root, IDENTITY));
+        for (const root of roots) yield* visit(root, IDENTITY);
         check(vertexCount > 0, 'empty scene');
         const center = minimum.map((n, i) => (n + maximum[i]) / 2);
         const extent = Math.max(...minimum.map((n, i) => (maximum[i] - n) / 2));
@@ -288,20 +305,98 @@
         const indices = new Uint32Array(indexCount);
         let v = 0;
         let ix = 0;
-        let radius = 0;
+        let radiusSquared = 0;
         let height = 0;
         for (const piece of pieces) {
             for (let i = 0; i < piece.vertices.length; i += 9) {
                 for (let j = 0; j < 3; j++) piece.vertices[i + j] = (piece.vertices[i + j] - center[j]) / extent;
-                radius = Math.max(radius, Math.hypot(piece.vertices[i], piece.vertices[i + 2]));
+                radiusSquared = Math.max(radiusSquared, piece.vertices[i] ** 2 + piece.vertices[i + 2] ** 2);
                 height = Math.max(height, Math.abs(piece.vertices[i + 1]));
+                if ((i / 9 & 4095) === 4095) yield;
             }
             vertices.set(piece.vertices, v * 9);
-            for (const index of piece.indices) indices[ix++] = index + v;
+            for (const index of piece.indices) {
+                indices[ix++] = index + v;
+                if ((ix & 8191) === 8191) yield;
+            }
             v += piece.vertices.length / 9;
         }
-        return { vertices, indices, radius, height };
+        return { vertices, indices, radius: Math.sqrt(radiusSquared), height };
     }
+
+    const workerUrl = typeof document !== 'undefined' ? document.currentScript?.src : null;
+    const decodeJobs = new Map();
+    let decoderWorker = null, workerIdle = 0, jobId = 0;
+    function stopWorker(error = new DOMException('Poster decoding aborted', 'AbortError')) {
+        clearTimeout(workerIdle); workerIdle = 0;
+        decoderWorker?.terminate(); decoderWorker = null;
+        for (const job of decodeJobs.values()) job.finish(error);
+        decodeJobs.clear();
+    }
+    function idleWorker() {
+        if (!decodeJobs.size) {
+            clearTimeout(workerIdle);
+            // The next service poster reuses this worker; it cannot outlive an
+            // inactive journey indefinitely or retain a decoded mesh cache.
+            workerIdle = setTimeout(stopWorker, 30000);
+        }
+    }
+    async function decodeCooperatively(data, signal) {
+        const decoding = decodeGlb(data);
+        while (true) {
+            if (signal.aborted) throw new DOMException('Poster decoding aborted', 'AbortError');
+            const step = decoding.next();
+            if (step.done) return step.value;
+            // A denied/unavailable worker still uses the sculpture. Chunk its
+            // validation instead of blocking input for the whole mesh.
+            if (globalThis.scheduler?.yield) await globalThis.scheduler.yield();
+            else if (typeof setTimeout !== 'undefined') await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+    }
+    async function decodeModel(data, signal) {
+        if (signal.aborted) throw new DOMException('Poster decoding aborted', 'AbortError');
+        check(data.byteLength >= 28 && data.byteLength <= MAX_BYTES, 'invalid size');
+        if (!workerUrl || typeof Worker === 'undefined') return decodeCooperatively(data, signal);
+        if (decodeJobs.size >= 2) throw new Error('Poster decoder queue is full');
+        clearTimeout(workerIdle); workerIdle = 0;
+        if (!decoderWorker) {
+            try { decoderWorker = new Worker(workerUrl); }
+            catch { return decodeCooperatively(data, signal); }
+            const activeWorker = decoderWorker;
+            decoderWorker.onmessage = ({ data: result }) => {
+                if (decoderWorker !== activeWorker) return;
+                const job = decodeJobs.get(result?.id);
+                if (!job) return;
+                decodeJobs.delete(result.id);
+                job.finish(result.error ? new Error(result.error) : null, result.model);
+                idleWorker();
+            };
+            decoderWorker.onerror = () => { if (decoderWorker === activeWorker) stopWorker(new Error('Poster decoder worker failed')); };
+            decoderWorker.onmessageerror = () => { if (decoderWorker === activeWorker) stopWorker(new Error('Poster decoder reply failed')); };
+        }
+        return new Promise((resolve, reject) => {
+            const id = ++jobId;
+            let timer;
+            const cancel = () => {
+                decodeJobs.delete(id);
+                finish(new DOMException('Poster decoding aborted', 'AbortError'));
+                if (!decodeJobs.size) stopWorker();
+            };
+            const finish = (error, model) => {
+                clearTimeout(timer);
+                signal.removeEventListener('abort', cancel);
+                error ? reject(error) : resolve(model);
+            };
+            decodeJobs.set(id, { finish });
+            signal.addEventListener('abort', cancel, { once: true });
+            // The timeout starts after download; a stalled worker must not hold
+            // its transferred asset or navigation resources indefinitely.
+            timer = setTimeout(() => stopWorker(new Error('Poster decoding timed out')), 8000);
+            try { decoderWorker.postMessage({ id, buffer: data }, [data]); }
+            catch (error) { stopWorker(error); }
+        });
+    }
+    if (typeof window !== 'undefined') window.addEventListener?.('pagehide', () => stopWorker());
 
     async function mount(canvas, { url, reducedMotion = false, onError, signal } = {}) {
         if (!navigator.gpu) throw new Error('WebGPU is unavailable');
@@ -312,6 +407,7 @@
         let colorTexture;
         let depthTexture;
         let shadowTexture;
+        let colorView, depthView;
         let observer;
         let resizeObserver;
         let disposed = false;
@@ -319,8 +415,8 @@
         let intersecting = true;
         let visible = true;
         let frame = 0;
-        let previousTime = 0;
-        let idle = 0;
+        let needsResize = true;
+        let needsRender = true;
         let progress = 0;
         let pixelWidth = 0;
         let pixelHeight = 0;
@@ -362,11 +458,10 @@
             if (!disposed && tick && !frame && visible && intersecting && !document.hidden) frame = requestAnimationFrame(tick);
         }
         function visibility() {
-            previousTime = 0;
             if (document.hidden || !visible || !intersecting) {
                 cancelAnimationFrame(frame);
                 frame = 0;
-            } else schedule();
+            } else { needsRender = true; schedule(); }
         }
         signal?.addEventListener('abort', destroy, { once: true });
         try {
@@ -387,10 +482,10 @@
             if (!context) throw new Error('WebGPU canvas is unavailable');
             const format = navigator.gpu.getPreferredCanvasFormat();
             context.configure({ device, format, alphaMode: 'premultiplied' });
-            const response = await fetch(url, { signal: abort.signal, credentials: 'same-origin' });
+            const response = await fetch(url, { signal: abort.signal, credentials: 'same-origin', priority: 'low' });
             if (!response.ok) throw new Error(`Poster asset request failed (${response.status})`);
             if (Number(response.headers.get('content-length')) > MAX_BYTES) throw new Error('Poster asset exceeds size limit');
-            const model = decodeGlb(await response.arrayBuffer());
+            const model = await decodeModel(await response.arrayBuffer(), abort.signal);
             active();
             device.pushErrorScope('validation');
             const shader = device.createShaderModule({ label: 'Carved marble poster', code: SHADER });
@@ -424,7 +519,11 @@
             }
             const vertexBuffer = upload(model.vertices, GPUBufferUsage.VERTEX);
             const indexBuffer = upload(model.indices, GPUBufferUsage.INDEX);
-            const sceneData = new Float32Array(8);
+            const indexCount = model.indices.length;
+            // The GPU owns the packed geometry now; keep only bounds/count in
+            // the frame closure so every poster does not retain a second mesh.
+            model.vertices = model.indices = null;
+            const sceneData = new Float32Array(12);
             const sceneBuffer = upload(sceneData, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
             shadowTexture = device.createTexture({ label: 'Marble shadow', size: [SHADOW_SIZE, SHADOW_SIZE],
                 format: 'depth24plus', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
@@ -439,13 +538,19 @@
             active();
             if (validation) throw validation;
             function resize() {
+                needsResize = false;
                 // Layout size excludes the poster's CSS scale during reveal. Using
                 // transformed bounds would reallocate MSAA targets on each scroll.
                 const layoutWidth = canvas.clientWidth;
                 const layoutHeight = canvas.clientHeight;
                 const rect = layoutWidth && layoutHeight ? { width: layoutWidth, height: layoutHeight }
                     : canvas.getBoundingClientRect();
-                const ratio = Math.min(window.devicePixelRatio || 1, 2, 1000 / Math.max(rect.width, rect.height, 1));
+                // Phone canvases remain antialiased at 4x MSAA, while a bounded
+                // backing store avoids paying the full 3x/4x panel pixel count.
+                // Desktop retains its original detailed render budget.
+                const phone = window.innerWidth <= 672 && window.matchMedia?.('(pointer: coarse)').matches;
+                const ratio = Math.min(window.devicePixelRatio || 1, phone ? 1.5 : 2,
+                    (phone ? 800 : 1000) / Math.max(rect.width, rect.height, 1));
                 const width = Math.max(1, Math.round(rect.width * ratio));
                 const height = Math.max(1, Math.round(rect.height * ratio));
                 if (width === pixelWidth && height === pixelHeight) return;
@@ -457,17 +562,20 @@
                     usage: GPUTextureUsage.RENDER_ATTACHMENT });
                 depthTexture = device.createTexture({ size: [width, height], sampleCount: 4, format: 'depth24plus',
                     usage: GPUTextureUsage.RENDER_ATTACHMENT });
+                colorView = colorTexture.createView(); depthView = depthTexture.createView();
             }
             function render() {
                 if (disposed) return false;
                 try {
-                    resize();
+                    if (needsResize) resize();
                     const aspect = pixelWidth / pixelHeight;
                     const fit = Math.min(0.88 / (model.height + model.radius * 0.09), 0.86 * aspect / model.radius);
-                    sceneData[0] = -0.30 + (staticMotion() ? 0 : idle + progress * 1.05);
+                    sceneData[0] = -0.30 + (staticMotion() ? 0 : progress * 1.05);
                     sceneData[1] = -0.08;
                     sceneData[4] = fit / aspect;
                     sceneData[5] = fit;
+                    sceneData[8] = Math.cos(sceneData[0]); sceneData[9] = Math.sin(sceneData[0]);
+                    sceneData[10] = Math.cos(sceneData[1]); sceneData[11] = Math.sin(sceneData[1]);
                     device.queue.writeBuffer(sceneBuffer, 0, sceneData);
                     const encoder = device.createCommandEncoder({ label: 'Marble poster frame' });
                     const shadowPass = encoder.beginRenderPass({ colorAttachments: [], depthStencilAttachment: {
@@ -477,36 +585,35 @@
                     shadowPass.setBindGroup(0, shadowGroup);
                     shadowPass.setVertexBuffer(0, vertexBuffer);
                     shadowPass.setIndexBuffer(indexBuffer, 'uint32');
-                    shadowPass.drawIndexed(model.indices.length);
+                    shadowPass.drawIndexed(indexCount);
                     shadowPass.end();
-                    const pass = encoder.beginRenderPass({ colorAttachments: [{ view: colorTexture.createView(),
+                    const pass = encoder.beginRenderPass({ colorAttachments: [{ view: colorView,
                         resolveTarget: context.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 },
-                        loadOp: 'clear', storeOp: 'discard' }], depthStencilAttachment: { view: depthTexture.createView(),
+                        loadOp: 'clear', storeOp: 'discard' }], depthStencilAttachment: { view: depthView,
                         depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'discard' } });
                     pass.setPipeline(pipeline);
                     pass.setBindGroup(0, sceneGroup);
                     pass.setVertexBuffer(0, vertexBuffer);
                     pass.setIndexBuffer(indexBuffer, 'uint32');
-                    pass.drawIndexed(model.indices.length);
+                    pass.drawIndexed(indexCount);
                     pass.end();
                     device.queue.submit([encoder.finish()]);
+                    needsRender = false;
                     return true;
                 } catch (error) {
                     fail(error);
                     return false;
                 }
             }
-            tick = (time) => {
+            tick = () => {
                 frame = 0;
                 if (disposed || !visible || !intersecting || document.hidden) return;
-                // A decorative sculpture needs 30 fps, not the display's full
-                // refresh rate. Hidden/offscreen time does not advance its turn.
-                if (!previousTime || time - previousTime >= 32 || staticMotion()) {
-                    if (previousTime && !staticMotion()) idle = (idle + Math.min(time - previousTime, 100) * 0.000035) % (Math.PI * 2);
-                    previousTime = time;
+                // Scroll input renders at the display's vsync cadence. Once
+                // its pose is unchanged, there is no decorative idle loop to
+                // compete with the next page or drain a phone's GPU.
+                if (needsRender) {
                     render();
                 }
-                if (!staticMotion()) schedule();
             };
             if (!render()) active();
             await device.queue.onSubmittedWorkDone();
@@ -519,8 +626,10 @@
                 });
                 observer.observe(canvas);
             }
+            const invalidateSize = () => { needsResize = true; needsRender = true; schedule(); };
+            window.addEventListener?.('resize', invalidateSize, { signal: abort.signal });
             if (typeof ResizeObserver !== 'undefined') {
-                resizeObserver = new ResizeObserver(schedule);
+                resizeObserver = new ResizeObserver(invalidateSize);
                 resizeObserver.observe(canvas);
             }
             document.addEventListener('visibilitychange', visibility);
@@ -535,8 +644,10 @@
                 },
                 setProgress(value) {
                     if (!Number.isFinite(value)) return;
-                    progress = Math.min(1, Math.max(0, value));
-                    if (!staticMotion()) schedule();
+                    const next = Math.min(1, Math.max(0, value));
+                    if (progress === next) return;
+                    progress = next;
+                    if (!staticMotion()) { needsRender = true; schedule(); }
                 },
                 destroy,
             };
@@ -544,6 +655,24 @@
             destroy();
             throw error;
         }
+    }
+    // The hashed renderer is also the same-origin worker entry point. Keeping
+    // validation in one implementation prevents the fast path accepting a GLB
+    // that the unavailable-worker path would reject.
+    if (typeof document === 'undefined') {
+        globalThis.onmessage = ({ data }) => {
+            if (!Number.isSafeInteger(data?.id) || data.id < 1) return;
+            try {
+                const decoding = decodeGlb(data.buffer);
+                let step;
+                do { step = decoding.next(); } while (!step.done);
+                const model = step.value;
+                globalThis.postMessage({ id: data.id, model }, [model.vertices.buffer, model.indices.buffer]);
+            } catch (error) {
+                globalThis.postMessage({ id: data.id, error: error.message });
+            }
+        };
+        return;
     }
     window.__engJourneyPoster = { mount };
 })();

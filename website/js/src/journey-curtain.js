@@ -120,8 +120,10 @@
         const elapsed = Math.max(16, now - scrollAt);
         lastScroll = scrollY; scrollAt = now;
         speed = Math.max(-2200, Math.min(2200, delta * 1000 / elapsed));
-        // One bounding-box read per scroll; the spring loop writes SVG only.
-        inspectVisibility();
+        // Without an observer, visibility has one fallback bounding-box read.
+        // The observer already tracks the reveal band; a second layout read
+        // on every scroll can force the router's composited writes to flush.
+        if (!observer) inspectVisibility();
         if (Math.abs(delta) > .2) wake();
     }, { passive: true });
     window.addEventListener('resize', () => { inspectVisibility(); });

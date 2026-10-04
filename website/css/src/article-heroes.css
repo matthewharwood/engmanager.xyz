@@ -90,7 +90,12 @@ html:has(> body.articles-page) { overflow-x: clip; }
 }
 
 .article-hero-scene figcaption strong { font-weight: 800; text-align: end; }
-.article-hero-scene[data-article-hero="auteurs"] figcaption { inset-inline: 13%; inset-block-end: 7%; }
+.article-hero-scene[data-article-hero="auteurs"] figcaption {
+    inset-inline: 20%;
+    inset-block-end: 17%;
+    justify-content: center;
+    gap: 0.75rem;
+}
 
 @media (max-width: 42rem) {
     .article-hero-scene:not([data-article-hero="auteurs"]) { aspect-ratio: 1.35; }

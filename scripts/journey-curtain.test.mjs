@@ -78,3 +78,15 @@ test('finishing or restarting a reading cycle removes or restores exactly one cu
     h.scroll(100); h.settle();
     assert.equal(h.pending, 0);
 });
+
+test('observed reveal visibility removes scroll layout reads while its rag still follows input', () => {
+    const h = harness();
+    const reads = h.reads, rest = h.edge;
+    for (let i = 0; i < 10; i++) { h.scroll(15); h.step(); }
+    assert.equal(h.reads, reads, 'IntersectionObserver makes scroll geometry reads unnecessary');
+    assert.notEqual(h.edge, rest);
+    h.settle(); assert.equal(h.edge, rest);
+    const fallback = harness({ observer: false });
+    const fallbackReads = fallback.reads; fallback.scroll(15);
+    assert.equal(fallback.reads, fallbackReads + 1, 'legacy fallback still refreshes visibility');
+});

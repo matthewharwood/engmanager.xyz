@@ -44,6 +44,96 @@ async function ready(path){await load(path);await until(()=>win().__engNav?.read
 async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;await win().__engNav.navigate(path,options);await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
+async function checkVisibleDiagrams(article){
+  // The same-origin module supplies deterministic graph markup for lifecycle
+  // checks. Real Mermaid layout is checked separately over its actual CDN.
+  const nodes=[...doc().querySelectorAll('.article .mermaid')];
+  assert(nodes.length===3,'the execution article retains all three source diagrams');
+  win().scrollTo({top:0,behavior:'instant'});await scrollSettled();
+  assert(!win().__diagramFixture,'offscreen figures do not import the diagram provider on article mount');
+  nodes[0].scrollIntoView({block:'center',behavior:'instant'});
+  await until(()=>nodes[0].querySelector('svg'),'the visible first diagram renders after input settles');
+  assert(win().__diagramFixture.calls.length===1&&!nodes[1].querySelector('svg')&&!nodes[2].querySelector('svg'),'one visible figure renders while offscreen figures keep their source');
+  await click('.model-figure .diagram-expand');await until(()=>query('.diagram-viewer').open,'visible diagram expands');
+  assert(query('.diagram-viewer .diagram-canvas svg'),'the expanded viewer contains the selected graph');
+  await click('.diagram-zoom [data-zoom="in"]');assert(query('.diagram-viewer output').textContent==='150%','expanded diagram zoom remains usable');
+  await click('.diagram-close');
+  for(const node of nodes.slice(1)){node.scrollIntoView({block:'center',behavior:'instant'});await until(()=>node.querySelector('svg'),'each remaining visible diagram renders');}
+  assert(win().__diagramFixture.calls.length===3&&nodes.every(node=>node.parentElement.querySelector('.diagram-expand')),'all three diagrams acquire rendered content and expansion controls');
+  const original=nodes.map(node=>node.querySelector('svg')),beforeResume=win().__diagramFixture.calls.length;
+  await navigate('/shop',{source:'reveal'});await click('[data-journey-resume]');await until(()=>win().location.pathname===article&&settled(),'retained diagram article resumes');
+  await scrollSettled();
+  assert(nodes.every((node,index)=>node.querySelector('svg')===original[index])&&win().__diagramFixture.calls.length===beforeResume,'retained article reuses unchanged rendered SVGs');
+  assert(nodes.every(node=>node.parentElement.querySelector('.diagram-expand')),'retained diagram expansion controls rebind to the new viewer');
+  const last=nodes.at(-1);last.scrollIntoView({block:'center',behavior:'instant'});await scrollSettled();
+  const beforeTheme=win().__diagramFixture.calls.length;await click('[data-theme-cycle]');
+  await until(()=>win().__diagramFixture.calls.length>beforeTheme,'visible diagram updates for a new theme');
+  const beforeCompact=win().__diagramFixture.calls.length;frame.style.width='390px';await until(()=>win().innerWidth===390,'compact diagram viewport');
+  last.scrollIntoView({block:'center',behavior:'instant'});await until(()=>win().__diagramFixture.calls.length>beforeCompact&&win().__diagramFixture.calls.at(-1).source.startsWith('flowchart TD'),'compact layout rerenders the original LR graph vertically');
+  assert(win().__diagramFixture.calls.every(call=>!call.busy&&!call.revealing&&call.source.includes('-->')),'native diagram layout starts from original sources outside journey holds');
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after visible diagrams');
+  win().scrollTo({top:0,behavior:'instant'});await scrollSettled();
+}
+async function checkLazyPayments(){
+  const head=doc().head,append=head.append.bind(head),actualFetch=win().fetch.bind(win()),requests=[],mounts=[],destroyed=[],returns=[];
+  assert(!head.querySelector('script[src^="https://js.stripe.com/v3"]'),'browsing the catalog never requests the payment provider');
+  head.append=(...nodes)=>{for(const node of nodes){if(node.tagName==='SCRIPT'&&node.src.startsWith('https://js.stripe.com/v3'))requests.push(node);else append(node);}};
+  const fakeStripe=()=>({elements:()=>({create:type=>({mount:()=>mounts.push(type),on:(name,fn)=>{if(name==='ready')setTimeout(fn,0);},destroy:()=>destroyed.push(type)}),update(){}}),retrievePaymentIntent:async secret=>{returns.push(secret);return{paymentIntent:{status:secret==='fixture_failed'?'requires_payment_method':secret==='fixture_cancelled'?'canceled':'succeeded',receipt_email:'fixture@example.invalid'}};}});
+  try{
+    win().__checkout.enabled=true;win().__checkout.publishableKey='pk_test_local_fixture';
+    await click('[data-cart-toggle]');await until(()=>requests.length===1,'bag intent requests one payment provider');
+    requests[0].onerror();await until(()=>query('[data-checkout-error]').textContent.includes('could not load'),'a provider failure shows a retryable checkout error');
+    await click('[data-close-bag]');await click('[data-cart-toggle]');await until(()=>requests.length===2,'reopening the bag retries provider loading');
+    // Leave while the real lazy loader is pending: its eventual completion
+    // must not mount Elements into a disposed storefront.
+    await navigate('/coach');win().Stripe=fakeStripe;requests[1].onload();await delay(50);
+    assert(mounts.length===0,'late payment initialization cannot mount into a departed storefront');
+    await navigate('/shop');win().__checkout.enabled=true;win().__checkout.publishableKey='pk_test_local_fixture';
+    await click('[data-cart-toggle]');await until(()=>mounts.length===2,'a new storefront reuses the loaded provider');
+    assert(requests.length===2&&mounts.includes('address')&&mounts.includes('payment'),'one address/payment pair mounts without downloading the provider again');
+    await navigate('/coach');assert(destroyed.length===2,'navigation disposes both mounted payment elements');
+    // Supply a test-only return key with new checkout disabled in the response.
+    // Stripe is a local stub: no PaymentIntent is created or confirmed.
+    // Reset the provider singleton to exercise a cold redirect failure and
+    // an in-document retry rather than relying on the previously loaded fake.
+    const loaderUrl=head.querySelector('script[src*="/js/payment-provider."]').src;
+    delete win().Stripe;delete win().__engPayments;
+    await new Promise((resolve,reject)=>{const loader=doc().createElement('script');loader.src=loaderUrl;loader.onload=resolve;loader.onerror=reject;head.append(loader);});
+    win().fetch=async(input,options)=>{
+      const response=await actualFetch(input,options),url=new URL(input?.url||String(input),win().location.href);
+      const secret=url.searchParams.get('payment_intent_client_secret');
+      if(url.pathname!=='/shop'||!['fixture_return','fixture_failed','fixture_cancelled'].includes(secret))return response;
+      const parsed=new (win().DOMParser)().parseFromString(await response.text(),'text/html');
+      const island=parsed.querySelector('script[data-eng-config="__checkout"]'),config=JSON.parse(island.textContent);
+      config.enabled=secret==='fixture_failed';config.publishableKey='pk_test_local_fixture';island.textContent=JSON.stringify(config);
+      const patched=new (win().Response)(parsed.documentElement.outerHTML,{status:response.status,headers:response.headers});
+      Object.defineProperty(patched,'url',{value:response.url});
+      return patched;
+    };
+    const returnDocument=doc();
+    await navigate('/shop?bag=checkout&payment_intent_client_secret=fixture_return');
+    assert(doc()===returnDocument,'payment return fixture preserves its native same-document response URL');
+    await until(()=>requests.length===3,'a cold payment return requests the provider with new checkout disabled');
+    requests[2].onerror();
+    await until(()=>query('[data-checkout-error]').textContent.includes('confirmation could not load'),'a failed payment return explains how to retry');
+    await click('[data-close-bag]');win().history.back();
+    await until(()=>query('[data-bag]').dataset.bagState==='checkout'&&requests.length===4,'restoring checkout retries the pending payment return without a refresh');
+    assert(doc()===returnDocument,'payment return retry preserves the live document');
+    win().Stripe=fakeStripe;requests[3].onload();
+    await until(()=>{
+      const pane=query('[data-bag-checkout-pane]'),done=query('[data-checkout-done]');
+      return returns.includes('fixture_return')&&visible(pane)&&visible(done)&&pane.getBoundingClientRect().height>0&&done.getBoundingClientRect().height>0;
+    },'payment redirect return visibly restores an existing confirmation even when new checkout is disabled');
+    assert(requests.length===4&&!query('[data-checkout-error]').textContent,'retried payment return clears its error and coalesces provider requests');
+    await navigate('/shop?bag=checkout&payment_intent_client_secret=fixture_failed');
+    await until(()=>returns.includes('fixture_failed')&&mounts.length===4&&visible(query('[data-checkout-form]')),'a failed payment return restores ordinary enabled checkout');
+    assert(!visible(query('[data-checkout-done]'))&&requests.length===4,'a nonfinal payment cannot masquerade as a confirmation or reload the provider');
+    await navigate('/coach');assert(destroyed.length===4,'the recovered checkout disposes its new Elements pair');
+    await navigate('/shop?bag=checkout&payment_intent_client_secret=fixture_cancelled');
+    await until(()=>returns.includes('fixture_cancelled')&&visible(query('[data-checkout-disabled]'))&&query('[data-checkout-error]').textContent.includes('not completed'),'a canceled return with new orders disabled explains its state');
+    assert(mounts.length===4&&!visible(query('[data-checkout-form]'))&&!visible(query('[data-checkout-done]')),'disabled canceled returns mount no payment form and show no successful confirmation');
+  }finally{head.append=append;win().fetch=actualFetch;delete win().Stripe;}
+}
 async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'next destination has a reveal runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.8,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]'))&&query('[data-journey-promote]')&&!query('[data-journey-promote]').disabled,'scroll automatically reveals the next destination poster');}
 async function checkCurtain(){
   const rag=query('[data-journey-curtain]');
@@ -194,15 +284,28 @@ try{
   assert(!visible(previous()),'opening the storefront directly has no previous-page window');
   assert(query('[data-product-card]'),'the real embedded catalog is available without Stripe credentials');
   const firstCard=query('[data-product-card]'),productPath=new URL(firstCard.href).pathname;
+  frame.style.width='390px';await until(()=>win().innerWidth===390,'mobile responsive catalog');
+  const mobileCardImage=firstCard.querySelector('img');await mobileCardImage.decode();
+  assert(mobileCardImage.naturalWidth>0&&mobileCardImage.naturalWidth<900&&/-(160|384|640)(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(mobileCardImage.currentSrc).pathname),'native mobile cards decode a responsive candidate instead of the 900px original');
+  assert(mobileCardImage.srcset.includes('160w')&&mobileCardImage.srcset.includes('384w')&&mobileCardImage.srcset.includes('640w')&&mobileCardImage.srcset.includes('900w'),'cards retain the complete responsive image ladder');
   firstCard.click();await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='false','direct product opens');
   assert(win().location.pathname===productPath,'product overlay writes the product URL');
+  const responsiveGallery=query('[data-product-image]');await responsiveGallery.decode();
+  const product=win().__shopProducts.products.find(item=>item.slug===firstCard.dataset.slug),original=new (win().Image)();
+  assert(responsiveGallery.srcset===product.images[0].srcset&&responsiveGallery.sizes,'the gallery requests the candidate appropriate to its actual panel size');
+  const galleryThumb=query('.shop-thumb img');await galleryThumb.decode();
+  assert(galleryThumb.naturalWidth===160&&/-160(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(galleryThumb.currentSrc).pathname),'gallery thumbnails decode the 160px derivative');
+  original.src=product.images[0].url;await original.decode();
+  assert(original.naturalWidth===900,'the original full-resolution product image remains available');
   await click('[data-close-product]');await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='true','direct product closes');
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after responsive image checks');
   assert(win().location.pathname==='/shop','closing a product restores the same-origin storefront route');
   await ready(productPath);await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='false','hard-loaded product opens');
   assert(!visible(previous()),'opening a product URL directly creates no previous window');
   await click('[data-close-product]');await until(()=>win().location.pathname==='/shop'&&query('[data-product-panel]')?.getAttribute('aria-hidden')==='true','hard-loaded product returns to shop');
 
   await navigate(article);
+  await checkVisibleDiagrams(article);
   const hero=query('[data-article-hero="the-execution-marketplace"]');
   assert(hero&&hero.querySelector('svg.article-hero-poster')&&hero.querySelector('canvas.article-hero-canvas'),'execution article has an accessible static hero and canvas');
   hero.scrollIntoView({behavior:'instant'});
@@ -238,6 +341,21 @@ try{
   await until(()=>visible(previous()),'article previous window');
   assert(previous().textContent.includes('Execution')||previous().querySelector('[data-journey-resume]'),'article window includes a resume control');
   assert(doc().querySelectorAll('[data-journey-previous]').length===1,'exactly one previous window is retained');
+  await until(()=>previous()?.querySelector('iframe[data-preview-ready="true"]')?.contentDocument?.querySelector('.article'),'resume snapshot hydrates with styles, fonts and visible images when idle');
+  const resumeSnapshot=previous().querySelector('iframe');
+  assert(resumeSnapshot.getAttribute('sandbox')==='allow-same-origin'&&!resumeSnapshot.contentDocument.querySelector('script,dialog,[popover],[role="dialog"][aria-modal="true"]'),'idle resume snapshot remains script-free and omits interactive overlays');
+  const previewViewport=resumeSnapshot.parentElement,previewBounds=previewViewport.getBoundingClientRect(),snapshotBounds=resumeSnapshot.getBoundingClientRect();
+  assert(win().getComputedStyle(previewViewport).contain.includes('paint')&&win().getComputedStyle(resumeSnapshot).contain.includes('paint')&&Math.abs(snapshotBounds.width-previewBounds.width)<2,'the full snapshot is paint-contained inside its scaled thumbnail viewport');
+  assert(Math.abs(resumeSnapshot.contentWindow.innerWidth-parseFloat(resumeSnapshot.style.width))<2&&Math.abs(resumeSnapshot.contentWindow.innerHeight-parseFloat(resumeSnapshot.style.height))<2,'thumbnail scaling preserves the original CSS viewport: '+JSON.stringify({inner:[resumeSnapshot.contentWindow.innerWidth,resumeSnapshot.contentWindow.innerHeight],style:[resumeSnapshot.style.width,resumeSnapshot.style.height]}));
+  assert([...resumeSnapshot.contentDocument.querySelectorAll('svg')].every(svg=>!svg.animationsPaused||svg.animationsPaused()),'static snapshots pause SVG animation timelines as well as CSS animations');
+  const snapshotTimelines=[...resumeSnapshot.contentDocument.querySelectorAll('svg')].filter(svg=>svg.getCurrentTime).map(svg=>({svg,time:svg.getCurrentTime()}));
+  assert(snapshotTimelines.some(({svg})=>svg.querySelector('animate')),'snapshot timing check includes an authored animated SVG filter');
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+  assert(snapshotTimelines.every(({svg,time})=>Math.abs(svg.getCurrentTime()-time)<.001),'snapshot SVG timelines do not advance across display frames');
+  assert([...resumeSnapshot.contentDocument.querySelectorAll('.marquee-track,.article-fluid-link,.liquid-title')].every(node=>resumeSnapshot.contentWindow.getComputedStyle(node).willChange==='auto'),'static snapshots discard decorative animation layer hints');
+  assert(resumeSnapshot.contentDocument.fonts.status==='loaded','ready snapshot has settled typography');
+  assert([...resumeSnapshot.contentDocument.images].filter(image=>{const rect=image.getBoundingClientRect();return rect.width>0&&rect.height>0&&rect.bottom>0&&rect.top<resumeSnapshot.contentWindow.innerHeight;}).every(image=>image.complete),'ready snapshot has settled visible-image decoding or native fallback');
+  await until(()=>Math.abs(resumeSnapshot.contentWindow.scrollY-articleScroll)<8,'idle snapshot preserves the outgoing viewport');
   await click('[data-product-card]');await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='false','product opens after reveal');
   assert(!visible(previous()),'product overlay hides the previous-page window');
   await click('[data-close-product]');await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='true'&&visible(previous()),'closing product restores previous window');
@@ -349,7 +467,12 @@ try{
 
   // A live destination mounts below the sculpture. Deliberately leave one
   // lifecycle callback pending to prove a completed fetch cannot uncover it.
-  await navigate(article);await reveal();
+  await navigate(article);
+  const warmedImages=[];
+  const warmObserver=new (win().MutationObserver)(records=>{for(const record of records)for(const node of record.addedNodes){if(node.nodeType===1&&node.matches('link[rel="preload"][as="image"]'))warmedImages.push({href:node.href,srcset:node.getAttribute('imagesrcset'),sizes:node.getAttribute('imagesizes')});}});
+  warmObserver.observe(doc().head,{childList:true});
+  await reveal();await until(()=>warmedImages.length===3,'automatic reveal warms only the critical product row');warmObserver.disconnect();
+  assert(warmedImages.every(image=>/-384(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(image.href).pathname)&&image.srcset.includes('160w')&&image.srcset.includes('384w')&&image.srcset.includes('640w')&&image.srcset.includes('900w')&&image.sizes.includes('30vw')),'critical product preloads use the same responsive candidate ladder and viewport sizes as live cards');
   const mountPoster=query('[data-journey-next="shop"]');
   await checkCurtain();
   assert(mountPoster.querySelector('.journey-poster-art canvas')&&mountPoster.querySelector('.journey-poster-art img')&&!mountPoster.querySelector('iframe'),'shop transition uses a sculpture canvas and still instead of a page iframe');
@@ -388,9 +511,11 @@ try{
   await navigate(article);await reveal();
   const imagePoster=query('[data-journey-next="shop"]'),imageRemoval=observePosterRemoval(imagePoster);
   const imagePrototype=win().HTMLImageElement.prototype,actualDecode=imagePrototype.decode;
-  let releaseImage,imageStarted=false;
+  let releaseImage,imageStarted=false,hiddenDecodeCalls=0,hiddenImage;
+  const removeHiddenImage=win().__engNav.onSwap(root=>{const page=root.querySelector('[data-journey-current="shop"]');if(!page)return;hiddenImage=page.querySelector('[data-product-card] img').cloneNode(false);hiddenImage.dataset.readinessHidden='true';hiddenImage.style.cssText='position:fixed;inset:0;width:48px;height:48px;visibility:hidden';page.append(hiddenImage);});
   const imageGate=new Promise(resolve=>{releaseImage=resolve;});
   imagePrototype.decode=function(){
+    if(this.dataset.readinessHidden==='true')hiddenDecodeCalls++;
     const decoded=actualDecode.call(this);
     if(this.closest('[data-journey-current="shop"]')){imageStarted=true;return Promise.all([decoded.catch(()=>{}),imageGate]);}
     return decoded;
@@ -399,7 +524,8 @@ try{
   await until(()=>imageStarted,'visible shop image decode starts');await delay(2200);
   assert(imagePoster.isConnected&&imagePoster.hasAttribute('data-committing')&&win().__engNav.busy&&query('[data-journey-current="shop"]').inert,'a slow visible image remains covered beyond two seconds');
   assert(!query('[data-journey-current="shop"]').hasAttribute('data-journey-rendered'),'pending image decode does not report a completed render');
-  releaseImage();await gatedImage;imagePrototype.decode=actualDecode;await delay(0);
+  releaseImage();await gatedImage;imagePrototype.decode=actualDecode;removeHiddenImage();hiddenImage.remove();await delay(0);
+  assert(hiddenDecodeCalls===0,'CSS-hidden image geometry never blocks the visible-image readiness gate');
   assert(imageRemoval.state.removedAfterRender&&!imagePoster.isConnected,'decoded shop content is marked rendered before the sculpture dissolves');
   imageRemoval.disconnect();
 
@@ -527,6 +653,8 @@ try{
     assert(doc().querySelectorAll('[data-product-panel]').length===1&&doc().querySelectorAll('[data-journey-current]').length===1,'repeated mounts retain one live shop and one current outlet');
   }
 
+  await checkLazyPayments();
+
   await navigate(article);
   const actualFetch=win().fetch.bind(win());
   let releaseFetch,started=false;
@@ -645,6 +773,23 @@ try{
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nURL: '+win()?.location.href+'\nSCROLL: '+win()?.scrollY+' '+JSON.stringify(window.__scrollDiagnostic||{})+'\nHISTORY: '+JSON.stringify(win()?.history.state)+'\nRECENT CHECKS:\n'+checks.slice(-10).join('\n');document.body.dataset.testResult='failed';}
 </script></body></html>"##;
 
+// Deterministic provider contract for native lifecycle/viewport assertions.
+// scripts/verify-article-diagrams.mjs separately exercises the real CDN module.
+const MERMAID_FIXTURE: &str = r##"
+const state=window.__diagramFixture||={loads:0,calls:[]};state.loads++;
+let configuration;
+export default {
+  initialize(value){configuration=value;},
+  async render(id,source,scratch){
+    state.calls.push({source,busy:window.__engNav?.busy,revealing:document.body.classList.contains('journey-revealing')});
+    if(!scratch.isConnected)throw Error('Diagram scratch must belong to the current article');
+    const labels=[...source.matchAll(/\["([^"]+)"\]/g)].map(match=>match[1]);
+    const escape=value=>value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+    return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 ${Math.max(120,labels.length*30)}" role="img"><rect width="100%" height="100%" fill="${configuration.themeVariables.primaryColor}"/>${labels.map((label,index)=>`<text x="10" y="${25+index*30}" fill="${configuration.themeVariables.primaryTextColor}">${escape(label)}</text>`).join('')}</svg>`};
+  }
+};
+"##;
+
 #[derive(Clone)]
 struct Proxy {
     target: String,
@@ -652,6 +797,10 @@ struct Proxy {
 }
 
 async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response {
+    let diagrams = request
+        .uri()
+        .path()
+        .starts_with("/assets/js/article-diagrams.");
     let response = match proxy
         .client
         .get(format!("{}{}", proxy.target, request.uri()))
@@ -676,6 +825,15 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
         headers.insert(header::CONTENT_SECURITY_POLICY, "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src 'self'; connect-src 'self'; frame-ancestors 'self'".parse().unwrap());
     }
     match response.bytes().await {
+        Ok(bytes) if diagrams => (
+            status,
+            headers,
+            String::from_utf8_lossy(&bytes).replace(
+                "https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs",
+                "/__journey_mermaid.mjs",
+            ),
+        )
+            .into_response(),
         Ok(bytes) => (status, headers, bytes).into_response(),
         Err(error) => (StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
     }
@@ -698,6 +856,10 @@ async fn exercise_journey(reduced_motion: bool) {
     let port = listener.local_addr().unwrap().port();
     let router = axum::Router::new()
         .route("/__journey_test", get(|| async { Html(FIXTURE) }))
+        .route(
+            "/__journey_mermaid.mjs",
+            get(|| async { ([(header::CONTENT_TYPE, "text/javascript")], MERMAID_FIXTURE) }),
+        )
         .fallback(forward)
         .with_state(Proxy {
             target: format!("http://127.0.0.1:{}", server.port),

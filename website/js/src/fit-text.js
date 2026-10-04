@@ -24,6 +24,7 @@
 //   https://developer.mozilla.org/en-US/docs/Web/API/TextMetrics
 
 const MIN_FONT_SIZE_PX = 20;
+let textContext;
 
 // Convert a font-family attribute value into a Canvas-safe family list.
 // Family names containing whitespace need quotes for the CSS font shorthand.
@@ -45,8 +46,9 @@ function measureInk(text) {
     );
     const fontWeight = text.getAttribute("font-weight") || "normal";
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+    // One measurement context serves the whole outlet. Creating a canvas for
+    // every feed row adds allocation work to the page promotion.
+    const ctx = (textContext ||= document.createElement("canvas").getContext("2d"));
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     const m = ctx.measureText(content);
 
@@ -86,13 +88,15 @@ function clamp(value, min, max) {
 // enclosing .article-fluid-link. The checkbox and strike-through then
 // size from the same measured font scale as the SVG/fallback title,
 // instead of from a fixed mobile clamp.
-function syncTitleMetrics(svg, ink) {
+function titleWidth(svg) {
+    const wrap = svg.closest(".fluid-display-wrap");
+    return (wrap || svg).getBoundingClientRect().width;
+}
+
+function syncTitleMetrics(svg, ink, containerWidth) {
     const link = svg.closest(".article-fluid-link");
     if (!link) return false;
 
-    const wrap = svg.closest(".fluid-display-wrap");
-    const containerWidth =
-        wrap?.getBoundingClientRect().width || svg.getBoundingClientRect().width;
     if (!containerWidth) return false;
 
     const scale = containerWidth / ink.inkWidth;
@@ -125,18 +129,23 @@ function syncTitleMetrics(svg, ink) {
     // Re-evaluate the fallback threshold and fitted title metrics
     // whenever row width changes. The fit (viewBox) doesn't need
     // re-running — it's container-relative via SVG scaling.
-    let pending = false;
+    let resizeFrame = 0;
     const onResize = () => {
-        if (pending) return;
-        pending = true;
-        requestAnimationFrame(() => {
-            pending = false;
+        if (resizeFrame) return;
+        resizeFrame = requestAnimationFrame(() => {
+            resizeFrame = 0;
+            const updates = [];
             for (const [svg, ink] of measurements) {
                 if (!svg.isConnected) {
                     measurements.delete(svg);
                     continue;
                 }
-                const usesFallback = syncTitleMetrics(svg, ink);
+                updates.push({ svg, ink, width: titleWidth(svg) });
+            }
+            // Read the widths together before any SVG/style mutation. One
+            // dirty row must not force layout before measuring the next row.
+            for (const { svg, ink, width } of updates) {
+                const usesFallback = syncTitleMetrics(svg, ink, width);
                 svg.classList.toggle("is-too-small", usesFallback);
             }
         });
@@ -159,20 +168,22 @@ function syncTitleMetrics(svg, ink) {
             for (const svg of measurements.keys()) {
                 if (!svg.isConnected) measurements.delete(svg);
             }
+            const fitted = [];
             for (const svg of root.querySelectorAll("svg.fluid-display-svg")) {
                 if (measurements.has(svg)) continue;
                 const text = svg.querySelector("text");
                 if (!text) continue;
                 const ink = measureInk(text);
                 if (!ink) continue;
+                fitted.push({ svg, ink, width: titleWidth(svg) });
+            }
+            for (const { svg, ink, width } of fitted) {
                 applyFit(svg, ink);
                 measurements.set(svg, ink);
-                const usesFallback = syncTitleMetrics(svg, ink);
+                const usesFallback = syncTitleMetrics(svg, ink, width);
                 svg.classList.toggle("is-too-small", usesFallback);
                 observer?.observe(svg.closest(".fluid-display-wrap") || svg);
             }
-
-            requestAnimationFrame(onResize);
         } catch (_err) {
             // Measurement failed — leave the fallback viewBox in place.
         }
@@ -188,6 +199,8 @@ function syncTitleMetrics(svg, ink) {
     });
     window.__engNav?.onBeforeSwap?.(() => {
         generation++;
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = 0;
         observer?.disconnect();
         measurements.clear();
     });

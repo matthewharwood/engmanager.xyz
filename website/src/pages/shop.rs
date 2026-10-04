@@ -7,7 +7,10 @@ use serde_json::json;
 
 use super::shell::PageShell;
 use crate::AppState;
-use crate::catalog::{CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_url};
+use crate::catalog::{
+    CAP_VIEWS, SHOP_PRODUCTS, ShopProduct, product_image_srcset, product_image_url,
+    product_image_variant_url,
+};
 use crate::components::quick_actions::theme_picker;
 use crate::components::{Head, page_config_islands};
 
@@ -97,12 +100,8 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
 
     let mut scripts = Head::new();
     scripts.add_inline(data);
-    scripts.add_inline(view! {
-        <link rel="preconnect" href="https://js.stripe.com" crossorigin />
-        <link rel="preconnect" href="https://api.stripe.com" crossorigin />
-        <script src="https://js.stripe.com/v3" defer></script>
-    });
     scripts.add_js("js/audio.js");
+    scripts.add_js("js/payment-provider.js");
     scripts.add_js("js/shop.js");
 
     let body = view! {
@@ -145,13 +144,18 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
 }
 
 fn render_product_grid() -> HtmlFragment {
-    SHOP_PRODUCTS.iter().map(render_product_card).collect()
+    SHOP_PRODUCTS
+        .iter()
+        .enumerate()
+        .map(|(index, product)| render_product_card(product, index < 3))
+        .collect()
 }
 
-fn render_product_card(product: &ShopProduct) -> HtmlFragment {
+fn render_product_card(product: &ShopProduct, first_row: bool) -> HtmlFragment {
     let href = format!("/products/{}?image=front", product.slug);
     let price = product.price.label();
-    let image = product_image_url(product, &CAP_VIEWS[0]);
+    let image = product_image_variant_url(product, &CAP_VIEWS[0], 384);
+    let srcset = product_image_srcset(product, &CAP_VIEWS[0]);
     let alt = format!("{} embroidered dad cap front view", product.name);
 
     view! {
@@ -162,6 +166,9 @@ fn render_product_card(product: &ShopProduct) -> HtmlFragment {
            aria-label={ format!("Open {}", product.name) }>
             <span class="shop-card-figure">
                 <img src={ image }
+                     srcset={ srcset }
+                     sizes="(min-width: 114rem) 17rem, (min-width: 44rem) 15vw, 30vw"
+                     data-journey-image={ if first_row { "true" } else { "false" } }
                      alt={ alt }
                      width="900"
                      height="1100"
@@ -438,6 +445,8 @@ fn product_images_json(product: &ShopProduct) -> Vec<serde_json::Value> {
                 "label": view.label,
                 "caption": view.caption,
                 "url": product_image_url(product, view),
+                "srcset": product_image_srcset(product, view),
+                "thumbnailUrl": product_image_variant_url(product, view, 160),
             })
         })
         .collect()
@@ -460,6 +469,11 @@ mod tests {
         assert!(html.contains("/assets/css/shop."));
         assert!(!html.contains("animejs@4"));
         assert!(html.contains("/assets/js/shop."));
+        assert!(html.contains("/assets/js/payment-provider."));
+        assert!(
+            !html.contains("https://js.stripe.com/v3"),
+            "browsing the catalog must not execute the payment provider"
+        );
         assert!(html.contains(r#"data-eng-config="__shopProducts""#));
         assert!(html.contains("data-shop-grid"));
         assert!(html.contains(".webp"));

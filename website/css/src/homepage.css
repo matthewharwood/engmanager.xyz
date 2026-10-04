@@ -57,6 +57,12 @@
     cursor: grabbing;
 }
 
+/* Feed decoration and fixed controls yield to the next poster so Continue
+ * stays uncovered. JS also stops the DVD animation's frame work. */
+.journey-revealing .dvd-bouncer,
+.journey-revealing .trash,
+.journey-revealing .avatar-button { visibility: hidden; }
+
 /* Lock the whole page out of any pan/zoom while a drag is in flight.
  * Belt-and-suspenders alongside per-element touch-action: none on the
  * chip / visited check / DVD — if the captured pointer falls through

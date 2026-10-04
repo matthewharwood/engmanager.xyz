@@ -32,7 +32,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate,label){const deadline=performance.now()+12000;while(performance.now()<deadline){if(predicate())return;await delay(40);}throw new Error('Timed out: '+label);}
 async function hard(path){const old=doc();frame.src=path;await until(()=>doc()!==old&&win().location.pathname===path.split('?')[0]&&doc().readyState==='complete'&&settled(),'hard load '+path);}
 async function navigate(path){await win().__engNav.navigate(path);await until(()=>win().location.pathname===path&&settled(),'navigate '+path);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');}
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
+  if(query('[data-journey-current="feed"]')){
+    assert(!visible(query('.trash'))&&!visible(query('.avatar-button')),'feed controls yield to the revealed article cover');
+    const link=query('[data-journey-promote]'),box=link.getBoundingClientRect(),hit=doc().elementFromPoint(box.left+12,box.top+box.height/2);
+    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile');
+  }
+}
 async function promote(path){const link=query('[data-journey-promote]');assert(link&&new URL(link.href).pathname===path,'Continue points to '+path);link.click();await until(()=>win().location.pathname===path&&settled(),'promote '+path);}
 async function articleBottom(slug){const article=query('[data-article-slug="'+slug+'"]');assert(article,'the intended article is mounted');const rect=article.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.bottom-win().innerHeight+20,behavior:'instant'});await until(()=>win().__engReading.snapshot().completed.includes(slug),'actual article bottom completes '+slug);}
 async function fonts(){const typography=win().__engTypography;if(typography){await typography.ready;await typography.displayReady;}else await doc().fonts.ready;}
@@ -62,6 +68,10 @@ try{
   const poster=query('[data-journey-next="article"]'),still=poster.querySelector('.journey-poster-art img');
   await still.decode();
   assert(still.complete&&still.naturalWidth>0&&visible(poster),'the carved folio remains visible while article HTML stalls');
+  win().scrollTo({top:0,behavior:'instant'});
+  await until(()=>!doc().body.classList.contains('journey-revealing'),'scrolling back closes the article cover');
+  assert(visible(query('.trash'))&&visible(query('.avatar-button')),'returning to the feed restores its controls');
+  await reveal();
   await titleFits(390,first.title);await titleFits(320,first.title);
   rejectPrefetch();await until(()=>query('[data-journey-runway]').dataset.failed==='true','failed prefetch offers Continue');
   assert(visible(poster)&&still.naturalWidth>0,'failed article fetch retains the complete cover');
@@ -69,6 +79,20 @@ try{
   await promote(first.path);
   assert(win().__engReading.snapshot().completed.length===0,'entering through Continue still requires reading to the bottom');
   await articleBottom(first.slug);
+  // Once read, the reveal's hot scroll path must not query page geometry or
+  // revisit synchronous progress storage on each subsequent touch frame.
+  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+  const readArticle=query('[data-article-slug="'+first.slug+'"]'),readRunway=query('[data-journey-runway]');
+  const articleRect=readArticle.getBoundingClientRect,runwayRect=readRunway.getBoundingClientRect,complete=win().__engReading.complete;
+  let geometryReads=0,repeatReads=0;
+  readArticle.getBoundingClientRect=function(){geometryReads++;return articleRect.call(this);};
+  readRunway.getBoundingClientRect=function(){geometryReads++;return runwayRect.call(this);};
+  win().__engReading.complete=function(...args){repeatReads++;return complete.apply(this,args);};
+  try{
+    for(let i=0;i<12;i++){win().scrollBy({top:2,behavior:'instant'});await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));}
+    assert(geometryReads===0,'stable article reveal frames reuse measured geometry');
+    assert(repeatReads===0,'an already-read article never touches completion storage during reveal frames');
+  }finally{delete readArticle.getBoundingClientRect;delete readRunway.getBoundingClientRect;win().__engReading.complete=complete;}
   await reveal();await promote('/shop');
   await reveal();await promote('/coach');
   await reveal();await promote('/subscribe');

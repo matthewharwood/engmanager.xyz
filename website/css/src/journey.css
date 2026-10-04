@@ -48,18 +48,37 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
 .journey-stage { position: fixed; z-index: 1; inset: 0; visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; }
 .journey-revealing .journey-stage[data-preview-ready],
 .journey-stage[data-committing] { visibility: visible; opacity: 1; }
-.journey-stage[data-committing] { z-index: 76; transition: none; }
+.journey-stage[data-committing] {
+    z-index: 76;
+    transition: none;
+    /* Establish the bounded handoff surface while the poster is still
+       opaque, before the destination mounts behind its opacity animation. */
+    contain: strict;
+    will-change: opacity;
+}
 .journey-stage-viewport {
     position: absolute;
     inset: 0;
     overflow: hidden;
     border: 1px solid color-mix(in oklab, var(--text-2) 30%, transparent);
-    border-radius: var(--journey-corner, 1rem);
+    border-radius: .8rem;
     background: var(--surface-1);
-    box-shadow: 0 24px 80px color-mix(in oklab, var(--text-1) 18%, transparent);
-    transform: scale(var(--journey-scale, .82));
-    opacity: var(--journey-progress, 0);
+    box-shadow: 0 8px 24px color-mix(in oklab, var(--text-1) 12%, transparent);
+    transform: scale(.82);
+    opacity: 0;
+    contain: layout paint;
+    will-change: transform, opacity;
 }
+.journey-stage[data-committing] .journey-stage-viewport {
+    border-radius: 0;
+    /* Scroll has reached its final pose. The parent owns the only animation
+       now; the static child no longer needs separate transform/opacity
+       compositing hints. */
+    will-change: auto;
+}
+/* The mounted newsletter already waits for its first GPU frame behind the
+   poster. Its own canvas fade would run inside the full-viewport handoff. */
+html[data-journey-loading] .armillary-canvas { transition: none; }
 .journey-preview { display: block; inline-size: 100%; block-size: 100%; border: 0; pointer-events: none; background: var(--surface-1); }
 .journey-promote {
     position: absolute;
@@ -116,6 +135,7 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
     inline-size: min(100%, 42rem);
     min-block-size: 0;
     block-size: 100%;
+    contain: layout paint;
 }
 .journey-poster-art::before {
     content: '';
@@ -181,8 +201,8 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
 .journey-previous[hidden], .journey-stage[hidden] { display: none; }
 .journey-revealing .journey-previous { visibility: hidden; }
 .journey-resume { display: block; inline-size: 100%; padding: 0; border: 0; color: inherit; background: transparent; text-align: start; cursor: pointer; font: inherit; }
-.journey-previous-viewport { display: block; position: relative; aspect-ratio: 16 / 9; overflow: hidden; pointer-events: none; }
-.journey-previous-viewport .journey-preview { position: absolute; inset: 0; transform-origin: top left; }
+.journey-previous-viewport { display: block; position: relative; inline-size: 100%; aspect-ratio: 16 / 9; overflow: hidden; contain: layout paint; pointer-events: none; }
+.journey-previous-viewport .journey-preview { position: absolute; inset: 0; contain: layout paint; transform-origin: top left; }
 .journey-previous-caption { display: grid; gap: .3rem; padding: .7rem; border-block-start: 1px solid color-mix(in oklab, var(--text-2) 20%, transparent); font: .65rem/1.4 var(--font-mono); }
 .journey-previous-caption strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; }
 .journey-previous-caption > span { color: var(--text-2); }
