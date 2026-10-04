@@ -129,6 +129,7 @@
     document.addEventListener('visibilitychange', cancel);
     window.addEventListener('pagehide', dispose);
     window.addEventListener('pageshow', mount);
+    window.addEventListener('eng:journeytarget', mount);
     nav.onBeforeSwap(dispose);
     nav.onSwap(mount);
     window.__engCurtain = { ready: true };

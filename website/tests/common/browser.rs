@@ -375,6 +375,8 @@ async fn dump_dom_with_options(
         if let Some(gesture) = value.get("gesture") {
             let x = gesture["x"].as_f64().expect("gesture x");
             let y = gesture["y"].as_f64().expect("gesture y");
+            let to_x = gesture["toX"].as_f64().unwrap_or(x - 110.0);
+            let to_y = gesture["toY"].as_f64().unwrap_or(y);
             cdp_command(
                 &mut socket,
                 &mut id,
@@ -382,19 +384,19 @@ async fn dump_dom_with_options(
                 "Runtime.evaluate",
                 serde_json::json!({"expression":"delete window.__journeyGesture"}),
             );
-            for (kind, offset, button) in [
+            for (kind, progress, button) in [
                 ("mouseMoved", 0.0, "none"),
                 ("mousePressed", 0.0, "left"),
-                ("mouseMoved", -25.0, "left"),
-                ("mouseMoved", -110.0, "left"),
-                ("mouseReleased", -110.0, "left"),
+                ("mouseMoved", 25.0 / 110.0, "left"),
+                ("mouseMoved", 1.0, "left"),
+                ("mouseReleased", 1.0, "left"),
             ] {
                 cdp_command(
                     &mut socket,
                     &mut id,
                     nonce as u32,
                     "Input.dispatchMouseEvent",
-                    serde_json::json!({"type":kind,"x":x+offset,"y":y,"button":button,"clickCount":1}),
+                    serde_json::json!({"type":kind,"x":x+(to_x-x)*progress,"y":y+(to_y-y)*progress,"button":button,"clickCount":1}),
                 );
             }
         }
@@ -402,6 +404,9 @@ async fn dump_dom_with_options(
             let key_code = match key {
                 "Tab" => 9,
                 "Escape" => 27,
+                "Delete" => 46,
+                "Backspace" => 8,
+                "Enter" => 13,
                 _ => panic!("unsupported fixture keyboard request: {key}"),
             };
             for kind in ["keyDown", "keyUp"] {

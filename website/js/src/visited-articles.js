@@ -25,9 +25,10 @@ const REVEAL_DELAY_MS = 320;
 const loadVisited = () => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return new Set();
+        if (!raw || raw.length > 100_000) return new Set();
         const parsed = JSON.parse(raw);
-        return new Set(Array.isArray(parsed) ? parsed : []);
+        return new Set(Array.isArray(parsed) ? parsed.slice(0, 512).filter((slug) =>
+            typeof slug === "string" && slug.length > 0 && slug.length <= 160) : []);
     } catch {
         return new Set();
     }
@@ -35,7 +36,7 @@ const loadVisited = () => {
 
 const saveVisited = (set) => {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...set].slice(-512)));
     } catch {
         // Quota exceeded / Safari private mode / disabled storage.
         // Visited state still works for the current page load.
@@ -62,11 +63,10 @@ const saveVisited = (set) => {
     // Hydration: mark previously-read articles immediately so the
     // strike + checkmark are already in place at first paint.
     const hydrate = (root) => {
+        const completed = new Set(window.__engReading?.snapshot?.().completed || []);
         root.querySelectorAll(".article-fluid-link").forEach((link) => {
             const slug = link.dataset.slug;
-            if (slug && visited.has(slug)) {
-                link.classList.add("is-visited");
-            }
+            link.classList.toggle("is-visited", !!slug && (visited.has(slug) || completed.has(slug)));
         });
     };
 
@@ -86,7 +86,7 @@ const saveVisited = (set) => {
         if (!slug) return;
 
         // Already visited → let normal navigation happen.
-        if (visited.has(slug)) return;
+        if (visited.has(slug) || window.__engReading?.snapshot?.().completed.includes(slug)) return;
 
         // Modifier-clicks / middle-click / non-primary → open in
         // new tab without the reveal flow so the user's intent
@@ -127,6 +127,12 @@ const saveVisited = (set) => {
     init(document);
     window.__engNav?.onBeforeSwap?.(() => clearTimeout(revealTimer));
     window.__engNav?.onSwap?.(init);
+    window.addEventListener("eng:readingprogress", () => hydrate(document));
+    window.addEventListener("storage", (event) => {
+        if (event.key !== STORAGE_KEY) return;
+        visited = loadVisited();
+        hydrate(document);
+    });
 
     // Prerendered documents snapshot localStorage early — re-read the
     // visited set at activation so reads made in other tabs while this

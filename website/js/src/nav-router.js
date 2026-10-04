@@ -6,7 +6,7 @@
     const initialPage = document.querySelector('[data-eng-page]');
     if (!nav || nav.ready || !initialPage) return;
 
-    const CONFIGS = ['__shopProducts', '__checkout', '__coach', '__engUrls', '__engSfxUrls', '__journeyPosters'];
+    const CONFIGS = ['__shopProducts', '__checkout', '__coach', '__engUrls', '__engSfxUrls', '__journeyPosters', '__journeyArticles'];
     const META = 'meta[name="description"],meta[name="robots"],meta[property^="og:"],meta[property^="article:"],meta[name^="twitter:"],link[rel="canonical"],link[rel="alternate"],script[type="application/ld+json"]';
     const privatePath = (p) => p === '/articles/big-personality' || /^\/personality(?:\/|$)/.test(p);
     const eligible = (url) => url.origin === location.origin && !privatePath(url.pathname)
@@ -170,6 +170,7 @@
                 window[name] = config.value;
             } else if (['__coach', '__shopProducts', '__checkout'].includes(name)) delete window[name];
         }
+        window.__engReading?.configure(window.__journeyArticles);
     }
 
     async function fetchPage(url, signal) {
@@ -284,6 +285,7 @@
             url: 'https://doi.org/10.48539/HBM929.XKCL.339',
             changes: 'Adapted in Blender; eyes and base added.',
         } },
+        article: { number: '01', title: 'A thought worth following.', detail: 'Read a little. Keep going.', sculpture: 'An open marble book with a turned page' },
     };
     let rendererScript;
     function loadPosterRenderer() {
@@ -297,10 +299,13 @@
     }
 
     function createStage(kind, url) {
-        const spec = POSTERS[kind] || POSTERS.feed;
+        const article = kind === 'article' && window.__journeyArticles?.articles?.find((entry) => entry.path === new URL(url, location.href).pathname);
+        const articleIndex = article ? window.__journeyArticles.articles.indexOf(article) : -1;
+        const spec = article ? { ...POSTERS.article, title: article.title, number: String(articleIndex + 1).padStart(2, '0') } : POSTERS[kind] || POSTERS.feed;
         const assets = window.__journeyPosters?.models[kind];
         const card = document.createElement('section');
         card.className = 'journey-stage';
+        if (kind === 'article') card.classList.add('journey-poster-article');
         card.dataset.journeyNext = kind;
         card.dataset.destination = url;
         card.setAttribute('aria-label', `Continue to ${label(kind)}`);
@@ -309,7 +314,7 @@
         const rail = document.createElement('div');
         rail.className = 'journey-poster-rail';
         const brand = document.createElement('span'); brand.textContent = 'ENGMANAGER.XYZ';
-        const index = document.createElement('span'); index.textContent = `NEXT / ${spec.number}`;
+        const index = document.createElement('span'); index.textContent = article ? `ARTICLE / ${spec.number} OF ${window.__journeyArticles.articles.length}` : `NEXT / ${spec.number}`;
         rail.append(brand, index);
         const art = document.createElement('div'); art.className = 'journey-poster-art';
         art.setAttribute('role', 'img'); art.setAttribute('aria-label', spec.sculpture);
@@ -320,6 +325,7 @@
         art.append(still, canvas);
         const caption = document.createElement('div'); caption.className = 'journey-poster-caption';
         const heading = document.createElement('h2'); heading.textContent = spec.title;
+        if (kind === 'article') heading.className = 'journey-poster-title-article';
         const detail = document.createElement('p'); detail.textContent = spec.detail;
         caption.append(heading, detail);
         if (spec.credit) {
@@ -349,6 +355,36 @@
         card.append(viewport, promote);
         runtime.append(card);
         const lifetime = new AbortController();
+        let titleObserver, titleFrame = 0;
+        function fitTitle() {
+            titleFrame = 0;
+            if (lifetime.signal.aborted || !heading.clientWidth || !heading.clientHeight) return;
+            // A sentence keeps its natural line breaks. Fit the actual face in
+            // its bounded box rather than treating a headline as a single word.
+            let low = 20, high = Math.min(180, innerWidth * .14), fitted = low;
+            for (let step = 0; step < 10; step++) {
+                const size = (low + high) / 2;
+                heading.style.fontSize = `${size}px`;
+                if (heading.scrollWidth <= heading.clientWidth + 1 && heading.scrollHeight <= heading.clientHeight + 1) {
+                    fitted = size; low = size;
+                } else high = size;
+            }
+            heading.style.fontSize = `${fitted}px`;
+        }
+        function queueTitle() {
+            if (!titleFrame && !lifetime.signal.aborted) titleFrame = requestAnimationFrame(fitTitle);
+        }
+        if (kind === 'article') {
+            titleObserver = new ResizeObserver(queueTitle);
+            titleObserver.observe(heading);
+            window.addEventListener('engmanager:fontchange', queueTitle, { signal: lifetime.signal });
+            (async () => {
+                const typography = window.__engTypography;
+                if (typography) { await typography.ready; await typography.displayReady; }
+                else await document.fonts?.ready;
+                queueTitle();
+            })().catch(() => {});
+        }
         let renderer, progress = 0;
         let stillTimer;
         card._posterReady = Promise.race([
@@ -357,7 +393,7 @@
         ]).finally(() => clearTimeout(stillTimer));
         card._posterVisible = () => renderer?.setVisible(!card.hidden && (progress > 0 || card.hasAttribute('data-committing')));
         card._posterProgress = (value) => { progress = value; renderer?.setProgress(value); card._posterVisible(); };
-        card._dispose = () => { lifetime.abort(); renderer?.destroy(); card.remove(); };
+        card._dispose = () => { lifetime.abort(); titleObserver?.disconnect(); cancelAnimationFrame(titleFrame); renderer?.destroy(); card.remove(); };
         // The still is an actual Blender render of this same sculpture. It is
         // also the complete low-data / unavailable-GPU experience.
         if (assets && !saveData() && navigator.gpu) {
@@ -392,7 +428,9 @@
     }
 
     function posterKind(url) {
-        return ({ '/shop': 'shop', '/coach': 'coach', '/subscribe': 'subscribe', '/feed': 'feed', '/': 'feed' })[new URL(url, location.href).pathname];
+        const path = new URL(url, location.href).pathname;
+        if (window.__journeyArticles?.articles?.some((article) => article.path === path)) return 'article';
+        return ({ '/shop': 'shop', '/coach': 'coach', '/subscribe': 'subscribe', '/feed': 'feed', '/': 'feed' })[path];
     }
 
     // The sculpture and its small fallback are local metadata. Show them as
@@ -473,6 +511,20 @@
 
     function setupNext() {
         clearNext();
+        if (current.kind === 'feed') {
+            if (window.__engReading) current.nextUrl = window.__engReading.nextArticle()?.path || null;
+            const fallback = current.page.querySelector('[data-journey-fallback]');
+            if (current.nextUrl) {
+                current.page.dataset.engNext = current.nextUrl;
+                fallback?.querySelector('a')?.setAttribute('href', current.nextUrl);
+                if (fallback) fallback.hidden = false;
+            } else {
+                delete current.page.dataset.engNext;
+                if (fallback) fallback.hidden = true;
+            }
+            window.dispatchEvent(new CustomEvent('eng:journeytarget', { detail: { kind: current.kind, path: current.nextUrl } }));
+            if (window.__engReading?.snapshot().allComplete) window.dispatchEvent(new CustomEvent('eng:readingcomplete'));
+        }
         if (!current.nextUrl) return;
         runway = document.createElement('section');
         runway.className = 'journey-runway';
@@ -566,6 +618,12 @@
     }
 
     function updateScroll(userScrolled) {
+        if (userScrolled && !nav.busy && !overlayOpen() && current.kind === 'article') {
+            const article = current.page.querySelector('[data-article-slug]');
+            if (article && article.getBoundingClientRect().bottom <= innerHeight + 2) {
+                window.__engReading?.complete(article.dataset.articleSlug);
+            }
+        }
         if (!runway || committing || stage?.hasAttribute('data-committing')) return;
         const top = runway.getBoundingClientRect().top;
         // Fast touch scrolling, restored positions, and viewport changes can
@@ -682,6 +740,9 @@
             if (!options.history) remember();
             const outgoing = current;
             if (source === 'reveal') {
+                if (outgoing.kind === 'article' && new URL(dest.href).pathname === '/shop') {
+                    window.__engReading?.complete(outgoing.page.querySelector('[data-article-slug]')?.dataset.articleSlug);
+                }
                 // The viewport immediately before the foreground disappears is
                 // useful to resume; the empty reveal runway is not article text.
                 outgoing.scroll = Math.min(outgoing.scroll, Math.max(0, outgoing.page.offsetTop + outgoing.page.offsetHeight - innerHeight));
@@ -813,7 +874,7 @@
             return;
         }
         event.preventDefault();
-        navigate(dest.href);
+        navigate(dest.href, link.closest('[data-journey-fallback]') ? { source: 'reveal' } : {});
     });
 
     window.addEventListener('popstate', (event) => {
@@ -873,6 +934,9 @@
         });
     });
     window.addEventListener('pagehide', () => { if (!nav.busy) remember(); });
+    window.addEventListener('eng:readingprogress', () => {
+        if (nav.ready && !nav.busy && !committing && current.kind === 'feed') setupNext();
+    });
 
     nav.navigate = navigate;
     nav.prepareNext = prepareNext;

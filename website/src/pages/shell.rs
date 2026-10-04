@@ -203,7 +203,7 @@ pub struct PageShell {
     theme_color: &'static str,
     speculation_rules: bool,
     nav_router: bool,
-    journey: Option<(&'static str, Option<&'static str>)>,
+    journey: Option<(&'static str, Option<String>)>,
     body_class: &'static str,
     /// Extra attribute on `<body>` (checkout's `data-checkout-mode`).
     body_attr: Option<(&'static str, &'static str)>,
@@ -283,9 +283,9 @@ impl PageShell {
     /// One complete page outlet, including its navigation and dialog markup.
     /// The next destination is an ordinary same-origin URL and remains a real
     /// link when scripting, intersection observers, or motion are unavailable.
-    pub fn journey(mut self, kind: &'static str, next: Option<&'static str>) -> Self {
+    pub fn journey(mut self, kind: &'static str, next: Option<&str>) -> Self {
         self.nav_router = true;
-        self.journey = Some((kind, next));
+        self.journey = Some((kind, next.map(str::to_owned)));
         self
     }
 
@@ -320,6 +320,39 @@ impl PageShell {
         head.add_blocking_js("js/theme-fonts.js");
         head.add_blocking_js("js/theme-toggle.js");
         head.add_inline(render_sfx_urls());
+        if self.nav_router {
+            // Every journey surface shares the public roster. It is available
+            // before page scripts, including cleanup and returned feed mounts.
+            let mut articles: Vec<_> = crate::content::public_articles()
+                .filter(|article| article.slug != "big-personality")
+                .collect();
+            articles.sort_by(|left, right| {
+                right
+                    .date
+                    .cmp(&left.date)
+                    .then_with(|| left.slug.cmp(right.slug))
+            });
+            let manifest = serde_json::json!({
+                "version": 1,
+                "articles": articles.iter().map(|article| serde_json::json!({
+                    "slug": article.slug,
+                    "path": format!("/articles/{}", article.slug),
+                    "title": article.title_alias.unwrap_or(article.title),
+                    "summary": article.summary,
+                    "date": article.date.iso(),
+                })).collect::<Vec<_>>()
+            })
+            .to_string();
+            head.add_inline(crate::components::script_island(
+                "__journeyArticles",
+                &manifest,
+            ));
+            head.add_inline(crate::components::page_config_island(
+                "__journeyArticles",
+                &manifest,
+            ));
+            head.add_js("js/journey-state.js");
+        }
         head.extend(self.scripts);
         // Router-eligible pages append the soft-navigation router after every
         // page script (deferred; execution order is irrelevant — it only
@@ -328,7 +361,7 @@ impl PageShell {
         if self.nav_router {
             let posters = serde_json::json!({
                 "renderer": asset_url("js/journey-poster-renderer.js"),
-                "models": (["shop", "coach", "subscribe", "feed"].into_iter().map(|kind| {
+                "models": (["shop", "coach", "subscribe", "feed", "article"].into_iter().map(|kind| {
                     (kind, serde_json::json!({
                         "model": asset_url(&format!("journey/{kind}.glb")),
                         "still": asset_url(&format!("journey/{kind}.webp")),
@@ -422,17 +455,18 @@ impl PageShell {
         }
         if let Some((kind, next)) = self.journey {
             let _ = write!(doc, "<div data-eng-page=\"{kind}\"");
-            if let Some(next) = next {
+            if let Some(next) = next.as_deref() {
                 let _ = write!(doc, " data-eng-next=\"{next}\"");
             }
             doc.push('>');
             doc.push_str(body.as_str());
-            if let Some(next) = next {
+            if let Some(next) = next.as_deref() {
                 let label = match kind {
                     "article" => "Explore the store",
                     "shop" => "Discover coaching",
                     "coach" => "Get the free newsletter",
                     "subscribe" => "Back to the feed",
+                    "feed" => "Read the next article",
                     _ => "Continue exploring",
                 };
                 doc.push_str(view! {
@@ -528,6 +562,47 @@ mod tests {
         let audio = html.find("/assets/js/audio.").expect("audio.js");
         assert!(bootstrap < audio && audio < tag);
         assert!(!html.contains("speculationrules"));
+    }
+
+    #[test]
+    fn journey_reading_roster_is_public_newest_first_and_precedes_page_scripts() {
+        let mut scripts = Head::new();
+        scripts.add_js("js/visited-articles.js");
+        let next = String::from("/articles/your-gmail-avatar-is-part-of-your-job-search");
+        let html = PageShell::new("Reading", "homepage")
+            .scripts(scripts)
+            .journey("feed", Some(next.as_str()))
+            .render(HtmlFragment::empty());
+        let marker = r#"type="application/json" data-eng-config="__journeyArticles""#;
+        let start = html.find(marker).expect("inert public reading roster");
+        let payload_start = start + html[start..].find('>').expect("island start") + 1;
+        let payload_end =
+            payload_start + html[payload_start..].find("</script>").expect("island end");
+        let manifest: serde_json::Value =
+            serde_json::from_str(&html[payload_start..payload_end]).expect("roster JSON");
+        let roster = manifest["articles"].as_array().expect("article roster");
+        assert!(!roster.is_empty());
+        assert!(
+            roster
+                .windows(2)
+                .all(|pair| pair[0]["date"].as_str() >= pair[1]["date"].as_str())
+        );
+        assert!(roster.iter().all(|entry| {
+            let slug = entry["slug"].as_str().expect("slug");
+            slug != "big-personality"
+                && crate::content::article_by_slug(slug).is_some_and(|article| article.indexed)
+                && entry["path"] == format!("/articles/{slug}")
+        }));
+        let state = html
+            .find("/assets/js/journey-state.")
+            .expect("reading state bundle");
+        let page_script = html
+            .find("/assets/js/visited-articles.")
+            .expect("page bundle");
+        let router = html.find("/assets/js/nav-router.").expect("router");
+        assert!(start < state && state < page_script && page_script < router);
+        assert!(html.contains(&format!(r#"data-eng-next="{next}""#)));
+        assert!(html.contains("Read the next article"));
     }
 
     #[test]

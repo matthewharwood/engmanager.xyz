@@ -1,0 +1,48 @@
+{
+  "review_date": "2026-10-04",
+  "method": "Actual native Chrome WebGPU inspection of exported GLBs, with the production journey-poster-renderer.js and WGSL. Review harness changes only the submitted yaw uniform for front (0), three-quarter (pi/4), and profile (pi/2); it hides fallback images while native GPU canvases are visible.",
+  "asset_sha256": {
+    "shop": {
+      "glb": "cf3e2c58bab76f49b1e710832023317cecdc895f8d33e33a1adf3e81d7f8659e",
+      "webp": "0b2a3bfd84346af67bd6bc352d447a07e625db5558f90ecefed7935004c8b038"
+    },
+    "coach": {
+      "glb": "7f277983f19e0e9df107ed8472fc30fd14cb7ac817032051873c38dd79a6d0ba",
+      "webp": "022f241eb473b2d1515eb6642751d57a0ef24f6e91696a4f2a86ff2ff89112e1"
+    },
+    "subscribe": {
+      "glb": "de423f4df1bb912bd2e05025aa52ae6076bebf2163d77bd70f0f326a662c1e6c",
+      "webp": "b56549ecafafafca4b4dacb14f15c801e90ff31d5a5244a5d2f63be273589339"
+    },
+    "feed": {
+      "glb": "3f931b2303128e2d5247e534dc054780fc5974e8cd7da32772f79785f7484d5a",
+      "webp": "a411426fc832e4cbf9261d12c52ecca4a39a46da6d38f913a5c30b82bc8902d9"
+    },
+    "article": {
+      "glb": "48b4282d95a53e9d57c890204946a83281be2cf233e5ff038ffa2cba9cff6e8b",
+      "webp": "938150d1035717e4e3110f4055b279288cb075780bed841b7536c94c1938733b"
+    }
+  },
+  "observations": {
+    "all_five_front_profile_three_quarter": "Visible, closed silhouettes with no missing front or side faces under real back-face culling.",
+    "article": "Layered leaves, gutter and rising page turn remain visible; ivory material agrees with the portrait, scroll and brain series.",
+    "readiness": "Awaited all returned mount promises and submitted first frames, document.fonts.ready and every fallback image decode.",
+    "reduced_motion": "All five native models remain static after angle input, with zero queued animation frames after initialization settles.",
+    "static_fallbacks": "All five decoded WebP fallbacks remain visible while GPU canvases are hidden; renderer frame/submission counts stop advancing.",
+    "renderer_disposal": {
+      "devices_destroyed": 5,
+      "buffers_destroyed": 15,
+      "textures_destroyed": 25,
+      "contexts_unconfigured": 5,
+      "live_devices": 0,
+      "live_buffers": 0,
+      "live_textures": 0,
+      "live_contexts": 0,
+      "queued_frames": 0
+    },
+    "navigation_cleanup": "Leaving the gallery destroys all five devices, all fifteen buffers, all twenty-five created textures, all five contexts and pending frames.",
+    "console_errors_or_warnings": []
+  },
+  "review_screenshots": "Temporary review captures in /tmp/folio-webgpu-review/screenshots; these working images are not redistributed as runtime assets.",
+  "scope": "This report validates the model exports and renderer. Integrated journey routing, scrolling, title overlap and retained-page lifecycle are checked separately."
+}

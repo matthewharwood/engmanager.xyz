@@ -1372,3 +1372,51 @@ body[data-dragging="true"] .marquee-track {
 .big-cursor[data-visible="true"] { opacity: 1; }
 .big-cursor::backdrop { background: transparent; pointer-events: none; }
 .big-cursor canvas { display: block; inline-size: 100%; block-size: 100%; }
+
+/* Half a screen of quiet before the feed joins the next essay. */
+.feed-afterword {
+    min-block-size: 50svh;
+    display: grid;
+    place-items: center;
+    padding: 3rem clamp(1.25rem, 5vw, 5rem);
+}
+.reading-completion {
+    inline-size: min(100%, 58rem);
+    display: grid;
+    gap: 1.25rem;
+    padding-block: 2rem;
+}
+.reading-completion[hidden] { display: none; }
+.reading-completion-eyebrow,
+.reading-completion-count {
+    margin: 0;
+    color: var(--text-2);
+    font: .75rem/1.5 var(--font-mono);
+    letter-spacing: .08em;
+}
+.reading-completion h2 {
+    margin: 0;
+    font: 900 clamp(2rem, 5.5vw, 5rem)/1.07 var(--font-display);
+    letter-spacing: -.045em;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+}
+.reading-completion [data-reading-completion-copy] { margin: 0; max-inline-size: 42rem; font-size: 1rem; line-height: 1.6; }
+.reading-completion-tags { display: flex; flex-wrap: wrap; gap: .75rem; padding-block: .5rem; }
+.reading-completion-tags[hidden] { display: none; }
+.reading-completion-tags .chip { max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; touch-action: none; cursor: grab; }
+.reading-completion-reset {
+    justify-self: start;
+    padding: .85rem 1.25rem;
+    border: 1px solid var(--text-1);
+    color: var(--text-1);
+    background: var(--surface-1);
+    font: .8rem/1.2 var(--font-mono);
+    cursor: pointer;
+}
+.reading-completion-reset:focus-visible,
+.reading-completion-tags .chip:focus-visible,
+.article-check:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 4px;
+}

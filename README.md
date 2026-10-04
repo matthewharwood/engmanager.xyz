@@ -186,10 +186,16 @@ References: [Kit profile pictures](https://help.kit.com/en/articles/4296459-how-
 [Kit newsletter site](https://help.kit.com/en/articles/6412804-managing-your-newsletter-site-in-kit),
 and [Gmail profile pictures](https://support.google.com/mail/answer/35529?hl=en).
 
-The blog, store, and coaching share a progressive navigation shell. Near the
-end of an article the store is prepared underneath it; the store leads to
-coaching, and coaching leads back to the feed. Same-origin aliases keep that
-journey in one document. The existing shop/store and coach subdomain roots
+The feed, articles, store, coaching, and newsletter share a progressive navigation
+shell. The feed adds half a viewport of breathing room before the cloth reveal
+introduces the next unread article. Each article leads to the store, coaching,
+newsletter, and feed; the next lap offers the next unread article. Same-origin
+aliases keep that journey in one document. Reading progress is stored locally
+under `engmanager.reading-progress.v1`; opening a link alone does not complete
+an article. Finishing the public essay list unlocks a playful article-then-tag
+cleanup, persisted under `engmanager.reading-cleanup.v1`, with a restart button.
+The personality introduction retains its separate document boundary and is not
+required to finish the reading loop. The existing shop/store and coach subdomain roots
 continue to serve their original entry points. A real change of hostname
 requires a document navigation, because browser history cannot change origin.
 The personality assessment and standalone checkout keep their own document

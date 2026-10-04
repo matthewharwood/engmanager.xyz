@@ -11,7 +11,7 @@
 //     and draggable into the same can.
 
 const TRASH_SELECTOR = ".trash-can";
-const CHIP_SELECTOR = ".marquee .chip";
+const CHIP_SELECTOR = ".marquee .chip,[data-reading-completion-tags] .chip";
 const ARTICLE_CHECK_SELECTOR = ".article-fluid-link.is-visited .article-check";
 const ARTICLE_LINK_SELECTOR = ".article-fluid-link.is-visited";
 const DVD_SELECTOR = "[data-dvd-bouncer]";
@@ -26,6 +26,23 @@ const DVD_CATCH_PAD_PX = 2;
 let drag = null;
 let suppressNextArticleClick = false;
 let dvdState = null;
+
+function trashIdentity(original, type) {
+    return type === "article"
+        ? { type, key: original.dataset.slug }
+        : type === "chip" && original.classList.contains("chip-tag")
+          ? { type: "tag", key: original.dataset.chipId }
+          : { type, key: original.dataset.chipId };
+}
+
+function canTrash(original, type) {
+    const identity = trashIdentity(original, type);
+    return window.__engReadingCompletion?.canTrash(identity.type, identity.key) !== false;
+}
+
+function animationDuration(duration) {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 1 : duration;
+}
 
 // During an active drag the original element is hidden but must stay
 // in the hit-test tree so pointer capture remains valid on its
@@ -42,6 +59,7 @@ function showOriginal(el) {
 }
 
 function startDrag(event) {
+    if (drag) return;
     if (event.button !== undefined && event.button !== 0) return;
 
     if (isDvdCatch(event) && !event.target.closest?.(DVD_PROTECTED_TARGETS)) {
@@ -51,7 +69,8 @@ function startDrag(event) {
 
     const articleCheck = event.target.closest?.(ARTICLE_CHECK_SELECTOR);
     const article = articleCheck?.closest(ARTICLE_LINK_SELECTOR);
-    if (article && article.dataset.trashed !== "true") {
+    if (article && article.dataset.trashed !== "true" && article.dataset.trashPending !== "true") {
+        if (!canTrash(article, "article")) return;
         startArticleDrag(event, article, articleCheck);
         return;
     }
@@ -59,7 +78,8 @@ function startDrag(event) {
     const chip = event.target.closest?.(CHIP_SELECTOR);
     if (!chip) return;
     if (chip.dataset.trashed === "true") return;
-    if (chip.getAttribute("aria-hidden") === "true") return; // skip clone copies
+    if (chip.dataset.trashPending === "true") return;
+    if (!canTrash(chip, "chip")) return;
     startChipDrag(event, chip);
 }
 
@@ -221,7 +241,7 @@ async function onUp(event) {
     finishDragState(type);
 
     try {
-        if (inRange && trash) {
+        if (inRange && trash && canTrash(original, type)) {
             await consume(ghost, trash, original, type);
         } else {
             await flyBack(ghost, origin, original, type);
@@ -298,6 +318,9 @@ function isInTrashRange(event, trash) {
 }
 
 async function consume(ghost, trash, original, type) {
+    const identity = trashIdentity(original, type);
+    const cleanup = ["article", "tag"].includes(identity.type)
+        && window.__engReadingCompletion?.snapshot().active;
     const tr = trash.getBoundingClientRect();
     const width = parseFloat(ghost.style.width || "0");
     const height = parseFloat(ghost.style.height || "0");
@@ -331,10 +354,17 @@ async function consume(ghost, trash, original, type) {
                 opacity: 0,
             },
         ],
-        { duration: 360, easing: "cubic-bezier(0.5, 0, 0.8, 0.5)", fill: "forwards" },
+        { duration: animationDuration(360), easing: "cubic-bezier(0.5, 0, 0.8, 0.5)", fill: "forwards" },
     ).finished;
 
     ghost.remove();
+
+    // A reset in another tab can arrive during this animation. It restores
+    // the page immediately; a late drop must not hide the restored row again.
+    if (cleanup && (!window.__engReadingCompletion?.snapshot().active || !canTrash(original, type))) {
+        showOriginal(original);
+        return false;
+    }
 
     if (type === "chip") {
         hideChipCopies(original);
@@ -352,13 +382,15 @@ async function consume(ghost, trash, original, type) {
     bumpTrashCounter();
     shakeTrash(trash);
     playTrashSfx();
+    window.__engReadingCompletion?.recordTrash(identity.type, identity.key);
+    return true;
 }
 
 function hideChipCopies(original) {
     const id = original.dataset.chipId;
     if (id) {
         document
-            .querySelectorAll(`${CHIP_SELECTOR}[data-chip-id="${CSS.escape(id)}"]`)
+            .querySelectorAll(`[data-chip-id="${CSS.escape(id)}"]`)
             .forEach((chip) => {
                 chip.style.visibility = "hidden";
                 chip.dataset.trashed = "true";
@@ -381,7 +413,7 @@ function bumpTrashCounter() {
             { transform: "scale(1.5)" },
             { transform: "scale(1)" },
         ],
-        { duration: 360, easing: "cubic-bezier(0.5, 1.6, 0.5, 1)" },
+        { duration: animationDuration(360), easing: "cubic-bezier(0.5, 1.6, 0.5, 1)" },
     );
 }
 
@@ -393,7 +425,7 @@ function shakeTrash(trash) {
             { transform: "rotate(5deg) scale(1.06)" },
             { transform: "rotate(0) scale(1)" },
         ],
-        { duration: 360, easing: "cubic-bezier(0.5, 1.6, 0.5, 1)" },
+        { duration: animationDuration(360), easing: "cubic-bezier(0.5, 1.6, 0.5, 1)" },
     );
 }
 
@@ -435,7 +467,7 @@ async function flyBack(ghost, origin, original, type) {
               ];
 
     await ghost.animate(keyframes, {
-        duration: 420,
+        duration: animationDuration(420),
         easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
         fill: "forwards",
     }).finished;
@@ -585,6 +617,54 @@ function updateDvdCatchState(event) {
 }
 
 document.addEventListener("pointerdown", startDrag);
+
+// The article title remains a normal link. Delete/Backspace is its optional
+// cleanup action, avoiding a nested focusable button inside the anchor.
+// Stationary tag controls are separate buttons with the usual Enter/Space keys.
+document.addEventListener("keydown", async (event) => {
+    if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+    const completion = window.__engReadingCompletion?.snapshot();
+    if (!completion?.active) return;
+    const article = event.target.closest?.(ARTICLE_LINK_SELECTOR);
+    const chip = event.target.closest?.("[data-reading-completion-tags] .chip-tag");
+    const original = article || chip;
+    const type = article ? "article" : "chip";
+    if (!original || original.dataset.trashed === "true" || original.dataset.trashPending === "true") return;
+    if (article && !["Delete", "Backspace"].includes(event.key)) return;
+    if (chip && !["Enter", " ", "Delete", "Backspace"].includes(event.key)) return;
+    if (!canTrash(original, type)) return;
+    const trash = document.querySelector(TRASH_SELECTOR);
+    if (!trash) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    original.dataset.trashPending = "true";
+    const rect = original.getBoundingClientRect();
+    const ghost = original.cloneNode(true);
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.classList.add(article ? "article-trash-ghost" : "chip-ghost");
+    Object.assign(ghost.style, {
+        position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`,
+        width: `${rect.width}px`, height: `${rect.height}px`, margin: "0",
+        zIndex: "1000", pointerEvents: "none",
+    });
+    document.body.append(ghost);
+    hideOriginal(original);
+    try {
+        const consumed = await consume(ghost, trash, original, type);
+        if (!consumed) return;
+        const root = document.querySelector("[data-journey-current]") || document;
+        const next = root.querySelector('.article-fluid-link:not([data-trashed])')
+            || root.querySelector('[data-reading-completion-tags] .chip-tag')
+            || root.querySelector('[data-reading-completion-reset]');
+        next?.focus({ preventScroll: true });
+    } catch {
+        ghost.remove();
+        showOriginal(original);
+    } finally {
+        delete original.dataset.trashPending;
+    }
+});
 initDvdBouncer();
 
 // Soft navigation: the homepage trash island (and its DVD node) is a
