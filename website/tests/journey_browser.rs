@@ -163,7 +163,15 @@ async function checkWaveRules(){
     assert(sample(node).state==='paused'&&sample(node).image.includes('data:image/svg+xml'),'sine separator starts paused with its authored SVG mask');
     hoverNode.scrollIntoView({block:'center',behavior:'instant'});await scrollSettled();
     const rect=hoverNode.getBoundingClientRect();await hoverAt(rect.left+rect.width/2,rect.top+Math.min(10,rect.height/2));
-    assert(sample(node).state===(reduced?'paused':'running'),'native container hover respects the motion preference');
+    assert(sample(node).state===(reduced?'paused':'running'),'native container hover respects the motion preference: '+JSON.stringify({
+      node:node.className,hoverNode:hoverNode.className,state:sample(node).state,reduced,
+      hover:win().matchMedia('(hover: hover)').matches,pointer:win().matchMedia('(pointer: fine)').matches,
+      hovered:node.matches(':hover'),targetHovered:hoverNode.matches(':hover'),rect:rect.toJSON(),
+      target:doc().elementFromPoint(rect.left+rect.width/2,rect.top+Math.min(10,rect.height/2))?.outerHTML.slice(0,400),
+      frame:frame.getBoundingClientRect().toJSON(),parentScroll:[scrollX,scrollY],hidden:doc().hidden,
+      wavePaused:doc().documentElement.hasAttribute('data-wave-paused'),loading:doc().documentElement.hasAttribute('data-journey-loading'),
+      revealing:doc().body.classList.contains('journey-revealing'),busy:win().__engNav.busy
+    }));
     const before=sample(node).position;await delay(180);
     assert((sample(node).position!==before)===!reduced,'the wave travels only during normal-motion hover');
     if(node.matches('.site-nav'))assert(sample(node,'::before').state===sample(node).state&&win().getComputedStyle(node,'::before').backdropFilter.includes('blur'),'the wavy glass edge follows the navigation stroke');
