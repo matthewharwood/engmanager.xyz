@@ -80,7 +80,7 @@ pub fn render_sitemap_link() -> HtmlFragment {
 
 pub fn render_liquid_title_filter() -> HtmlFragment {
     view! {
-        <svg class="liquid-title-defs"
+        <svg class={ classes!("liquid-title-defs") }
              aria-hidden="true"
              focusable="false"
              width="0"
@@ -147,13 +147,18 @@ pub fn render_dev_meta() -> HtmlFragment {
 // shared sizing hook. (The
 // folder / Discord / GitHub nav glyphs moved into the co-located nav component,
 // `components/nav/`, which is the only place they were used.)
-const ICON_SEARCH: &str = r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 10 L13.5 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>"##;
+const ICON_SEARCH: &str = css_html!(
+    r##"<svg class="site-nav-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 10 L13.5 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>"##
+);
 
 // Shared nav button: opens the search dialog and focuses the input.
 // js/nav-search-toggle.js wires up the click/Escape handling.
 pub fn render_nav_search_toggle() -> HtmlFragment {
     HtmlFragment::new(format!(
-        r##"<button class="site-search-toggle" type="button" aria-label="Open search" aria-haspopup="dialog" aria-controls="site-search-overlay" aria-expanded="false" data-search-toggle>{ICON_SEARCH}</button>"##
+        css_html!(
+            r##"<button class="site-search-toggle" type="button" aria-label="Open search" aria-haspopup="dialog" aria-controls="site-search-overlay" aria-expanded="false" data-search-toggle>{ICON_SEARCH}</button>"##
+        ),
+        ICON_SEARCH = ICON_SEARCH
     ))
 }
 

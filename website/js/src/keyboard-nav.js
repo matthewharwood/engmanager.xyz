@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Keyboard navigation for the homepage article stack.
 //
 // ArrowDown / ArrowUp cycles focus through .article-fluid-link elements
@@ -18,12 +22,12 @@
         if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
         const tag = e.target && e.target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-        if (!document.body || !document.body.classList.contains("homepage")) {
+        if (!document.body || !document.body.classList.contains(cssToken("homepage"))) {
             return;
         }
 
         const links = Array.from(
-            document.querySelectorAll(".article-fluid-link"),
+            document.querySelectorAll(cssSelector(".article-fluid-link")),
         );
         if (!links.length) return;
 

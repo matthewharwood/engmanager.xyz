@@ -4,6 +4,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -40,7 +42,8 @@ HTMLCanvasElement.prototype.getContext=function(kind,...args){
 };
 </script>"##;
 
-const FIXTURE: &str = r##"<script type="module">
+const FIXTURE: &str = css_html!(
+    r##"<script type="module">
 const result=document.querySelector('#result'),checks=[];
 const unavailable=new URLSearchParams(location.search).has('no_webgl');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -143,7 +146,8 @@ try{
   }
   result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){const probe=query('.reveal-card-cloth')?.__clothProbe;result.textContent='FAIL\n'+error.stack+'\nCLOTH: '+JSON.stringify(query('.reveal-card-frame')?.dataset)+'\nWEBGL: '+JSON.stringify({context:!!probe,draws:probe?.draws,times:probe?.times.slice(-3)})+'\nRECENT CHECKS:\n'+checks.slice(-10).join('\n');document.body.dataset.testResult='failed';}
-</script>"##;
+</script>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

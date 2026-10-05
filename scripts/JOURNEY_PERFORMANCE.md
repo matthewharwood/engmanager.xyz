@@ -6,12 +6,13 @@ secrets, with payment/newsletter credentials unset. Use a fresh Chrome profile
 for each comparison, the same Chrome version, and the same quiet host. Freeze
 the baseline release binary before rebuilding the candidate. A debug binary
 reads generated assets from disk, so copying only that binary does not freeze a
-baseline.
+baseline. For a CSS-adapter build, preserve its full `css-compact-output.json`
+from Cargo's `OUT_DIR` beside the frozen binary as well.
 
 ```sh
 cargo build -p website --release
 # Start the binary on a local port, e.g. PORT=3092 /absolute/path/to/website.
-node --max-old-space-size=8192 scripts/profile-journey.mjs --url=http://127.0.0.1:3092 --cpu=4 --passes=2 --label=commit-or-diff-id --output=/tmp/journey-candidate
+node --max-old-space-size=8192 scripts/profile-journey.mjs --url=http://127.0.0.1:3092 --css-manifest=/absolute/path/compact/css-compact-output.json --cpu=4 --passes=2 --label=commit-or-diff-id --output=/tmp/journey-candidate --assert
 node --max-old-space-size=8192 scripts/analyze-journey-performance.mjs /tmp/journey-candidate/report.json
 ```
 
@@ -23,6 +24,18 @@ Reject a run that did not initialize a WebGPU sculpture, has horizontal
 overflow, or hard-navigated after a failed same-document promotion. The report
 records hard-navigation fallbacks and their errors so a slow failure cannot be
 misreported as a smooth transition.
+
+Use `--css-manifest` for every adapter-built compact, naming-only, or guard-only
+binary, passing the file frozen with that exact release. Omit the option for
+the original release and stock upgrade-only controls, which have no adapter
+manifest. `ENG_CSS_MODE=baseline` is the adapter's guard-only control, distinct
+from the original frozen baseline. The probe uses existing data/role hooks,
+checks the supplied generation at its asset-fingerprint reads, and records the
+manifest and binding-helper digests separately from harness/analyzer source
+fingerprints. Binding or generation changes do not change gestures, phases,
+trace interpretation, or performance budgets. See
+[`_docs/css-compression-evaluation.md`](../_docs/css-compression-evaluation.md)
+for the separate five-variant rendered-body and native CSS comparison.
 
 Use `--assert` for the candidate on a quiet host. It requires successful same
 document promotion, an active same-origin sculpture decoder Worker, at least
@@ -153,7 +166,7 @@ For shader specialization changes, compile and capture all twelve authored
 article scenes with the actual served bundle in native Chrome:
 
 ```sh
-node scripts/verify-article-heroes.mjs --url=http://127.0.0.1:3092 --output=/tmp/article-heroes-candidate
+node scripts/verify-article-heroes.mjs --url=http://127.0.0.1:3092 --css-manifest=/absolute/path/compact/css-compact-output.json --output=/tmp/article-heroes-candidate
 ```
 
 The local fixture reuses the repository's authored SVGs and served hero CSS/JS.
@@ -162,12 +175,16 @@ captures each scene, and exercises context loss/recovery with the SVG visible.
 Its explicit remount hook also checks that disposed scene renderer state is
 cleared. This compile/visual fixture is separate from the journey timing run so
 GPU readbacks and screenshots cannot contaminate its frame measurements.
+For guard-only or naming-only builds, pass their own matching manifest instead.
+The fixture expands its three explicit authored class lists through the
+manifest, including safely elided static identities; it uses data hooks for
+inspection. Omit `--css-manifest` when verifying the original/upgrade controls.
 
 For diagram scheduling changes, separately exercise the served article bundle
 with its real pinned CDN Mermaid module:
 
 ```sh
-node scripts/verify-article-diagrams.mjs --url=http://127.0.0.1:3092 --output=/tmp/article-diagrams-candidate
+node scripts/verify-article-diagrams.mjs --url=http://127.0.0.1:3092 --css-manifest=/absolute/path/compact/css-compact-output.json --output=/tmp/article-diagrams-candidate
 ```
 
 This unthrottled native functional fixture checks all three authored graphs,
@@ -181,3 +198,9 @@ timing run. Its rendered-content checks do not measure first-time visible graph
 layout costs: deferring that work until the figure is visible and input/journey
 are idle does not accelerate Mermaid's intrinsic layout. Journey timing covers
 promotion and its settled viewport separately from reading each graph.
+As with hero QA, guard/naming builds need their own saved manifest and the
+original/upgrade controls omit it. Explicit application identity selectors and
+the journey state token resolve through the manifest; a missing or elided
+observed identity fails before Chrome starts. Existing data/ARIA hooks and
+Mermaid's third-party SVG class namespace stay literal. No arbitrary source or
+JavaScript string is rewritten.

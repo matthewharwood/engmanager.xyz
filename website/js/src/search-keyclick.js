@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Desktop-only keyboard click stinger while typing in the site search.
 //
 // Each non-modifier keydown plays a short ~0.5s click via the shared
@@ -38,7 +42,7 @@
     // (JS_ROUTER_CONSTRAINTS §2.2).
     const bind = (root) => {
         root.querySelectorAll(
-            "[data-search-form] input[type='search']",
+            cssSelector("[data-search-form] input[type='search']"),
         ).forEach((input) => {
             if (input.dataset.keyclickBound) return;
             input.dataset.keyclickBound = "true";

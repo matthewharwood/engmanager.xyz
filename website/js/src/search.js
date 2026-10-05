@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Typeahead search binding (JS_ROUTER_CONSTRAINTS §2.1).
 //
 // bind(root) attaches once per form (data-search-bound guard) so the
@@ -30,7 +34,7 @@
     let formCounter = 0;
 
     function bind(root) {
-        root.querySelectorAll("[data-search-form]").forEach((form) => {
+        root.querySelectorAll(cssSelector("[data-search-form]")).forEach((form) => {
             if (form.dataset.searchBound) {
                 // A previous outlet's forms keep their element listeners, but
                 // the outside-click set may have pruned them while detached.
@@ -40,18 +44,18 @@
             form.dataset.searchBound = "true";
             const formIndex = formCounter++;
 
-            const input = form.querySelector("input[type='search']");
-            const list = form.querySelector("[data-search-results]");
+            const input = form.querySelector(cssSelector("input[type='search']"));
+            const list = form.querySelector(cssSelector("[data-search-results]"));
             if (!input || !list) return;
 
             const listId = list.id || `site-search-results-${formIndex}`;
             list.id = listId;
             input.setAttribute("aria-controls", listId);
 
-            const preview = form.querySelector("[data-search-preview]");
-            const empty = form.querySelector("[data-search-empty]");
-            const status = form.querySelector("[data-search-status]");
-            const filters = [...form.querySelectorAll("[data-search-kind]")];
+            const preview = form.querySelector(cssSelector("[data-search-preview]"));
+            const empty = form.querySelector(cssSelector("[data-search-empty]"));
+            const status = form.querySelector(cssSelector("[data-search-status]"));
+            const filters = [...form.querySelectorAll(cssSelector("[data-search-kind]"))];
             const labels = { article: "Articles", product: "Store", coaching: "Coaching", subscription: "Subscription" };
             const actions = { article: "Read article", product: "View in store", coaching: "Explore coaching", subscription: "Subscribe for free" };
             let kind = "";
@@ -103,7 +107,7 @@
                     const image = document.createElement("img");
                     image.src = hit.image;
                     image.alt = hit.title;
-                    image.className = "site-search-preview-image";
+                    image.className = cssClasses("site-search-preview-image");
                     image.decoding = "async";
                     preview.append(image);
                 }
@@ -113,7 +117,7 @@
                 if (hit.sections?.length) {
                     preview.append(text("p", "site-search-preview-section-label", hit.kind === "article" ? "In this article" : "What to expect"));
                     const sections = document.createElement("ul");
-                    sections.className = "site-search-preview-sections";
+                    sections.className = cssClasses("site-search-preview-sections");
                     hit.sections.forEach(section => sections.append(text("li", "", section)));
                     preview.append(sections);
                 }
@@ -128,7 +132,7 @@
                 input.setAttribute("aria-expanded", "false");
                 input.removeAttribute("aria-activedescendant");
                 activeIndex = -1;
-                items.forEach(item => { item.classList.remove("is-active"); item.setAttribute("aria-selected", "false"); });
+                items.forEach(item => { item.classList.remove(cssToken("is-active")); item.setAttribute("aria-selected", "false"); });
                 if (status) status.textContent = "";
                 showPreview(null);
             };
@@ -136,7 +140,7 @@
                 if (!items.length || list.hidden) return;
                 activeIndex = (nextIndex + items.length) % items.length;
                 items.forEach((item, index) => {
-                    item.classList.toggle("is-active", index === activeIndex);
+                    item.classList.toggle(cssToken("is-active"), index === activeIndex);
                     item.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
                 });
                 const item = items[activeIndex];
@@ -161,7 +165,7 @@
                         item.id = `${listId}-option-${index}`;
                         item.setAttribute("role", "option");
                         item.setAttribute("aria-selected", "false");
-                        item.className = "site-search-result";
+                        item.className = cssClasses("site-search-result");
                         const link = document.createElement("a");
                         link.href = hit.url;
                         link.tabIndex = preview ? -1 : 0;
@@ -233,11 +237,11 @@
                     setActive(activeIndex + (event.key === "ArrowDown" ? 1 : -1));
                 } else if (event.key === "Enter" && activeIndex >= 0 && items[activeIndex] && !list.hidden) {
                     event.preventDefault();
-                    const link = items[activeIndex].querySelector("a");
+                    const link = items[activeIndex].querySelector(cssSelector("a"));
                     if (link) window.location.assign(link.href);
                 } else if (event.key === "Escape" || (event.key === "Tab" && !preview)) close();
             });
-            form.closest("[data-search-overlay]")?.addEventListener("close", close);
+            form.closest(cssSelector("[data-search-overlay]"))?.addEventListener("close", close);
             addCloser(form, close, () => { clearTimeout(debounce); controller?.abort(); });
 
             initHomeKeyboard(form, input, close);
@@ -245,13 +249,13 @@
     }
 
     function initHomeKeyboard(form, input, closeResults) {
-        if (!form.classList.contains("home-search")) return;
+        if (!form.classList.contains(cssToken("home-search"))) return;
         if (!window.matchMedia?.("(min-width: 48em) and (hover: hover) and (pointer: fine)").matches) {
             return;
         }
 
         const keyboard = document.createElement("div");
-        keyboard.className = "home-keyboard";
+        keyboard.className = cssClasses("home-keyboard");
         keyboard.hidden = true;
         keyboard.setAttribute("aria-label", "Clickable search keyboard");
 
@@ -271,7 +275,7 @@
 
         rows.forEach((rowKeys) => {
             const row = document.createElement("div");
-            row.className = "home-keyboard-row";
+            row.className = cssClasses("home-keyboard-row");
             rowKeys.forEach((keyConfig) => {
                 const config =
                     typeof keyConfig === "string"
@@ -280,10 +284,10 @@
                 const key = document.createElement("button");
                 key.type = "button";
                 key.tabIndex = -1;
-                key.className = "home-key";
+                key.className = cssClasses("home-key");
                 key.textContent = config.label;
-                if (config.wide) key.classList.add("home-key-wide");
-                if (config.accent) key.classList.add("home-key-accent");
+                if (config.wide) key.classList.add(cssToken("home-key-wide"));
+                if (config.accent) key.classList.add(cssToken("home-key-accent"));
                 key.addEventListener("pointerdown", (event) => {
                     event.preventDefault();
                 });

@@ -1,0 +1,428 @@
+{
+  "schema_version": 1,
+  "source_commit": "2061afa3aad1577e56f95cf665b49a3462f5d890",
+  "source_binary_sha256": "90bc3052acbd7eab31dc0c2e8dddd94bf12377a54a227d4131283d50b76ed62e",
+  "purpose": "Exact previous-generation CSS and JavaScript for the initial compact-class deployment. Never substitute current bytes at a previous hash.",
+  "assets": [
+    {
+      "path": "/assets/css/article-heroes.96df19ea.css",
+      "file": "assets/css/article-heroes.96df19ea.css",
+      "sha256": "96df19ea47f314bf4e9a3a5029146aa9dec5cf97ec0c568bf8e9fb7f098dabfd",
+      "bytes": 2294,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/article-newsletter.b1e6062c.css",
+      "file": "assets/css/article-newsletter.b1e6062c.css",
+      "sha256": "b1e6062ce9987459245ec9e951b69dc6d8dd5a3f91d1e641ac5cff05f3894548",
+      "bytes": 3173,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/articles.8161e889.css",
+      "file": "assets/css/articles.8161e889.css",
+      "sha256": "8161e88911d0d3566f168aa536b741e0fc2d27dedd0443baa6cc7731e793e205",
+      "bytes": 32449,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-api-receipt.505143f2.css",
+      "file": "assets/css/c-api-receipt.505143f2.css",
+      "sha256": "505143f226161579201e4e8dc705a50a44ae771b4010a9c11660ef42dc42a870",
+      "bytes": 6132,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-armillary.6f279774.css",
+      "file": "assets/css/c-armillary.6f279774.css",
+      "sha256": "6f279774e9c0144be220b1f6cc53b471c4f52adea6d0767f0837df7a74cd7bef",
+      "bytes": 2050,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-article-toc.623926a9.css",
+      "file": "assets/css/c-article-toc.623926a9.css",
+      "sha256": "623926a97285ac5dadacdee7911107bcde3c64a7b9fd0fde2ea6d57c75696330",
+      "bytes": 1658,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-discord-widget.8118f4f2.css",
+      "file": "assets/css/c-discord-widget.8118f4f2.css",
+      "sha256": "8118f4f2b273bc2714d4cd536b1cb1e0544ef678ed2aa4ba0cda7e00be17210f",
+      "bytes": 2986,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-discovery-toasts.a3e4267f.css",
+      "file": "assets/css/c-discovery-toasts.a3e4267f.css",
+      "sha256": "a3e4267f5dd4348dabf4c57e947789a20909d48aa5e4073a913d357d24a21001",
+      "bytes": 1613,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-global-search.c21d1acc.css",
+      "file": "assets/css/c-global-search.c21d1acc.css",
+      "sha256": "c21d1acc1e73c2958e3aab1a6670909115d1c7874d1783e587f7ad8e003775c4",
+      "bytes": 5310,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-nav.644837d6.css",
+      "file": "assets/css/c-nav.644837d6.css",
+      "sha256": "644837d677a6cde5a982e3ad2c5eac101c3753758d4f7801af37466f52383a33",
+      "bytes": 680,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-quick-actions.5f72fec8.css",
+      "file": "assets/css/c-quick-actions.5f72fec8.css",
+      "sha256": "5f72fec8b258f076c8167c9be3e804bb2b9092962c31ded4e7265d0241112379",
+      "bytes": 2082,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-quote-card.6b6fc6a1.css",
+      "file": "assets/css/c-quote-card.6b6fc6a1.css",
+      "sha256": "6b6fc6a1db43e09f16a9651dd950885a185c904d8057d5b098793f29a69d7df4",
+      "bytes": 3935,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-region-map.17218c04.css",
+      "file": "assets/css/c-region-map.17218c04.css",
+      "sha256": "17218c0438c60664954621accfa9218b48e7361d84f4da80f76adc9105bc0073",
+      "bytes": 5000,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-sigil.69291a56.css",
+      "file": "assets/css/c-sigil.69291a56.css",
+      "sha256": "69291a567141d5bc0b9936d50b6db31617200a2c45e8a72a749943d3e56765d9",
+      "bytes": 5137,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/c-to-top.509ff754.css",
+      "file": "assets/css/c-to-top.509ff754.css",
+      "sha256": "509ff754a3dd67285862597bbc8358f6c8f329fe676c4ee1e7ca87571ba23fce",
+      "bytes": 1144,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/checkout.76ab5c4b.css",
+      "file": "assets/css/checkout.76ab5c4b.css",
+      "sha256": "76ab5c4b77d0034e46ae51ecf8700f00630d584d5ef6a9d7eb04e88bba95c87c",
+      "bytes": 12474,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/coach.30bf813c.css",
+      "file": "assets/css/coach.30bf813c.css",
+      "sha256": "30bf813cab2dc69c6b15e6b86a9987b4c011f343c007b60199f7825e1192cea5",
+      "bytes": 22667,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/critical.260032c2.css",
+      "file": "assets/css/critical.260032c2.css",
+      "sha256": "260032c25df42e2cf6aa4aa630885d169fd9f0112d96530e7913d552a04b52f9",
+      "bytes": 29251,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/homepage.6f639431.css",
+      "file": "assets/css/homepage.6f639431.css",
+      "sha256": "6f639431a937c4d152d8e795c1459c25d57155e4233827a5edde6c2e705092ad",
+      "bytes": 23624,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/journey.6642a24a.css",
+      "file": "assets/css/journey.6642a24a.css",
+      "sha256": "6642a24a510d070d3a13844c5922c62d30dbdf5d1184b33e8906958c95e68aa3",
+      "bytes": 10865,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/liquid-title.83789fd2.css",
+      "file": "assets/css/liquid-title.83789fd2.css",
+      "sha256": "83789fd248d3d6ad5cafb5b62f33ec75ddb47d02a868b093ce8a4e7552ec04b3",
+      "bytes": 3810,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/newsletter.95077fa1.css",
+      "file": "assets/css/newsletter.95077fa1.css",
+      "sha256": "95077fa1a3c0a6e56960f722d574e1c70fb3399330e50cf0e4ff8e3824a12515",
+      "bytes": 11761,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/search.e8004f27.css",
+      "file": "assets/css/search.e8004f27.css",
+      "sha256": "e8004f27d25b93c014709578bc3cf66742c6e3e7e4fbf5424df78041f2bf5761",
+      "bytes": 5009,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/css/shop.a64c6310.css",
+      "file": "assets/css/shop.a64c6310.css",
+      "sha256": "a64c63109b115a1661813d0d7aabd04c22a907ed2959901c3adf929588ec2fe0",
+      "bytes": 27088,
+      "content_type": "text/css"
+    },
+    {
+      "path": "/assets/js/article-date-countup.2d8b265c.js",
+      "file": "assets/js/article-date-countup.2d8b265c.js",
+      "sha256": "2d8b265c762bc4dbd99047c4e69004f796e9e33575aab6fe104c571692a097b6",
+      "bytes": 3629,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/article-diagrams.908ed742.js",
+      "file": "assets/js/article-diagrams.908ed742.js",
+      "sha256": "908ed7429e573d9abecd6a4bda19392ace5d8df337fdedf371cd23698cd6bc12",
+      "bytes": 8138,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/article-heroes.1ae896ce.js",
+      "file": "assets/js/article-heroes.1ae896ce.js",
+      "sha256": "1ae896ce5495589e88e3efe836ff5c5d14ebac5e4b8ce0694eef7433cac7a4c4",
+      "bytes": 20442,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/article-section-reveal.a23a2d84.js",
+      "file": "assets/js/article-section-reveal.a23a2d84.js",
+      "sha256": "a23a2d84a413ff87456f685fa54faa41a4186bcb488d23b9862be277c1fa7589",
+      "bytes": 3628,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/article-taxonomy.c7abde05.js",
+      "file": "assets/js/article-taxonomy.c7abde05.js",
+      "sha256": "c7abde05d0a33ff559013681104b9c778eec7e4d2cd1d1f81bbee1bb41ca6815",
+      "bytes": 2355,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/audio.2603f19e.js",
+      "file": "assets/js/audio.2603f19e.js",
+      "sha256": "2603f19e2dcff121c86bc9a4926f41a3258d23df1df795f935d15ca9c8a57c07",
+      "bytes": 329,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/big-cursor.7d50df1e.js",
+      "file": "assets/js/big-cursor.7d50df1e.js",
+      "sha256": "7d50df1ed3f9c706eef36a222800ef588260a55cc8fccbe876aa76a793b730e8",
+      "bytes": 4836,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-armillary.53c0e3d2.js",
+      "file": "assets/js/c-armillary.53c0e3d2.js",
+      "sha256": "53c0e3d2f96ef3a658e974aaf93572587cbbccf59d12c75070ed43bfe4a91944",
+      "bytes": 11349,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-article-toc.083f7087.js",
+      "file": "assets/js/c-article-toc.083f7087.js",
+      "sha256": "083f70873965d97791c593798d12c1dee81cc5fcd3bee09a96e08c02e525d996",
+      "bytes": 1512,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-quote-card.33af2901.js",
+      "file": "assets/js/c-quote-card.33af2901.js",
+      "sha256": "33af290161e09246381a039e42e6c524c6cc7cb44af247072071da81bedb0e56",
+      "bytes": 8597,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-region-map.8a7f3df9.js",
+      "file": "assets/js/c-region-map.8a7f3df9.js",
+      "sha256": "8a7f3df9add8f4e94919d6d2b1a1b4fca148c35f210b38147746bd615a8c6f00",
+      "bytes": 6336,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-sigil.6576ecc6.js",
+      "file": "assets/js/c-sigil.6576ecc6.js",
+      "sha256": "6576ecc6d71d75f5b585c787f616f0073fd7e9fe57956916f8419479e33d382e",
+      "bytes": 9125,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/c-to-top.923e915a.js",
+      "file": "assets/js/c-to-top.923e915a.js",
+      "sha256": "923e915a58422fce0b9e50229f43fcb1679659e2f6a9c9a0baebf7c6f1083aec",
+      "bytes": 517,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/checkout.ecd561a1.js",
+      "file": "assets/js/checkout.ecd561a1.js",
+      "sha256": "ecd561a1eebad0bf0397023604bd1f9e3a6f8fd5e807808bd333ff64904137a4",
+      "bytes": 13912,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/coach.a1dfb27c.js",
+      "file": "assets/js/coach.a1dfb27c.js",
+      "sha256": "a1dfb27c83791e73c3e17a331197944e9f18363b28034232a967ca202b33bf13",
+      "bytes": 12819,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/copy-code.b4811320.js",
+      "file": "assets/js/copy-code.b4811320.js",
+      "sha256": "b4811320b54bfc753a04e925ae1a2b42ce41dbb14cc458c0b25a70ac65c60233",
+      "bytes": 1976,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/cursor-renderer.02cb6d11.js",
+      "file": "assets/js/cursor-renderer.02cb6d11.js",
+      "sha256": "02cb6d11bf1ee47c417f51b930172af4a0be3342bb5c724636a05fcb8efc65ea",
+      "bytes": 10117,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/experiences.d79db085.js",
+      "file": "assets/js/experiences.d79db085.js",
+      "sha256": "d79db0859048b17550596b031ff695379d6a130b9bd521be27cdfec1794c4497",
+      "bytes": 54196,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/fit-text.cb631bf3.js",
+      "file": "assets/js/fit-text.cb631bf3.js",
+      "sha256": "cb631bf3b8e918076b3c25a93c178087a67e03d33bcb172a03d265e27899b421",
+      "bytes": 2794,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/journey-curtain.5f645c34.js",
+      "file": "assets/js/journey-curtain.5f645c34.js",
+      "sha256": "5f645c34e8e9b1fe2e4062536addd1b682fe1356a16dad718bb73c8adeea68bb",
+      "bytes": 3132,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/journey-state.099c8473.js",
+      "file": "assets/js/journey-state.099c8473.js",
+      "sha256": "099c84730b71e8a16695ee0c430063fb93d62592f9bdb0ea38a47d524ff3366d",
+      "bytes": 2194,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/keyboard-nav.923de981.js",
+      "file": "assets/js/keyboard-nav.923de981.js",
+      "sha256": "923de981fb040c67838352ad48589ba1b6df6b7d1adc33946d523b41d387add3",
+      "bytes": 518,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/liquid-title.4a718673.js",
+      "file": "assets/js/liquid-title.4a718673.js",
+      "sha256": "4a7186736f51d22d10ccf1ac03f1c136fba70f15f468f3abfdc8a5968a4288a6",
+      "bytes": 1892,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/nav-router.460f94c6.js",
+      "file": "assets/js/nav-router.460f94c6.js",
+      "sha256": "460f94c6d083df27c5722d252acd3193fe5485afd6ab1168d873f68f4a0b9272",
+      "bytes": 29611,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/nav-search-toggle.6ac9831c.js",
+      "file": "assets/js/nav-search-toggle.6ac9831c.js",
+      "sha256": "6ac9831c6d47ef0b51e0f9d43aee7e1fb004a33ce88b9aefb366ca8d532d9bd2",
+      "bytes": 1372,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/payment-provider.304dafcd.js",
+      "file": "assets/js/payment-provider.304dafcd.js",
+      "sha256": "304dafcd5e0c9f3ac56965c451c718770a75abbdb84ff5cadc3b80d049ab4a82",
+      "bytes": 663,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/reading-completion.835336cc.js",
+      "file": "assets/js/reading-completion.835336cc.js",
+      "sha256": "835336ccfba68a6beefb7af66bd35e95165876a3ca6a558242a9b23433bf46e7",
+      "bytes": 5403,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/reveal-cloth.c8f22ce2.js",
+      "file": "assets/js/reveal-cloth.c8f22ce2.js",
+      "sha256": "c8f22ce27577d164c7a12d4cebe363eb96bffa859a16035c6d69547739161bf0",
+      "bytes": 8216,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/search-keyclick.237faef7.js",
+      "file": "assets/js/search-keyclick.237faef7.js",
+      "sha256": "237faef7b800575d76c27a75aa8d894c8629e482e897c0bd4e1dab97f4b82fa6",
+      "bytes": 540,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/search.5c92d775.js",
+      "file": "assets/js/search.5c92d775.js",
+      "sha256": "5c92d775819e3f3ee10a02dd0c87f535fbea7064aef0e1349e3231328a7ee15e",
+      "bytes": 8070,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/shop.a0b0ddd4.js",
+      "file": "assets/js/shop.a0b0ddd4.js",
+      "sha256": "a0b0ddd4217b4ae7e72c7feacea26c9936b7cdc5f0140c2b97cb2a94a53ba8e8",
+      "bytes": 45558,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/theme-fonts.0109d9ca.js",
+      "file": "assets/js/theme-fonts.0109d9ca.js",
+      "sha256": "0109d9ca832b1dd7d9a7d7aaa4759e4b1903454a4c008b64cc27a7219db36c0f",
+      "bytes": 4015,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/theme-toggle.6b3bb228.js",
+      "file": "assets/js/theme-toggle.6b3bb228.js",
+      "sha256": "6b3bb22850d8a968ffd41c38eceb8fc9c6006ed9cb3e389f2391e996b9482a30",
+      "bytes": 1869,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/trash-drag.27471022.js",
+      "file": "assets/js/trash-drag.27471022.js",
+      "sha256": "274710223d66871e681e04598727b389d5c5c422db3e3b099e027359fc4fb338",
+      "bytes": 15366,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/view-transitions.5de7bdd1.js",
+      "file": "assets/js/view-transitions.5de7bdd1.js",
+      "sha256": "5de7bdd1ff441503aad5794bedfc9e691971e54780227db7346d212598ec255f",
+      "bytes": 663,
+      "content_type": "text/javascript"
+    },
+    {
+      "path": "/assets/js/visited-articles.e6011f0d.js",
+      "file": "assets/js/visited-articles.e6011f0d.js",
+      "sha256": "e6011f0d7ed93691f88bbd2c489b30671362c672b87f19a520dd22c9f2a87725",
+      "bytes": 2645,
+      "content_type": "text/javascript"
+    }
+  ]
+}

@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // coach.engmanager.xyz — speed reader, spectrum slider, booking sheet.
 //
 // Data: window.__coach (see pages/coach.rs `island_json`).
@@ -13,8 +17,8 @@ function unmount() {
     active = null;
 }
 function mount() {
-    const surface = document.querySelector("[data-reader]");
-    if (!surface || !document.body.classList.contains("coach-page")) {
+    const surface = document.querySelector(cssSelector("[data-reader]"));
+    if (!surface || !document.body.classList.contains(cssToken("coach-page"))) {
         unmount();
         return;
     }
@@ -78,27 +82,27 @@ function mount() {
     };
 
     const els = {
-        reader: document.querySelector("[data-reader]"),
-        word: document.querySelector("[data-reader-word]"),
-        pre: document.querySelector("[data-reader-pre]"),
-        pivot: document.querySelector("[data-reader-pivot]"),
-        post: document.querySelector("[data-reader-post]"),
-        progress: document.querySelector("[data-reader-progress]"),
-        text: document.querySelector("[data-reader-text]"),
-        toggle: document.querySelector("[data-reader-toggle]"),
-        modeOptions: document.querySelectorAll("[data-reader-mode-option]"),
-        speedOptions: document.querySelectorAll("[data-reader-speed]"),
-        spectrum: document.querySelector("[data-spectrum]"),
-        input: document.querySelector("[data-spectrum-input]"),
-        stops: document.querySelectorAll("[data-spectrum-stop]"),
-        current: document.querySelector("[data-spectrum-current]"),
-        recap: document.querySelector("[data-spectrum-recap]"),
-        localWindow: document.querySelector("[data-local-window]"),
-        booking: document.querySelector("[data-booking]"),
-        frame: document.querySelector("[data-booking-frame]"),
-        stamp: document.querySelector("[data-booking-stamp]"),
-        openers: document.querySelectorAll("[data-book-open]"),
-        views: document.querySelectorAll("[data-booking-view]"),
+        reader: document.querySelector(cssSelector("[data-reader]")),
+        word: document.querySelector(cssSelector("[data-reader-word]")),
+        pre: document.querySelector(cssSelector("[data-reader-pre]")),
+        pivot: document.querySelector(cssSelector("[data-reader-pivot]")),
+        post: document.querySelector(cssSelector("[data-reader-post]")),
+        progress: document.querySelector(cssSelector("[data-reader-progress]")),
+        text: document.querySelector(cssSelector("[data-reader-text]")),
+        toggle: document.querySelector(cssSelector("[data-reader-toggle]")),
+        modeOptions: document.querySelectorAll(cssSelector("[data-reader-mode-option]")),
+        speedOptions: document.querySelectorAll(cssSelector("[data-reader-speed]")),
+        spectrum: document.querySelector(cssSelector("[data-spectrum]")),
+        input: document.querySelector(cssSelector("[data-spectrum-input]")),
+        stops: document.querySelectorAll(cssSelector("[data-spectrum-stop]")),
+        current: document.querySelector(cssSelector("[data-spectrum-current]")),
+        recap: document.querySelector(cssSelector("[data-spectrum-recap]")),
+        localWindow: document.querySelector(cssSelector("[data-local-window]")),
+        booking: document.querySelector(cssSelector("[data-booking]")),
+        frame: document.querySelector(cssSelector("[data-booking-frame]")),
+        stamp: document.querySelector(cssSelector("[data-booking-stamp]")),
+        openers: document.querySelectorAll(cssSelector("[data-book-open]")),
+        views: document.querySelectorAll(cssSelector("[data-booking-view]")),
     };
 
     function readStored(key) {
@@ -328,10 +332,10 @@ function mount() {
             }),
         );
         if (animate) {
-            els.text.classList.remove("is-swapping");
+            els.text.classList.remove(cssToken("is-swapping"));
             // Force a reflow so re-adding the class restarts the animation.
             void els.text.offsetWidth;
-            els.text.classList.add("is-swapping");
+            els.text.classList.add(cssToken("is-swapping"));
         }
     }
 
@@ -491,9 +495,9 @@ function mount() {
     function focusables(root) {
         return [
             ...root.querySelectorAll(
-                'a[href], button:not([disabled]), iframe, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+                cssSelector('a[href], button:not([disabled]), iframe, input, select, textarea, [tabindex]:not([tabindex="-1"])'),
             ),
-        ].filter((el) => !el.closest("[hidden]") && el.getClientRects().length > 0);
+        ].filter((el) => !el.closest(cssSelector("[hidden]")) && el.getClientRects().length > 0);
     }
 
     // Idempotent: reconcile the sheet DOM to a desired state (user actions via
@@ -515,10 +519,10 @@ function mount() {
             els.booking.hidden = true;
             els.booking.setAttribute("aria-hidden", "true");
             els.openers.forEach((el) => el.setAttribute("aria-expanded", "false"));
-            document.body.classList.remove("shop-cart-open");
+            document.body.classList.remove(cssToken("shop-cart-open"));
             hold("booking", false);
             notifyOverlay();
-            document.querySelector(".coach-book-chip")?.focus({ preventScroll: true });
+            document.querySelector(cssSelector(".coach-book-chip"))?.focus({ preventScroll: true });
             return;
         }
 
@@ -526,7 +530,7 @@ function mount() {
         els.booking.setAttribute("aria-hidden", "false");
         els.booking.dataset.bookingState = target;
         els.openers.forEach((el) => el.setAttribute("aria-expanded", "true"));
-        document.body.classList.add("shop-cart-open");
+        document.body.classList.add(cssToken("shop-cart-open"));
         hold("booking", true);
         notifyOverlay();
         els.views.forEach((view) => {
@@ -546,8 +550,8 @@ function mount() {
             const view = els.booking.querySelector(`[data-booking-view="${target}"]`);
             const first =
                 target === "icebreakers"
-                    ? view?.querySelector("[data-intake-copy]")
-                    : els.booking.querySelector("[data-booking-close]");
+                    ? view?.querySelector(cssSelector("[data-intake-copy]"))
+                    : els.booking.querySelector(cssSelector("[data-booking-close]"));
             first?.focus({ preventScroll: true });
         }
     }
@@ -556,7 +560,7 @@ function mount() {
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
-        const opener = target.closest("[data-book-open]");
+        const opener = target.closest(cssSelector("[data-book-open]"));
         if (opener) {
             // Modified clicks keep the native link behavior (new tab).
             if (event.metaKey || event.ctrlKey || event.shiftKey || event.button === 1) return;
@@ -565,43 +569,43 @@ function mount() {
             else setBooking(null);
             return;
         }
-        if (target.closest("[data-booking-close]") || target.closest("[data-booking-scrim]")) {
+        if (target.closest(cssSelector("[data-booking-close]")) || target.closest(cssSelector("[data-booking-scrim]"))) {
             setBooking(null);
             return;
         }
-        if (target.closest("[data-booking-next]")) {
+        if (target.closest(cssSelector("[data-booking-next]"))) {
             setBooking("icebreakers");
             return;
         }
-        if (target.closest("[data-booking-back]")) {
+        if (target.closest(cssSelector("[data-booking-back]"))) {
             setBooking("calendar");
             return;
         }
 
-        const mode = target.closest("[data-reader-mode-option]");
+        const mode = target.closest(cssSelector("[data-reader-mode-option]"));
         if (mode) {
             setMode(mode.dataset.readerModeOption);
             return;
         }
-        const speed = target.closest("[data-reader-speed]");
+        const speed = target.closest(cssSelector("[data-reader-speed]"));
         if (speed) {
             setWpm(speed.dataset.readerSpeed);
             return;
         }
-        if (target.closest("[data-reader-restart]")) {
+        if (target.closest(cssSelector("[data-reader-restart]"))) {
             restart();
             return;
         }
-        if (target.closest("[data-reader-back]")) {
+        if (target.closest(cssSelector("[data-reader-back]"))) {
             back();
             return;
         }
-        if (target.closest("[data-reader-toggle]")) {
+        if (target.closest(cssSelector("[data-reader-toggle]"))) {
             togglePlay();
             return;
         }
         // Pip labels are a pointer shortcut; keyboards use the slider itself.
-        const stop = target.closest("[data-spectrum-stop]");
+        const stop = target.closest(cssSelector("[data-spectrum-stop]"));
         if (stop) {
             const index = personaIndex(stop.dataset.spectrumStop);
             if (index < 0) return;
@@ -616,7 +620,7 @@ function mount() {
             if (reader.mode !== "speed" || reader.holds.has("offscreen")) return;
             if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
             const target = event.target instanceof Element ? event.target : null;
-            if (target?.closest("input, textarea, select, button, a, [contenteditable]")) return;
+            if (target?.closest(cssSelector("input, textarea, select, button, a, [contenteditable]"))) return;
             if (event.key === " ") {
                 event.preventDefault();
                 togglePlay();
@@ -709,7 +713,7 @@ function mount() {
             els.booking.setAttribute("aria-hidden", "true");
         }
         els.frame?.removeAttribute("src");
-        document.body.classList.remove("shop-cart-open");
+        document.body.classList.remove(cssToken("shop-cart-open"));
         delete document.documentElement.dataset.coachReady;
     } };
 }

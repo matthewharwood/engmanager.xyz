@@ -13,35 +13,35 @@ pub use super::asset_names::quote_card::{SCRIPT, STYLE};
 
 pub fn render(title: &str, url: &str) -> Rendered {
     let markup = view! {
-        <dialog class="quote-card-dialog" data-quote-card-dialog aria-labelledby="quote-card-heading">
-            <header class="quote-card-header">
-                <h2 id="quote-card-heading" class="quote-card-heading">"Make a quote card"</h2>
-                <button class="quote-card-close" type="button" data-quote-card-close aria-label="Close quote card">
+        <dialog class={ classes!("quote-card-dialog") } data-quote-card-dialog aria-labelledby="quote-card-heading">
+            <header class={ classes!("quote-card-header") }>
+                <h2 id="quote-card-heading" class={ classes!("quote-card-heading") }>"Make a quote card"</h2>
+                <button class={ classes!("quote-card-close") } type="button" data-quote-card-close aria-label="Close quote card">
                     <span aria-hidden="true">"✕"</span>
                 </button>
             </header>
-            <div class="quote-card-body">
-                <p class="quote-card-intro">"Use a passage from this article in a slide or team discussion. Select text in the article first to choose a different passage."</p>
-                <label class="quote-card-label" for="quote-card-text">"Quote + source"</label>
-                <textarea id="quote-card-text" class="quote-card-text" data-quote-card-text readonly rows="3" aria-describedby="quote-card-status"></textarea>
-                <div class="quote-card-preview" data-quote-card-preview>
-                    <div class="quote-card-artwork" data-quote-card-artwork>
-                        <p class="quote-card-wordmark">"ENG MANAGER"</p>
-                        <blockquote class="quote-card-quote" data-quote-card-quote></blockquote>
-                        <div class="quote-card-credit">
-                            <p class="quote-card-author">"Matthew Harwood"</p>
-                            <p class="quote-card-article">{ title }</p>
-                            <a class="quote-card-source" href={ url }>{ url }</a>
+            <div class={ classes!("quote-card-body") }>
+                <p class={ classes!("quote-card-intro") }>"Use a passage from this article in a slide or team discussion. Select text in the article first to choose a different passage."</p>
+                <label class={ classes!("quote-card-label") } for="quote-card-text">"Quote + source"</label>
+                <textarea id="quote-card-text" class={ classes!("quote-card-text") } data-quote-card-text readonly rows="3" aria-describedby="quote-card-status"></textarea>
+                <div class={ classes!("quote-card-preview") } data-quote-card-preview>
+                    <div class={ classes!("quote-card-artwork") } data-quote-card-artwork>
+                        <p class={ classes!("quote-card-wordmark") }>"ENG MANAGER"</p>
+                        <blockquote class={ classes!("quote-card-quote") } data-quote-card-quote></blockquote>
+                        <div class={ classes!("quote-card-credit") }>
+                            <p class={ classes!("quote-card-author") }>"Matthew Harwood"</p>
+                            <p class={ classes!("quote-card-article") }>{ title }</p>
+                            <a class={ classes!("quote-card-source") } href={ url }>{ url }</a>
                         </div>
                     </div>
                 </div>
             </div>
-            <footer class="quote-card-footer">
-                <div class="quote-card-actions">
-                    <button class="quote-card-button" type="button" data-quote-card-copy>"Copy quote + link"</button>
-                    <button class="quote-card-button quote-card-button-primary" type="button" data-quote-card-download hidden>"Download PNG"</button>
+            <footer class={ classes!("quote-card-footer") }>
+                <div class={ classes!("quote-card-actions") }>
+                    <button class={ classes!("quote-card-button") } type="button" data-quote-card-copy>"Copy quote + link"</button>
+                    <button class={ classes!("quote-card-button quote-card-button-primary") } type="button" data-quote-card-download hidden>"Download PNG"</button>
                 </div>
-                <p id="quote-card-status" class="quote-card-status" role="status" data-quote-card-status>
+                <p id="quote-card-status" class={ classes!("quote-card-status") } role="status" data-quote-card-status>
                     "Copy the quote and its source link, or select the passage above to copy it yourself."
                 </p>
             </footer>

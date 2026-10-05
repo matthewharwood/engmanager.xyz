@@ -1,3 +1,9 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+// Build-time shader marker; identity keeps direct-source execution readable.
+var glsl = value => value;
+
 // Twelve mechanisms, one renderer. See _docs/article-hero-atlas.md for the
 // content/algorithm/treatment matrix. None of these are personality scores or
 // live business data; they are deterministic editorial abstractions.
@@ -8,10 +14,10 @@
         'talking-not-typing', 'the-casino-hypothesis', 'the-execution-marketplace',
         'vibe-coding-a-shop', 'your-gmail-avatar-is-part-of-your-job-search',
     ];
-    const VERTEX = `#version 300 es
+    const VERTEX = glsl(`#version 300 es
     in vec2 a_position;
-    void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`;
-    const FRAGMENT = `#version 300 es
+    void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`);
+    const FRAGMENT = glsl(`#version 300 es
     precision highp float;
     uniform vec2 u_resolution;
     uniform vec2 u_pointer;
@@ -285,7 +291,7 @@
         }
         color += (valueNoise(gl_FragCoord.xy * 0.35 + t * 0.3) - 0.5) * 0.018;
         outColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-    }`;
+    }`);
 
     const instances = new Map();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -336,7 +342,7 @@
     }
     function setup(figure) {
         if (instances.has(figure)) return;
-        const canvas = figure.querySelector('.article-hero-canvas');
+        const canvas = figure.querySelector(cssSelector('.article-hero-canvas'));
         const scene = SLUGS.indexOf(figure.dataset.articleHero);
         if (scene < 0 || !canvas) return;
         const lifetime = new AbortController(), signal = lifetime.signal;
@@ -347,7 +353,7 @@
         let size = { width: figure.clientWidth, height: figure.clientHeight };
         const pointer = [0.5, 0.5];
         const suspended = () => contextLost || document.hidden || window.__engNav?.busy
-            || document.body.classList.contains('journey-revealing');
+            || document.body.classList.contains(cssToken('journey-revealing'));
         const stop = () => { cancelAnimationFrame(raf); raf = 0; };
         function resize() {
             const phone = matchMedia('(pointer: coarse)').matches && innerWidth <= 672;
@@ -484,7 +490,7 @@
     function unmount() { for (const dispose of instances.values()) dispose(); instances.clear(); }
     function mount(root = document) {
         for (const [figure, dispose] of instances) if (!figure.isConnected) { dispose(); instances.delete(figure); }
-        root.querySelectorAll('[data-article-hero]').forEach(setup);
+        root.querySelectorAll(cssSelector('[data-article-hero]')).forEach(setup);
     }
     mount();
     window.__engNav?.onBeforeSwap?.(unmount);

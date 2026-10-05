@@ -25,7 +25,12 @@ dotenvy = "0.15"
 hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
-lightningcss = "1.0.0-alpha.69"
+lightningcss = { version = "=1.0.0-alpha.72", features = ["visitor"] }
+lightningcss-compact = { git = "https://github.com/eng-manager-xyz/lightningcss-compact", rev = "c6be50175cfb3995c9c9b82f3991900a0a251066", version = "0.1.0" }
+syn = { version = "2", features = ["full"] }
+proc-macro2 = { version = "1", features = ["span-locations"] }
+oxc_ast = "0.131"
+oxc_ast_visit = "0.131"
 oxc_allocator = "0.131"
 oxc_codegen = "0.131"
 oxc_mangler = "0.131"
@@ -50,4 +55,9 @@ strip = "symbols"
 # build.rs runs lightningcss + oxc minification over every asset on each
 # rerun; optimizing the build script and its deps directly speeds `just dev`.
 [profile.dev.build-override]
+opt-level = 3
+
+# Debug rust-embed hashes live image files on every render. Keep hot edits and
+# exact asset verification without spending seconds in unoptimized SHA-256.
+[profile.dev.package.sha2]
 opt-level = 3

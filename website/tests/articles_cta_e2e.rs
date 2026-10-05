@@ -10,6 +10,8 @@
 //! other half: that the offer it quotes comes from `coaching::` and is not a
 //! hardcoded copy.
 
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use common::{SITE_HOST, TestServer};
@@ -78,10 +80,11 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
         );
 
         let newsletter = html
-            .find(r#"<aside class="article-newsletter""#)
+            .find(css_html!(r#"<aside class="article-newsletter""#))
             .unwrap_or_else(|| panic!("{slug} has no newsletter signup"));
         assert_eq!(
-            html.matches(r#"class="article-newsletter""#).count(),
+            html.matches(css_html!(r#"class="article-newsletter""#))
+                .count(),
             1,
             "{slug} repeats the newsletter module"
         );
@@ -93,10 +96,12 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
         if slug == "big-personality" {
             assert!(csp.contains("form-action 'none'"));
             assert!(!signup.contains("<form"));
-            assert!(signup.contains(r#"class="article-newsletter-signup-link" href="/subscribe""#));
+            assert!(signup.contains(css_html!(
+                r#"class="article-newsletter-signup-link" href="/subscribe""#
+            )));
             assert!(html.contains("data-personality-route=\"article\""));
             assert!(html.contains("href=\"/personality/prepare\""));
-            assert!(!html.contains("class=\"article-coach\""));
+            assert!(!html.contains(css_html!("class=\"article-coach\"")));
             assert!(!html.contains("experiences.js"));
             assert!(
                 newsletter > html.find(r#"href="/personality/library""#).unwrap(),
@@ -119,7 +124,7 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
         assert!(signup.contains(r#"name="website" tabindex="-1" autocomplete="off""#));
 
         let cta = html
-            .find(r#"<aside class="article-coach""#)
+            .find(css_html!(r#"<aside class="article-coach""#))
             .unwrap_or_else(|| panic!("{slug} has no coaching CTA"));
         assert!(
             newsletter > cta,
@@ -129,7 +134,7 @@ async fn every_article_offers_the_newsletter_after_its_existing_actions() {
         // Under the pagination, never above it. Articles at the end of a
         // chain render no next-up cards at all — the CTA still has to be
         // there, which is the case this ordering check must not skip.
-        if let Some(pagination) = html.find(r#"<footer class="article-nextup""#) {
+        if let Some(pagination) = html.find(css_html!(r#"<footer class="article-nextup""#)) {
             assert!(cta > pagination, "{slug}: CTA renders above the pagination");
         }
 

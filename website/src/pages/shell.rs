@@ -48,6 +48,14 @@ const SPECULATION_RULES_JSON: &str = r#"{"prerender":[{"where":{"and":[{"href_ma
 /// Mount promises are awaited by the journey poster before it reveals the page.
 const ENG_NAV_BOOTSTRAP: &str = r#"<script>window.__engNav=(()=>{const s=new Set(),b=new Set(),a=(s,c)=>(s.add(c),()=>s.delete(c)),f=(s,m)=>Promise.allSettled([...s].map(c=>{try{return c(m)}catch{}}));return{onSwap:c=>a(s,c),_fire:m=>f(s,m),onBeforeSwap:c=>a(b,c),_before:m=>f(b,m)}})();</script>"#;
 
+/// Special documents that inject managed styles still share their generation.
+pub(super) fn css_generation_meta() -> HtmlFragment {
+    HtmlFragment::new(format!(
+        "<meta name=\"eng-css-generation\" content=\"{}\">",
+        crate::CSS_GENERATION
+    ))
+}
+
 /// Escape a string for embedding inside a JSON string literal that itself
 /// lives in a `<script>` element: the JSON specials (`"`, `\`, control chars)
 /// plus `<`/`>`/`&` as `\uXXXX` so the payload can never form `</script>` or
@@ -383,6 +391,7 @@ impl PageShell {
 
         let mut doc = String::with_capacity(16 * 1024);
         doc.push_str("<!DOCTYPE html><html lang=\"en\"><head>");
+        doc.push_str(css_generation_meta().as_str());
         doc.push_str(
             view! {
                 <meta charset="utf-8" />
@@ -438,20 +447,21 @@ impl PageShell {
         // The open `<body>` tag is assembled manually: `view!` can only emit
         // balanced trees, and the extra attribute is optional. Both values are
         // crate-controlled `&'static str`s (no escaping needed).
+        // self.body_class already came from a literal compile-time binding.
+        // Append it directly instead of making the inventory guess a dynamic
+        // class attribute inside an unrelated formatting string.
+        doc.push_str("<body class=\"");
+        doc.push_str(self.body_class);
         match self.body_attr {
             Some((name, value)) => {
-                let _ = write!(
-                    doc,
-                    "<body class=\"{}\" {name}=\"{value}\">",
-                    self.body_class
-                );
+                let _ = write!(doc, "\" {name}=\"{value}\">");
             }
-            None => {
-                let _ = write!(doc, "<body class=\"{}\">", self.body_class);
-            }
+            None => doc.push_str("\">"),
         }
         if let Some(label) = self.skip_link {
-            doc.push_str(view! { <a class="skip-link" href="#main">{ label }</a> }.as_str());
+            doc.push_str(
+                view! { <a class={ classes!("skip-link") } href="#main">{ label }</a> }.as_str(),
+            );
         }
         if let Some((kind, next)) = self.journey {
             let _ = write!(doc, "<div data-eng-page=\"{kind}\"");
@@ -470,8 +480,8 @@ impl PageShell {
                     _ => "Continue exploring",
                 };
                 doc.push_str(view! {
-                    <footer class="journey-next" data-journey-fallback>
-                        <a class="journey-next-link" href={ next }>{ label }<span aria-hidden="true">" ↗"</span></a>
+                    <footer class={ classes!("journey-next") } data-journey-fallback>
+                        <a class={ classes!("journey-next-link") } href={ next }>{ label }<span aria-hidden="true">" ↗"</span></a>
                     </footer>
                 }.as_str());
             }
@@ -508,7 +518,7 @@ mod tests {
         scripts.add(&component("css/c-nav.css", "js/search.js"));
         scripts.add(&component("css/c-to-top.css", "js/search.js"));
 
-        let html = PageShell::new("Shell Test", "search-page")
+        let html = PageShell::new("Shell Test", classes!("search-page"))
             .assets(assets)
             .scripts(scripts)
             .render(HtmlFragment::new("<main id=\"main\"></main>".to_string()));
@@ -530,7 +540,9 @@ mod tests {
         // Shared dep deduped to a single tag.
         assert_eq!(html.matches("/assets/js/search.").count(), 1);
         // Body scaffold: skip-link by default, no speculation rules.
-        assert!(html.contains(r##"<body class="search-page"><a class="skip-link" href="#main">"##));
+        assert!(html.contains(css_html!(
+            r##"<body class="search-page"><a class="skip-link" href="#main">"##
+        )));
         assert!(!html.contains("speculationrules"));
         // ledger #15: the __engNav bootstrap rides every page, ahead of all
         // script tiers (theme-toggle included), and stays under 300 bytes.
@@ -545,7 +557,7 @@ mod tests {
     fn shell_nav_router_prop_appends_one_deferred_tag() {
         let mut scripts = Head::new();
         scripts.add_js("js/audio.js");
-        let html = PageShell::new("Router Page", "homepage")
+        let html = PageShell::new("Router Page", classes!("homepage"))
             .scripts(scripts)
             .speculation_rules(true)
             .nav_router(true)
@@ -569,7 +581,7 @@ mod tests {
         let mut scripts = Head::new();
         scripts.add_js("js/visited-articles.js");
         let next = String::from("/articles/your-gmail-avatar-is-part-of-your-job-search");
-        let html = PageShell::new("Reading", "homepage")
+        let html = PageShell::new("Reading", classes!("homepage"))
             .scripts(scripts)
             .journey("feed", Some(next.as_str()))
             .render(HtmlFragment::empty());
@@ -607,14 +619,16 @@ mod tests {
 
     #[test]
     fn shell_per_page_props_render() {
-        let html = PageShell::new("Checkout", "checkout-page")
+        let html = PageShell::new("Checkout", classes!("checkout-page"))
             .body_attr("data-checkout-mode", "checkout")
             .theme_color("#11111b")
             .speculation_rules(true)
             .skip_link(None)
             .render(HtmlFragment::empty());
 
-        assert!(html.contains(r#"<body class="checkout-page" data-checkout-mode="checkout">"#));
+        assert!(html.contains(css_html!(
+            r#"<body class="checkout-page" data-checkout-mode="checkout">"#
+        )));
         assert!(html.contains(r##"<meta name="theme-color" content="#11111b">"##));
         assert!(html.contains(&format!(
             r#"<script type="speculationrules" data-server>{SPECULATION_RULES_JSON}</script>"#

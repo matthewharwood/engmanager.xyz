@@ -2,6 +2,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -20,7 +22,8 @@ impl Drop for ProxyTask {
     }
 }
 
-const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Reading cycle checks</title></head><body>
+const FIXTURE: &str = css_html!(
+    r##"<!doctype html><html><head><meta charset="utf-8"><title>Reading cycle checks</title></head><body>
 <pre id="result">RUNNING</pre><iframe id="app" title="Reading cycle under test" style="width:1200px;height:900px;border:0"></iframe>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
@@ -174,7 +177,8 @@ try{
   assert([...doc().querySelectorAll('.article-fluid-link,.marquee .chip-tag')].every(node=>node.dataset.trashed!=='true')&&query('[data-trash-count]').textContent==='0'&&query('[data-journey-curtain]'),'restart restores rows, tag copies, bin and rag');
   result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nURL: '+win()?.location.href+'\nREADING: '+JSON.stringify(win()?.__engReading?.snapshot())+'\nCLEANUP: '+JSON.stringify(win()?.__engReadingCompletion?.snapshot())+'\nRECENT CHECKS:\n'+checks.slice(-12).join('\n');document.body.dataset.testResult='failed';}
-</script></body></html>"##;
+</script></body></html>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

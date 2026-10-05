@@ -4,6 +4,8 @@
 //! assets, headers, the apex `/coaching` redirect, and the guard that keeps an
 //! invalid booking URL off the page.
 
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use common::{COACH_HOST, SITE_HOST, TEST_BOOKING_URL, TestServer, asset_href, coach_island};
@@ -33,6 +35,9 @@ async fn coach_subdomain_serves_the_booking_flow_end_to_end() {
         headers[CACHE_CONTROL],
         "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400"
     );
+    assert_eq!(headers["cloudflare-cdn-cache-control"], "no-store");
+    assert_eq!(headers["cdn-cache-control"], "no-store");
+    assert!(!headers.contains_key("cache-tag"));
     assert_eq!(headers["x-content-type-options"], "nosniff");
     assert!(
         headers["content-security-policy-report-only"]
@@ -99,8 +104,8 @@ async fn coach_subdomain_serves_the_booking_flow_end_to_end() {
 
     // --- hashed assets round-trip over HTTP --------------------------------
     for (prefix, content_type, marker) in [
-        ("/assets/css/coach.", "text/css", ".coach-rsvp"),
-        ("/assets/css/shop.", "text/css", ".shop-bag"),
+        ("/assets/css/coach.", "text/css", selector!(".coach-rsvp")),
+        ("/assets/css/shop.", "text/css", selector!(".shop-bag")),
         ("/assets/js/coach.", "javascript", "__coach"),
     ] {
         let href = asset_href(&html, prefix);

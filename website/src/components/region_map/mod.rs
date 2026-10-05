@@ -82,27 +82,27 @@ pub fn render(props: Props) -> Rendered {
 }"#;
 
     let markup = view! {
-        <figure class="region-map" data-region-map aria-labelledby="foottraffic-map-title">
-            <div class="region-map-copy">
+        <figure class={ classes!("region-map") } data-region-map aria-labelledby="foottraffic-map-title">
+            <div class={ classes!("region-map-copy") }>
                 <h2 id="foottraffic-map-title">"Regional Operator Map"</h2>
                 <p>
                     "A first pass at the territory model: one operator per region, with the same map module ready for later heat-map and blast-radius layers."
                 </p>
             </div>
-            <div class="region-map-shell">
-                <div class="region-map-canvas"
+            <div class={ classes!("region-map-shell") }>
+                <div class={ classes!("region-map-canvas") }
                      data-region-map-canvas
                      role="application"
                      tabindex="0"
                      aria-label="Interactive map of Project FootTraffic operators"></div>
-                <div class="region-map-poster" data-region-map-poster>
+                <div class={ classes!("region-map-poster") } data-region-map-poster>
                     <img src={ props.poster_url }
                          alt=""
                          width="1200"
                          height="675"
                          loading="eager"
                          decoding="async" />
-                    <div class="region-map-status" data-region-map-status role="status">
+                    <div class={ classes!("region-map-status") } data-region-map-status role="status">
                         "Loading interactive map"
                     </div>
                 </div>
@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn renders_map_figure_with_config_island_and_fallbacks() {
         let html = rendered().markup.into_string();
-        assert!(html.contains(r#"<figure class="region-map" data-region-map"#));
+        assert!(html.contains(css_html!(r#"<figure class="region-map" data-region-map"#)));
         assert!(html.contains("data-region-map-canvas"));
         // Hoisted poster URL lands on the fallback image.
         assert!(html.contains(r#"src="/assets/foottraffic-map-poster.deadbeef.svg""#));

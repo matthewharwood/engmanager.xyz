@@ -68,7 +68,7 @@ pub fn render(snapshot: &DiscordSnapshot) -> Rendered {
         .into_iter()
         .map(|m| {
             view! {
-                <img class="discord-widget-avatar"
+                <img class={ classes!("discord-widget-avatar") }
                      src={ m.avatar_url.clone().unwrap_or_default() }
                      alt={ m.username.clone() }
                      loading="lazy"
@@ -79,7 +79,7 @@ pub fn render(snapshot: &DiscordSnapshot) -> Rendered {
         .collect();
 
     let overflow_node = if overflow > 0 {
-        view! { <span class="discord-widget-avatars-more">{ format!("+{overflow}") }</span> }
+        view! { <span class={ classes!("discord-widget-avatars-more") }>{ format!("+{overflow}") }</span> }
     } else {
         HtmlFragment::empty()
     };
@@ -88,7 +88,7 @@ pub fn render(snapshot: &DiscordSnapshot) -> Rendered {
         HtmlFragment::empty()
     } else {
         view! {
-            <div class="discord-widget-avatars" aria-label="Members currently online">
+            <div class={ classes!("discord-widget-avatars") } aria-label="Members currently online">
                 { avatars }
                 { overflow_node }
             </div>
@@ -103,15 +103,15 @@ pub fn render(snapshot: &DiscordSnapshot) -> Rendered {
             .iter()
             .map(|c| {
                 view! {
-                    <span class="discord-widget-channel">
-                        <span class="discord-widget-channel-icon" aria-hidden="true">"#"</span>
+                    <span class={ classes!("discord-widget-channel") }>
+                        <span class={ classes!("discord-widget-channel-icon") } aria-hidden="true">"#"</span>
                         { c.name.clone() }
                     </span>
                 }
             })
             .collect();
         view! {
-            <div class="discord-widget-channels" aria-label="Voice channels">
+            <div class={ classes!("discord-widget-channels") } aria-label="Voice channels">
                 { chips }
             </div>
         }
@@ -120,30 +120,30 @@ pub fn render(snapshot: &DiscordSnapshot) -> Rendered {
     let member_count_node = if member_text.is_empty() {
         HtmlFragment::empty()
     } else {
-        view! { <span class="discord-widget-members">{ member_text }</span> }
+        view! { <span class={ classes!("discord-widget-members") }>{ member_text }</span> }
     };
 
     let markup = view! {
-        <aside class="discord-widget" aria-label="Live Discord server stats">
-            <div class="discord-widget-header">
-                <div class="discord-widget-icon" aria-hidden="true">{ initial }</div>
-                <div class="discord-widget-title">
-                    <div class="discord-widget-name">{ snapshot.guild_name.clone() }</div>
+        <aside class={ classes!("discord-widget") } aria-label="Live Discord server stats">
+            <div class={ classes!("discord-widget-header") }>
+                <div class={ classes!("discord-widget-icon") } aria-hidden="true">{ initial }</div>
+                <div class={ classes!("discord-widget-title") }>
+                    <div class={ classes!("discord-widget-name") }>{ snapshot.guild_name.clone() }</div>
                     { member_count_node }
                 </div>
-                <div class="discord-widget-online">
-                    <span class="discord-widget-pip" aria-hidden="true"></span>
+                <div class={ classes!("discord-widget-online") }>
+                    <span class={ classes!("discord-widget-pip") } aria-hidden="true"></span>
                     { online_text }
                 </div>
             </div>
             { avatars_row }
             { voice_row }
-            <a class="discord-widget-join"
+            <a class={ classes!("discord-widget-join") }
                href={ snapshot.instant_invite.clone() }
                target="_blank"
                rel="noopener">
                 "Join the Discord"
-                <span class="discord-widget-join-arrow" aria-hidden="true">"↗"</span>
+                <span class={ classes!("discord-widget-join-arrow") } aria-hidden="true">"↗"</span>
             </a>
         </aside>
     };
@@ -186,19 +186,19 @@ mod tests {
     #[test]
     fn renders_card_from_snapshot() {
         let html = render(&snapshot()).markup.into_string();
-        assert!(
-            html.contains(
-                r#"<aside class="discord-widget" aria-label="Live Discord server stats">"#
-            )
-        );
+        assert!(html.contains(css_html!(
+            r#"<aside class="discord-widget" aria-label="Live Discord server stats">"#
+        )));
         // Guild initial, counts, avatar row (avatar-less members excluded),
         // voice chips, and the join CTA.
-        assert!(html.contains(r#"<div class="discord-widget-icon" aria-hidden="true">A</div>"#));
+        assert!(html.contains(css_html!(
+            r#"<div class="discord-widget-icon" aria-hidden="true">A</div>"#
+        )));
         assert!(html.contains("13 online"));
         assert!(html.contains("420 members"));
         assert!(html.contains(r#"alt="ada""#));
         assert!(!html.contains("grace"));
-        assert!(html.contains(r#"class="discord-widget-channel""#));
+        assert!(html.contains(css_html!(r#"class="discord-widget-channel""#)));
         assert!(html.contains("Join the Discord"));
         assert!(html.contains(r#"href="https://discord.gg/sTzQBrbnBM""#));
     }

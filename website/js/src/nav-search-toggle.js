@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // The magnifier opens a shared, light-dismiss search overlay on every
 // viewport. The search form stays inside the native dialog so typeahead
 // results and keyboard navigation work the same on mobile and desktop.
@@ -13,7 +17,7 @@
     const instances = new WeakMap();
 
     function init(root) {
-        const toggle = root.querySelector("[data-search-toggle]");
+        const toggle = root.querySelector(cssSelector("[data-search-toggle]"));
         if (!toggle) {
             current = null;
             return;
@@ -23,13 +27,13 @@
             return;
         }
         toggle.dataset.searchToggleBound = "true";
-        const nav = toggle.closest(".site-nav");
+        const nav = toggle.closest(cssSelector(".site-nav"));
         if (!nav) {
             current = null;
             return;
         }
-        const overlay = nav.querySelector("[data-search-overlay]");
-        const input = overlay?.querySelector(".site-search-input");
+        const overlay = nav.querySelector(cssSelector("[data-search-overlay]"));
+        const input = overlay?.querySelector(cssSelector(".site-search-input"));
         if (!overlay || !input) {
             current = null;
             return;
@@ -71,7 +75,7 @@
             window.dispatchEvent(new Event("eng:overlaychange"));
         });
 
-        overlay.querySelector("[data-search-close]")?.addEventListener("click", close);
+        overlay.querySelector(cssSelector("[data-search-close]"))?.addEventListener("click", close);
         overlay.addEventListener("click", (event) => {
             if (event.target === overlay) close();
         });

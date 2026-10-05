@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Scrollspy for the article-page sidebar TOC.
 //
 // IntersectionObserver with a trigger band near the top of the viewport
@@ -24,7 +28,7 @@
     function init(root) {
         if (dispose) return;
 
-        const toc = root.querySelector(".article-toc");
+        const toc = root.querySelector(cssSelector(".article-toc"));
         if (!toc) return;
 
         const cleanups = [];
@@ -38,8 +42,8 @@
         // on desktop also fixes a Chromium quirk where the disclosure's
         // force-shown content didn't appear until a resize-triggered style recalc —
         // so the tools now show on first load instead of only after a resize.
-        const tools = root.querySelector(".article-meta-tools");
-        const toolsHome = root.querySelector(".article-meta-disclosure-tools");
+        const tools = root.querySelector(cssSelector(".article-meta-tools"));
+        const toolsHome = root.querySelector(cssSelector(".article-meta-disclosure-tools"));
         if (tools && toolsHome) {
             const wide = window.matchMedia("(min-width: 72rem)");
             const placeTools = () => {
@@ -52,26 +56,26 @@
         }
 
         const headings = Array.from(
-            root.querySelectorAll(".article :is(h2, h3)[id]"),
+            root.querySelectorAll(cssSelector(".article :is(h2, h3)[id]")),
         );
         if (!headings.length) return;
 
-        const linkFor = (id) =>
-            toc.querySelector(`.article-toc-link[href="#${CSS.escape(id)}"]`);
+        const tocLinks = [...toc.querySelectorAll(cssSelector(".article-toc-link"))];
+        const linkFor = (id) => tocLinks.find(link => link.getAttribute("href") === "#" + id);
         const links = new Map(
             headings.map((h) => [h.id, linkFor(h.id)]).filter(([, l]) => l),
         );
 
         const inZone = new Set();
         let activeId = headings[0].id;
-        for (const link of links.values()) link.classList.remove("is-current");
-        links.get(activeId)?.classList.add("is-current");
+        for (const link of links.values()) link.classList.remove(cssToken("is-current"));
+        links.get(activeId)?.classList.add(cssToken("is-current"));
 
         const setActive = (id) => {
             if (id === activeId) return;
-            links.get(activeId)?.classList.remove("is-current");
+            links.get(activeId)?.classList.remove(cssToken("is-current"));
             activeId = id;
-            links.get(activeId)?.classList.add("is-current");
+            links.get(activeId)?.classList.add(cssToken("is-current"));
         };
 
         const isAtBottom = () =>

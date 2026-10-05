@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTRIBUTION =
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -22,7 +26,7 @@ function onReady(callback) {
 }
 
 function readConfig(root) {
-    const configNode = root.querySelector("[data-region-map-config]");
+    const configNode = root.querySelector(cssSelector("[data-region-map-config]"));
     if (!configNode) {
         return null;
     }
@@ -35,7 +39,7 @@ function readConfig(root) {
 }
 
 function setStatus(root, message) {
-    const status = root.querySelector("[data-region-map-status]");
+    const status = root.querySelector(cssSelector("[data-region-map-status]"));
     if (status) {
         status.textContent = message;
     }
@@ -89,7 +93,7 @@ function radiusMeters(pin) {
 
 function popupFor(pin) {
     const wrapper = document.createElement("div");
-    wrapper.className = "region-map-popup";
+    wrapper.className = cssClasses("region-map-popup");
 
     const name = document.createElement("strong");
     name.textContent = pin.name || "Operator";
@@ -161,7 +165,7 @@ function scheduleMapThemeRefresh() {
 
 function initRegionMap(root) {
     if (root.regionMap) return;
-    const canvas = root.querySelector("[data-region-map-canvas]");
+    const canvas = root.querySelector(cssSelector("[data-region-map-canvas]"));
     const config = readConfig(root);
     if (!canvas || !config) {
         setStatus(root, "Map configuration unavailable");
@@ -206,7 +210,7 @@ function initRegionMap(root) {
             return;
         }
         loaded = true;
-        root.classList.add("is-loaded");
+        root.classList.add(cssToken("is-loaded"));
         setStatus(root, "Interactive map loaded");
         map.invalidateSize({ pan: false });
     };
@@ -229,7 +233,7 @@ function initRegionMap(root) {
         const radius = radiusMeters(pin);
         if (radius > 0) {
             const radiusCircle = window.L.circle(coords, {
-                className: "region-map-radius",
+                className: cssToken("region-map-radius"),
                 interactive: false,
                 pane: "regionRadiusPane",
                 radius,
@@ -239,7 +243,7 @@ function initRegionMap(root) {
         }
 
         const marker = window.L.circleMarker(coords, {
-            className: "region-map-marker",
+            className: cssToken("region-map-marker"),
             ...markerStyle(palette, index),
         })
             .bindPopup(popupFor(pin))
@@ -289,7 +293,7 @@ function initRegionMap(root) {
             clearTimeout(loadingTimer);
             map.remove();
             delete root.regionMap;
-            root.classList.remove("is-loaded");
+            root.classList.remove(cssToken("is-loaded"));
         },
     };
 
@@ -307,7 +311,7 @@ function initRegionMap(root) {
 }
 
 function scanRegionMaps(root) {
-    root.querySelectorAll("[data-region-map]").forEach(initRegionMap);
+    root.querySelectorAll(cssSelector("[data-region-map]")).forEach(initRegionMap);
 }
 
 // Prerender gate (JS_ROUTER_CONSTRAINTS §3): booting Leaflet pulls

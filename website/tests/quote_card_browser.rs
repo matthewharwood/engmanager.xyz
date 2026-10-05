@@ -4,6 +4,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -50,7 +52,8 @@ if(new URLSearchParams(location.search).has('enabled')){
 }
 </script>"##;
 
-const FIXTURE: &str = r##"<script type="module">
+const FIXTURE: &str = css_html!(
+    r##"<script type="module">
 const result=document.querySelector('#result'),checks=[];
 const parameters=new URLSearchParams(location.search),enabled=parameters.has('enabled'),recovery=parameters.has('fail_native');
 const renderer=enabled&&!recovery?'html-in-canvas':'svg';
@@ -179,7 +182,8 @@ try{
   }finally{URL.createObjectURL=create;HTMLAnchorElement.prototype.click=anchorClick;HTMLCanvasElement.prototype.toBlob=nativeToBlob;if(recovery)CanvasRenderingContext2D.prototype.drawElementImage=nativeDraw;}
   result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATUS: '+query('[data-quote-card-status]')?.textContent+'\nRECENT CHECKS:\n'+checks.slice(-10).join('\n');document.body.dataset.testResult='failed';}
-</script>"##;
+</script>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

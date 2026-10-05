@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Fits SVG text to its container with ink-tight bounds, so the rendered
 // glyphs are flush with the SVG's edges (no left/right side-bearing gap).
 //
@@ -66,7 +70,7 @@ function measureInk(text) {
 }
 
 function applyFit(svg, ink) {
-    const text = svg.querySelector("text");
+    const text = svg.querySelector(cssSelector("text"));
     if (!text) return;
     text.setAttribute("x", ink.boxLeft);
     text.setAttribute("y", ink.ascent);
@@ -89,12 +93,12 @@ function clamp(value, min, max) {
 // size from the same measured font scale as the SVG/fallback title,
 // instead of from a fixed mobile clamp.
 function titleWidth(svg) {
-    const wrap = svg.closest(".fluid-display-wrap");
+    const wrap = svg.closest(cssSelector(".fluid-display-wrap"));
     return (wrap || svg).getBoundingClientRect().width;
 }
 
 function syncTitleMetrics(svg, ink, containerWidth) {
-    const link = svg.closest(".article-fluid-link");
+    const link = svg.closest(cssSelector(".article-fluid-link"));
     if (!link) return false;
 
     if (!containerWidth) return false;
@@ -146,7 +150,7 @@ function syncTitleMetrics(svg, ink, containerWidth) {
             // dirty row must not force layout before measuring the next row.
             for (const { svg, ink, width } of updates) {
                 const usesFallback = syncTitleMetrics(svg, ink, width);
-                svg.classList.toggle("is-too-small", usesFallback);
+                svg.classList.toggle(cssToken("is-too-small"), usesFallback);
             }
         });
     };
@@ -169,9 +173,9 @@ function syncTitleMetrics(svg, ink, containerWidth) {
                 if (!svg.isConnected) measurements.delete(svg);
             }
             const fitted = [];
-            for (const svg of root.querySelectorAll("svg.fluid-display-svg")) {
+            for (const svg of root.querySelectorAll(cssSelector("svg.fluid-display-svg"))) {
                 if (measurements.has(svg)) continue;
-                const text = svg.querySelector("text");
+                const text = svg.querySelector(cssSelector("text"));
                 if (!text) continue;
                 const ink = measureInk(text);
                 if (!ink) continue;
@@ -181,8 +185,8 @@ function syncTitleMetrics(svg, ink, containerWidth) {
                 applyFit(svg, ink);
                 measurements.set(svg, ink);
                 const usesFallback = syncTitleMetrics(svg, ink, width);
-                svg.classList.toggle("is-too-small", usesFallback);
-                observer?.observe(svg.closest(".fluid-display-wrap") || svg);
+                svg.classList.toggle(cssToken("is-too-small"), usesFallback);
+                observer?.observe(svg.closest(cssSelector(".fluid-display-wrap")) || svg);
             }
         } catch (_err) {
             // Measurement failed — leave the fallback viewBox in place.

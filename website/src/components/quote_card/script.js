@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Native HTML layout is the source of both the readable preview and its PNG.
 // The compatibility path snapshots this text-only card through SVG; it does
 // not patch browser prototypes or emulate the experimental paint lifecycle.
@@ -11,7 +15,7 @@
 
     function passage(node) {
         const clone = node?.cloneNode(true);
-        clone?.querySelectorAll('button, script, style').forEach(control => control.remove());
+        clone?.querySelectorAll(cssSelector('button, script, style')).forEach(control => control.remove());
         return clone?.textContent?.replace(/\s+/g, ' ').trim() || '';
     }
 
@@ -115,7 +119,7 @@
         const faces = Object.values(window.__engThemeFonts || {})
             .filter(face => families.includes(face.family))
             .map(face => ({ ...face, weight: '400' }));
-        const shared = document.querySelector('[data-theme-font-faces]')?.sheet;
+        const shared = document.querySelector(cssSelector('[data-theme-font-faces]'))?.sheet;
         for (const rule of shared?.cssRules || []) {
             if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
             const family = rule.style.getPropertyValue('font-family').replace(/["']/g, '');
@@ -160,8 +164,8 @@
                 const rect = artwork.getBoundingClientRect();
                 if (rect.width <= 0 || rect.height <= 0) throw new Error('No drawable preview');
                 const clone = artwork.cloneNode(true);
-                const originals = [artwork, ...artwork.querySelectorAll('*')];
-                const copies = [clone, ...clone.querySelectorAll('*')];
+                const originals = [artwork, ...artwork.querySelectorAll(cssSelector('*'))];
+                const copies = [clone, ...clone.querySelectorAll(cssSelector('*'))];
                 const families = [];
                 originals.forEach((node, index) => {
                     const style = getComputedStyle(node);
@@ -228,18 +232,18 @@
 
     function mount(root = document) {
         unmount();
-        const article = root.querySelector('.article[data-article-slug]');
-        const dialog = root.querySelector('[data-quote-card-dialog]');
-        const opener = root.querySelector('[data-quote-card-open]');
+        const article = root.querySelector(cssSelector('.article[data-article-slug]'));
+        const dialog = root.querySelector(cssSelector('[data-quote-card-dialog]'));
+        const opener = root.querySelector(cssSelector('[data-quote-card-open]'));
         if (!article || !dialog || !opener || typeof dialog.showModal !== 'function') return;
         const lifetime = new AbortController();
         const { signal } = lifetime;
-        const artwork = dialog.querySelector('[data-quote-card-artwork]');
-        const quote = dialog.querySelector('[data-quote-card-quote]');
-        const text = dialog.querySelector('[data-quote-card-text]');
-        const status = dialog.querySelector('[data-quote-card-status]');
-        const download = dialog.querySelector('[data-quote-card-download]');
-        const source = artwork.querySelector('a');
+        const artwork = dialog.querySelector(cssSelector('[data-quote-card-artwork]'));
+        const quote = dialog.querySelector(cssSelector('[data-quote-card-quote]'));
+        const text = dialog.querySelector(cssSelector('[data-quote-card-text]'));
+        const status = dialog.querySelector(cssSelector('[data-quote-card-status]'));
+        const download = dialog.querySelector(cssSelector('[data-quote-card-download]'));
+        const source = artwork.querySelector(cssSelector('a'));
         const generated = [];
         const urls = new Map();
         let exporting = null, copyText = '', returnFocus = null;
@@ -251,7 +255,7 @@
             const range = selected.getRangeAt(0);
             if (!article.contains(range.startContainer) || !article.contains(range.endContainer)) return '';
             const fragment = range.cloneContents();
-            fragment.querySelectorAll('button, script, style').forEach(control => control.remove());
+            fragment.querySelectorAll(cssSelector('button, script, style')).forEach(control => control.remove());
             return fragment.textContent.replace(/\s+/g, ' ').trim();
         }
 
@@ -264,7 +268,7 @@
                 ? characters.slice(0, LIMIT).join('').replace(/\s+\S*$/, '').trimEnd() + '…'
                 : raw;
             quote.textContent = excerpt;
-            copyText = `“${excerpt}”\n— Matthew Harwood, ${artwork.querySelector('.quote-card-article').textContent}\n${source.href}`;
+            copyText = `“${excerpt}”\n— Matthew Harwood, ${artwork.querySelector(cssSelector('.quote-card-article')).textContent}\n${source.href}`;
             text.value = copyText;
             download.hidden = false;
             status.textContent = (shortened ? 'Long passage shortened for this card. ' : '')
@@ -275,26 +279,26 @@
 
         opener.hidden = false;
         opener.addEventListener('click', () => {
-            open(selection() || passage(article.querySelector('blockquote')
-                || article.querySelector('.article-reveal-section p, :scope > p')), opener);
+            open(selection() || passage(article.querySelector(cssSelector('blockquote'))
+                || article.querySelector(cssSelector('.article-reveal-section p, :scope > p'))), opener);
         }, { signal });
-        article.querySelectorAll('blockquote').forEach(block => {
+        article.querySelectorAll(cssSelector('blockquote')).forEach(block => {
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'share-quote';
+            button.className = cssClasses('share-quote');
             button.dataset.quoteCardFromQuote = '';
             button.textContent = 'Make quote card';
             button.addEventListener('click', () => open(passage(block), button), { signal });
             block.appendChild(button);
             generated.push(button);
         });
-        dialog.querySelector('[data-quote-card-close]').addEventListener('click', () => dialog.close(), { signal });
+        dialog.querySelector(cssSelector('[data-quote-card-close]')).addEventListener('click', () => dialog.close(), { signal });
         dialog.addEventListener('close', () => {
             cancel();
             if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
         }, { signal });
         dialog.addEventListener('cancel', cancel, { signal });
-        dialog.querySelector('[data-quote-card-copy]').addEventListener('click', async () => {
+        dialog.querySelector(cssSelector('[data-quote-card-copy]')).addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(copyText);
                 if (!signal.aborted && dialog.open) status.textContent = 'Quote and source link copied.';

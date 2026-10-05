@@ -105,16 +105,16 @@ fn json_escape(s: &str) -> String {
 // inserts/removes it when soft-navigating in/out of the homepage).
 fn render_reveal_card() -> HtmlFragment {
     view! {
-        <aside id="article-reveal" popover="manual" class="reveal-card" data-swap-region="reveal">
-            <div class="reveal-card-frame">
-                <div class="reveal-card-decoration" aria-hidden="true">
-                    <canvas class="reveal-card-cloth" aria-hidden="true"></canvas>
+        <aside id="article-reveal" popover="manual" class={ classes!("reveal-card") } data-swap-region="reveal">
+            <div class={ classes!("reveal-card-frame") }>
+                <div class={ classes!("reveal-card-decoration") } aria-hidden="true">
+                    <canvas class={ classes!("reveal-card-cloth") } aria-hidden="true"></canvas>
                 </div>
-                <div class="reveal-card-surface">
-                    <header class="reveal-card-head">
-                        <span class="reveal-card-emoji" data-reveal-emoji aria-hidden="true">"⌬"</span>
-                        <span class="reveal-card-category" data-reveal-category>"…"</span>
-                        <button class="reveal-card-close"
+                <div class={ classes!("reveal-card-surface") }>
+                    <header class={ classes!("reveal-card-head") }>
+                        <span class={ classes!("reveal-card-emoji") } data-reveal-emoji aria-hidden="true">"⌬"</span>
+                        <span class={ classes!("reveal-card-category") } data-reveal-category>"…"</span>
+                        <button class={ classes!("reveal-card-close") }
                                 type="button"
                                 popovertarget="article-reveal"
                                 popovertargetaction="hide"
@@ -122,20 +122,20 @@ fn render_reveal_card() -> HtmlFragment {
                             "✕"
                         </button>
                     </header>
-                    <div class="reveal-card-content">
-                        <h2 class="reveal-card-title" data-reveal-title>"…"</h2>
-                        <time class="reveal-card-date" data-reveal-date>"…"</time>
-                        <p class="reveal-card-summary" data-reveal-summary>"…"</p>
-                        <div class="reveal-card-tags" data-reveal-tags></div>
+                    <div class={ classes!("reveal-card-content") }>
+                        <h2 class={ classes!("reveal-card-title") } data-reveal-title>"…"</h2>
+                        <time class={ classes!("reveal-card-date") } data-reveal-date>"…"</time>
+                        <p class={ classes!("reveal-card-summary") } data-reveal-summary>"…"</p>
+                        <div class={ classes!("reveal-card-tags") } data-reveal-tags></div>
                     </div>
-                    <footer class="reveal-card-actions">
-                        <button class="reveal-card-dismiss"
+                    <footer class={ classes!("reveal-card-actions") }>
+                        <button class={ classes!("reveal-card-dismiss") }
                                 type="button"
                                 popovertarget="article-reveal"
                                 popovertargetaction="hide">
                             "Nahhh"
                         </button>
-                        <a class="reveal-card-continue" data-reveal-continue href="#">
+                        <a class={ classes!("reveal-card-continue") } data-reveal-continue href="#">
                             "Read →"
                         </a>
                     </footer>
@@ -156,10 +156,10 @@ fn render_topic_marquees() -> HtmlFragment {
         .iter()
         .map(|c| {
             view! {
-                <span class="chip chip-category"
+                <span class={ classes!("chip chip-category") }
                       data-chip-id={ format!("cat-{}", c.slug()) }>
-                    <span class="chip-emoji" aria-hidden="true">{ c.emoji() }</span>
-                    <span class="chip-label">{ c.label() }</span>
+                    <span class={ classes!("chip-emoji") } aria-hidden="true">{ c.emoji() }</span>
+                    <span class={ classes!("chip-label") }>{ c.label() }</span>
                 </span>
             }
         })
@@ -175,22 +175,22 @@ fn render_topic_marquees() -> HtmlFragment {
         .into_iter()
         .map(|t| {
             view! {
-                <span class="chip chip-tag"
+                <span class={ classes!("chip chip-tag") }
                       data-chip-id={ format!("tag-{}", t.label()) }>
-                    <span class="chip-emoji" aria-hidden="true">{ t.emoji() }</span>
-                    <span class="chip-label">{ t.label() }</span>
+                    <span class={ classes!("chip-emoji") } aria-hidden="true">{ t.emoji() }</span>
+                    <span class={ classes!("chip-label") }>{ t.label() }</span>
                 </span>
             }
         })
         .collect();
 
-    let category_track = marquee_track(&category_group, "marquee-track-forward");
-    let tag_track = marquee_track(&tag_group, "marquee-track-reverse");
+    let category_track = marquee_track(&category_group, classes!("marquee-track-forward"));
+    let tag_track = marquee_track(&tag_group, classes!("marquee-track-reverse"));
 
     view! {
-        <aside class="marquee-bar" aria-label="Article topics">
-            <div class="marquee">{ category_track }</div>
-            <div class="marquee">{ tag_track }</div>
+        <aside class={ classes!("marquee-bar") } aria-label="Article topics">
+            <div class={ classes!("marquee") }>{ category_track }</div>
+            <div class={ classes!("marquee") }>{ tag_track }</div>
         </aside>
     }
 }
@@ -201,13 +201,13 @@ fn render_topic_marquees() -> HtmlFragment {
 // list. Four copies = 4× total width, with a -25% loop translate; even
 // at 4K viewports the visible band is fully covered through the loop.
 fn marquee_track(group: &HtmlFragment, direction_class: &str) -> HtmlFragment {
-    let track_class = format!("marquee-track {direction_class}");
+    let track_class = format!("{} {direction_class}", classes!("marquee-track"));
     view! {
         <div class={ track_class }>
-            <div class="marquee-group">{ group.clone() }</div>
-            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
-            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
-            <div class="marquee-group" aria-hidden="true">{ group.clone() }</div>
+            <div class={ classes!("marquee-group") }>{ group.clone() }</div>
+            <div class={ classes!("marquee-group") } aria-hidden="true">{ group.clone() }</div>
+            <div class={ classes!("marquee-group") } aria-hidden="true">{ group.clone() }</div>
+            <div class={ classes!("marquee-group") } aria-hidden="true">{ group.clone() }</div>
         </div>
     }
 }
@@ -225,23 +225,23 @@ impl Component for EngHeadline {
             HtmlFragment::empty()
         };
         let headline_class = if HOME_LIQUID_HEADLINE_ENABLED {
-            "fluid-display liquid-title liquid-title-always"
+            classes!("fluid-display liquid-title liquid-title-always")
         } else {
-            "fluid-display"
+            classes!("fluid-display")
         };
         let svg_class = if HOME_LIQUID_HEADLINE_ENABLED {
-            "fluid-display-svg liquid-title-svg"
+            classes!("fluid-display-svg liquid-title-svg")
         } else {
-            "fluid-display-svg"
+            classes!("fluid-display-svg")
         };
         let text_class = if HOME_LIQUID_HEADLINE_ENABLED {
-            "fluid-display-text liquid-title-svg-main"
+            classes!("fluid-display-text liquid-title-svg-main")
         } else {
-            "fluid-display-text"
+            classes!("fluid-display-text")
         };
         let liquid_copies = if HOME_LIQUID_HEADLINE_ENABLED {
             view! {
-                <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-a"
+                <text class={ classes!("fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-a") }
                       x="0"
                       y="160"
                       font-family="PP Monument Extended, sans-serif"
@@ -250,7 +250,7 @@ impl Component for EngHeadline {
                       aria-hidden="true">
                     "ENG MANAGER"
                 </text>
-                <text class="fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-b"
+                <text class={ classes!("fluid-display-text liquid-title-svg-copy liquid-title-svg-copy-b") }
                       x="0"
                       y="160"
                       font-family="PP Monument Extended, sans-serif"
@@ -265,7 +265,7 @@ impl Component for EngHeadline {
         };
 
         view! {
-            <div id="main" class="fluid-display-wrap" tabindex="-1">
+            <div id="main" class={ classes!("fluid-display-wrap") } tabindex="-1">
                 { filter }
                 <h1 class={ headline_class }
                     data-liquid-title={ if HOME_LIQUID_HEADLINE_ENABLED { "always" } else { "off" } }
@@ -301,53 +301,53 @@ impl Component for EngResume {
 
     fn render(_: Self::Props, _: HtmlFragment) -> HtmlFragment {
         view! {
-            <section class="resume" aria-label="About Matthew Harwood">
-                <div class="resume-line resume-heading">"MATTHEW HARWOOD"</div>
-                <div class="resume-line resume-sep">"~~~"</div>
-                <div class="resume-line">"CONTACT: matthewcharwood (LINKEDIN)"</div>
-                <div class="resume-line">"LOCATION: USA"</div>
-                <div class="resume-line">
+            <section class={ classes!("resume") } aria-label="About Matthew Harwood">
+                <div class={ classes!("resume-line resume-heading") }>"MATTHEW HARWOOD"</div>
+                <div class={ classes!("resume-line resume-sep") }>"~~~"</div>
+                <div class={ classes!("resume-line") }>"CONTACT: matthewcharwood (LINKEDIN)"</div>
+                <div class={ classes!("resume-line") }>"LOCATION: USA"</div>
+                <div class={ classes!("resume-line") }>
                     "STATUS: "
-                    <span class="status-online">
+                    <span class={ classes!("status-online") }>
                         "ONLINE"
-                        <span class="status-pip" aria-hidden="true"></span>
+                        <span class={ classes!("status-pip") } aria-hidden="true"></span>
                     </span>
                 </div>
-                <div class="resume-line">"FOCUS:"</div>
-                <div class="resume-line">
+                <div class={ classes!("resume-line") }>"FOCUS:"</div>
+                <div class={ classes!("resume-line") }>
                     "  - [Engineering Manager]("
-                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                    <a class={ classes!("resume-link") } href="https://www.linkedin.com/in/matthewcharwood">
                         "https://www.linkedin.com/in/matthewcharwood"
                     </a>
                     ")"
                 </div>
-                <div class="resume-line">"  - [Frontend Platform / Design Systems / Tooling]"</div>
-                <div class="resume-line resume-sep">"~~~"</div>
-                <div class="resume-line">"PROJECTS:"</div>
-                <div class="resume-line">
+                <div class={ classes!("resume-line") }>"  - [Frontend Platform / Design Systems / Tooling]"</div>
+                <div class={ classes!("resume-line resume-sep") }>"~~~"</div>
+                <div class={ classes!("resume-line") }>"PROJECTS:"</div>
+                <div class={ classes!("resume-line") }>
                     "  - [engmanager.xyz]("
-                    <a class="resume-link" href="https://engmanager.xyz">
+                    <a class={ classes!("resume-link") } href="https://engmanager.xyz">
                         "https://engmanager.xyz"
                     </a>
                     ")"
                 </div>
-                <div class="resume-line">
+                <div class={ classes!("resume-line") }>
                     "  - [github/matthewharwood]("
-                    <a class="resume-link" href="https://github.com/matthewharwood">
+                    <a class={ classes!("resume-link") } href="https://github.com/matthewharwood">
                         "https://github.com/matthewharwood"
                     </a>
                     ")"
                 </div>
-                <div class="resume-line">
+                <div class={ classes!("resume-line") }>
                     "  - [linkedin/matthewcharwood]("
-                    <a class="resume-link" href="https://www.linkedin.com/in/matthewcharwood">
+                    <a class={ classes!("resume-link") } href="https://www.linkedin.com/in/matthewcharwood">
                         "https://www.linkedin.com/in/matthewcharwood"
                     </a>
                     ")"
                 </div>
-                <div class="resume-line">
+                <div class={ classes!("resume-line") }>
                     "  - [articles]("
-                    <a class="resume-link" href="/articles/">"/articles/"</a>
+                    <a class={ classes!("resume-link") } href="/articles/">"/articles/"</a>
                     ")"
                 </div>
             </section>
@@ -368,7 +368,7 @@ pub async fn index() -> Html<String> {
                 .collect::<Vec<_>>()
                 .join(" ");
             view! {
-                <a class="article-fluid-link"
+                <a class={ classes!("article-fluid-link") }
                    href={ format!("/articles/{}", a.slug) }
                    aria-label={ a.title }
                    style={ format!("view-transition-name: article-{}", a.slug) }
@@ -379,8 +379,8 @@ pub async fn index() -> Html<String> {
                     // localStorage by js/visited-articles.js; first
                     // click adds the slug to the visited set and the
                     // checkmark + title strike-through fade in.
-                    <span class="article-check" aria-hidden="true">
-                        <svg class="article-check-mark" viewBox="0 0 16 16">
+                    <span class={ classes!("article-check") } aria-hidden="true">
+                        <svg class={ classes!("article-check-mark") } viewBox="0 0 16 16">
                             <path d="M2.5 8.5 L6.5 12.5 L13.5 3.5"
                                   fill="none"
                                   stroke="currentColor"
@@ -388,7 +388,7 @@ pub async fn index() -> Html<String> {
                                   stroke-linecap="round"
                                   stroke-linejoin="round" />
                         </svg>
-                        <svg class="article-trash-mark"
+                        <svg class={ classes!("article-trash-mark") }
                              viewBox="0 0 24 24"
                              fill="none"
                              stroke="currentColor"
@@ -402,8 +402,8 @@ pub async fn index() -> Html<String> {
                             <line x1="14" y1="11" x2="14" y2="17" />
                         </svg>
                     </span>
-                    <div class="fluid-display-wrap">
-                        <svg class="fluid-display-svg article-fluid-svg"
+                    <div class={ classes!("fluid-display-wrap") }>
+                        <svg class={ classes!("fluid-display-svg article-fluid-svg") }
                              viewBox="0 0 1200 200"
                              preserveAspectRatio="xMidYMid meet"
                              role="img"
@@ -420,12 +420,12 @@ pub async fn index() -> Html<String> {
                         // Fallback rendered as HTML text when the SVG would
                         // shrink below 20px. fit-text.js toggles .is-too-small
                         // on the SVG; CSS swaps the visible element.
-                        <span class="article-fluid-fallback" aria-hidden="true">
+                        <span class={ classes!("article-fluid-fallback") } aria-hidden="true">
                             { a.title.to_uppercase() }
                         </span>
                         // Strike-through bar — scaleX 0 → 1 when the
                         // parent link gets `.is-visited`.
-                        <span class="article-strike" aria-hidden="true"></span>
+                        <span class={ classes!("article-strike") } aria-hidden="true"></span>
                     </div>
                 </a>
             }
@@ -502,12 +502,12 @@ pub async fn index() -> Html<String> {
                       data-pointer-url={ crate::asset_url("cursors/v1/pointer.glb") }
                       data-hand-url={ crate::asset_url("cursors/v1/hand.glb") }></span>
                 { nav_markup }
-                <div class="dvd-bouncer" data-dvd-bouncer aria-hidden="true">
-                    <svg class="dvd-bouncer-mark"
+                <div class={ classes!("dvd-bouncer") } data-dvd-bouncer aria-hidden="true">
+                    <svg class={ classes!("dvd-bouncer-mark") }
                          viewBox="0 0 160 72"
                          focusable="false"
                          aria-hidden="true">
-                        <rect class="dvd-bouncer-plate"
+                        <rect class={ classes!("dvd-bouncer-plate") }
                               x="3"
                               y="3"
                               width="154"
@@ -529,21 +529,21 @@ pub async fn index() -> Html<String> {
                 { render_topic_marquees() }
                 { article_links }
 
-                <section class="feed-afterword" aria-label="Keep exploring">
-                    <div class="reading-completion" data-reading-completion hidden>
-                        <p class="reading-completion-eyebrow">"THE END, FOR NOW"</p>
+                <section class={ classes!("feed-afterword") } aria-label="Keep exploring">
+                    <div class={ classes!("reading-completion") } data-reading-completion hidden>
+                        <p class={ classes!("reading-completion-eyebrow") }>"THE END, FOR NOW"</p>
                         <h2 data-reading-completion-title>"You've read all my work."</h2>
                         <p data-reading-completion-copy></p>
-                        <p class="reading-completion-count" data-reading-completion-count role="status" aria-live="polite"></p>
-                        <div class="reading-completion-tags" data-reading-completion-tags></div>
-                        <button class="reading-completion-reset" data-reading-completion-reset type="button">"Start another lap"</button>
+                        <p class={ classes!("reading-completion-count") } data-reading-completion-count role="status" aria-live="polite"></p>
+                        <div class={ classes!("reading-completion-tags") } data-reading-completion-tags></div>
+                        <button class={ classes!("reading-completion-reset") } data-reading-completion-reset type="button">"Start another lap"</button>
                     </div>
                 </section>
 
                 // Avatar is a popover trigger via the native HTML Popover API.
                 // Clicking toggles the #bio popover.
-                <button class="avatar-button" type="button" popovertarget="bio" aria-label="Open bio">
-                    <img class="avatar"
+                <button class={ classes!("avatar-button") } type="button" popovertarget="bio" aria-label="Open bio">
+                    <img class={ classes!("avatar") }
                          src=AVATAR_SRC
                          srcset={ avatar_srcset(&[48, 96, 144]) }
                          sizes="48px"
@@ -561,9 +561,9 @@ pub async fn index() -> Html<String> {
                 // SFX plays. Misses fly back. js/trash-drag.js owns the
                 // pointer DnD logic. data-swap-region: ledger #14 (homepage-
                 // only island, region-reconciled by the soft-nav router).
-                <div class="trash" data-trash data-swap-region="trash">
-                    <button class="trash-can" type="button" aria-label="Trash" tabindex="-1">
-                        <svg class="trash-icon"
+                <div class={ classes!("trash") } data-trash data-swap-region="trash">
+                    <button class={ classes!("trash-can") } type="button" aria-label="Trash" tabindex="-1">
+                        <svg class={ classes!("trash-icon") }
                              viewBox="0 0 24 24"
                              fill="none"
                              stroke="currentColor"
@@ -577,9 +577,9 @@ pub async fn index() -> Html<String> {
                             <line x1="10" y1="11" x2="10" y2="17" />
                             <line x1="14" y1="11" x2="14" y2="17" />
                         </svg>
-                        <span class="trash-count" data-trash-count="0">"0"</span>
+                        <span class={ classes!("trash-count") } data-trash-count="0">"0"</span>
                     </button>
-                    <span class="trash-blast" aria-hidden="true"></span>
+                    <span class={ classes!("trash-blast") } aria-hidden="true"></span>
                 </div>
 
                 // Resume bio. Anchored so its bottom-right corner touches the
@@ -603,7 +603,7 @@ pub async fn index() -> Html<String> {
     };
 
     Html(
-        PageShell::new("ENG MANAGER", "homepage")
+        PageShell::new("ENG MANAGER", classes!("homepage"))
             .meta(meta)
             .assets(assets)
             .scripts(scripts)

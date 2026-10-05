@@ -36,6 +36,71 @@ pub struct CssDist;
 #[folder = "$OUT_DIR/js-dist/"]
 pub struct JsDist;
 
+// Exact previous-generation bodies bridge HTML already cached before class
+// compilation was introduced. The archive is immutable and manifest-only;
+// unknown obsolete hashes still never alias today's bytes.
+#[derive(RustEmbed)]
+#[folder = "compat/css-generation-2061afa3/"]
+struct CompatAssets;
+
+#[derive(serde::Deserialize)]
+struct CompatManifest {
+    schema_version: u32,
+    source_commit: String,
+    source_binary_sha256: String,
+    assets: Vec<CompatEntry>,
+}
+#[derive(serde::Deserialize)]
+struct CompatEntry {
+    path: String,
+    file: String,
+    sha256: String,
+    bytes: usize,
+    content_type: String,
+}
+
+fn lookup_compat_asset(path: &str) -> Option<EmbeddedFile> {
+    static MANIFEST: std::sync::LazyLock<std::collections::BTreeMap<String, CompatEntry>> =
+        std::sync::LazyLock::new(|| {
+            let manifest: CompatManifest = serde_json::from_str(include_str!(
+                "../compat/css-generation-2061afa3/manifest.json"
+            ))
+            .expect("verified previous-generation manifest");
+            assert_eq!(manifest.schema_version, 1);
+            assert_eq!(
+                manifest.source_commit,
+                "2061afa3aad1577e56f95cf665b49a3462f5d890"
+            );
+            assert_eq!(
+                manifest.source_binary_sha256,
+                "90bc3052acbd7eab31dc0c2e8dddd94bf12377a54a227d4131283d50b76ed62e"
+            );
+            let mut entries = std::collections::BTreeMap::new();
+            for entry in manifest.assets {
+                assert_eq!(entry.file, entry.path.trim_start_matches('/'));
+                assert!(
+                    entry.path.starts_with("/assets/css/") || entry.path.starts_with("/assets/js/")
+                );
+                assert!(
+                    entries.insert(entry.path.clone(), entry).is_none(),
+                    "duplicate compatibility URL"
+                );
+            }
+            entries
+        });
+    let entry = MANIFEST.get(&format!("/assets/{path}"))?;
+    let file = CompatAssets::get(&entry.file)?;
+    // The embedded full digest verifies exact bytes, not merely a short URL
+    // hash. This also protects debug reads if an archive file is corrupted.
+    if file.data.len() != entry.bytes
+        || hash_hex(&file.metadata.sha256_hash()) != entry.sha256
+        || file.metadata.mimetype() != entry.content_type
+    {
+        return None;
+    }
+    Some(file)
+}
+
 // Three-tier lookup: `css/` paths come from the lightningcss-built
 // chunks, `js/` paths from the oxc-built bundles, everything else from
 // the static `assets/` tree (fonts, images, etc.).
@@ -119,6 +184,10 @@ fn compute_asset_url(path: &str) -> String {
     let Some(file) = lookup_asset(path) else {
         return format!("/assets/{path}");
     };
+    asset_url_for_file(path, &file)
+}
+
+fn asset_url_for_file(path: &str, file: &EmbeddedFile) -> String {
     let Some((stem, ext)) = path.rsplit_once('.') else {
         return format!("/assets/{path}");
     };
@@ -141,10 +210,8 @@ fn hash_hex(bytes: &[u8]) -> String {
 // hash segment, in which case the handler falls back to looking up the path
 // as-is (e.g. CSS-referenced fonts, Markdown-embedded images).
 //
-// Doesn't validate that the hash matches the file's actual hash. If a client
-// requests an old hash with current content, we serve the current content
-// (the URL is just a cache key, not a content integrity check), and the
-// next HTML refresh hands them the up-to-date URL anyway.
+// The handler validates this alias against current bytes, or an exact
+// provenance-checked previous-generation archive. It never mixes class maps.
 fn strip_asset_hash(path: &str) -> Option<String> {
     let slash = path.rfind('/').map_or(0, |i| i + 1);
     let (dir, file) = path.split_at(slash);
@@ -248,9 +315,12 @@ pub(crate) async fn asset_handler(Path(path): Path<String>) -> Response {
     let file = if path.starts_with("personality/") {
         lookup_asset(&path)
     } else {
-        strip_asset_hash(&path)
-            .and_then(|stripped| lookup_asset(&stripped))
-            .or_else(|| lookup_asset(&path))
+        match strip_asset_hash(&path) {
+            Some(stripped) => lookup_asset(&stripped)
+                .filter(|file| asset_url_for_file(&stripped, file) == format!("/assets/{path}"))
+                .or_else(|| lookup_compat_asset(&path)),
+            None => lookup_asset(&path),
+        }
     };
 
     match file {

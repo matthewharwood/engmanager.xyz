@@ -28,6 +28,14 @@ hex = { workspace = true }
 
 [build-dependencies]
 lightningcss = { workspace = true }
+lightningcss-compact = { workspace = true }
+sha2 = { workspace = true }
+syn = { workspace = true }
+proc-macro2 = { workspace = true }
+oxc_ast = { workspace = true }
+oxc_ast_visit = { workspace = true }
+pulldown-cmark = { workspace = true }
+serde_json = { workspace = true }
 oxc_allocator = { workspace = true }
 oxc_codegen = { workspace = true }
 oxc_mangler = { workspace = true }
@@ -36,6 +44,12 @@ oxc_parser = { workspace = true }
 oxc_span = { workspace = true }
 
 [dev-dependencies]
+lightningcss = { workspace = true }
+oxc_ast = { workspace = true }
+oxc_ast_visit = { workspace = true }
+oxc_allocator = { workspace = true }
+oxc_parser = { workspace = true }
+oxc_span = { workspace = true }
 # Router-surface regression tests drive the real Router with
 # tower::ServiceExt::oneshot and read bodies via http-body-util.
 http-body-util = "0.1"

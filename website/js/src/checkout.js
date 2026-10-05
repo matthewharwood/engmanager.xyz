@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // On-site Stripe Elements checkout + confirmation.
 //
 // Two modes, switched on <body data-checkout-mode>:
@@ -209,17 +213,17 @@ function buildAppearance() {
 
 function miniCap(colors) {
     const cap = document.createElement("span");
-    cap.className = "mini-cap";
+    cap.className = cssClasses("mini-cap");
     cap.setAttribute("aria-hidden", "true");
     cap.style.setProperty("--cap", colors.cap);
     cap.style.setProperty("--thread", colors.thread);
     cap.style.setProperty("--accent", colors.accent);
     const crown = document.createElement("span");
-    crown.className = "mini-cap-crown";
+    crown.className = cssClasses("mini-cap-crown");
     const brim = document.createElement("span");
-    brim.className = "mini-cap-brim";
+    brim.className = cssClasses("mini-cap-brim");
     const dot = document.createElement("span");
-    dot.className = "mini-cap-dot";
+    dot.className = cssClasses("mini-cap-dot");
     cap.append(crown, brim, dot);
     return cap;
 }
@@ -268,25 +272,25 @@ function payLabel() {
 }
 
 function refreshPayButton() {
-    const btn = $("[data-checkout-pay]");
+    const btn = $(cssSelector("[data-checkout-pay]"));
     if (!btn) return;
-    const label = $("[data-pay-label]");
+    const label = $(cssSelector("[data-pay-label]"));
     if (label && !busy) label.textContent = payLabel();
     btn.disabled = busy || !elementsReady || cartModel.length === 0 || currentAmount < 50;
 }
 
 function setBusy(value) {
     busy = value;
-    const btn = $("[data-checkout-pay]");
-    const label = $("[data-pay-label]");
-    const spinner = $("[data-pay-spinner]");
+    const btn = $(cssSelector("[data-checkout-pay]"));
+    const label = $(cssSelector("[data-pay-label]"));
+    const spinner = $(cssSelector("[data-pay-spinner]"));
     if (label) label.textContent = value ? "Processing…" : payLabel();
     if (spinner) spinner.hidden = !value;
     refreshPayButton();
 }
 
 function showError(message) {
-    const el = $("[data-checkout-error]");
+    const el = $(cssSelector("[data-checkout-error]"));
     if (!el) return;
     el.textContent = message;
     el.hidden = false;
@@ -294,7 +298,7 @@ function showError(message) {
 }
 
 function clearError() {
-    const el = $("[data-checkout-error]");
+    const el = $(cssSelector("[data-checkout-error]"));
     if (el) {
         el.textContent = "";
         el.hidden = true;
@@ -303,12 +307,12 @@ function clearError() {
 
 function clearSkeleton(sel) {
     const host = $(sel);
-    const skeleton = host && host.querySelector(".checkout-element-skeleton");
+    const skeleton = host && host.querySelector(cssSelector(".checkout-element-skeleton"));
     if (skeleton) skeleton.remove();
 }
 
 function renderReceipt() {
-    const linesEl = $("[data-receipt-lines]");
+    const linesEl = $(cssSelector("[data-receipt-lines]"));
     if (linesEl) {
         linesEl.textContent = "";
         for (const item of cartModel) {
@@ -321,39 +325,39 @@ function renderReceipt() {
 
 function receiptLine(item) {
     const li = document.createElement("li");
-    li.className = "receipt-line";
+    li.className = cssClasses("receipt-line");
 
     const head = document.createElement("div");
-    head.className = "receipt-line-head";
+    head.className = cssClasses("receipt-line-head");
     head.append(miniCap(item.product.colors));
     const name = document.createElement("span");
-    name.className = "receipt-line-name";
+    name.className = cssClasses("receipt-line-name");
     name.textContent = item.product.name;
     head.append(name);
 
     const price = document.createElement("span");
-    price.className = "receipt-line-price";
+    price.className = cssClasses("receipt-line-price");
     price.textContent = money(item.product.price * 100 * item.quantity);
 
     const controls = document.createElement("div");
-    controls.className = "receipt-qty";
+    controls.className = cssClasses("receipt-qty");
     controls.setAttribute("role", "group");
     controls.setAttribute("aria-label", `Quantity for ${item.product.name}`);
     const minus = iconButton("–", `Decrease ${item.product.name}`, () =>
         changeQty(item.slug, -1),
     );
-    minus.className = "receipt-qty-btn";
+    minus.className = cssClasses("receipt-qty-btn");
     const qty = document.createElement("span");
-    qty.className = "receipt-qty-val";
+    qty.className = cssClasses("receipt-qty-val");
     qty.textContent = String(item.quantity);
     const plus = iconButton("+", `Increase ${item.product.name}`, () => changeQty(item.slug, 1));
-    plus.className = "receipt-qty-btn";
+    plus.className = cssClasses("receipt-qty-btn");
     const remove = iconButton("×", `Remove ${item.product.name}`, () => removeItem(item.slug));
-    remove.className = "receipt-remove";
+    remove.className = cssClasses("receipt-remove");
     controls.append(minus, qty, plus, remove);
 
     const top = document.createElement("div");
-    top.className = "receipt-line-top";
+    top.className = cssClasses("receipt-line-top");
     top.append(head, price);
 
     li.append(top, controls);
@@ -418,7 +422,7 @@ async function initCheckout() {
         refreshPayButton();
     });
 
-    const form = $("[data-checkout-form]");
+    const form = $(cssSelector("[data-checkout-form]"));
     if (form) form.addEventListener("submit", onPay);
 
     window.addEventListener("engmanager:themechange", () => {
@@ -435,7 +439,7 @@ async function onPay(event) {
     if (busy) return;
     clearError();
 
-    const emailInput = $("[data-checkout-email]");
+    const emailInput = $(cssSelector("[data-checkout-email]"));
     const email = (emailInput && emailInput.value.trim()) || "";
     if (!isEmail(email)) {
         showError("Enter a valid email so we can send your confirmation.");
@@ -548,7 +552,7 @@ function stashOrder(data, email, shipping) {
 function onPaid(paymentIntent, data) {
     writeCartModel([]);
     stampReceipt();
-    const done = $("[data-checkout-done]");
+    const done = $(cssSelector("[data-checkout-done]"));
     if (done) done.hidden = false;
     setText("[data-done-text]", "Payment confirmed — preparing your receipt…");
 
@@ -567,7 +571,7 @@ function onPaid(paymentIntent, data) {
 }
 
 function stampReceipt() {
-    const stamp = $("[data-receipt-stamp]");
+    const stamp = $(cssSelector("[data-receipt-stamp]"));
     if (stamp) stamp.dataset.show = "true";
     setText("[data-receipt-meta]", "PAID");
 }
@@ -613,7 +617,7 @@ function shortOrderId(piId) {
 }
 
 function renderConfirmed(stash, paymentIntent) {
-    const linesEl = $("[data-receipt-lines]");
+    const linesEl = $(cssSelector("[data-receipt-lines]"));
     let subtotal = 0;
 
     if (stash && Array.isArray(stash.items) && stash.items.length) {
@@ -633,7 +637,7 @@ function renderConfirmed(stash, paymentIntent) {
             }
         }
         // Confirmation receipts are read-only — strip the qty controls.
-        document.querySelectorAll("[data-receipt-lines] .receipt-qty").forEach((c) => c.remove());
+        document.querySelectorAll(cssSelector("[data-receipt-lines] .receipt-qty")).forEach((c) => c.remove());
     }
 
     const amount =

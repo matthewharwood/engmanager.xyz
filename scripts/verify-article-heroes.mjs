@@ -7,13 +7,17 @@ import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Cdp } from './local-chrome-cdp.mjs';
+import { loadCssManifestBindings } from './css-manifest-bindings.mjs';
 
 const options=Object.fromEntries(process.argv.slice(2).map((arg)=>{const [key,...value]=arg.replace(/^--/,'').split('=');return[key,value.join('=')||'true'];}));
 const origin=new URL(options.url||'http://127.0.0.1:3092');
 if(!['127.0.0.1','localhost','[::1]'].includes(origin.hostname))throw Error('Use an explicitly local server');
+const cssBindings=await loadCssManifestBindings(options['css-manifest']);
+const heroClasses={scene:cssBindings.className('article-hero-scene'),poster:cssBindings.className('article-hero-poster'),canvas:cssBindings.className('article-hero-canvas')};
 const output=resolve(options.output||join(tmpdir(),`article-hero-native-${Date.now()}`));
 await mkdir(output,{recursive:true});
 const pageHtml=await(await fetch(new URL('/articles/your-gmail-avatar-is-part-of-your-job-search',origin))).text();
+cssBindings.assertHtmlGeneration(pageHtml);
 const script=pageHtml.match(/<script[^>]+src="([^"]*\/js\/article-heroes\.[^"]+\.js)"/)[1];
 const css=pageHtml.match(/<link[^>]+href="([^"]*\/css\/article-heroes\.[^"]+\.css)"/)[1];
 const [source,bundle,style]=await Promise.all([
@@ -27,7 +31,7 @@ if(specs.length!==12)throw Error(`Expected all12 hero specifications, found${spe
 const html=`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><style>
 :root{--paper:#181b21;--ink:#d9dce5;--plum:#7aa2fa;--ink-soft:#6480a2;--accent:#7aa2fa;--ctp-mantle:#181b21;--ctp-text:#d9dce5;--ctp-blue:#89b4fa;--ctp-pink:#f5c2e7;background:#181b21;color:#d9dce5;font-family:system-ui}body{margin:0;padding:20px}h1{font:700 18px/1.3 system-ui;overflow-wrap:anywhere}button{display:block;margin:25px auto;font:16px monospace;padding:15px}figure[hidden]{display:none}</style></head><body><h1 id="name"></h1><main id="slot"></main><button id="next">Next scene</button>
 <script>const specs=${JSON.stringify(specs)};let index=0;window.__heroReview={renders:[],disposals:[],errors:[]};window.__engNav={busy:false,onBeforeSwap(fn){this.before=fn},onSwap(fn){this.swap=fn}};
-function show(){const spec=specs[index],old=document.querySelector('figure');window.__engNav.before?.();if(old)window.__heroReview.disposals.push({slug:old.dataset.articleHero,renderer:old.dataset.renderer??null});document.getElementById('name').textContent=spec.name+' / '+spec.slug;document.getElementById('slot').innerHTML='<figure class="article-hero-scene" data-article-hero="'+spec.slug+'" role="img" aria-label="'+spec.description+'"><svg class="article-hero-poster" viewBox="0 0 600 340" aria-hidden="true">'+spec.poster+'</svg><canvas class="article-hero-canvas" aria-hidden="true"></canvas><figcaption><span>FIELD STUDY / '+spec.slug+'</span><strong>'+spec.name+'</strong></figcaption></figure>';window.__engNav.swap?.(document);}show();document.getElementById('next').onclick=()=>{index=(index+1)%specs.length;show()};addEventListener('error',event=>window.__heroReview.errors.push(event.message));</script><script src="/bundle.js"></script></body></html>`;
+function show(){const spec=specs[index],old=document.querySelector('figure');window.__engNav.before?.();if(old)window.__heroReview.disposals.push({slug:old.dataset.articleHero,renderer:old.dataset.renderer??null});document.getElementById('name').textContent=spec.name+' / '+spec.slug;document.getElementById('slot').innerHTML='<figure class="${heroClasses.scene}" data-article-hero="'+spec.slug+'" role="img" aria-label="'+spec.description+'"><svg class="${heroClasses.poster}" viewBox="0 0 600 340" aria-hidden="true">'+spec.poster+'</svg><canvas class="${heroClasses.canvas}" aria-hidden="true"></canvas><figcaption><span>FIELD STUDY / '+spec.slug+'</span><strong>'+spec.name+'</strong></figcaption></figure>';window.__engNav.swap?.(document);}show();document.getElementById('next').onclick=()=>{index=(index+1)%specs.length;show()};addEventListener('error',event=>window.__heroReview.errors.push(event.message));</script><script src="/bundle.js"></script></body></html>`;
 const server=createServer((request,response)=>{
     const path=new URL(request.url,'http://127.0.0.1').pathname;
     response.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'");
@@ -54,7 +58,7 @@ try {
     await Promise.all([page.command('Page.enable'),page.command('Runtime.enable')]);
     await page.command('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:2,mobile:true});
     await page.command('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:5});
-    const report={source:origin.href,script,css,browser:await browser.command('Browser.getVersion'),gpu:(await browser.command('SystemInfo.getInfo')).gpu.devices,scenes:[]};
+    const report={source:origin.href,script,css,cssManifest:cssBindings.provenance,fixtureClassBindings:heroClasses,browser:await browser.command('Browser.getVersion'),gpu:(await browser.command('SystemInfo.getInfo')).gpu.devices,scenes:[]};
     for(const reduced of [false,true]){
         await page.command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:reduced?'reduce':'no-preference'}]});
         await page.command('Page.navigate',{url:fixture});
@@ -72,7 +76,7 @@ try {
             report.scenes.push({...state,screenshot});
             if(!reduced){
                 await evaluate('window.__heroReview.loss=document.querySelector("canvas").getContext("webgl2").getExtension("WEBGL_lose_context");window.__heroReview.loss.loseContext()');
-                await until('!document.querySelector("figure").dataset.renderer&&Number(getComputedStyle(document.querySelector(".article-hero-poster")).opacity)>0&&Number(getComputedStyle(document.querySelector(".article-hero-canvas")).opacity)===0','authored SVG remains visible after context loss');
+                await until('!document.querySelector("[data-article-hero]").dataset.renderer&&Number(getComputedStyle(document.querySelector("[data-article-hero] > svg")).opacity)>0&&Number(getComputedStyle(document.querySelector("[data-article-hero] > canvas")).opacity)===0','authored SVG remains visible after context loss');
                 const fallback=await page.command('Page.captureScreenshot',{format:'png',fromSurface:true});
                 await writeFile(join(output,`fallback-${spec.slug}.png`),Buffer.from(fallback.data,'base64'));
                 await evaluate('window.__heroReview.loss.restoreContext()');

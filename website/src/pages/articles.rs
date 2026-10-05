@@ -52,17 +52,17 @@ fn render_taxonomy(category: Category, tags: &[Tag]) -> HtmlFragment {
         .into_iter()
         .map(|t| {
             view! {
-                <span class="article-tag">{ t.label() }</span>
+                <span class={ classes!("article-tag") }>{ t.label() }</span>
             }
         })
         .collect();
 
     view! {
-        <div class="article-taxonomy">
-            <span class="article-category" data-category={ category.slug() }>
+        <div class={ classes!("article-taxonomy") }>
+            <span class={ classes!("article-category") } data-category={ category.slug() }>
                 { category.label() }
             </span>
-            <div class="article-tags" aria-label="Tags">
+            <div class={ classes!("article-tags") } aria-label="Tags">
                 { tag_chips }
             </div>
         </div>
@@ -76,24 +76,24 @@ fn render_taxonomy(category: Category, tags: &[Tag]) -> HtmlFragment {
 // matches reality on every browser.
 fn article_meta_tools() -> HtmlFragment {
     view! {
-        <div class="article-meta-tools" aria-label="Article tools">
-            <button class="article-meta-tool" type="button" data-quote-card-open hidden>
+        <div class={ classes!("article-meta-tools") } aria-label="Article tools">
+            <button class={ classes!("article-meta-tool") } type="button" data-quote-card-open hidden>
                 <span aria-hidden="true">"❝"</span>
                 <span>"Make quote card"</span>
             </button>
-            <button class="article-meta-tool" type="button" data-share hidden>
+            <button class={ classes!("article-meta-tool") } type="button" data-share hidden>
                 <span aria-hidden="true">"↗"</span>
                 <span>"Share"</span>
             </button>
-            <button class="article-meta-tool" type="button" data-read-aloud hidden>
+            <button class={ classes!("article-meta-tool") } type="button" data-read-aloud hidden>
                 <span aria-hidden="true">"▶"</span>
                 <span>"Read aloud"</span>
             </button>
-            <button class="article-meta-tool" type="button" data-fullscreen hidden>
+            <button class={ classes!("article-meta-tool") } type="button" data-fullscreen hidden>
                 <span aria-hidden="true">"⛶"</span>
                 <span>"Fullscreen"</span>
             </button>
-            <button class="article-meta-tool" type="button" data-eyedropper hidden>
+            <button class={ classes!("article-meta-tool") } type="button" data-eyedropper hidden>
                 <span aria-hidden="true">"◉"</span>
                 <span>"Recolor"</span>
             </button>
@@ -122,7 +122,7 @@ fn render_article_reveal_bootstrap() -> HtmlFragment {
 fn render_article_title(title: &str, vt_name: &str) -> HtmlFragment {
     view! {
         { render_liquid_title_filter() }
-        <h1 class="article-title liquid-title"
+        <h1 class={ classes!("article-title liquid-title") }
             style={ vt_name }
             data-liquid-title
             data-liquid-title-text={ title }>
@@ -243,7 +243,7 @@ fn layout(
         HtmlFragment::empty()
     };
 
-    PageShell::new(title, "articles-page")
+    PageShell::new(title, classes!("articles-page"))
         .meta(meta)
         .raw_meta(reveal_bootstrap)
         .assets(assets)
@@ -264,21 +264,21 @@ pub async fn index() -> Html<String> {
     let entries: HtmlFragment = public_articles()
         .map(|a| {
             view! {
-                <li class="article-entry">
-                    <a class="article-entry-title" href={ format!("/articles/{}", a.slug) }>
+                <li class={ classes!("article-entry") }>
+                    <a class={ classes!("article-entry-title") } href={ format!("/articles/{}", a.slug) }>
                         { a.title }
                     </a>
-                    <span class="article-entry-date">{ a.date.label() }</span>
-                    <p class="article-entry-summary">{ a.summary }</p>
+                    <span class={ classes!("article-entry-date") }>{ a.date.label() }</span>
+                    <p class={ classes!("article-entry-summary") }>{ a.summary }</p>
                 </li>
             }
         })
         .collect();
 
     let body = view! {
-        <section class="articles-index">
-            <h1 class="articles-index-title">"ARTICLES"</h1>
-            <ul class="article-list">{ entries }</ul>
+        <section class={ classes!("articles-index") }>
+            <h1 class={ classes!("articles-index-title") }>"ARTICLES"</h1>
+            <ul class={ classes!("article-list") }>{ entries }</ul>
         </section>
     };
 
@@ -314,8 +314,8 @@ fn render_article_navigation(current_index: usize) -> HtmlFragment {
     }
 
     view! {
-        <footer class="article-nextup" aria-label="Next articles">
-            <nav class="article-next-grid" aria-label="Next articles">
+        <footer class={ classes!("article-nextup") } aria-label="Next articles">
+            <nav class={ classes!("article-next-grid") } aria-label="Next articles">
                 { next }
                 { topic_next }
             </nav>
@@ -337,7 +337,7 @@ fn render_coaching_cta() -> HtmlFragment {
         .iter()
         .map(|person| match person.photo {
             Some(path) => view! {
-                <img class="article-coach-face"
+                <img class={ classes!("article-coach-face") }
                      src={ asset_url(path) }
                      alt=""
                      width="36"
@@ -346,7 +346,7 @@ fn render_coaching_cta() -> HtmlFragment {
                      decoding="async" />
             },
             None => view! {
-                <span class="article-coach-face article-coach-face-monogram">{ person.initials }</span>
+                <span class={ classes!("article-coach-face article-coach-face-monogram") }>{ person.initials }</span>
             },
         })
         .collect();
@@ -357,28 +357,28 @@ fn render_coaching_cta() -> HtmlFragment {
         .join(" · ");
 
     view! {
-        <aside class="article-coach" aria-labelledby="article-coach-title">
-            <p class="article-coach-kicker">"1:1 coaching · Matthew Harwood"</p>
-            <h2 id="article-coach-title" class="article-coach-title">
+        <aside class={ classes!("article-coach") } aria-labelledby="article-coach-title">
+            <p class={ classes!("article-coach-kicker") }>"1:1 coaching · Matthew Harwood"</p>
+            <h2 id="article-coach-title" class={ classes!("article-coach-title") }>
                 { headline(SessionMode::Solo) }
             </h2>
-            <p class="article-coach-copy">
+            <p class={ classes!("article-coach-copy") }>
                 "A resume review and career call for engineers and designers. You send me your resume and a short intake doc, I read both before we talk, and you leave with a plan instead of another year of guessing."
             </p>
-            <div class="article-coach-actions">
-                <a class="article-coach-cta" href={ format!("{COACH_ORIGIN}/") }>
+            <div class={ classes!("article-coach-actions") }>
+                <a class={ classes!("article-coach-cta") } href={ format!("{COACH_ORIGIN}/") }>
                     { cta_label(SessionMode::Solo) }
                 </a>
-                <a class="article-coach-secondary" href={ format!("{COACH_ORIGIN}/?group=1") }>
+                <a class={ classes!("article-coach-secondary") } href={ format!("{COACH_ORIGIN}/?group=1") }>
                     "Or bring friends →"
                 </a>
             </div>
-            <p class="article-coach-terms">
+            <p class={ classes!("article-coach-terms") }>
                 { format!("{} · {} · {}", OFFER.duration_label(), OFFER.window_label(), OFFER.meeting) }
             </p>
-            <div class="article-coach-proof">
-                <span class="article-coach-faces" aria-hidden="true">{ faces }</span>
-                <span class="article-coach-proof-text">
+            <div class={ classes!("article-coach-proof") }>
+                <span class={ classes!("article-coach-faces") } aria-hidden="true">{ faces }</span>
+                <span class={ classes!("article-coach-proof-text") }>
                     { format!("Recommended on LinkedIn by {names}, engineers I managed.") }
                 </span>
             </div>
@@ -390,14 +390,14 @@ fn render_coaching_cta() -> HtmlFragment {
 /// The distinct field IDs also let the module live on the personality article.
 pub(super) fn render_newsletter_cta(inline_signup: bool) -> HtmlFragment {
     view! {
-        <aside class="article-newsletter" aria-labelledby="article-newsletter-title">
-            <p class="article-newsletter-kicker">"Free coaching notes · Matthew Harwood"</p>
-            <h2 id="article-newsletter-title" class="article-newsletter-title">"Keep learning, in your inbox."</h2>
-            <p class="article-newsletter-copy">"Notes on building things, leading teams, tools, workflow, and community. I send a note when I have something worth sharing."</p>
+        <aside class={ classes!("article-newsletter") } aria-labelledby="article-newsletter-title">
+            <p class={ classes!("article-newsletter-kicker") }>"Free coaching notes · Matthew Harwood"</p>
+            <h2 id="article-newsletter-title" class={ classes!("article-newsletter-title") }>"Keep learning, in your inbox."</h2>
+            <p class={ classes!("article-newsletter-copy") }>"Notes on building things, leading teams, tools, workflow, and community. I send a note when I have something worth sharing."</p>
             { if inline_signup { view! {
-              <form class="article-newsletter-form" method="post" action="/api/newsletter/subscribe">
+              <form class={ classes!("article-newsletter-form") } method="post" action="/api/newsletter/subscribe">
                 <label for="article-newsletter-email">"Your email address"</label>
-                <div class="article-newsletter-controls">
+                <div class={ classes!("article-newsletter-controls") }>
                     <input id="article-newsletter-email"
                            type="email"
                            name="email"
@@ -415,12 +415,12 @@ pub(super) fn render_newsletter_cta(inline_signup: bool) -> HtmlFragment {
                     <label for="article-newsletter-website">"Leave this field empty"</label>
                     <input id="article-newsletter-website" type="text" name="website" tabindex="-1" autocomplete="off" />
                 </div>
-                <p id="article-newsletter-privacy" class="article-newsletter-privacy">"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
+                <p id="article-newsletter-privacy" class={ classes!("article-newsletter-privacy") }>"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
               </form>
-              <a class="article-newsletter-about" href="/subscribe">"More about the newsletter"<span aria-hidden="true">" →"</span></a>
+              <a class={ classes!("article-newsletter-about") } href="/subscribe">"More about the newsletter"<span aria-hidden="true">" →"</span></a>
             } } else { view! {
-              <a class="article-newsletter-signup-link" href="/subscribe">"Get the free notes"<span aria-hidden="true">" ↗"</span></a>
-              <p class="article-newsletter-privacy">"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
+              <a class={ classes!("article-newsletter-signup-link") } href="/subscribe">"Get the free notes"<span aria-hidden="true">" ↗"</span></a>
+              <p class={ classes!("article-newsletter-privacy") }>"Free to read. Unsubscribe whenever you like. "<a href="/newsletter/privacy" data-hard-nav>"Newsletter privacy"</a></p>
             } } }
         </aside>
     }
@@ -438,18 +438,18 @@ fn render_next_article_card(
     let chips = render_article_topic_chips(article);
 
     view! {
-        <a class="article-next-card"
+        <a class={ classes!("article-next-card") }
            href={ format!("/articles/{}", article.slug) }
            data-relevance-score={ format!("{}", score) }>
-            <span class="article-next-kicker">"Next"</span>
-            <span class="article-next-body">
-                <span class="article-next-context">{ context }</span>
-                <strong class="article-next-title">{ title }</strong>
-                <span class="article-next-chips" aria-label="Article topics">
+            <span class={ classes!("article-next-kicker") }>"Next"</span>
+            <span class={ classes!("article-next-body") }>
+                <span class={ classes!("article-next-context") }>{ context }</span>
+                <strong class={ classes!("article-next-title") }>{ title }</strong>
+                <span class={ classes!("article-next-chips") } aria-label="Article topics">
                     { chips }
                 </span>
             </span>
-            <span class="article-next-arrow" aria-hidden="true">"→"</span>
+            <span class={ classes!("article-next-arrow") } aria-hidden="true">"→"</span>
         </a>
     }
 }
@@ -459,13 +459,13 @@ fn render_article_topic_chips(article: &Article) -> HtmlFragment {
         .into_iter()
         .map(|tag| {
             view! {
-                <span class="article-next-chip">{ tag.label() }</span>
+                <span class={ classes!("article-next-chip") }>{ tag.label() }</span>
             }
         })
         .collect();
 
     view! {
-        <span class="article-next-chip article-next-chip-category">
+        <span class={ classes!("article-next-chip article-next-chip-category") }>
             { article.category.label() }
         </span>
         { tags }
@@ -565,13 +565,13 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                 quote_card::render(page_title, &format!("{SITE_ORIGIN}/articles/{slug}")).markup;
             let body = view! {
                 <article id="main"
-                         class="article"
+                         class={ classes!("article") }
                          tabindex="-1"
                          data-article-slug={ slug.clone() }>
                     { title }
                     { article_hero::render(&slug) }
-                    <header class="article-meta">
-                        <img class="article-meta-avatar"
+                    <header class={ classes!("article-meta") }>
+                        <img class={ classes!("article-meta-avatar") }
                              src=AVATAR_SRC
                              srcset={ avatar_srcset(&[40, 80, 120]) }
                              sizes="40px"
@@ -580,15 +580,15 @@ pub async fn detail(State(state): State<AppState>, Path(slug): Path<String>) -> 
                              height="40"
                              loading="eager"
                              decoding="async" />
-                        <div class="article-meta-author">
-                            <div class="article-meta-name">"Matthew Harwood"</div>
-                            <div class="article-meta-role">"Engineering Manager @ Uber"</div>
+                        <div class={ classes!("article-meta-author") }>
+                            <div class={ classes!("article-meta-name") }>"Matthew Harwood"</div>
+                            <div class={ classes!("article-meta-role") }>"Engineering Manager @ Uber"</div>
                         </div>
-                        <time class="article-meta-date" datetime={ a.date.iso() }>
+                        <time class={ classes!("article-meta-date") } datetime={ a.date.iso() }>
                             { a.date.label() }
                         </time>
-                        <details class="article-meta-disclosure article-meta-disclosure-tools">
-                            <summary class="article-meta-summary">"Actions"</summary>
+                        <details class={ classes!("article-meta-disclosure article-meta-disclosure-tools") }>
+                            <summary class={ classes!("article-meta-summary") }>"Actions"</summary>
                             { article_meta_tools() }
                         </details>
                         { taxonomy }
@@ -979,7 +979,8 @@ fn reveal_section_start(index: usize, preload: bool) -> Event<'static> {
     let preload_attr = if preload { " data-reveal-preload" } else { "" };
     Event::Html(CowStr::Boxed(
         format!(
-            r#"<section class="article-reveal-section" data-article-reveal data-reveal-variant="{variant}" data-reveal-order="{index}"{preload_attr}>"#
+            css_html!(r#"<section class="article-reveal-section" data-article-reveal data-reveal-variant="{variant}" data-reveal-order="{index}"{preload_attr}>"#),
+            variant = variant, index = index, preload_attr = preload_attr
         )
         .into_boxed_str(),
     ))
@@ -1021,7 +1022,7 @@ mod tests {
         let html = body.as_str();
 
         assert!(
-            html.contains(r#"class="article-reveal-section""#),
+            html.contains(css_html!(r#"class="article-reveal-section""#)),
             "article body should render section reveal wrappers",
         );
         assert!(

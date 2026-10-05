@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Two identical runs, measured after layout, keep the seam at exactly one run.
 // The fixed category never joins the moving track.
 (() => {
@@ -7,8 +11,8 @@
 
     function mount() {
         dispose();
-        const page = document.querySelector('[data-journey-current]') || document;
-        const cleanups = [...page.querySelectorAll('.article-tags')].map(viewport => {
+        const page = document.querySelector(cssSelector('[data-journey-current]')) || document;
+        const cleanups = [...page.querySelectorAll(cssSelector('.article-tags'))].map(viewport => {
             const originals = [...viewport.children];
             if (!originals.length) return () => {};
             const lifetime = new AbortController();
@@ -28,16 +32,16 @@
                 reset();
                 if (motion.matches || viewport.clientWidth <= 0) return;
                 const track = document.createElement('div');
-                track.className = 'article-tag-track';
+                track.className = cssClasses('article-tag-track');
                 const run = document.createElement('div');
-                run.className = 'article-tag-run';
+                run.className = cssClasses('article-tag-run');
                 run.append(...originals);
                 track.append(run);
                 viewport.replaceChildren(track);
                 // Include the trailing inter-tag gap in the measured distance.
                 for (let i = 0; run.getBoundingClientRect().width < viewport.clientWidth && i < 256; i++) {
                     const placeholder = document.createElement('span');
-                    placeholder.className = 'article-tag article-tag-placeholder';
+                    placeholder.className = cssClasses('article-tag article-tag-placeholder');
                     placeholder.textContent = fillers[i % fillers.length];
                     placeholder.setAttribute('aria-hidden', 'true');
                     run.append(placeholder);

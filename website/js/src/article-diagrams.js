@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Diagrams are content; rendering belongs to the same mount lifecycle as the
 // article's other enhancements. Retained pages keep their original sources.
 (() => {
@@ -66,8 +70,8 @@
     }
 
     function mount() {
-        const nodes = [...document.querySelectorAll(".article .mermaid")];
-        const surface = nodes[0]?.closest("[data-eng-page]") || nodes[0]?.closest(".article");
+        const nodes = [...document.querySelectorAll(cssSelector(".article .mermaid"))];
+        const surface = nodes[0]?.closest(cssSelector("[data-eng-page]")) || nodes[0]?.closest(cssSelector(".article"));
         if (active?.surface === surface) return;
         unmount();
         if (!surface || !nodes.length) return;
@@ -83,12 +87,12 @@
         const appearanceKey = () => [document.documentElement.getAttribute("data-theme") || "", dark.matches, compact.matches,
             getComputedStyle(document.documentElement).getPropertyValue("--font-mono")].join("|");
         const viewer = document.createElement("dialog");
-        viewer.className = "diagram-viewer";
+        viewer.className = cssClasses("diagram-viewer");
         viewer.setAttribute("aria-label", "Expanded diagram");
-        viewer.innerHTML = `<div class="diagram-viewer-bar"><span>Diagram</span><div class="diagram-zoom" aria-label="Diagram zoom"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><output>100%</output><button type="button" data-zoom="in" aria-label="Zoom in">+</button></div><button type="button" class="diagram-close" aria-label="Close diagram">✕</button></div><div class="diagram-viewport"><div class="diagram-canvas"></div></div>`;
+        viewer.innerHTML = cssHtml(`<div class="diagram-viewer-bar"><span>Diagram</span><div class="diagram-zoom" aria-label="Diagram zoom"><button type="button" data-zoom="out" aria-label="Zoom out">−</button><output>100%</output><button type="button" data-zoom="in" aria-label="Zoom in">+</button></div><button type="button" class="diagram-close" aria-label="Close diagram">✕</button></div><div class="diagram-viewport"><div class="diagram-canvas"></div></div>`);
         document.body.append(viewer);
-        const viewport = viewer.querySelector(".diagram-viewport");
-        const canvas = viewer.querySelector(".diagram-canvas");
+        const viewport = viewer.querySelector(cssSelector(".diagram-viewport"));
+        const canvas = viewer.querySelector(cssSelector(".diagram-canvas"));
         const zoomLevels = [1, 1.5, 2, 3, 4];
         let zoomIndex = 0;
         let opener = null;
@@ -102,11 +106,11 @@
             viewer.querySelector('[data-zoom="out"]').disabled = zoomIndex === 0;
             viewer.querySelector('[data-zoom="in"]').disabled = zoomIndex === zoomLevels.length - 1;
         }
-        viewer.querySelector(".diagram-zoom").addEventListener("click", (event) => {
-            const direction = event.target.closest("button")?.dataset.zoom;
+        viewer.querySelector(cssSelector(".diagram-zoom")).addEventListener("click", (event) => {
+            const direction = event.target.closest(cssSelector("button"))?.dataset.zoom;
             if (direction) setZoom(zoomIndex + (direction === "in" ? 1 : -1));
         });
-        viewer.querySelector(".diagram-close").addEventListener("click", () => viewer.close());
+        viewer.querySelector(cssSelector(".diagram-close")).addEventListener("click", () => viewer.close());
         viewer.addEventListener("close", () => {
             canvas.replaceChildren();
             selectedNode = null;
@@ -118,14 +122,14 @@
         });
 
         function bindExpand(node) {
-            if (!node.querySelector("svg") || node.parentElement.querySelector(".diagram-expand")) return;
+            if (!node.querySelector(cssSelector("svg")) || node.parentElement.querySelector(cssSelector(".diagram-expand"))) return;
             const expand = document.createElement("button");
             expand.type = "button";
-            expand.className = "diagram-expand";
+            expand.className = cssClasses("diagram-expand");
             expand.textContent = "Expand diagram ↗";
             node.after(expand);
             expand.addEventListener("click", () => {
-                const diagram = node.querySelector("svg");
+                const diagram = node.querySelector(cssSelector("svg"));
                 if (!diagram) return;
                 opener = expand;
                 selectedNode = node;
@@ -139,13 +143,13 @@
         }
         nodes.forEach((node) => {
             bindExpand(node);
-            if (node.querySelector("svg") && renderedKeys.get(node) === appearanceKey()) pending.delete(node);
+            if (node.querySelector(cssSelector("svg")) && renderedKeys.get(node) === appearanceKey()) pending.delete(node);
         });
 
         const showFallback = () => {
             if (disposed) return;
             nodes.forEach((node) => {
-                if (node.querySelector("svg")) return;
+                if (node.querySelector(cssSelector("svg"))) return;
                 node.textContent = sources.get(node);
                 node.style.visibility = "visible";
             });
@@ -160,7 +164,7 @@
             return bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
         }
         const suspended = () => document.hidden || touching || window.__engNav?.busy
-            || document.body.classList.contains("journey-revealing");
+            || document.body.classList.contains(cssToken("journey-revealing"));
         const eligible = (node, version) => !disposed && version === revision && node.isConnected
             && intersects(node) && !suspended() && performance.now() - activityAt >= 180;
 
@@ -172,7 +176,7 @@
             renderedKeys.set(node, appearanceKey());
             pending.delete(node); prepared.delete(node);
             bindExpand(node);
-            if (viewer.open && selectedNode === node) canvas.replaceChildren(node.querySelector("svg").cloneNode(true));
+            if (viewer.open && selectedNode === node) canvas.replaceChildren(node.querySelector(cssSelector("svg")).cloneNode(true));
         }
 
         function waitFor(promise) {
@@ -232,7 +236,7 @@
                         prepared.set(node, svg);
                         commit(node, svg, version);
                     } catch {
-                        if (!disposed && version === revision && !node.querySelector("svg")) {
+                        if (!disposed && version === revision && !node.querySelector(cssSelector("svg"))) {
                             node.textContent = sources.get(node);
                             node.style.visibility = "visible";
                         }
@@ -310,7 +314,7 @@
         window.addEventListener("engmanager:themechange", invalidate, { signal: lifetime.signal });
         window.addEventListener("engmanager:fontchange", () => {
             const key = appearanceKey();
-            if (nodes.some((node) => node.querySelector("svg") && renderedKeys.get(node) !== key)) invalidate();
+            if (nodes.some((node) => node.querySelector(cssSelector("svg")) && renderedKeys.get(node) !== key)) invalidate();
         }, { signal: lifetime.signal });
         dark.addEventListener("change", invalidate, { signal: lifetime.signal });
         compact.addEventListener("change", invalidate, { signal: lifetime.signal });
@@ -321,7 +325,7 @@
             pending.clear(); visible.clear(); prepared.clear();
             clearTimeout(fallbackTimer);
             viewer.remove();
-            nodes.forEach((node) => node.parentElement?.querySelector(".diagram-expand")?.remove());
+            nodes.forEach((node) => node.parentElement?.querySelector(cssSelector(".diagram-expand"))?.remove());
             scratchNodes.forEach((node) => node.remove());
             scratchNodes.clear();
         } };

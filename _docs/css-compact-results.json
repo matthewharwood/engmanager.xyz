@@ -1,0 +1,1082 @@
+{
+  "schemaVersion": 1,
+  "status": {
+    "bodyInventory": "passed",
+    "nativeMatrix": "passed",
+    "candidateJourneyBudgets": "passed",
+    "heroes": "passed",
+    "diagrams": "passed",
+    "fullWebsiteCI": "passed",
+    "registryReleaseInstallation": "pending",
+    "rawEvidenceArchivePublication": "pending",
+    "remoteCurrentHeadPRChecks": "pending"
+  },
+  "evidenceIndex": "css-compact-evidence.json",
+  "compression": {
+    "sourceArtifact": "body.report",
+    "routes": 49,
+    "codecs": {
+      "brotliQuality": 5,
+      "gzipLevel": 9,
+      "node": "v24.12.0",
+      "zlib": "1.3.1-470d3a2",
+      "scope": "Exact body bytes recompressed individually; excludes HTTP headers. Browser encodedDataLength is recorded separately and includes transport bookkeeping."
+    },
+    "components": {
+      "baseline": {
+        "html": {
+          "raw": 2830518,
+          "brotli5": 511004,
+          "gzip9": 569832
+        },
+        "css": {
+          "raw": 3817952,
+          "brotli5": 823023,
+          "gzip9": 880506
+        },
+        "javascript": {
+          "raw": 4081853,
+          "brotli5": 1378463,
+          "gzip9": 1456303
+        },
+        "combined": {
+          "raw": 10730323,
+          "brotli5": 2712490,
+          "gzip9": 2906641
+        }
+      },
+      "candidate": {
+        "html": {
+          "raw": 2733420,
+          "brotli5": 507715,
+          "gzip9": 562965
+        },
+        "css": {
+          "raw": 3536499,
+          "brotli5": 798623,
+          "gzip9": 856508
+        },
+        "javascript": {
+          "raw": 3949282,
+          "brotli5": 1358154,
+          "gzip9": 1434436
+        },
+        "combined": {
+          "raw": 10219201,
+          "brotli5": 2664492,
+          "gzip9": 2853909
+        }
+      }
+    },
+    "aggregateDelta": {
+      "raw": -511122,
+      "brotli5": -47998,
+      "gzip9": -52732
+    },
+    "brotliGrowthRoutes": 0,
+    "gzipGrowthRoutes": 0,
+    "attribution": [
+      {
+        "before": "baseline",
+        "after": "upgrade-control",
+        "scope": "Equal-weight per-route cold HTML plus declared CSS/JS bodies; arithmetic attribution only, not native equivalence or a candidate acceptance gate.",
+        "aggregateDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "htmlDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "cssDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "jsDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        }
+      },
+      {
+        "before": "upgrade-control",
+        "after": "guard-control",
+        "scope": "Equal-weight per-route cold HTML plus declared CSS/JS bodies; arithmetic attribution only, not native equivalence or a candidate acceptance gate.",
+        "aggregateDelta": {
+          "raw": -81145,
+          "brotli5": -11717,
+          "gzip9": -13058
+        },
+        "htmlDelta": {
+          "raw": 4610,
+          "brotli5": 2456,
+          "gzip9": 2573
+        },
+        "cssDelta": {
+          "raw": 319,
+          "brotli5": -37,
+          "gzip9": 25
+        },
+        "jsDelta": {
+          "raw": -86074,
+          "brotli5": -14136,
+          "gzip9": -15656
+        }
+      },
+      {
+        "before": "guard-control",
+        "after": "naming-control",
+        "scope": "Equal-weight per-route cold HTML plus declared CSS/JS bodies; arithmetic attribution only, not native equivalence or a candidate acceptance gate.",
+        "aggregateDelta": {
+          "raw": -429977,
+          "brotli5": -36281,
+          "gzip9": -39674
+        },
+        "htmlDelta": {
+          "raw": -101708,
+          "brotli5": -5745,
+          "gzip9": -9440
+        },
+        "cssDelta": {
+          "raw": -281772,
+          "brotli5": -24363,
+          "gzip9": -24023
+        },
+        "jsDelta": {
+          "raw": -46497,
+          "brotli5": -6173,
+          "gzip9": -6211
+        }
+      },
+      {
+        "before": "naming-control",
+        "after": "candidate",
+        "scope": "Equal-weight per-route cold HTML plus declared CSS/JS bodies; arithmetic attribution only, not native equivalence or a candidate acceptance gate.",
+        "aggregateDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "htmlDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "cssDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        },
+        "jsDelta": {
+          "raw": 0,
+          "brotli5": 0,
+          "gzip9": 0
+        }
+      }
+    ],
+    "nativeRecaptureGuardVariation": {
+      "route": "site:/articles/auteurs",
+      "reason": "Live Discord online count changed from 121 to 139; raw and gzip lengths unchanged",
+      "guardBrotliVariationBytes": 1,
+      "candidateTotalsUnchanged": true
+    }
+  },
+  "plugin": {
+    "stylesheets": 25,
+    "classOwners": 894,
+    "renamedIdentities": 599,
+    "namingAndCompleteOutputsEqual": true,
+    "candidates_evaluated": 61,
+    "accepted_transformations": 0,
+    "shared_classes": 0,
+    "extracted_declarations": 0,
+    "elided_identities": 0
+  },
+  "frozenBuilds": [
+    {
+      "label": "guard",
+      "binary": "/tmp/engmanager-css-guard-control-website",
+      "binarySha256": "3412700ed702e1abdff53b2cfd9fcbecf12b5126afb03495957e757fc3761aac",
+      "generation": "6c836e9bf514d48ef1c92152d131c7f4ae144b1099dd2dd1456db6a7610791c7",
+      "mode": "guard-control",
+      "compiledProjectSha256": "39952af9f5d402126aeafe10cb2e88fde956552da737b4e6e34f41f2e00b4851",
+      "recordedSourceCount": 136
+    },
+    {
+      "label": "naming",
+      "binary": "/tmp/engmanager-css-naming-control-website",
+      "binarySha256": "478547640a277af213cf0df91bccc5911c301e88768eec20f3642aa089d284b8",
+      "generation": "3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790",
+      "mode": "naming-control",
+      "compiledProjectSha256": "4319a604d43c3c6b34187901292cfb243e341ee4265005fe40c9eee8fbee93d5",
+      "recordedSourceCount": 136
+    },
+    {
+      "label": "compact",
+      "binary": "/tmp/engmanager-css-compact-website",
+      "binarySha256": "02d6f789eba72de5d1d6bf26fdfce00e1d5b18135175f9f75c3e9b77b0be4972",
+      "generation": "3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790",
+      "mode": "compact",
+      "compiledProjectSha256": "d6ce506b70ba4c42f62656b5ee1b0ffdd838ef04bf7f9b4c5d281af4f9abec15",
+      "recordedSourceCount": 136
+    }
+  ],
+  "native": {
+    "sourceArtifact": "native.report",
+    "assertions": {
+      "passed": true,
+      "scope": "matched compressed route inventory, native actual cold/warm document plus declared-asset transfers, and native static CSS/layout parity; animation/GPU-state reviews retained separately",
+      "targets": [
+        "candidate"
+      ],
+      "failures": []
+    },
+    "captures": 480,
+    "casesPerVariant": 96,
+    "variantCount": 5,
+    "routes": [
+      "site:/",
+      "site:/articles/your-gmail-avatar-is-part-of-your-job-search",
+      "site:/coach",
+      "site:/personality/prepare",
+      "site:/shop",
+      "site:/subscribe"
+    ],
+    "presets": {
+      "viewports": [
+        {
+          "name": "mobile",
+          "width": 390,
+          "height": 844,
+          "dpr": 2,
+          "mobile": true
+        },
+        {
+          "name": "desktop",
+          "width": 1440,
+          "height": 1000,
+          "dpr": 1,
+          "mobile": false
+        }
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "motions": [
+        false,
+        true
+      ],
+      "caches": [
+        "cold",
+        "warm"
+      ],
+      "repeats": 1
+    },
+    "hardware": {
+      "platform": "darwin",
+      "release": "24.6.0",
+      "cpu": "Apple M4 Max",
+      "cores": 16,
+      "memoryBytes": 51539607552
+    },
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/154.0.8037.93",
+      "revision": "@f89f3a4363808e117c592adedcf9947882ac3b79",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+      "jsVersion": "15.4.80.19"
+    },
+    "harnessSha256": "3619bc83db7467c27f0d1090a21a3ac3ae2e6acb46f9ba6f9ea99e4a8e58e2ca",
+    "probeContractSha256": "9b48237da1a1ecb72e661c60356586fd6d964ab0090bbbc7f4d79247d10e7980",
+    "readerInspectionPolicy": "native-restart-first-nonzero-token-pause-v1",
+    "comparisons": [
+      {
+        "after": "upgrade-control",
+        "matchedCases": 96,
+        "strictDifferences": 0,
+        "gpuStateDifferences": 0,
+        "nativeErrors": 0,
+        "overflowCases": 0,
+        "transferGrowthCases": 0,
+        "incompleteTransferCases": 0
+      },
+      {
+        "after": "guard-control",
+        "matchedCases": 96,
+        "strictDifferences": 0,
+        "gpuStateDifferences": 0,
+        "nativeErrors": 0,
+        "overflowCases": 0,
+        "transferGrowthCases": 32,
+        "incompleteTransferCases": 0
+      },
+      {
+        "after": "naming-control",
+        "matchedCases": 96,
+        "strictDifferences": 0,
+        "gpuStateDifferences": 0,
+        "nativeErrors": 0,
+        "overflowCases": 0,
+        "transferGrowthCases": 0,
+        "incompleteTransferCases": 0
+      },
+      {
+        "after": "candidate",
+        "matchedCases": 96,
+        "strictDifferences": 0,
+        "gpuStateDifferences": 0,
+        "nativeErrors": 0,
+        "overflowCases": 0,
+        "transferGrowthCases": 0,
+        "incompleteTransferCases": 0
+      }
+    ],
+    "historicalFailure": {
+      "sourceArtifact": "first-native.report",
+      "reason": "Live native coach token progress transitions sampled at different phases",
+      "replacement": "Fresh five-variant cohort; actual Pause/Restart/first-token/Pause controls, strict nonzero transform and reader-state comparison retained"
+    }
+  },
+  "journeys": [
+    {
+      "id": "journey-baseline-latest",
+      "variant": "baseline",
+      "article": "latest",
+      "assertion": {
+        "status": "not-requested",
+        "budgetVersion": "scroll-fade-settled-longtasks-v2",
+        "failures": []
+      },
+      "harnessSha256": "b6abbe75958aae97b262b6019c8e8693ccd62deab050bcb95074ef5140e25e60",
+      "bindingSourceSha256": "1d81daba661d8f91fda64e7a0389f6502dfefca4ed37070413ed182ddc8cd335",
+      "analysis": {
+        "method": "native-presentations-and-phase-frame-counters-v2",
+        "analyzedAt": "2026-10-05T02:02:21.961Z",
+        "sources": {
+          "journey-performance-metrics.mjs": "3a7b92cfe5f9fe44864fee93dccdf5fb132dff61924f9dc127ae739fd2c3818d",
+          "parse-chrome-trace.mjs": "ba5874e6ca37cb81f88743582be364009fdd5d92bf9d2df41bd0f2e7ace67328"
+        }
+      },
+      "cssManifest": null,
+      "started": "2026-10-05T01:58:50.282Z",
+      "completed": "2026-10-05T02:01:43.814Z",
+      "rows": [
+        {
+          "lap": "cold",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              633,
+              649.6999999880791
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.37000000476837,
+                16.912000000476837
+              ],
+              "worstLegP95Ms": 18.65700000524521,
+              "largestIntervalMs": 18.98800003528595
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.683000028133392,
+                16.916999995708466
+              ],
+              "worstLegP95Ms": 18.662000000476837,
+              "largestIntervalMs": 18.97699999809265
+            },
+            "nativeFrames": {
+              "expected": 191,
+              "dropped": 2,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.667999982833862,
+                16.787000000476837
+              ],
+              "worstLegP95Ms": 18.55699998140335,
+              "largestIntervalMs": 35.9210000038147
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.671000003814697,
+                16.743000030517578
+              ],
+              "worstLegP95Ms": 18.548000037670135,
+              "largestIntervalMs": 36.34700000286102
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.600000023841858,
+                16.899999976158142
+              ],
+              "worstLegP95Ms": 19,
+              "largestIntervalMs": 34.09999996423721
+            },
+            "nativeTouchFrames": {
+              "expected": 1142,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.43859649122807015
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        },
+        {
+          "lap": "warm",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              633.3999999761581,
+              651.0999999642372
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.31800001859665,
+                16.64300000667572
+              ],
+              "worstLegP95Ms": 18.765999972820282,
+              "largestIntervalMs": 18.86700004339218
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.465999960899353,
+                16.666999995708466
+              ],
+              "worstLegP95Ms": 18.528999984264374,
+              "largestIntervalMs": 18.86599999666214
+            },
+            "nativeFrames": {
+              "expected": 194,
+              "dropped": 2,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.601000010967255,
+                16.67500001192093
+              ],
+              "worstLegP95Ms": 18.6350000500679,
+              "largestIntervalMs": 35.675999999046326
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.581999957561493,
+                16.680999994277954
+              ],
+              "worstLegP95Ms": 18.548000037670135,
+              "largestIntervalMs": 35.81400001049042
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.69999998807907,
+                16.700000047683716
+              ],
+              "worstLegP95Ms": 18.899999976158142,
+              "largestIntervalMs": 33.39999997615814
+            },
+            "nativeTouchFrames": {
+              "expected": 1144,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.43859649122807015
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        }
+      ]
+    },
+    {
+      "id": "journey-baseline-long",
+      "variant": "baseline",
+      "article": "long",
+      "assertion": {
+        "status": "not-requested",
+        "budgetVersion": "scroll-fade-settled-longtasks-v2",
+        "failures": []
+      },
+      "harnessSha256": "b6abbe75958aae97b262b6019c8e8693ccd62deab050bcb95074ef5140e25e60",
+      "bindingSourceSha256": "1d81daba661d8f91fda64e7a0389f6502dfefca4ed37070413ed182ddc8cd335",
+      "analysis": {
+        "method": "native-presentations-and-phase-frame-counters-v2",
+        "analyzedAt": "2026-10-05T02:10:05.769Z",
+        "sources": {
+          "journey-performance-metrics.mjs": "3a7b92cfe5f9fe44864fee93dccdf5fb132dff61924f9dc127ae739fd2c3818d",
+          "parse-chrome-trace.mjs": "ba5874e6ca37cb81f88743582be364009fdd5d92bf9d2df41bd0f2e7ace67328"
+        }
+      },
+      "cssManifest": null,
+      "started": "2026-10-05T02:06:49.624Z",
+      "completed": "2026-10-05T02:09:49.319Z",
+      "rows": [
+        {
+          "lap": "cold",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.4000000357628,
+              649.8000000119209
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.55400002002716,
+                16.75900000333786
+              ],
+              "worstLegP95Ms": 17.85999995470047,
+              "largestIntervalMs": 19.725000023841858
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.569999992847443,
+                16.722000002861023
+              ],
+              "worstLegP95Ms": 17.85699999332428,
+              "largestIntervalMs": 18.82099997997284
+            },
+            "nativeFrames": {
+              "expected": 189,
+              "dropped": 0,
+              "worstLegDroppedPercent": 0
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.619999945163727,
+                16.683000028133392
+              ],
+              "worstLegP95Ms": 17.70799994468689,
+              "largestIntervalMs": 36.25199997425079
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.646000027656555,
+                16.676999986171722
+              ],
+              "worstLegP95Ms": 17.619000017642975,
+              "largestIntervalMs": 36.27799999713898
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.600000023841858,
+                16.69999998807907
+              ],
+              "worstLegP95Ms": 18.19999998807907,
+              "largestIntervalMs": 31.100000023841858
+            },
+            "nativeTouchFrames": {
+              "expected": 1143,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.43859649122807015
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        },
+        {
+          "lap": "warm",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.0999999642372,
+              650.5
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.540000021457672,
+                16.787999987602234
+              ],
+              "worstLegP95Ms": 18.00499999523163,
+              "largestIntervalMs": 18.65499997138977
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.562999963760376,
+                16.764999985694885
+              ],
+              "worstLegP95Ms": 17.99399995803833,
+              "largestIntervalMs": 18.140999972820282
+            },
+            "nativeFrames": {
+              "expected": 193,
+              "dropped": 2,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.65499997138977,
+                16.67799997329712
+              ],
+              "worstLegP95Ms": 17.74099999666214,
+              "largestIntervalMs": 67.1719999909401
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.658999979496002,
+                16.67900002002716
+              ],
+              "worstLegP95Ms": 17.647000014781952,
+              "largestIntervalMs": 34.319000005722046
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.69999998807907,
+                16.69999998807907
+              ],
+              "worstLegP95Ms": 18.600000023841858,
+              "largestIntervalMs": 54.80000001192093
+            },
+            "nativeTouchFrames": {
+              "expected": 1146,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.43859649122807015
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        }
+      ]
+    },
+    {
+      "id": "journey-candidate-latest",
+      "variant": "candidate",
+      "article": "latest",
+      "assertion": {
+        "status": "passed",
+        "budgetVersion": "scroll-fade-settled-longtasks-v2",
+        "failures": []
+      },
+      "harnessSha256": "b6abbe75958aae97b262b6019c8e8693ccd62deab050bcb95074ef5140e25e60",
+      "bindingSourceSha256": "1d81daba661d8f91fda64e7a0389f6502dfefca4ed37070413ed182ddc8cd335",
+      "analysis": {
+        "method": "native-presentations-and-phase-frame-counters-v2",
+        "analyzedAt": "2026-10-05T02:05:59.990Z",
+        "sources": {
+          "journey-performance-metrics.mjs": "3a7b92cfe5f9fe44864fee93dccdf5fb132dff61924f9dc127ae739fd2c3818d",
+          "parse-chrome-trace.mjs": "ba5874e6ca37cb81f88743582be364009fdd5d92bf9d2df41bd0f2e7ace67328"
+        }
+      },
+      "cssManifest": {
+        "path": "/tmp/engmanager-css-compact/css-compact-output.json",
+        "sha256": "d6ce506b70ba4c42f62656b5ee1b0ffdd838ef04bf7f9b4c5d281af4f9abec15",
+        "schemaVersion": 1,
+        "generation": "3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790",
+        "compilerVersion": "0.1.0"
+      },
+      "started": "2026-10-05T02:02:38.984Z",
+      "completed": "2026-10-05T02:05:32.354Z",
+      "rows": [
+        {
+          "lap": "cold",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.6999999880791,
+              649.6999999880791
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.424000024795532,
+                16.60099995136261
+              ],
+              "worstLegP95Ms": 18.55699998140335,
+              "largestIntervalMs": 18.746999979019165
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.40700000524521,
+                16.602999985218048
+              ],
+              "worstLegP95Ms": 18.569999992847443,
+              "largestIntervalMs": 18.647000014781952
+            },
+            "nativeFrames": {
+              "expected": 191,
+              "dropped": 2,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.51800000667572,
+                16.665999948978424
+              ],
+              "worstLegP95Ms": 18.615000009536743,
+              "largestIntervalMs": 35.5349999666214
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.487000048160553,
+                16.66399997472763
+              ],
+              "worstLegP95Ms": 18.5900000333786,
+              "largestIntervalMs": 35.821999967098236
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.5,
+                16.69999998807907
+              ],
+              "worstLegP95Ms": 19.19999998807907,
+              "largestIntervalMs": 32.80000001192093
+            },
+            "nativeTouchFrames": {
+              "expected": 1126,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.4484304932735426
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        },
+        {
+          "lap": "warm",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.5,
+              650.3000000119209
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.5,
+                16.665999948978424
+              ],
+              "worstLegP95Ms": 18.94599997997284,
+              "largestIntervalMs": 18.985000014305115
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.58600002527237,
+                16.75299996137619
+              ],
+              "worstLegP95Ms": 18.942000031471252,
+              "largestIntervalMs": 18.982999980449677
+            },
+            "nativeFrames": {
+              "expected": 195,
+              "dropped": 3,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.625999987125397,
+                16.807000041007996
+              ],
+              "worstLegP95Ms": 18.582000017166138,
+              "largestIntervalMs": 37.074000000953674
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.651000022888184,
+                16.796999990940094
+              ],
+              "worstLegP95Ms": 18.598999977111816,
+              "largestIntervalMs": 37.48400002717972
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.600000023841858,
+                16.700000047683716
+              ],
+              "worstLegP95Ms": 18.899999976158142,
+              "largestIntervalMs": 23.30000001192093
+            },
+            "nativeTouchFrames": {
+              "expected": 1129,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.4484304932735426
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        }
+      ]
+    },
+    {
+      "id": "journey-candidate-long",
+      "variant": "candidate",
+      "article": "long",
+      "assertion": {
+        "status": "passed",
+        "budgetVersion": "scroll-fade-settled-longtasks-v2",
+        "failures": []
+      },
+      "harnessSha256": "b6abbe75958aae97b262b6019c8e8693ccd62deab050bcb95074ef5140e25e60",
+      "bindingSourceSha256": "1d81daba661d8f91fda64e7a0389f6502dfefca4ed37070413ed182ddc8cd335",
+      "analysis": {
+        "method": "native-presentations-and-phase-frame-counters-v2",
+        "analyzedAt": "2026-10-05T02:14:02.177Z",
+        "sources": {
+          "journey-performance-metrics.mjs": "3a7b92cfe5f9fe44864fee93dccdf5fb132dff61924f9dc127ae739fd2c3818d",
+          "parse-chrome-trace.mjs": "ba5874e6ca37cb81f88743582be364009fdd5d92bf9d2df41bd0f2e7ace67328"
+        }
+      },
+      "cssManifest": {
+        "path": "/tmp/engmanager-css-compact/css-compact-output.json",
+        "sha256": "d6ce506b70ba4c42f62656b5ee1b0ffdd838ef04bf7f9b4c5d281af4f9abec15",
+        "schemaVersion": 1,
+        "generation": "3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790",
+        "compilerVersion": "0.1.0"
+      },
+      "started": "2026-10-05T02:10:39.947Z",
+      "completed": "2026-10-05T02:13:38.141Z",
+      "rows": [
+        {
+          "lap": "cold",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.6000000238419,
+              649.8999999761581
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.62900000810623,
+                16.763000011444092
+              ],
+              "worstLegP95Ms": 18.135999977588654,
+              "largestIntervalMs": 33.305999994277954
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.628000020980835,
+                16.75799995660782
+              ],
+              "worstLegP95Ms": 18.152999997138977,
+              "largestIntervalMs": 19.24099999666214
+            },
+            "nativeFrames": {
+              "expected": 191,
+              "dropped": 1,
+              "worstLegDroppedPercent": 2.5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.59900003671646,
+                16.674999952316284
+              ],
+              "worstLegP95Ms": 17.667999982833862,
+              "largestIntervalMs": 38.539000034332275
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.651000022888184,
+                16.680000007152557
+              ],
+              "worstLegP95Ms": 17.6700000166893,
+              "largestIntervalMs": 35.396000027656555
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.600000023841858,
+                16.69999998807907
+              ],
+              "worstLegP95Ms": 18.400000035762787,
+              "largestIntervalMs": 33.59999996423721
+            },
+            "nativeTouchFrames": {
+              "expected": 1136,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.4424778761061947
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        },
+        {
+          "lap": "warm",
+          "legs": 5,
+          "visibleFade": {
+            "authoredDurationMs": 620,
+            "completionRangeMs": [
+              632.8000000119209,
+              650.0999999642372
+            ],
+            "presentation": {
+              "legMedianRangeMs": [
+                16.3639999628067,
+                16.685000002384186
+              ],
+              "worstLegP95Ms": 18.147000014781952,
+              "largestIntervalMs": 23.78600001335144
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.316999971866608,
+                16.682999968528748
+              ],
+              "worstLegP95Ms": 18.149999976158142,
+              "largestIntervalMs": 20.614000022411346
+            },
+            "nativeFrames": {
+              "expected": 194,
+              "dropped": 3,
+              "worstLegDroppedPercent": 5
+            },
+            "mainThreadLongTasks": 0
+          },
+          "continuousScroll": {
+            "presentation": {
+              "legMedianRangeMs": [
+                16.610000014305115,
+                16.67500001192093
+              ],
+              "worstLegP95Ms": 17.726000010967255,
+              "largestIntervalMs": 35.23600000143051
+            },
+            "compositorDraw": {
+              "legMedianRangeMs": [
+                16.642000019550323,
+                16.671999990940094
+              ],
+              "worstLegP95Ms": 17.673000037670135,
+              "largestIntervalMs": 35.496999979019165
+            },
+            "gestureBoundedSculptureSubmissions": {
+              "legMedianRangeMs": [
+                16.600000023841858,
+                16.700000047683716
+              ],
+              "worstLegP95Ms": 18.19999998807907,
+              "largestIntervalMs": 32.89999997615814
+            },
+            "nativeTouchFrames": {
+              "expected": 1137,
+              "dropped": 3,
+              "worstLegDroppedPercent": 0.43859649122807015
+            },
+            "mainThreadLongTasks": 0
+          },
+          "settledMainThreadLongTasks": 0,
+          "missingPresentedFrames": 0,
+          "checkerboardedPresentedFrames": 0,
+          "provenDecoderWorkerLegs": 5,
+          "hardNavigationFallbacks": 0
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Compression totals are equal-weight route bodies, not a traffic-weighted or warm-session estimate.",
+    "Native transfer scope is main-frame document plus completed declared same-origin CSS/JS resources; transitive/optional assets, images and fonts are excluded.",
+    "Native screenshots are retained inspection evidence; animated/GPU scenes are not claimed pixel-identical.",
+    "One paired journey capture per article/build demonstrates budget compliance, not a statistically established speedup.",
+    "No isolated resident or GPU memory benchmark was performed.",
+    "Desktop mobile viewport/CPU/network emulation does not certify physical Android performance.",
+    "Small evidence index hashes explicit files only; full raw capture payload integrity awaits release packaging."
+  ],
+  "localCI": {
+    "acceptanceArtifact": "ci.acceptance",
+    "requiredBrowserTests": true,
+    "rustc": "rustc 1.97.0-nightly (f964de49b 2026-05-07)",
+    "dependency": "pinned external Git revision",
+    "initialRequiredGateReport": "ci.initial-run",
+    "initialPassedGates": 7,
+    "initialFullRustExitCode": 101,
+    "historicalFailure": "Obsolete expectation for removed unpublished no-cache policy in coach_e2e; implementation correctly preserves original browser cache policy",
+    "correctedFullRust": {
+      "exitCode": 0,
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "website"
+      ],
+      "passedTests": 203,
+      "failedTests": 0,
+      "ignoredTests": 0,
+      "completedTargets": 17,
+      "artifact": "ci.tests-after-cache-expectation"
+    },
+    "nodeTests": {
+      "passed": 381,
+      "failed": 0,
+      "ignored": 0,
+      "artifact": "ci.npm-test"
+    },
+    "postCommentFormattingExitCode": 0,
+    "postCommentClippyExitCode": 0,
+    "postCommentClippyArtifact": "ci.clippy-after-comment",
+    "generatedAssetProof": {
+      "artifact": "ci.generated-assets",
+      "generation": "3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790",
+      "manifestMatchesFrozen": true,
+      "directories": [
+        {
+          "directory": "css-dist",
+          "identical": true,
+          "fileCount": 25
+        },
+        {
+          "directory": "js-dist",
+          "identical": true,
+          "fileCount": 43
+        },
+        {
+          "directory": "compiled-articles",
+          "identical": true,
+          "fileCount": 12
+        }
+      ]
+    }
+  }
+}

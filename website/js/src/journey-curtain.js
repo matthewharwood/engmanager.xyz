@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // The outgoing page ends in torn paper. Small independent springs let that
 // edge lag behind a scroll, then fall back to its original cut. No canvas,
 // layout reads during animation, or animation work outside the reveal.
@@ -91,18 +95,18 @@
 
     function mount() {
         dispose();
-        const page = document.querySelector('[data-journey-current][data-eng-next]');
+        const page = document.querySelector(cssSelector('[data-journey-current][data-eng-next]'));
         if (!page) return;
         // Previous-page snapshots must never carry a live duplicate curtain.
-        page.querySelectorAll('[data-journey-curtain]').forEach((node) => node.remove());
+        page.querySelectorAll(cssSelector('[data-journey-curtain]')).forEach((node) => node.remove());
         const svg = document.createElementNS(NS, 'svg');
-        svg.classList.add('journey-curtain'); svg.dataset.journeyCurtain = '';
+        svg.classList.add(cssToken('journey-curtain')); svg.dataset.journeyCurtain = '';
         svg.setAttribute('viewBox', '0 0 1200 100');
         svg.setAttribute('preserveAspectRatio', 'none');
         svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
-        const fill = document.createElementNS(NS, 'path'); fill.classList.add('journey-curtain-paper');
-        const edge = document.createElementNS(NS, 'path'); edge.classList.add('journey-curtain-edge');
-        const fibers = document.createElementNS(NS, 'path'); fibers.classList.add('journey-curtain-fibers');
+        const fill = document.createElementNS(NS, 'path'); fill.classList.add(cssToken('journey-curtain-paper'));
+        const edge = document.createElementNS(NS, 'path'); edge.classList.add(cssToken('journey-curtain-edge'));
+        const fibers = document.createElementNS(NS, 'path'); fibers.classList.add(cssToken('journey-curtain-fibers'));
         svg.append(fill, edge, fibers); page.append(svg);
         curtain = { svg, fill, edge, fibers, nodes: points() };
         paint(); inspectVisibility();

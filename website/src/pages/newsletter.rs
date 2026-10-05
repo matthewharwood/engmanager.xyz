@@ -59,37 +59,37 @@ pub fn page(status: Option<&str>) -> String {
 
     let body = view! {
         { nav_markup }
-        <main id="main" class="newsletter-shell" tabindex="-1">
-            <div class="newsletter-content">
-                <div class="newsletter-intro">
-                    <p class="newsletter-eyebrow">
-                        <span class="newsletter-pip" aria-hidden="true"></span>
+        <main id="main" class={ classes!("newsletter-shell") } tabindex="-1">
+            <div class={ classes!("newsletter-content") }>
+                <div class={ classes!("newsletter-intro") }>
+                    <p class={ classes!("newsletter-eyebrow") }>
+                        <span class={ classes!("newsletter-pip") } aria-hidden="true"></span>
                         "The ENGMANAGER newsletter · Free"
                     </p>
                     <h1>"Keep a little"<br /><span>"perspective."</span></h1>
-                    <p class="newsletter-description">
+                    <p class={ classes!("newsletter-description") }>
                         "Free coaching, in your inbox. I share what I’m learning about building things, leading teams, and finding your way at work."
                     </p>
-                    <p class="newsletter-byline">
+                    <p class={ classes!("newsletter-byline") }>
                         "From Matthew Harwood · "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>
                     </p>
                 </div>
-                <section class="newsletter-card" aria-labelledby="newsletter-signup-title">
+                <section class={ classes!("newsletter-card") } aria-labelledby="newsletter-signup-title">
                     { signup }
                 </section>
-                <p class="newsletter-scope">
+                <p class={ classes!("newsletter-scope") }>
                     "We’ll cover workflow, developer tools, frameworks, community, engineering leadership, and essays. Plus whatever else helps us grow."
                 </p>
             </div>
-            <div class="newsletter-cosmos">{ sculpture_markup }</div>
-            <footer class="newsletter-footer">
+            <div class={ classes!("newsletter-cosmos") }>{ sculpture_markup }</div>
+            <footer class={ classes!("newsletter-footer") }>
                 <span>"Notes from Matthew Harwood. Sent when there’s something worth sharing."</span>
                 <a href="/feed">"Read the articles"<span aria-hidden="true">" ↗"</span></a>
             </footer>
         </main>
     };
 
-    PageShell::new(TITLE, "newsletter-page")
+    PageShell::new(TITLE, classes!("newsletter-page"))
         .meta(MetaTags {
             description: Some(DESCRIPTION.to_string()),
             canonical: Some(CANONICAL.to_string()),
@@ -124,16 +124,16 @@ fn signup_form(status: Option<&str>) -> HtmlFragment {
     let feedback = feedback
         .map(|message| {
             view! {
-                <p id="newsletter-feedback" class="newsletter-feedback" role="alert">{ message }</p>
+                <p id="newsletter-feedback" class={ classes!("newsletter-feedback") } role="alert">{ message }</p>
             }
         })
         .unwrap_or_else(HtmlFragment::empty);
 
     view! {
-        <h2 id="newsletter-signup-title" class="sr-only">"Get the free coaching notes."</h2>
-        <form class="newsletter-form" method="post" action="/api/newsletter/subscribe">
+        <h2 id="newsletter-signup-title" class={ classes!("sr-only") }>"Get the free coaching notes."</h2>
+        <form class={ classes!("newsletter-form") } method="post" action="/api/newsletter/subscribe">
             <label for="newsletter-email">"Your email address"</label>
-            <div class="newsletter-form-controls">
+            <div class={ classes!("newsletter-form-controls") }>
                 <input id="newsletter-email"
                        type="email"
                        name="email"
@@ -148,48 +148,48 @@ fn signup_form(status: Option<&str>) -> HtmlFragment {
                        aria-describedby={ described_by } />
                 <button type="submit">"Send me the notes"<span aria-hidden="true">"↗"</span></button>
             </div>
-            <div class="newsletter-honeypot" hidden aria-hidden="true">
+            <div class={ classes!("newsletter-honeypot") } hidden aria-hidden="true">
                 <label for="newsletter-website">"Leave this field empty"</label>
                 <input id="newsletter-website" type="text" name="website" tabindex="-1" autocomplete="off" />
             </div>
             { feedback }
-            <p id="newsletter-privacy" class="newsletter-privacy">"Free to read. Unsubscribe whenever you like."<br /><a href=PRIVACY_PATH data-hard-nav>"How your newsletter data is used"</a></p>
+            <p id="newsletter-privacy" class={ classes!("newsletter-privacy") }>"Free to read. Unsubscribe whenever you like."<br /><a href=PRIVACY_PATH data-hard-nav>"How your newsletter data is used"</a></p>
         </form>
     }
 }
 
 fn confirmation() -> HtmlFragment {
     view! {
-        <div class="newsletter-confirmation" role="status" aria-live="polite">
-            <span class="newsletter-confirmation-mark" aria-hidden="true">"✓"</span>
+        <div class={ classes!("newsletter-confirmation") } role="status" aria-live="polite">
+            <span class={ classes!("newsletter-confirmation-mark") } aria-hidden="true">"✓"</span>
             <h2 id="newsletter-signup-title">"Check your inbox."</h2>
-            <p class="newsletter-card-description">"If your address needs confirming, you’ll receive an email shortly. Follow the link inside to finish signing up."</p>
-            <dl class="newsletter-email-details">
+            <p class={ classes!("newsletter-card-description") }>"If your address needs confirming, you’ll receive an email shortly. Follow the link inside to finish signing up."</p>
+            <dl class={ classes!("newsletter-email-details") }>
                 <dt>"From"</dt>
                 <dd>{ SENDER_NAME }<br /><a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a></dd>
                 <dt>"Subject"</dt>
                 <dd>{ CONFIRMATION_SUBJECT }</dd>
             </dl>
-            <p class="newsletter-confirmation-note">"Already subscribed? You’re all set. Thanks for reading."</p>
+            <p class={ classes!("newsletter-confirmation-note") }>"Already subscribed? You’re all set. Thanks for reading."</p>
         </div>
-        <details class="newsletter-inbox-help">
+        <details class={ classes!("newsletter-inbox-help") }>
             <summary>"Can’t find the email?"</summary>
             <p>"Check Spam and Promotions. If it landed in Spam, mark it “Not spam.” In Gmail, you can move it to Primary if you’d prefer your notes there."</p>
             <p>"Need a hand? "<a href="mailto:matthew@engmanager.xyz">"Email Matthew"</a>"."</p>
         </details>
-        <a class="newsletter-reset" href="/subscribe" data-hard-nav>"Use another email address"<span aria-hidden="true">" ↗"</span></a>
+        <a class={ classes!("newsletter-reset") } href="/subscribe" data-hard-nav>"Use another email address"<span aria-hidden="true">" ↗"</span></a>
     }
 }
 
 fn confirmed() -> HtmlFragment {
     view! {
-        <div class="newsletter-confirmation" role="status" aria-live="polite">
-            <span class="newsletter-confirmation-mark" aria-hidden="true">"✓"</span>
+        <div class={ classes!("newsletter-confirmation") } role="status" aria-live="polite">
+            <span class={ classes!("newsletter-confirmation-mark") } aria-hidden="true">"✓"</span>
             <h2 id="newsletter-signup-title">"You’re on the list."</h2>
-            <p class="newsletter-card-description">"Thanks for making a little room in your inbox. I’ll send you a note when there’s something worth sharing."</p>
-            <p class="newsletter-confirmation-note">"Until then, there’s plenty to read."</p>
+            <p class={ classes!("newsletter-card-description") }>"Thanks for making a little room in your inbox. I’ll send you a note when there’s something worth sharing."</p>
+            <p class={ classes!("newsletter-confirmation-note") }>"Until then, there’s plenty to read."</p>
         </div>
-        <a class="newsletter-reset" href="/feed">"Explore the articles"<span aria-hidden="true">" ↗"</span></a>
+        <a class={ classes!("newsletter-reset") } href="/feed">"Explore the articles"<span aria-hidden="true">" ↗"</span></a>
     }
 }
 
@@ -217,10 +217,10 @@ pub fn privacy_page() -> String {
 
     let body = view! {
         { nav_markup }
-        <main id="main" class="newsletter-document" tabindex="-1">
-            <p class="newsletter-eyebrow">"The ENGMANAGER newsletter"</p>
+        <main id="main" class={ classes!("newsletter-document") } tabindex="-1">
+            <p class={ classes!("newsletter-eyebrow") }>"The ENGMANAGER newsletter"</p>
             <h1>"Newsletter privacy."</h1>
-            <p class="newsletter-document-intro">"A note on the information used to send you these notes, and how to manage it."</p>
+            <p class={ classes!("newsletter-document-intro") }>"A note on the information used to send you these notes, and how to manage it."</p>
             <section aria-labelledby="newsletter-data-heading">
                 <h2 id="newsletter-data-heading">"When you subscribe"</h2>
                 <p>"The signup form asks for your email address. This website passes it to Kit, the service Matthew Harwood uses to manage newsletter subscriptions and send emails. Kit records whether your subscription is unconfirmed, confirmed, or unsubscribed."</p>
@@ -238,12 +238,12 @@ pub fn privacy_page() -> String {
                 <h2 id="newsletter-contact-heading">"Questions or data requests"</h2>
                 <p>"For help with your subscription, or to request access, a correction, or deletion of newsletter information, email "<a href="mailto:matthew@engmanager.xyz">{ SENDER_EMAIL }</a>"."</p>
             </section>
-            <p class="newsletter-document-scope">"This notice covers the ENGMANAGER newsletter signup and email delivery."</p>
-            <a class="newsletter-reset" href="/feed" data-hard-nav>"Back to the articles"<span aria-hidden="true">" ↗"</span></a>
+            <p class={ classes!("newsletter-document-scope") }>"This notice covers the ENGMANAGER newsletter signup and email delivery."</p>
+            <a class={ classes!("newsletter-reset") } href="/feed" data-hard-nav>"Back to the articles"<span aria-hidden="true">" ↗"</span></a>
         </main>
     };
 
-    PageShell::new(title, "newsletter-page")
+    PageShell::new(title, classes!("newsletter-page"))
         .meta(MetaTags {
             description: Some("How newsletter signup information is used, and how to unsubscribe or request help with your data.".to_string()),
             canonical: Some(format!("https://engmanager.xyz{PRIVACY_PATH}")),
@@ -287,9 +287,9 @@ pub fn unsubscribe_page(token: Option<&str>) -> String {
             "Please wait a moment while your newsletter preference is updated.",
             "processing",
             view! {
-                <form class="newsletter-form newsletter-unsubscribe-form" method="post" action="/api/newsletter/unsubscribe" data-unsubscribe-form>
+                <form class={ classes!("newsletter-form newsletter-unsubscribe-form") } method="post" action="/api/newsletter/unsubscribe" data-unsubscribe-form>
                     <input type="hidden" name="token" value={ token } />
-                    <noscript><p class="newsletter-confirmation-note">"Select Unsubscribe below to stop future newsletters."</p></noscript>
+                    <noscript><p class={ classes!("newsletter-confirmation-note") }>"Select Unsubscribe below to stop future newsletters."</p></noscript>
                     <button type="submit" data-unsubscribe-submit>"Unsubscribe"</button>
                 </form>
             },
@@ -341,6 +341,8 @@ fn unsubscribe_document(
     // no navigation router, external resource hints, analytics, or theme
     // runtime can observe the URL. The decorative local renderer is independent
     // of the POST script and does not access URLs, forms, or subscriber state.
+    // A plain clean preferences link remains usable with unavailable assets or
+    // JavaScript. Recovery never observes a bearer URL or replays a POST result.
     let document = view! {
         <html lang="en">
             <head>
@@ -348,6 +350,7 @@ fn unsubscribe_document(
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <meta name="robots" content="noindex,nofollow" />
                 <meta name="referrer" content="no-referrer" />
+                { super::shell::css_generation_meta() }
                 <title>"Newsletter preferences · ENGMANAGER.XYZ"</title>
                 <link rel="icon" type="image/svg+xml" href={ asset_url("favicon.svg") } />
                 <link rel="stylesheet" href={ asset_url("css/critical.css") } />
@@ -356,27 +359,28 @@ fn unsubscribe_document(
                 { script }
                 <script src={ asset_url(sigil::SCRIPT) } defer></script>
             </head>
-            <body class="newsletter-page newsletter-preferences-page identity-page">
-                <a class="skip-link" href="#main">"Skip to content"</a>
-                <header class="preferences-header">
-                    <a class="identity-wordmark" href="/" aria-label="ENGMANAGER home">
+            <body class={ classes!("newsletter-page newsletter-preferences-page identity-page") }>
+                <a class={ classes!("skip-link") } href="#main">"Skip to content"</a>
+                <header class={ classes!("preferences-header") }>
+                    <a class={ classes!("identity-wordmark") } href="/" aria-label="ENGMANAGER home">
                         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 10 18H2Z" stroke="currentColor" /><path d="M7 14q5-6 10 0-5 5-10 0Z" stroke="currentColor" /><circle cx="12" cy="14" r="1.5" fill="currentColor" /></svg>
                         "ENGMANAGER"
                     </a>
                 </header>
-                <main id="main" class="newsletter-document newsletter-preferences" tabindex="-1" data-unsubscribe-state={ state }>
-                    <div class="preferences-copy">
-                    <p class="newsletter-eyebrow">"Newsletter preferences"</p>
-                    <span class="newsletter-preferences-mark" aria-hidden="true" data-unsubscribe-mark>{ if state == "success" { "✓" } else { "—" } }</span>
+                <main id="main" class={ classes!("newsletter-document newsletter-preferences") } tabindex="-1" data-unsubscribe-state={ state }>
+                    <div class={ classes!("preferences-copy") }>
+                    <p class={ classes!("newsletter-eyebrow") }>"Newsletter preferences"</p>
+                    <span class={ classes!("newsletter-preferences-mark") } aria-hidden="true" data-unsubscribe-mark>{ if state == "success" { "✓" } else { "—" } }</span>
                     <h1 data-unsubscribe-heading>{ heading }</h1>
-                    <p class="newsletter-document-intro" role="status" aria-live="polite" data-unsubscribe-message>{ message }</p>
+                    <p class={ classes!("newsletter-document-intro") } role="status" aria-live="polite" data-unsubscribe-message>{ message }</p>
                     { form }
-                    <p class="newsletter-preferences-contact">"Need help? "<a href="mailto:matthew@engmanager.xyz?subject=Newsletter%20unsubscribe">"Email Matthew"</a>"."</p>
-                    <a class="newsletter-reset" href="/newsletter/privacy">"Newsletter privacy"</a>
+                    <p class={ classes!("newsletter-preferences-contact") }>"Need help? "<a href="mailto:matthew@engmanager.xyz?subject=Newsletter%20unsubscribe">"Email Matthew"</a>"."</p>
+                    <a class={ classes!("newsletter-reset") } href="/newsletter/privacy">"Newsletter privacy"</a>
+                    <span data-css-asset-recovery><a class={ classes!("newsletter-reset") } href="/unsubscribe">"Open newsletter preferences"</a></span>
                     </div>
-                    <div class="preferences-art">
+                    <div class={ classes!("preferences-art") }>
                         { sculpture_markup }
-                        <p class="preferences-art-caption" aria-hidden="true">"A little space. A little perspective."</p>
+                        <p class={ classes!("preferences-art-caption") } aria-hidden="true">"A little space. A little perspective."</p>
                     </div>
                 </main>
             </body>
@@ -390,6 +394,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn unsubscribe_documents_share_generated_styles_without_automatic_replay() {
+        let token = format!("v1.42.{}", "a".repeat(64));
+        for html in [
+            unsubscribe_page(None),
+            unsubscribe_page(Some(&token)),
+            unsubscribe_page(Some("invalid")),
+            unsubscribe_result(true),
+            unsubscribe_result(false),
+        ] {
+            let generation = format!(
+                "<meta name=\"eng-css-generation\" content=\"{}\">",
+                crate::CSS_GENERATION
+            );
+            let first_stylesheet = html.find("/assets/css/critical.").unwrap();
+            assert!(html.find(&generation).unwrap() < first_stylesheet);
+            assert!(html.contains("data-css-asset-recovery"));
+            assert!(html.contains("href=\"/unsubscribe\">Open newsletter preferences</a>"));
+            for forbidden in [
+                "__engNav",
+                "__rum",
+                "experiences.js",
+                "<script>",
+                "/assets/css-generation-recovery.js",
+                "eng-css-recovery",
+            ] {
+                assert!(!html.contains(forbidden));
+            }
+        }
+    }
+
+    #[test]
     fn signup_is_accessible_and_works_without_javascript() {
         let html = page(None);
         assert!(html.contains(r#"method="post" action="/api/newsletter/subscribe""#));
@@ -398,7 +433,9 @@ mod tests {
         assert!(
             html.contains(r#"required aria-invalid="false" aria-describedby="newsletter-privacy""#)
         );
-        assert!(html.contains(r#"class="newsletter-honeypot" hidden aria-hidden="true""#));
+        assert!(html.contains(css_html!(
+            r#"class="newsletter-honeypot" hidden aria-hidden="true""#
+        )));
         assert!(html.contains(r#"name="website" tabindex="-1" autocomplete="off""#));
         assert!(html.contains(r#"<link rel="canonical" href="https://engmanager.xyz/subscribe""#));
         assert!(!html.contains(r#"name="first_name""#));
@@ -410,9 +447,9 @@ mod tests {
         assert!(html.contains(
             r#"aria-invalid="true" aria-describedby="newsletter-privacy newsletter-feedback""#
         ));
-        assert!(
-            html.contains(r#"id="newsletter-feedback" class="newsletter-feedback" role="alert""#)
-        );
+        assert!(html.contains(css_html!(
+            r#"id="newsletter-feedback" class="newsletter-feedback" role="alert""#
+        )));
         assert!(html.contains("Please enter a valid email address"));
     }
 

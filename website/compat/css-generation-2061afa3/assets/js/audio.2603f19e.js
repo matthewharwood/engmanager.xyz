@@ -1,0 +1,2 @@
+(()=>{(()=>{let e=new Map;window.__engAudio={play(t,n,r){let i=(r&&r.volume)??.5;if(n){this.stop(t);try{let r=new Audio(n);r.volume=i,e.set(t,r),r.addEventListener(`ended`,()=>{e.get(t)===r&&e.delete(t)}),r.play().catch(()=>{})}catch{}}},stop(t){let n=e.get(t);if(n){try{n.pause(),n.currentTime=0}catch{}e.delete(t)}}}})();
+})();

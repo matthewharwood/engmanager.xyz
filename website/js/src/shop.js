@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // The storefront can be mounted repeatedly by the journey router. Each mount
 // gets fresh config, nodes, and cancellable effects; shared storage keeps the bag.
 (() => {
@@ -7,8 +11,8 @@ function unmount() {
     active = null;
 }
 function mount() {
-    const surface = document.querySelector(".shop-shell");
-    if (!surface || !document.body.classList.contains("shop-page") || document.body.classList.contains("coach-page")) {
+    const surface = document.querySelector(cssSelector(".shop-shell"));
+    if (!surface || !document.body.classList.contains(cssToken("shop-page")) || document.body.classList.contains(cssToken("coach-page"))) {
         unmount();
         return;
     }
@@ -110,42 +114,42 @@ const CAMERA_VIEWPORT_MARGIN = 220;
 const MOTION_EASING = "cubic-bezier(.22,.9,.2,1)";
 
 const selectors = {
-    skipLink: document.querySelector(".skip-link"),
-    topbar: document.querySelector(".shop-topbar"),
-    shell: document.querySelector(".shop-shell"),
-    grid: document.querySelector("[data-shop-grid]"),
-    panel: document.querySelector("[data-product-panel]"),
-    backdrop: document.querySelector("[data-shop-backdrop]"),
-    productTitle: document.querySelector("[data-product-title]"),
-    productKicker: document.querySelector("[data-product-kicker]"),
-    productFrame: document.querySelector(".shop-product-frame"),
-    productLayout: document.querySelector(".shop-product-layout"),
-    productCopyTitle: document.querySelector("[data-product-copy-title]"),
-    productPrice: document.querySelector("[data-product-price]"),
-    productDescription: document.querySelector("[data-product-description]"),
-    imageStage: document.querySelector("[data-image-advance]"),
-    carouselTrack: document.querySelector("[data-carousel-track]"),
-    productImage: document.querySelector('[data-cell="main"]'),
-    cellPrev: document.querySelector('[data-cell="prev"]'),
-    cellNext: document.querySelector('[data-cell="next"]'),
-    imageCaption: document.querySelector("[data-image-caption]"),
-    imageThumbs: document.querySelector("[data-image-thumbs]"),
-    imagePrev: document.querySelector("[data-image-prev]"),
-    imageNext: document.querySelector("[data-image-next]"),
-    edgeArrowUp: document.querySelector('[data-edge-arrow="up"]'),
-    edgeArrowDown: document.querySelector('[data-edge-arrow="down"]'),
-    cartToggles: document.querySelectorAll("[data-cart-toggle]"),
-    cartCounts: document.querySelectorAll("[data-cart-count]"),
-    cartItems: document.querySelector("[data-cart-items]"),
-    cartTotal: document.querySelector("[data-cart-total]"),
-    cartClear: document.querySelector("[data-cart-clear]"),
-    cartFoot: document.querySelector("[data-cart-foot]"),
-    bag: document.querySelector("[data-bag]"),
-    bagSheet: document.querySelector(".shop-bag-sheet"),
-    bagCart: document.querySelector("[data-bag-cart]"),
-    bagCheckoutPane: document.querySelector("[data-bag-checkout-pane]"),
-    bagScrim: document.querySelector("[data-bag-scrim]"),
-    bagCheckoutBtn: document.querySelector("[data-bag-checkout]"),
+    skipLink: document.querySelector(cssSelector(".skip-link")),
+    topbar: document.querySelector(cssSelector(".shop-topbar")),
+    shell: document.querySelector(cssSelector(".shop-shell")),
+    grid: document.querySelector(cssSelector("[data-shop-grid]")),
+    panel: document.querySelector(cssSelector("[data-product-panel]")),
+    backdrop: document.querySelector(cssSelector("[data-shop-backdrop]")),
+    productTitle: document.querySelector(cssSelector("[data-product-title]")),
+    productKicker: document.querySelector(cssSelector("[data-product-kicker]")),
+    productFrame: document.querySelector(cssSelector(".shop-product-frame")),
+    productLayout: document.querySelector(cssSelector(".shop-product-layout")),
+    productCopyTitle: document.querySelector(cssSelector("[data-product-copy-title]")),
+    productPrice: document.querySelector(cssSelector("[data-product-price]")),
+    productDescription: document.querySelector(cssSelector("[data-product-description]")),
+    imageStage: document.querySelector(cssSelector("[data-image-advance]")),
+    carouselTrack: document.querySelector(cssSelector("[data-carousel-track]")),
+    productImage: document.querySelector(cssSelector('[data-cell="main"]')),
+    cellPrev: document.querySelector(cssSelector('[data-cell="prev"]')),
+    cellNext: document.querySelector(cssSelector('[data-cell="next"]')),
+    imageCaption: document.querySelector(cssSelector("[data-image-caption]")),
+    imageThumbs: document.querySelector(cssSelector("[data-image-thumbs]")),
+    imagePrev: document.querySelector(cssSelector("[data-image-prev]")),
+    imageNext: document.querySelector(cssSelector("[data-image-next]")),
+    edgeArrowUp: document.querySelector(cssSelector('[data-edge-arrow="up"]')),
+    edgeArrowDown: document.querySelector(cssSelector('[data-edge-arrow="down"]')),
+    cartToggles: document.querySelectorAll(cssSelector("[data-cart-toggle]")),
+    cartCounts: document.querySelectorAll(cssSelector("[data-cart-count]")),
+    cartItems: document.querySelector(cssSelector("[data-cart-items]")),
+    cartTotal: document.querySelector(cssSelector("[data-cart-total]")),
+    cartClear: document.querySelector(cssSelector("[data-cart-clear]")),
+    cartFoot: document.querySelector(cssSelector("[data-cart-foot]")),
+    bag: document.querySelector(cssSelector("[data-bag]")),
+    bagSheet: document.querySelector(cssSelector(".shop-bag-sheet")),
+    bagCart: document.querySelector(cssSelector("[data-bag-cart]")),
+    bagCheckoutPane: document.querySelector(cssSelector("[data-bag-checkout-pane]")),
+    bagScrim: document.querySelector(cssSelector("[data-bag-scrim]")),
+    bagCheckoutBtn: document.querySelector(cssSelector("[data-bag-checkout]")),
 };
 
 let currentProduct = null;
@@ -302,7 +306,7 @@ function focusGridCard(slug) {
 
 function isVisibleFocusable(element) {
     if (!(element instanceof HTMLElement)) return false;
-    if (element.matches("[disabled], [hidden], [aria-hidden='true']")) return false;
+    if (element.matches(cssSelector("[disabled], [hidden], [aria-hidden='true']"))) return false;
     return element.getClientRects().length > 0;
 }
 
@@ -310,7 +314,7 @@ function focusableElementsIn(container) {
     if (!container) return [];
     return Array.from(
         container.querySelectorAll(
-            "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])",
+            cssSelector("a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])"),
         ),
     ).filter(isVisibleFocusable);
 }
@@ -352,7 +356,7 @@ function activeFocusTrapContainer() {
 
 function focusPrimaryCartToggle() {
     const toggle = isProductOpen()
-        ? selectors.panel?.querySelector("[data-cart-toggle]")
+        ? selectors.panel?.querySelector(cssSelector("[data-cart-toggle]"))
         : selectors.cartToggles[0];
     toggle?.focus({ preventScroll: true });
 }
@@ -373,15 +377,15 @@ function hideGridTextForClose() {
         cancelLater(gridTextRevealTimer);
         gridTextRevealTimer = null;
     }
-    document.body.classList.remove("shop-grid-text-revealing");
-    document.body.classList.add("shop-grid-text-hidden");
+    document.body.classList.remove(cssToken("shop-grid-text-revealing"));
+    document.body.classList.add(cssToken("shop-grid-text-hidden"));
 }
 
 function prepareGridTextReveal() {
     if (!selectors.grid) return 0;
     const columns = gridColumnCount();
     let maxDelay = 0;
-    selectors.grid.querySelectorAll(".shop-card-meta").forEach((meta, index) => {
+    selectors.grid.querySelectorAll(cssSelector(".shop-card-meta")).forEach((meta, index) => {
         const row = Math.floor(index / columns);
         const column = index % columns;
         const delay = (row + column) * GRID_TEXT_REVEAL_STAGGER;
@@ -393,17 +397,17 @@ function prepareGridTextReveal() {
 
 function clearGridTextRevealDelays() {
     selectors.grid
-        ?.querySelectorAll(".shop-card-meta")
+        ?.querySelectorAll(cssSelector(".shop-card-meta"))
         .forEach((meta) => meta.style.removeProperty("--shop-text-reveal-delay"));
 }
 
 function revealGridTextAfterClose() {
     if (gridTextRevealTimer) cancelLater(gridTextRevealTimer);
     const maxDelay = prepareGridTextReveal();
-    document.body.classList.add("shop-grid-text-revealing");
-    document.body.classList.remove("shop-grid-text-hidden");
+    document.body.classList.add(cssToken("shop-grid-text-revealing"));
+    document.body.classList.remove(cssToken("shop-grid-text-hidden"));
     gridTextRevealTimer = later(() => {
-        document.body.classList.remove("shop-grid-text-revealing");
+        document.body.classList.remove(cssToken("shop-grid-text-revealing"));
         clearGridTextRevealDelays();
         gridTextRevealTimer = null;
     }, GRID_TEXT_REVEAL_DURATION + maxDelay);
@@ -425,11 +429,11 @@ function slugSelector(slug) {
 }
 
 function cardForSlug(slug) {
-    return slug ? selectors.grid?.querySelector(slugSelector(slug)) : null;
+    return slug ? [...selectors.grid?.querySelectorAll("[data-product-card]") || []].find(card => card.dataset.slug === slug) : null;
 }
 
 function cardImageForSlug(slug) {
-    return cardForSlug(slug)?.querySelector("img") || null;
+    return cardForSlug(slug)?.querySelector(cssSelector("img")) || null;
 }
 
 function rectForElement(element) {
@@ -491,21 +495,21 @@ function cloneCameraWorld(focusImage = null) {
     const world = document.createElement("div");
     const backgroundLayer = document.createElement("div");
     const focusLayer = document.createElement("div");
-    const images = selectors.grid.querySelectorAll("[data-product-card] img");
+    const images = selectors.grid.querySelectorAll(cssSelector("[data-product-card] img"));
     const focusImages = [];
     const backgroundImages = [];
-    stage.className = "shop-camera-stage";
+    stage.className = cssClasses("shop-camera-stage");
     stage.setAttribute("aria-hidden", "true");
-    world.className = "shop-camera-world";
-    backgroundLayer.className = "shop-camera-layer is-background";
-    focusLayer.className = "shop-camera-layer is-focus";
+    world.className = cssClasses("shop-camera-world");
+    backgroundLayer.className = cssClasses("shop-camera-layer is-background");
+    focusLayer.className = cssClasses("shop-camera-layer is-focus");
 
     images.forEach((image) => {
         const rect = rectForElement(image);
         if (!rect || (image !== focusImage && !intersectsViewport(rect, CAMERA_VIEWPORT_MARGIN))) return;
 
         const clone = document.createElement("img");
-        clone.className = "shop-camera-image";
+        clone.className = cssClasses("shop-camera-image");
         clone.alt = "";
         clone.decoding = "async";
         clone.src = image.currentSrc || image.src;
@@ -513,7 +517,7 @@ function cloneCameraWorld(focusImage = null) {
         clone.style.blockSize = `${rect.height}px`;
         clone.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
         if (image === focusImage) {
-            clone.classList.add("is-focus");
+            clone.classList.add(cssToken("is-focus"));
             focusImages.push(clone);
             focusLayer.append(clone);
         } else {
@@ -544,7 +548,7 @@ function prepareCloseCamera(slug, camera = null) {
     const nextCamera = camera || cloneCameraWorld(cardImageForSlug(slug));
     if (!nextCamera) return;
 
-    nextCamera.stage.classList.add("is-prepared");
+    nextCamera.stage.classList.add(cssToken("is-prepared"));
     nextCamera.world.getAnimations().forEach((animation) => animation.cancel());
     nextCamera.world.style.opacity = "";
     nextCamera.world.style.transform = "";
@@ -585,7 +589,7 @@ function takePreparedCloseCamera(slug) {
     const camera = preparedCloseCamera;
     preparedCloseCamera = null;
     preparedCloseCameraSlug = null;
-    camera.stage.classList.remove("is-prepared");
+    camera.stage.classList.remove(cssToken("is-prepared"));
     camera.world.getAnimations().forEach((animation) => animation.cancel());
     camera.world.style.opacity = "";
     camera.world.style.transform = "";
@@ -621,7 +625,7 @@ function crossfadeProductImageToFront() {
     }
 
     const overlay = document.createElement("img");
-    overlay.className = "shop-product-image-crossfade";
+    overlay.className = cssClasses("shop-product-image-crossfade");
     overlay.alt = "";
     overlay.decoding = "async";
     overlay.src = currentSrc;
@@ -654,7 +658,7 @@ async function animateProductCameraOpen(options) {
     productTransitionActive = true;
     openProduct(product, imageId, openOptions);
     selectors.panel.style.opacity = "0";
-    selectors.productLayout?.classList.add("is-camera-opening");
+    selectors.productLayout?.classList.add(cssToken("is-camera-opening"));
     setProductSwitchMotion(0, 1, 1);
 
     await waitForImageReady(selectors.productImage);
@@ -663,20 +667,20 @@ async function animateProductCameraOpen(options) {
     // Ensure the track is centered before measuring the zoom target.
     setCarouselMotion(0, 1, 0, 1);
     const targetRect = rectForElement(selectors.productImage);
-    const camera = targetRect ? cloneCameraWorld(sourceElement || card?.querySelector("img")) : null;
+    const camera = targetRect ? cloneCameraWorld(sourceElement || card?.querySelector(cssSelector("img"))) : null;
     if (!camera || !targetRect) {
         selectors.panel.style.opacity = "";
-        selectors.productLayout?.classList.remove("is-camera-opening");
+        selectors.productLayout?.classList.remove(cssToken("is-camera-opening"));
         setProductSwitchMotion(0, 1, 1);
         camera?.stage.remove();
         activeCameraAnimation = null;
         productTransitionActive = false;
-        document.body.classList.remove("shop-camera-transitioning");
+        document.body.classList.remove(cssToken("shop-camera-transitioning"));
         return;
     }
 
     if (selectors.grid) selectors.grid.style.opacity = "0";
-    document.body.classList.add("shop-camera-transitioning");
+    document.body.classList.add(cssToken("shop-camera-transitioning"));
 
     const endTransform = cameraTransformForFocus(sourceRect, targetRect);
     const animations = [
@@ -732,10 +736,10 @@ async function animateProductCameraOpen(options) {
         camera.stage.remove();
         animations.forEach((animation) => animation.cancel());
         selectors.panel.style.opacity = "";
-        selectors.productLayout?.classList.remove("is-camera-opening");
+        selectors.productLayout?.classList.remove(cssToken("is-camera-opening"));
         activeCameraAnimation = null;
         productTransitionActive = false;
-        document.body.classList.remove("shop-camera-transitioning");
+        document.body.classList.remove(cssToken("shop-camera-transitioning"));
         if (shouldPrepareClose) schedulePrepareCloseCamera(product.slug);
     };
     activeCameraAnimation = {
@@ -777,16 +781,16 @@ function animateProductCameraClose(options = {}) {
     stopCarouselAnimation();
     stopProductSwitchAnimation();
     productTransitionActive = true;
-    document.body.classList.add("shop-camera-transitioning");
-    selectors.productLayout?.classList.add("is-camera-opening");
+    document.body.classList.add(cssToken("shop-camera-transitioning"));
+    selectors.productLayout?.classList.add(cssToken("is-camera-opening"));
 
     const camera = takePreparedCloseCamera(slug) || cloneCameraWorld(targetImage);
     const crossfade = crossfadeProductImageToFront();
     if (!camera) {
         crossfade?.cancel();
-        selectors.productLayout?.classList.remove("is-camera-opening");
+        selectors.productLayout?.classList.remove(cssToken("is-camera-opening"));
         productTransitionActive = false;
-        document.body.classList.remove("shop-camera-transitioning");
+        document.body.classList.remove(cssToken("shop-camera-transitioning"));
         closeProduct(options);
         return;
     }
@@ -836,11 +840,11 @@ function animateProductCameraClose(options = {}) {
         animations.forEach((animation) => animation.cancel());
         if (selectors.grid) selectors.grid.style.opacity = "";
         selectors.panel.style.opacity = "";
-        selectors.productLayout?.classList.remove("is-camera-opening");
+        selectors.productLayout?.classList.remove(cssToken("is-camera-opening"));
         setProductSwitchMotion(0, 1, 1);
         activeCameraAnimation = null;
         productTransitionActive = false;
-        document.body.classList.remove("shop-camera-transitioning");
+        document.body.classList.remove(cssToken("shop-camera-transitioning"));
         revealGridTextAfterClose();
     };
     cameraTransform.finished
@@ -859,7 +863,7 @@ function animateProductCameraClose(options = {}) {
 function openProductFromCard(product, imageId, card, options = {}) {
     if (productTransitionActive) return;
     disposePreparedCloseCamera();
-    const sourceImage = card?.querySelector("img");
+    const sourceImage = card?.querySelector(cssSelector("img"));
     lastOpenedProductSlug = product.slug;
 
     animateProductCameraOpen({
@@ -883,8 +887,8 @@ function stopProductSwitchAnimation() {
 }
 
 function setProductSwitching(active) {
-    selectors.productFrame?.classList.toggle("is-product-switching", active);
-    selectors.productLayout?.classList.toggle("is-product-swiping", active);
+    selectors.productFrame?.classList.toggle(cssToken("is-product-switching"), active);
+    selectors.productLayout?.classList.toggle(cssToken("is-product-swiping"), active);
 }
 
 function setProductSwitchMotion(y = 0, scale = 1, opacity = 1, x = 0) {
@@ -960,7 +964,7 @@ function productIndex(product) {
 
 function gridColumnCount() {
     if (!selectors.grid) return 1;
-    const cards = Array.from(selectors.grid.querySelectorAll("[data-product-card]"));
+    const cards = Array.from(selectors.grid.querySelectorAll(cssSelector("[data-product-card]")));
     if (cards.length) {
         const firstRect = rectForElement(cards[0]);
         if (firstRect) {
@@ -1132,8 +1136,8 @@ function onProductPointerDown(event) {
 
     const target = event.target;
     if (!(target instanceof Element)) return;
-    const interactive = target.closest("button, a, input, select, textarea");
-    if (interactive && !interactive.matches("[data-image-advance]")) return;
+    const interactive = target.closest(cssSelector("button, a, input, select, textarea"));
+    if (interactive && !interactive.matches(cssSelector("[data-image-advance]"))) return;
 
     productSwipeState = {
         pointerId: event.pointerId,
@@ -1245,7 +1249,7 @@ function cancelActiveDrags() {
         const id = dragState.pointerId;
         const wasDragging = dragState.dragging;
         dragState = null;
-        selectors.imageStage?.classList.remove("is-dragging");
+        selectors.imageStage?.classList.remove(cssToken("is-dragging"));
         selectors.imageThumbs?.removeAttribute("data-thumb-drag");
         releaseCarouselPointer(id);
         clearEdgeArrows();
@@ -1325,7 +1329,7 @@ function openProduct(product, imageId = "front", options = {}) {
     selectors.panel.hidden = false;
     selectors.panel.setAttribute("aria-hidden", "false");
     setBackgroundInert(true);
-    document.body.classList.add("shop-panel-open");
+    document.body.classList.add(cssToken("shop-panel-open"));
     showBackdrop();
     if (focus) focusProductDialog();
     notifyOverlay();
@@ -1352,7 +1356,7 @@ function closeProduct(options = {}) {
     selectors.panel.hidden = true;
     selectors.panel.setAttribute("aria-hidden", "true");
     setBackgroundInert(false);
-    document.body.classList.remove("shop-panel-open");
+    document.body.classList.remove(cssToken("shop-panel-open"));
     currentProduct = null;
     maybeHideBackdrop();
     clearOverlayScrollGutterIfIdle();
@@ -1380,7 +1384,7 @@ function renderThumbs(product) {
     product.images.forEach((image, index) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "shop-thumb";
+        button.className = cssClasses("shop-thumb");
         button.dataset.imageIndex = String(index);
         button.setAttribute("aria-label", `Show ${image.label} view`);
         button.setAttribute("aria-selected", index === currentImageIndex ? "true" : "false");
@@ -1457,7 +1461,7 @@ function selectImage(index, options = {}) {
     setCells();
     setText(selectors.imageCaption, image.caption);
 
-    selectors.imageThumbs?.querySelectorAll("[data-image-index]").forEach((button) => {
+    selectors.imageThumbs?.querySelectorAll(cssSelector("[data-image-index]")).forEach((button) => {
         button.setAttribute(
             "aria-selected",
             button.dataset.imageIndex === String(currentImageIndex) ? "true" : "false",
@@ -1682,7 +1686,7 @@ function onCarouselPointerMove(event) {
             return;
         }
         dragState.dragging = true;
-        selectors.imageStage?.classList.add("is-dragging");
+        selectors.imageStage?.classList.add(cssToken("is-dragging"));
         // Drop the dot's transition so it tracks the finger 1:1 (re-enabled on
         // release for the settle/commit ease).
         selectors.imageThumbs?.setAttribute("data-thumb-drag", "true");
@@ -1729,7 +1733,7 @@ function onCarouselPointerEnd(event) {
     if (!dragState || event.pointerId !== dragState.pointerId) return;
     const state = dragState;
     dragState = null;
-    selectors.imageStage?.classList.remove("is-dragging");
+    selectors.imageStage?.classList.remove(cssToken("is-dragging"));
     // Re-enable the dot transition so it eases to its resting/committed spot.
     selectors.imageThumbs?.removeAttribute("data-thumb-drag");
     releaseCarouselPointer(event.pointerId);
@@ -1797,10 +1801,10 @@ function addCurrentToCart() {
     // the cart badge's current label (so the count ticks up when the cap lands).
     const compact = compactViewport.matches && isProductOpen();
     const cartToggle = compact
-        ? selectors.panel?.querySelector("[data-cart-toggle]") || selectors.cartToggles[0]
+        ? selectors.panel?.querySelector(cssSelector("[data-cart-toggle]")) || selectors.cartToggles[0]
         : null;
     const sourceRect = compact ? plusButtonRect() : null;
-    const badge = cartToggle?.querySelector("[data-cart-count]");
+    const badge = cartToggle?.querySelector(cssSelector("[data-cart-count]"));
     const prevLabel = badge ? badge.textContent : null;
     const colors = currentProduct?.colors;
 
@@ -1815,7 +1819,7 @@ function addCurrentToCart() {
 }
 
 function plusButtonRect() {
-    const btn = selectors.panel?.querySelector("[data-size-toggle]");
+    const btn = selectors.panel?.querySelector(cssSelector("[data-size-toggle]"));
     return btn ? btn.getBoundingClientRect() : null;
 }
 
@@ -1850,7 +1854,7 @@ function flyCapToCart(sourceRect, targetEl, colors, onArrive) {
     const dy = targetRect.top + targetRect.height / 2 - startY;
 
     const flyer = miniCap(colors);
-    flyer.classList.add("shop-fly-cap");
+    flyer.classList.add(cssToken("shop-fly-cap"));
     flyer.style.left = `${startX}px`;
     flyer.style.top = `${startY}px`;
     appendOwned(flyer);
@@ -1890,7 +1894,7 @@ function bumpCartTarget(targetEl) {
         ],
         { duration: 340, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" },
     );
-    const badge = targetEl.querySelector("[data-cart-count]");
+    const badge = targetEl.querySelector(cssSelector("[data-cart-count]"));
     if (badge) {
         badge.animate(
             [
@@ -1905,10 +1909,10 @@ function bumpCartTarget(targetEl) {
 
 function flashAddedPopover(targetEl) {
     // One popover at a time, so rapid taps refresh rather than stack.
-    document.querySelectorAll(".shop-added-pop").forEach((node) => node.remove());
+    document.querySelectorAll(cssSelector(".shop-added-pop")).forEach((node) => node.remove());
     const rect = targetEl.getBoundingClientRect();
     const pop = document.createElement("div");
-    pop.className = "shop-added-pop";
+    pop.className = cssClasses("shop-added-pop");
     pop.setAttribute("role", "status");
     pop.setAttribute("aria-live", "polite");
     pop.textContent = "Added to cart";
@@ -1971,7 +1975,7 @@ function applyBag(next) {
         selectors.bag.hidden = true;
         selectors.bag.setAttribute("aria-hidden", "true");
         selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "false"));
-        document.body.classList.remove("shop-cart-open", "shop-bag-checkout");
+        document.body.classList.remove(cssToken("shop-cart-open"), cssToken("shop-bag-checkout"));
         // Hand interaction back to the product panel if the bag opened over it.
         if (selectors.panel) selectors.panel.inert = false;
         maybeHideBackdrop();
@@ -1986,7 +1990,7 @@ function applyBag(next) {
     selectors.bag.hidden = false;
     selectors.bag.setAttribute("aria-hidden", "false");
     selectors.cartToggles.forEach((toggle) => toggle.setAttribute("aria-expanded", "true"));
-    document.body.classList.add("shop-cart-open");
+    document.body.classList.add(cssToken("shop-cart-open"));
     showBackdrop();
     // The bag is a modal above the product panel — inert the panel so focus
     // can't escape into it while the bag is open.
@@ -1995,7 +1999,7 @@ function applyBag(next) {
     notifyOverlay();
     const checkout = target === "checkout";
     selectors.bag.dataset.bagState = target;
-    document.body.classList.toggle("shop-bag-checkout", checkout);
+    document.body.classList.toggle(cssToken("shop-bag-checkout"), checkout);
     // The pink CTA opens checkout; once you're in the checkout pane it's a no-op,
     // so render it disabled (still visible in the two-pane desktop layout).
     if (selectors.bagCheckoutBtn) selectors.bagCheckoutBtn.disabled = checkout;
@@ -2015,10 +2019,10 @@ function applyBag(next) {
     else scheduleEagerCheckoutMount();
 
     if (prev === "closed" && !checkout) {
-        selectors.bag.querySelector("[data-close-bag]")?.focus({ preventScroll: true });
+        selectors.bag.querySelector(cssSelector("[data-close-bag]"))?.focus({ preventScroll: true });
     } else if (checkout && prev !== "checkout") {
         selectors.bagCheckoutPane
-            ?.querySelector("[data-bag-back]")
+            ?.querySelector(cssSelector("[data-bag-back]"))
             ?.focus({ preventScroll: true });
     } else if (!checkout && prev === "checkout") {
         selectors.bagCheckoutBtn?.focus({ preventScroll: true });
@@ -2047,7 +2051,7 @@ function cartTotalDollars() {
 // A tiny embroidered-cap chip drawn from the product's own three colors.
 function miniCap(colors) {
     const cap = document.createElement("span");
-    cap.className = "mini-cap";
+    cap.className = cssClasses("mini-cap");
     cap.setAttribute("aria-hidden", "true");
     if (colors) {
         cap.style.setProperty("--cap", colors.cap);
@@ -2055,11 +2059,11 @@ function miniCap(colors) {
         cap.style.setProperty("--accent", colors.accent);
     }
     const crown = document.createElement("span");
-    crown.className = "mini-cap-crown";
+    crown.className = cssClasses("mini-cap-crown");
     const brim = document.createElement("span");
-    brim.className = "mini-cap-brim";
+    brim.className = cssClasses("mini-cap-brim");
     const dot = document.createElement("span");
-    dot.className = "mini-cap-dot";
+    dot.className = cssClasses("mini-cap-dot");
     cap.append(crown, brim, dot);
     return cap;
 }
@@ -2089,7 +2093,7 @@ function controlIcon(name) {
     svg.setAttribute("viewBox", "0 0 16 16");
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute("focusable", "false");
-    svg.classList.add("shop-control-icon");
+    svg.classList.add(cssToken("shop-control-icon"));
     const path = document.createElementNS(ns, "path");
     path.setAttribute("d", CONTROL_ICON_PATHS[name]);
     path.setAttribute("fill", "none");
@@ -2109,9 +2113,9 @@ function changeCartQty(slug, delta) {
     // Targeted update: refresh only this row's qty + price instead of rebuilding
     // the whole list, so rapid +/- clicks stay cheap (keeps INP low).
     const product = productBySlug.get(slug);
-    const row = selectors.cartItems?.querySelector(".shop-cart-item" + slugSelector(slug));
-    const qtyEl = row?.querySelector(".shop-cart-qty-val");
-    const priceEl = row?.querySelector(".shop-cart-item-price");
+    const row = [...selectors.cartItems?.querySelectorAll(cssSelector(".shop-cart-item")) || []].find(row => row.dataset.slug === slug);
+    const qtyEl = row?.querySelector(cssSelector(".shop-cart-qty-val"));
+    const priceEl = row?.querySelector(cssSelector(".shop-cart-item-price"));
     if (product && qtyEl && priceEl) {
         qtyEl.textContent = String(item.quantity);
         priceEl.textContent = `$${product.price * item.quantity}`;
@@ -2124,7 +2128,7 @@ function changeCartQty(slug, delta) {
 function removeCartItem(slug) {
     cart = cart.filter((i) => i.slug !== slug);
     writeCart();
-    const row = selectors.cartItems?.querySelector(".shop-cart-item" + slugSelector(slug));
+    const row = [...selectors.cartItems?.querySelectorAll(cssSelector(".shop-cart-item")) || []].find(row => row.dataset.slug === slug);
     if (cart.length && row) {
         row.remove();
         syncCartChrome();
@@ -2137,35 +2141,35 @@ function removeCartItem(slug) {
 
 function cartRow(item, product) {
     const row = document.createElement("li");
-    row.className = "shop-cart-item";
+    row.className = cssClasses("shop-cart-item");
     row.dataset.slug = item.slug;
 
     const top = document.createElement("div");
-    top.className = "shop-cart-item-top";
+    top.className = cssClasses("shop-cart-item-top");
     const head = document.createElement("div");
-    head.className = "shop-cart-item-head";
+    head.className = cssClasses("shop-cart-item-head");
     head.append(miniCap(product.colors));
     const title = document.createElement("strong");
     title.textContent = product.name;
     head.append(title);
     const price = document.createElement("span");
-    price.className = "shop-cart-item-price";
+    price.className = cssClasses("shop-cart-item-price");
     price.textContent = `$${product.price * Number(item.quantity || 1)}`;
     top.append(head, price);
 
     const controls = document.createElement("div");
-    controls.className = "shop-cart-qty";
+    controls.className = cssClasses("shop-cart-qty");
     controls.setAttribute("role", "group");
     controls.setAttribute("aria-label", `Quantity for ${product.name}`);
     const minus = cartIconButton(controlIcon("minus"), `Decrease ${product.name}`, () => changeCartQty(item.slug, -1));
-    minus.className = "shop-cart-qty-btn";
+    minus.className = cssClasses("shop-cart-qty-btn");
     const qty = document.createElement("span");
-    qty.className = "shop-cart-qty-val";
+    qty.className = cssClasses("shop-cart-qty-val");
     qty.textContent = String(item.quantity);
     const plus = cartIconButton(controlIcon("plus"), `Increase ${product.name}`, () => changeCartQty(item.slug, 1));
-    plus.className = "shop-cart-qty-btn";
+    plus.className = cssClasses("shop-cart-qty-btn");
     const remove = cartIconButton(controlIcon("close"), `Remove ${product.name}`, () => removeCartItem(item.slug));
-    remove.className = "shop-cart-remove";
+    remove.className = cssClasses("shop-cart-remove");
     controls.append(minus, qty, plus, remove);
 
     row.append(top, controls);
@@ -2196,17 +2200,17 @@ function recommendationCard() {
     if (!product) return null;
 
     const card = document.createElement("div");
-    card.className = "shop-cart-reco";
+    card.className = cssClasses("shop-cart-reco");
 
     const kicker = document.createElement("p");
-    kicker.className = "shop-cart-reco-kicker";
+    kicker.className = cssClasses("shop-cart-reco-kicker");
     kicker.textContent = "You might like";
 
     const body = document.createElement("div");
-    body.className = "shop-cart-reco-body";
+    body.className = cssClasses("shop-cart-reco-body");
 
     const img = document.createElement("img");
-    img.className = "shop-cart-reco-img";
+    img.className = cssClasses("shop-cart-reco-img");
     img.src = product.images?.[0]?.thumbnailUrl || product.images?.[0]?.url || "";
     img.alt = "";
     img.width = 900;
@@ -2215,11 +2219,11 @@ function recommendationCard() {
     img.decoding = "async";
 
     const info = document.createElement("div");
-    info.className = "shop-cart-reco-info";
+    info.className = cssClasses("shop-cart-reco-info");
     const name = document.createElement("strong");
     name.textContent = product.name;
     const price = document.createElement("span");
-    price.className = "shop-cart-reco-price";
+    price.className = cssClasses("shop-cart-reco-price");
     price.textContent = product.priceLabel;
     info.append(name, price);
 
@@ -2227,7 +2231,7 @@ function recommendationCard() {
 
     const add = document.createElement("button");
     add.type = "button";
-    add.className = "shop-cart-reco-add";
+    add.className = cssClasses("shop-cart-reco-add");
     add.textContent = "Add to bag";
     add.setAttribute("aria-label", `Add ${product.name} to bag`);
     listen(add, "click", () => addProductToCart(product.slug));
@@ -2267,7 +2271,7 @@ function renderCart() {
         selectors.cartItems.textContent = "";
         if (!cart.length) {
             const empty = document.createElement("p");
-            empty.className = "shop-cart-empty";
+            empty.className = cssClasses("shop-cart-empty");
             empty.textContent = EMPTY_STATE;
             selectors.cartItems.append(empty);
             // Don't nudge inside the checkout pane (it's visible beside the
@@ -2276,7 +2280,7 @@ function renderCart() {
             if (reco) selectors.cartItems.append(reco);
         } else {
             const list = document.createElement("ul");
-            list.className = "shop-cart-list";
+            list.className = cssClasses("shop-cart-list");
             const frag = document.createDocumentFragment();
             cart.forEach((item) => {
                 const product = productBySlug.get(item.slug);
@@ -2298,7 +2302,7 @@ function handleGridClick(event) {
         event.preventDefault();
         return;
     }
-    const card = event.target.closest("[data-product-card]");
+    const card = event.target.closest(cssSelector("[data-product-card]"));
     if (!card) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
     const product = productBySlug.get(card.dataset.slug);
@@ -2313,7 +2317,7 @@ function handleGridKeydown(event) {
         event.preventDefault();
         return;
     }
-    const card = event.target.closest("[data-product-card]");
+    const card = event.target.closest(cssSelector("[data-product-card]"));
     if (!card) return;
     const product = productBySlug.get(card.dataset.slug);
     if (!product) return;
@@ -2328,35 +2332,35 @@ listen(document, "click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    if (target.closest("[data-close-product]")) {
+    if (target.closest(cssSelector("[data-close-product]"))) {
         closeProductWithTransition();
         return;
     }
 
-    if (target.closest("[data-image-prev]")) {
+    if (target.closest(cssSelector("[data-image-prev]"))) {
         stepImageOrProduct(-1);
         return;
     }
 
-    if (target.closest("[data-image-next]")) {
+    if (target.closest(cssSelector("[data-image-next]"))) {
         stepImageOrProduct(1);
         return;
     }
 
-    if (target.closest("[data-image-advance]")) {
+    if (target.closest(cssSelector("[data-image-advance]"))) {
         if (suppressNextImageAdvance) return;
         stepImage(1);
         return;
     }
 
-    const thumb = target.closest("[data-image-index]");
+    const thumb = target.closest(cssSelector("[data-image-index]"));
     if (thumb) {
         const nextIndex = Number(thumb.dataset.imageIndex || 0);
         transitionToImage(nextIndex, nextIndex > currentImageIndex ? 1 : -1);
         return;
     }
 
-    if (target.closest("[data-size-toggle]")) {
+    if (target.closest(cssSelector("[data-size-toggle]"))) {
         // This store has no sizes — the plus button is a direct add-to-cart,
         // no size sheet, no transition.
         addCurrentToCart();
@@ -2364,38 +2368,38 @@ listen(document, "click", (event) => {
     }
 
 
-    if (target.closest("[data-cart-toggle]")) {
+    if (target.closest(cssSelector("[data-cart-toggle]"))) {
         if (isCartOpen()) setBag(null);
         else setBag("cart");
         return;
     }
 
-    if (target.closest("[data-close-bag]")) {
+    if (target.closest(cssSelector("[data-close-bag]"))) {
         setBag(null);
         return;
     }
 
-    if (target.closest("[data-bag-scrim]")) {
+    if (target.closest(cssSelector("[data-bag-scrim]"))) {
         setBag(null);
         return;
     }
 
-    if (target.closest("[data-bag-checkout]")) {
+    if (target.closest(cssSelector("[data-bag-checkout]"))) {
         setBag("checkout");
         return;
     }
 
-    if (target.closest("[data-bag-back]")) {
+    if (target.closest(cssSelector("[data-bag-back]"))) {
         setBag("cart");
         return;
     }
 
-    if (target.closest("[data-bag-done-close]")) {
+    if (target.closest(cssSelector("[data-bag-done-close]"))) {
         setBag(null);
         return;
     }
 
-    if (target.closest("[data-cart-clear]")) {
+    if (target.closest(cssSelector("[data-cart-clear]"))) {
         cart = [];
         writeCart();
         renderCart();
@@ -2469,7 +2473,7 @@ listen(window, "popstate", () => {
 
 listen(window, "resize", () => {
     const slug = currentProduct?.slug;
-    if (document.body.classList.contains("shop-panel-open") || document.body.classList.contains("shop-cart-open")) {
+    if (document.body.classList.contains(cssToken("shop-panel-open")) || document.body.classList.contains(cssToken("shop-cart-open"))) {
         updateOverlayScrollGutter({ force: true });
     }
     disposePreparedCloseCamera();
@@ -2573,7 +2577,7 @@ function clearCheckoutError() {
 
 function clearCheckoutSkeleton(sel) {
     const host = coEl(sel);
-    const skeleton = host && host.querySelector(".shop-checkout-skeleton");
+    const skeleton = host && host.querySelector(cssSelector(".shop-checkout-skeleton"));
     if (skeleton) skeleton.remove();
 }
 
@@ -2868,7 +2872,7 @@ function onCheckoutPaid(paymentIntent, email) {
     writeCart();
     renderCart();
 
-    const stamp = selectors.bag?.querySelector("[data-bag-stamp]");
+    const stamp = selectors.bag?.querySelector(cssSelector("[data-bag-stamp]"));
     if (stamp) stamp.dataset.show = "true";
     const form = coEl("[data-checkout-form]");
     if (form) form.hidden = true;
@@ -2971,7 +2975,7 @@ active = { surface, dispose() {
         selectors.bag.setAttribute("aria-hidden", "true");
     }
     if (selectors.backdrop) selectors.backdrop.hidden = true;
-    document.body.classList.remove("shop-panel-open", "shop-cart-open", "shop-bag-checkout", "shop-camera-transitioning", "shop-grid-text-hidden", "shop-grid-text-revealing");
+    document.body.classList.remove(cssToken("shop-panel-open"), cssToken("shop-cart-open"), cssToken("shop-bag-checkout"), cssToken("shop-camera-transitioning"), cssToken("shop-grid-text-hidden"), cssToken("shop-grid-text-revealing"));
     document.body.style.removeProperty("--shop-scrollbar-gutter");
     selectors.grid?.style.removeProperty("opacity");
     clearGridTextRevealDelays();

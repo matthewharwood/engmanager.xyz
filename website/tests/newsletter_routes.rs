@@ -1,3 +1,4 @@
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
 mod common;
 
 use common::{SITE_HOST, TestServer};

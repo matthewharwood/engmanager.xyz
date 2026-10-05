@@ -1,6 +1,8 @@
 //! Real-browser flow tests through a test-only same-origin proxy. The fixture
 //! drives the actual UI in an iframe; the production router has no test hooks.
 
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use std::io::{BufRead, BufReader, Read, Write};
@@ -19,7 +21,8 @@ use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
 use common::TestServer;
 
-const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Personality browser checks</title></head><body>
+const FIXTURE: &str = css_html!(
+    r##"<!doctype html><html><head><meta charset="utf-8"><title>Personality browser checks</title></head><body>
 <pre id="result">RUNNING</pre><iframe id="app" title="Assessment under test" style="width:1200px;height:1000px"></iframe>
 <script>
 // This separate script also catches syntax errors before the module can run.
@@ -465,7 +468,8 @@ try{
   assert(requests.filter(request=>new URL(request.uri,location.origin).searchParams.has('r')).every(request=>!request.referrer?.includes(publicToken)), 'public score query is not propagated through subresource referrers');
   store.close();result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nAPP: '+doc()?.querySelector('#save-status')?.textContent+'\n'+doc()?.querySelector('#action-error')?.textContent+'\nREFLECTION: '+doc()?.querySelector('#enhance-report [role="status"]')?.textContent+'\nRECENT CHECKS: '+checks.slice(-6).join('\n');document.body.dataset.testResult='failed';}
-</script></body></html>"##;
+</script></body></html>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

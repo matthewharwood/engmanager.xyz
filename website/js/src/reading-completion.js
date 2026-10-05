@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // The feed's last act: first clear the writing, then clear its tags.
 // Clicked/visited rows do not unlock it; only the journey's completed reads do.
 (() => {
@@ -24,8 +28,8 @@
     let active = false;
     let stage = "";
 
-    const currentPage = () => document.querySelector("[data-journey-current]")
-        || document.querySelector("[data-eng-page]") || document;
+    const currentPage = () => document.querySelector(cssSelector("[data-journey-current]"))
+        || document.querySelector(cssSelector("[data-eng-page]")) || document;
     const save = () => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -37,14 +41,14 @@
     };
 
     function catalog(root) {
-        const island = root.querySelector("#articles-data");
+        const island = root.querySelector(cssSelector("#articles-data"));
         if (!island) return;
         try {
             const data = JSON.parse(island.textContent || "{}");
             if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("invalid article registry");
             articleSlugs = new Set(Object.keys(data).filter(validKey).slice(0, MAX_ITEMS));
             tagLabels = new Map();
-            root.querySelectorAll(".marquee .chip-tag[data-chip-id]").forEach((chip) => {
+            root.querySelectorAll(cssSelector(".marquee .chip-tag[data-chip-id]")).forEach((chip) => {
                 const id = chip.dataset.chipId;
                 if (validKey(id) && !tagLabels.has(id) && tagLabels.size < MAX_ITEMS) {
                     tagLabels.set(id, chip.textContent.trim());
@@ -74,7 +78,7 @@
     }
 
     function restoreDiscarded(root) {
-        root.querySelectorAll("[data-cleanup-discarded]").forEach((node) => {
+        root.querySelectorAll(cssSelector("[data-cleanup-discarded]")).forEach((node) => {
             conceal(node, false);
             if (node.dataset.slug) {
                 node.removeAttribute("aria-hidden");
@@ -84,19 +88,19 @@
     }
 
     function renderTags(panel) {
-        const tray = panel.querySelector("[data-reading-completion-tags]");
+        const tray = panel.querySelector(cssSelector("[data-reading-completion-tags]"));
         if (!tray) return;
         // Keep remaining controls in place while deleting one; rebuilding the
         // whole tray would drop keyboard focus and lose pointer captures.
         const remaining = new Set(stage === "tags"
             ? [...tagLabels.keys()].filter((id) => !discarded.tags.has(id)) : []);
-        tray.querySelectorAll("[data-chip-id]").forEach((chip) => {
+        tray.querySelectorAll(cssSelector("[data-chip-id]")).forEach((chip) => {
             if (remaining.has(chip.dataset.chipId)) remaining.delete(chip.dataset.chipId);
             else chip.remove();
         });
         for (const id of remaining) {
             const chip = document.createElement("span");
-            chip.className = "chip chip-tag";
+            chip.className = cssClasses("chip chip-tag");
             chip.dataset.chipId = id;
             chip.textContent = tagLabels.get(id);
             chip.setAttribute("role", "button");
@@ -109,7 +113,7 @@
 
     function refresh() {
         const root = currentPage();
-        const panel = root.querySelector("[data-reading-completion]");
+        const panel = root.querySelector(cssSelector("[data-reading-completion]"));
         const snapshot = window.__engReading?.snapshot?.();
         active = !!snapshot?.allComplete && articleSlugs.size > 0;
         const articlesLeft = [...articleSlugs].filter((slug) => !discarded.articles.has(slug)).length;
@@ -119,7 +123,7 @@
             // Retained feed pages need the same restoration even if reading
             // was reset while an article or the shop is currently active.
             restoreDiscarded(document);
-            document.querySelectorAll("[data-cleanup-keyboard]").forEach((link) => {
+            document.querySelectorAll(cssSelector("[data-cleanup-keyboard]")).forEach((link) => {
                 link.removeAttribute("aria-keyshortcuts");
                 link.removeAttribute("aria-description");
                 delete link.dataset.cleanupKeyboard;
@@ -133,9 +137,9 @@
             return;
         }
 
-        root.querySelectorAll(".article-fluid-link[data-slug]").forEach((link) => {
+        root.querySelectorAll(cssSelector(".article-fluid-link[data-slug]")).forEach((link) => {
             const hidden = discarded.articles.has(link.dataset.slug);
-            link.classList.add("is-visited");
+            link.classList.add(cssToken("is-visited"));
             conceal(link, hidden);
             if (hidden) {
                 link.setAttribute("aria-hidden", "true");
@@ -148,7 +152,7 @@
                 link.setAttribute("aria-description", "Press Delete or Backspace to move this article to the trash.");
             }
         });
-        root.querySelectorAll(".marquee .chip-tag[data-chip-id]").forEach((chip) => {
+        root.querySelectorAll(cssSelector(".marquee .chip-tag[data-chip-id]")).forEach((chip) => {
             conceal(chip, discarded.tags.has(chip.dataset.chipId));
         });
 
@@ -166,9 +170,9 @@
         set("[data-reading-completion-count]", stage === "articles"
             ? `${articlesLeft} ${articlesLeft === 1 ? "article" : "articles"} left`
             : stage === "tags" ? `${tagsLeft} ${tagsLeft === 1 ? "tag" : "tags"} left` : "All done.");
-        const reset = panel.querySelector("[data-reading-completion-reset]");
+        const reset = panel.querySelector(cssSelector("[data-reading-completion-reset]"));
         if (reset) reset.hidden = stage !== "finished";
-        const count = root.querySelector("[data-trash-count]");
+        const count = root.querySelector(cssSelector("[data-trash-count]"));
         if (count) {
             const total = discarded.articles.size + discarded.tags.size;
             count.textContent = String(total);
@@ -201,13 +205,13 @@
         restoreDiscarded(document);
         window.__engReading?.reset?.();
         refresh();
-        const count = root.querySelector("[data-trash-count]");
+        const count = root.querySelector(cssSelector("[data-trash-count]"));
         if (count) {
             count.textContent = "0";
             count.dataset.trashCount = "0";
         }
         document.dispatchEvent(new CustomEvent("engmanager:cleanupready"));
-        const heading = root.querySelector("h1");
+        const heading = root.querySelector(cssSelector("h1"));
         if (heading) {
             heading.tabIndex = -1;
             heading.focus({ preventScroll: true });
@@ -231,7 +235,7 @@
     });
     window.addEventListener("pageshow", init);
     document.addEventListener("click", (event) => {
-        if (!event.target.closest?.("[data-reading-completion-reset]")) return;
+        if (!event.target.closest?.(cssSelector("[data-reading-completion-reset]"))) return;
         event.preventDefault();
         reset();
     });

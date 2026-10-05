@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // A shader paints the cloth, torn outline, and sharp projected shadow behind
 // the real article controls. DOM rows follow the same low-amplitude wave.
 (() => {
@@ -99,15 +103,15 @@
     }
     function setup(modal) {
         if (instances.has(modal)) return;
-        const frame = modal.querySelector('.reveal-card-frame');
-        const canvas = frame?.querySelector('.reveal-card-cloth');
-        const content = frame?.querySelector('.reveal-card-surface');
+        const frame = modal.querySelector(cssSelector('.reveal-card-frame'));
+        const canvas = frame?.querySelector(cssSelector('.reveal-card-cloth'));
+        const content = frame?.querySelector(cssSelector('.reveal-card-surface'));
         if (!canvas || !content) return;
         const lifetime = new AbortController(), { signal } = lifetime;
         let gl, program, buffer, position, uniforms;
         let raf = 0, elapsed = 0, previous = 0, disposed = false;
         let width = 1, height = 1, shadow = 10, paper, ink, rows = [];
-        const isOpen = () => modal.isConnected && modal.matches(':popover-open');
+        const isOpen = () => modal.isConnected && modal.matches(cssSelector(':popover-open'));
         const resetPose = () => {
             frame.style.removeProperty('translate');
             frame.style.removeProperty('rotate');
@@ -158,7 +162,7 @@
             rows = [...content.children].map(node => ({ node, y: node.offsetTop + node.offsetHeight / 2 }));
             // The live controls resolve theme colors even when the frame has
             // a transparent shader background. Canvas converts OKLCH to RGB.
-            paper = color(getComputedStyle(modal.querySelector('.reveal-card-close')).backgroundColor, [0.98, 0.98, 0.98]);
+            paper = color(getComputedStyle(modal.querySelector(cssSelector('.reveal-card-close'))).backgroundColor, [0.98, 0.98, 0.98]);
             ink = color(getComputedStyle(frame).color, [0.03, 0.03, 0.03]);
             shadow = parseFloat(getComputedStyle(frame).getPropertyValue('--reveal-card-shadow'));
             // clamp() remains unresolved in custom properties; the original
@@ -232,7 +236,7 @@
     const unmount = () => { for (const dispose of instances.values()) dispose(); instances.clear(); };
     const mount = () => {
         for (const [modal, dispose] of instances) if (!modal.isConnected) { dispose(); instances.delete(modal); }
-        document.querySelectorAll('#article-reveal').forEach(setup);
+        document.querySelectorAll(cssSelector('#article-reveal')).forEach(setup);
     };
     mount();
     window.__engNav?.onBeforeSwap?.(unmount);

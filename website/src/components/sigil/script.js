@@ -1,9 +1,13 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 /* A small software 3D renderer: etched metal, suspended capstone, and an eye.
  * No imports, storage, URL access, network, or interaction with page controls.
  * The server-rendered SVG remains visible if enhancement is unavailable. */
 (() => {
   'use strict';
-  const hosts = document.querySelectorAll('[data-sigil-scene]');
+  const hosts = document.querySelectorAll(cssSelector('[data-sigil-scene]'));
   if (!hosts.length || !window.requestAnimationFrame) return;
   const TAU = Math.PI * 2;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -14,8 +18,8 @@
   const scheme = window.matchMedia('(prefers-color-scheme: dark)');
 
   for (const host of hosts) {
-    const canvas = host.querySelector('[data-sigil-canvas]');
-    const motionButton = host.querySelector('[data-sigil-motion]');
+    const canvas = host.querySelector(cssSelector('[data-sigil-canvas]'));
+    const motionButton = host.querySelector(cssSelector('[data-sigil-motion]'));
     if (!canvas) continue;
     let ctx;
     try { ctx = canvas.getContext('2d', { alpha: true }); } catch (_) { continue; }

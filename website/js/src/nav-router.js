@@ -1,11 +1,16 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Continuous, same-origin navigation. The only retained page documents are the
 // current surface, its staged next surface, and one ephemeral previous surface.
 // Published personality/checkout documents remain hard navigation boundaries.
 (() => {
     const nav = window.__engNav;
-    const initialPage = document.querySelector('[data-eng-page]');
+    const initialPage = document.querySelector(cssSelector('[data-eng-page]'));
     if (!nav || nav.ready || !initialPage) return;
 
+    const cssRecoveryKey = 'engmanager.css-generation-recovery';
     const CONFIGS = ['__shopProducts', '__checkout', '__coach', '__engUrls', '__engSfxUrls', '__journeyPosters', '__journeyArticles'];
     const META = 'meta[name="description"],meta[name="robots"],meta[property^="og:"],meta[property^="article:"],meta[name^="twitter:"],link[rel="canonical"],link[rel="alternate"],script[type="application/ld+json"]';
     const privatePath = (p) => p === '/articles/big-personality' || /^\/personality(?:\/|$)/.test(p);
@@ -16,7 +21,7 @@
     const saveData = () => navigator.connection?.saveData === true;
     const logicalName = (url) => url.origin === location.origin && url.pathname.startsWith('/assets/')
         ? url.pathname.replace(/\.[0-9a-f]{8}(\.[a-z0-9]+)$/i, '$1') : url.href;
-    const assetTags = (root) => [...root.querySelectorAll('link[rel="stylesheet"][href],script[src]')].filter((el) => !el.closest('noscript'));
+    const assetTags = (root) => [...root.querySelectorAll(cssSelector('link[rel="stylesheet"][href],script[src]'))].filter((el) => !el.closest(cssSelector('noscript')));
     const assetUrl = (el) => new URL(el.getAttribute('src') || el.getAttribute('href'), location.href);
     const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
@@ -32,17 +37,17 @@
     const pendingScripts = new Map();
 
     const runtime = document.createElement('div');
-    runtime.className = 'journey-runtime';
+    runtime.className = cssClasses('journey-runtime');
     runtime.dataset.journeyRuntime = '';
     const status = document.createElement('p');
-    status.className = 'sr-only';
+    status.className = cssClasses('sr-only');
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     runtime.append(status);
     document.body.append(runtime);
 
     function record(doc, url) {
-        const page = doc.querySelector('[data-eng-page]');
+        const page = doc.querySelector(cssSelector('[data-eng-page]'));
         if (!page || privatePath(new URL(url).pathname)) throw new Error('document boundary');
         const configs = new Map();
         for (const name of CONFIGS) {
@@ -51,9 +56,10 @@
         }
         return {
             id: uid(), url, page, kind: page.dataset.engPage, title: doc.title,
+            css: doc.querySelector('meta[name="eng-css-generation"]')?.content,
             bodyClass: doc.body.className, nextUrl: page.dataset.engNext,
             assets: assetTags(doc).map((tag) => tag.cloneNode(true)),
-            inlineStyles: [...doc.head.querySelectorAll('style')].map((tag) => tag.cloneNode(true)),
+            inlineStyles: [...doc.head.querySelectorAll(cssSelector('style'))].map((tag) => tag.cloneNode(true)),
             metadata: [...doc.head.querySelectorAll(META)].map((tag) => tag.cloneNode(true)),
             configs, scroll: 0, width: innerWidth, height: innerHeight, focus: null,
         };
@@ -81,8 +87,8 @@
     remember();
 
     function overlayOpen() {
-        return document.body.matches('.shop-panel-open,.shop-cart-open')
-            || !!document.querySelector('dialog[open],[popover]:popover-open:not([data-cursor-overlay])');
+        return document.body.matches(cssSelector('.shop-panel-open,.shop-cart-open'))
+            || !!document.querySelector(cssSelector('dialog[open],[popover]:popover-open:not([data-cursor-overlay])'));
     }
 
     function syncOverlay() {
@@ -99,6 +105,11 @@
     document.addEventListener('toggle', syncOverlay, true);
 
     function assertAssets(rec) {
+        if (rec.css !== current.css) {
+            const error = new Error('The site has updated. Reload to continue with its current styles.');
+            error.css = rec.css || 'missing';
+            throw error;
+        }
         const live = new Map(assetTags(document).map((el) => { const u = assetUrl(el); return [logicalName(u), u.href]; }));
         for (const tag of rec.assets) {
             const url = assetUrl(tag), old = live.get(logicalName(url));
@@ -200,7 +211,7 @@
         const iframe = document.createElement('iframe');
         const cancelled = new Set();
         iframe._dispose = () => { for (const finish of [...cancelled]) finish(); cancelled.clear(); };
-        iframe.className = 'journey-preview';
+        iframe.className = cssClasses('journey-preview');
         iframe.setAttribute('sandbox', 'allow-same-origin');
         iframe.setAttribute('tabindex', '-1');
         iframe.setAttribute('aria-hidden', 'true');
@@ -261,13 +272,13 @@
                 const copy = rec.page.cloneNode(true);
                 // A resume preview has no interactive overlays. Excluding the
                 // hidden receipt/search/product trees also keeps it small.
-                copy.querySelectorAll('script,iframe,object,embed,audio,video,dialog,[popover],[role="dialog"][aria-modal="true"],[data-journey-fallback]').forEach((node) => node.remove());
-                copy.querySelectorAll('[autofocus]').forEach((node) => node.removeAttribute('autofocus'));
+                copy.querySelectorAll(cssSelector('script,iframe,object,embed,audio,video,dialog,[popover],[role="dialog"][aria-modal="true"],[data-journey-fallback]')).forEach((node) => node.remove());
+                copy.querySelectorAll(cssSelector('[autofocus]')).forEach((node) => node.removeAttribute('autofocus'));
                 doc.body.append(copy);
                 // CSS animation:none does not stop SVG's own timeline. Keep
                 // the full authored snapshot, but stop its decorative SMIL
                 // filters from repainting the thumbnail every display frame.
-                doc.querySelectorAll('svg').forEach((svg) => svg.pauseAnimations?.());
+                doc.querySelectorAll(cssSelector('svg')).forEach((svg) => svg.pauseAnimations?.());
                 iframe.contentWindow.scrollTo(0, scroll);
                 await doc.fonts?.ready;
                 if (!iframe.isConnected) return;
@@ -295,7 +306,7 @@
     // decode errors settle to the page's native fallback; a hung request keeps
     // the poster up until the normal hard-navigation recovery takes over.
     async function visibleImagesReady(doc) {
-        const images = [...doc.querySelectorAll('[data-journey-current] img')].filter((img) => {
+        const images = [...doc.querySelectorAll(cssSelector('[data-journey-current] img'))].filter((img) => {
             const rect = img.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 && rect.bottom > 0
                 && rect.top < innerHeight && rect.right > 0 && rect.left < innerWidth
@@ -368,33 +379,33 @@
         const spec = article ? { ...POSTERS.article, title: article.title, number: String(articleIndex + 1).padStart(2, '0') } : POSTERS[kind] || POSTERS.feed;
         const assets = window.__journeyPosters?.models[kind];
         const card = document.createElement('section');
-        card.className = 'journey-stage';
-        if (kind === 'article') card.classList.add('journey-poster-article');
+        card.className = cssClasses('journey-stage');
+        if (kind === 'article') card.classList.add(cssToken('journey-poster-article'));
         card.dataset.journeyNext = kind;
         card.dataset.destination = url;
         card.setAttribute('aria-label', `Continue to ${label(kind)}`);
         const viewport = document.createElement('div');
-        viewport.className = 'journey-stage-viewport journey-poster';
+        viewport.className = cssClasses('journey-stage-viewport journey-poster');
         const rail = document.createElement('div');
-        rail.className = 'journey-poster-rail';
+        rail.className = cssClasses('journey-poster-rail');
         const brand = document.createElement('span'); brand.textContent = 'ENGMANAGER.XYZ';
         const index = document.createElement('span'); index.textContent = article ? `ARTICLE / ${spec.number} OF ${window.__journeyArticles.articles.length}` : `NEXT / ${spec.number}`;
         rail.append(brand, index);
-        const art = document.createElement('div'); art.className = 'journey-poster-art';
+        const art = document.createElement('div'); art.className = cssClasses('journey-poster-art');
         art.setAttribute('role', 'img'); art.setAttribute('aria-label', spec.sculpture);
         const still = document.createElement('img');
         still.alt = ''; still.decoding = 'async';
         if (assets) still.src = assets.still;
         const canvas = document.createElement('canvas'); canvas.setAttribute('aria-hidden', 'true');
         art.append(still, canvas);
-        const caption = document.createElement('div'); caption.className = 'journey-poster-caption';
+        const caption = document.createElement('div'); caption.className = cssClasses('journey-poster-caption');
         const heading = document.createElement('h2'); heading.textContent = spec.title;
-        if (kind === 'article') heading.className = 'journey-poster-title-article';
+        if (kind === 'article') heading.className = cssClasses('journey-poster-title-article');
         const detail = document.createElement('p'); detail.textContent = spec.detail;
         caption.append(heading, detail);
         if (spec.credit) {
             const title = document.createElement('div');
-            const credit = document.createElement('small'); credit.className = 'journey-poster-credit';
+            const credit = document.createElement('small'); credit.className = cssClasses('journey-poster-credit');
             const source = document.createElement('a');
             source.href = spec.credit.url;
             source.textContent = spec.credit.source;
@@ -405,15 +416,16 @@
             heading.replaceWith(title);
             title.append(heading, credit);
         }
-        const hint = document.createElement('span'); hint.className = 'journey-poster-hint';
+        const hint = document.createElement('span'); hint.className = cssClasses('journey-poster-hint');
         hint.textContent = 'SCROLL TO CONTINUE';
         viewport.append(rail, art, caption, hint);
         const promote = document.createElement('a');
-        promote.className = 'journey-promote'; promote.href = url;
+        promote.className = cssClasses('journey-promote'); promote.href = url;
         promote.dataset.journeyPromote = '';
         promote.textContent = `Continue to ${label(kind)} ↗`;
         promote.addEventListener('click', (event) => {
             if (modified(event)) return;
+            if (promote.hasAttribute('data-hard-nav')) return;
             event.preventDefault(); navigate(url, { source: 'reveal' });
         });
         card.append(viewport, promote);
@@ -597,7 +609,7 @@
         // Public pages identify only their critical first images. Responsive
         // image hints choose the same candidate as the eventual live img, so
         // warming a phone's 384px card never downloads its 900px original.
-        const images = [...rec.page.querySelectorAll('img[data-journey-image="true"],img[loading="eager"],img[fetchpriority="high"]')].slice(0, 6);
+        const images = [...rec.page.querySelectorAll(cssSelector('img[data-journey-image="true"],img[loading="eager"],img[fetchpriority="high"]'))].slice(0, 6);
         for (const img of images) {
             const source = img.getAttribute('src');
             if (!source) continue;
@@ -656,10 +668,10 @@
         clearNext();
         if (current.kind === 'feed') {
             if (window.__engReading) current.nextUrl = window.__engReading.nextArticle()?.path || null;
-            const fallback = current.page.querySelector('[data-journey-fallback]');
+            const fallback = current.page.querySelector(cssSelector('[data-journey-fallback]'));
             if (current.nextUrl) {
                 current.page.dataset.engNext = current.nextUrl;
-                fallback?.querySelector('a')?.setAttribute('href', current.nextUrl);
+                fallback?.querySelector(cssSelector('a'))?.setAttribute('href', current.nextUrl);
                 if (fallback) fallback.hidden = false;
             } else {
                 delete current.page.dataset.engNext;
@@ -671,13 +683,13 @@
         watchGeometry();
         if (!current.nextUrl) return;
         runway = document.createElement('section');
-        runway.className = 'journey-runway';
+        runway.className = cssClasses('journey-runway');
         runway.dataset.journeyRunway = '';
         runway.setAttribute('aria-label', 'Continue exploring');
         const link = document.createElement('a');
         link.href = current.nextUrl;
-        link.className = 'journey-runway-link';
-        link.textContent = current.page.querySelector('[data-journey-fallback] a')?.textContent || 'Continue exploring ↗';
+        link.className = cssClasses('journey-runway-link');
+        link.textContent = current.page.querySelector(cssSelector('[data-journey-fallback] a'))?.textContent || 'Continue exploring ↗';
         link.addEventListener('click', (event) => {
             if (modified(event)) return;
             event.preventDefault();
@@ -714,13 +726,13 @@
         if (!previous) return;
         const rec = previous;
         const card = document.createElement('aside');
-        card.className = 'journey-previous';
+        card.className = cssClasses('journey-previous');
         card.dataset.journeyPrevious = rec.kind;
         card.setAttribute('aria-label', `Previous page: ${rec.title}`);
         const resume = document.createElement('button');
-        resume.type = 'button'; resume.className = 'journey-resume'; resume.dataset.journeyResume = '';
+        resume.type = 'button'; resume.className = cssClasses('journey-resume'); resume.dataset.journeyResume = '';
         resume.setAttribute('aria-label', `Resume ${rec.title} where you left off`);
-        const viewport = document.createElement('span'); viewport.className = 'journey-previous-viewport'; viewport.inert = true;
+        const viewport = document.createElement('span'); viewport.className = cssClasses('journey-previous-viewport'); viewport.inert = true;
         // The small semantic card is immediate. Its optional full-page snapshot
         // waits for idle time, away from the poster fade and first input frame.
         let thumbnail, resize, idle = 0, retry = 0, disposed = false;
@@ -752,18 +764,18 @@
             if (idle) cancelIdleCallback(idle);
             clearTimeout(retry); resize?.disconnect(); thumbnail?._dispose?.();
         };
-        const caption = document.createElement('span'); caption.className = 'journey-previous-caption';
+        const caption = document.createElement('span'); caption.className = cssClasses('journey-previous-caption');
         const name = document.createElement('strong'); name.textContent = rec.title.replace(/\s*[·|]\s*ENGMANAGER\.XYZ.*$/i, '');
         const hint = document.createElement('span'); hint.textContent = '↖ Resume where you left off';
         caption.append(name, hint); resume.append(viewport, caption);
         resume.addEventListener('click', () => { if (!card.dataset.swiped) navigate(rec.url, { source: 'resume', record: rec }); });
-        const close = document.createElement('button'); close.type = 'button'; close.className = 'journey-dismiss'; close.dataset.journeyDismiss = '';
+        const close = document.createElement('button'); close.type = 'button'; close.className = cssClasses('journey-dismiss'); close.dataset.journeyDismiss = '';
         close.setAttribute('aria-label', 'Dismiss previous page'); close.textContent = '×';
         close.addEventListener('click', dismissPrevious);
         card.append(resume, close);
         let drag = null;
         card.addEventListener('pointerdown', (event) => {
-            if (event.target.closest('[data-journey-dismiss]') || event.button !== 0) return;
+            if (event.target.closest(cssSelector('[data-journey-dismiss]')) || event.button !== 0) return;
             drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
             delete card.dataset.swiped;
         });
@@ -794,7 +806,7 @@
     function measureGeometry() {
         geometryFrame = 0;
         runwayTop = runway?.isConnected ? runway.getBoundingClientRect().top + scrollY : Infinity;
-        const article = current.kind === 'article' ? current.page.querySelector('[data-article-slug]') : null;
+        const article = current.kind === 'article' ? current.page.querySelector(cssSelector('[data-article-slug]')) : null;
         articleSlug = article?.dataset.articleSlug || null;
         articleBottom = article ? article.getBoundingClientRect().bottom + scrollY : Infinity;
         articleComplete = !!articleSlug && !!window.__engReading?.snapshot().completed.includes(articleSlug);
@@ -808,7 +820,7 @@
         if ('ResizeObserver' in window) {
             geometryObserver = new ResizeObserver(queueGeometry);
             geometryObserver.observe(current.page);
-            const article = current.page.querySelector('[data-article-slug]');
+            const article = current.page.querySelector(cssSelector('[data-article-slug]'));
             if (article) geometryObserver.observe(article);
         }
         measureGeometry();
@@ -817,7 +829,7 @@
     function setRevealExposure(active) {
         if (revealExposure === active) return;
         revealExposure = active;
-        document.body.classList.toggle('journey-revealing', active);
+        document.body.classList.toggle(cssToken('journey-revealing'), active);
         window.dispatchEvent(new CustomEvent('eng:journeyexposure', { detail: { active } }));
     }
 
@@ -848,9 +860,9 @@
     }
 
     function focusPage(rec, resume) {
-        const modal = [...rec.page.querySelectorAll('[role="dialog"][aria-modal="true"]')].find((node) => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
-        const target = modal?.querySelector('button,a[href],input:not([disabled]),[tabindex]') || modal
-            || ((resume || new URL(rec.url).hash) && rec.focus?.isConnected && rec.focus) || rec.page.querySelector('h1') || rec.page.querySelector('main') || rec.page;
+        const modal = [...rec.page.querySelectorAll(cssSelector('[role="dialog"][aria-modal="true"]'))].find((node) => !node.hidden && node.getAttribute('aria-hidden') !== 'true');
+        const target = modal?.querySelector(cssSelector('button,a[href],input:not([disabled]),[tabindex]')) || modal
+            || ((resume || new URL(rec.url).hash) && rec.focus?.isConnected && rec.focus) || rec.page.querySelector(cssSelector('h1')) || rec.page.querySelector(cssSelector('main')) || rec.page;
         if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
         target.focus({ preventScroll: true });
     }
@@ -940,7 +952,7 @@
             const outgoing = current;
             if (source === 'reveal') {
                 if (outgoing.kind === 'article' && new URL(dest.href).pathname === '/shop') {
-                    window.__engReading?.complete(outgoing.page.querySelector('[data-article-slug]')?.dataset.articleSlug);
+                    window.__engReading?.complete(outgoing.page.querySelector(cssSelector('[data-article-slug]'))?.dataset.articleSlug);
                 }
                 // The viewport immediately before the foreground disappears is
                 // useful to resume; the empty reveal runway is not article text.
@@ -957,7 +969,7 @@
                 stage = null;
             }
             nav._before?.(document.body);
-            document.querySelectorAll('[popover]:popover-open:not([data-cursor-overlay])').forEach((node) => node.hidePopover());
+            document.querySelectorAll(cssSelector('[popover]:popover-open:not([data-cursor-overlay])')).forEach((node) => node.hidePopover());
             clearNext();
             removePreviousCard();
             outgoing.page.inert = true;
@@ -966,7 +978,7 @@
             // Runtime nodes belong to the outgoing page. The shared runtime and
             // skip link are the only body siblings carried between surfaces.
             [...document.body.children].forEach((el) => {
-                if (el !== rec.page && el !== runtime && !el.matches('.skip-link')) el.remove();
+                if (el !== rec.page && el !== runtime && !el.matches(cssSelector('.skip-link'))) el.remove();
             });
             current = rec;
             previous = source === 'reveal' ? outgoing : null;
@@ -1025,6 +1037,36 @@
             return true;
         } catch (error) {
             if (controller.signal.aborted || version !== generation) return false;
+            if (error.css) {
+                // Keep a cumulative bounded history: a different failed
+                // target/version cannot erase an earlier recovery attempt.
+                // Queries are not stored, including payment return secrets.
+                if (navigator.onLine !== false) try {
+                    const recovery = JSON.stringify({ url: dest.origin + dest.pathname, generation: error.css });
+                    const attempts = JSON.parse(sessionStorage.getItem(cssRecoveryKey) || '[]');
+                    if (Array.isArray(attempts) && attempts.every(value => typeof value === 'string')
+                        && attempts.length < 32 && !attempts.includes(recovery)) {
+                        attempts.push(recovery);
+                        sessionStorage.setItem(cssRecoveryKey, JSON.stringify(attempts));
+                        location.assign(dest.href);
+                        return false;
+                    }
+                } catch { /* unavailable or corrupt storage keeps the readable failure */ }
+                status.textContent = navigator.onLine === false
+                    ? 'This page belongs to a newer site version. Reconnect and reload to continue.'
+                    : error.message;
+                const cover = stage || runtime.querySelector('[data-journey-next]');
+                if (cover) {
+                    cover.inert = false;
+                    delete cover.dataset.committing;
+                    const hint = cover.querySelector(cssSelector('.journey-poster-hint'));
+                    if (hint) hint.textContent = status.textContent;
+                    const action = cover.querySelector('[data-journey-promote]');
+                    if (action) { action.setAttribute('data-hard-nav', ''); action.textContent = 'Reload site ↗'; }
+                }
+                window.dispatchEvent(new CustomEvent('eng:journeyerror', { detail: { message: status.textContent } }));
+                return false;
+            }
             window.dispatchEvent(new CustomEvent('eng:journeyerror', { detail: { message: error.message } }));
             // A real load preserves normal offline/service-worker behavior and
             // avoids executing mixed assets after a deployment or load failure.
@@ -1062,7 +1104,7 @@
     // handlers. Respect their preventDefault and modifier/new-tab semantics.
     window.addEventListener('click', (event) => {
         if (event.defaultPrevented || modified(event)) return;
-        const link = event.target.closest?.('a[href]');
+        const link = event.target.closest?.(cssSelector('a[href]'));
         if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self') || link.hasAttribute('data-hard-nav')) return;
         const dest = new URL(link.href);
         if (!eligible(dest)) return;
@@ -1071,7 +1113,7 @@
             return;
         }
         event.preventDefault();
-        navigate(dest.href, link.closest('[data-journey-fallback]') ? { source: 'reveal' } : {});
+        navigate(dest.href, link.closest(cssSelector('[data-journey-fallback]')) ? { source: 'reveal' } : {});
     });
 
     window.addEventListener('popstate', (event) => {
@@ -1102,7 +1144,7 @@
     window.addEventListener('touchstart', (event) => { touchY = event.touches[0]?.clientY || 0; }, { passive: true });
     window.addEventListener('touchmove', (event) => { if ((event.touches[0]?.clientY || 0) < touchY) inputAt = performance.now(); }, { passive: true });
     window.addEventListener('keydown', (event) => {
-        if (['PageDown', 'End', 'ArrowDown', ' '].includes(event.key) && !event.target.closest?.('input,textarea,select,[contenteditable="true"]')) inputAt = performance.now();
+        if (['PageDown', 'End', 'ArrowDown', ' '].includes(event.key) && !event.target.closest?.(cssSelector('input,textarea,select,[contenteditable="true"]'))) inputAt = performance.now();
     });
     window.addEventListener('scroll', () => {
         if (scrollFrame) return;
@@ -1118,7 +1160,7 @@
     window.addEventListener('resize', queueGeometry, { passive: true });
     window.addEventListener('engmanager:themechange', () => {
         const theme = document.documentElement.getAttribute('data-theme');
-        runtime.querySelectorAll('iframe').forEach((iframe) => {
+        runtime.querySelectorAll(cssSelector('iframe')).forEach((iframe) => {
             try {
                 const html = iframe.contentDocument?.documentElement;
                 if (theme) html?.setAttribute('data-theme', theme); else html?.removeAttribute('data-theme');
@@ -1127,7 +1169,7 @@
     });
     window.addEventListener('engmanager:fontchange', () => {
         queueGeometry();
-        runtime.querySelectorAll('iframe').forEach((iframe) => {
+        runtime.querySelectorAll(cssSelector('iframe')).forEach((iframe) => {
             try { window.__engTypography?.syncDocument(iframe.contentDocument); } catch {}
         });
     });

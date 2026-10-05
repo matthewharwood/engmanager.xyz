@@ -1,0 +1,500 @@
+{
+  "schemaVersion": 1,
+  "scope": "Explicit completed reports, phase CSVs, frozen project input/output manifests, freeze records, and probe sources only. Raw artifact directories are referenced, not exhaustively hashed.",
+  "archivePublication": {
+    "status": "pending",
+    "release": "0.1.0",
+    "url": null,
+    "sha256": null
+  },
+  "ci": {
+    "status": "passed",
+    "path": "/private/tmp/engmanager-css-ci-external-git",
+    "acceptanceArtifact": "ci.acceptance",
+    "generatedAssetProofArtifact": "ci.generated-assets",
+    "historicalFailure": "Obsolete expectation for removed unpublished no-cache policy in coach_e2e; implementation correctly preserves original browser cache policy",
+    "initialRunArtifact": "ci.initial-run",
+    "correctedTestLogArtifact": "ci.tests-after-cache-expectation",
+    "postCommentClippyArtifact": "ci.clippy-after-comment",
+    "registryInstallation": "pending",
+    "remoteCurrentHeadPRChecks": "pending"
+  },
+  "artifactDirectories": [
+    {
+      "id": "body",
+      "path": "/private/tmp/engmanager-css-coherent-final-inventory",
+      "status": "accepted_body_inventory",
+      "indexedArtifacts": [
+        "body.report"
+      ]
+    },
+    {
+      "id": "warm",
+      "path": "/private/tmp/engmanager-css-coherent-final-warm",
+      "status": "accepted_native_transfers",
+      "indexedArtifacts": [
+        "warm.report"
+      ]
+    },
+    {
+      "id": "native",
+      "path": "/private/tmp/engmanager-css-reader-final-native",
+      "status": "accepted_native_matrix",
+      "indexedArtifacts": [
+        "native.report"
+      ]
+    },
+    {
+      "id": "first-native",
+      "path": "/private/tmp/engmanager-css-coherent-final-native",
+      "status": "historical_failed_inspection",
+      "indexedArtifacts": [
+        "first-native.report"
+      ]
+    },
+    {
+      "id": "warm-counterexample",
+      "path": "/private/tmp/engmanager-css-warm-coherence-counterexample",
+      "status": "historical_failed_transfer",
+      "indexedArtifacts": [
+        "warm-counterexample.report"
+      ]
+    },
+    {
+      "id": "heroes",
+      "path": "/private/tmp/engmanager-css-final-heroes",
+      "status": "accepted_scene_checks",
+      "indexedArtifacts": [
+        "heroes.report"
+      ]
+    },
+    {
+      "id": "diagrams",
+      "path": "/private/tmp/engmanager-css-final-diagrams",
+      "status": "accepted_diagram_checks",
+      "indexedArtifacts": [
+        "diagrams.report"
+      ]
+    },
+    {
+      "id": "guard",
+      "path": "/private/tmp/engmanager-css-guard-control",
+      "status": "frozen_build",
+      "indexedArtifacts": [
+        "guard.freeze.json",
+        "guard.css-compact-input.json",
+        "guard.css-compact-output.json"
+      ]
+    },
+    {
+      "id": "naming",
+      "path": "/private/tmp/engmanager-css-naming-control",
+      "status": "frozen_build",
+      "indexedArtifacts": [
+        "naming.freeze.json",
+        "naming.css-compact-input.json",
+        "naming.css-compact-output.json"
+      ]
+    },
+    {
+      "id": "compact",
+      "path": "/private/tmp/engmanager-css-compact",
+      "status": "frozen_build",
+      "indexedArtifacts": [
+        "compact.freeze.json",
+        "compact.css-compact-input.json",
+        "compact.css-compact-output.json"
+      ]
+    },
+    {
+      "id": "journey-baseline-latest",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-latest",
+      "status": "comparison_not_asserted",
+      "indexedArtifacts": [
+        "journey-baseline-latest.report",
+        "journey-baseline-latest.csv"
+      ]
+    },
+    {
+      "id": "journey-baseline-long",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-long",
+      "status": "comparison_not_asserted",
+      "indexedArtifacts": [
+        "journey-baseline-long.report",
+        "journey-baseline-long.csv"
+      ]
+    },
+    {
+      "id": "journey-candidate-latest",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-latest",
+      "status": "accepted_budget",
+      "indexedArtifacts": [
+        "journey-candidate-latest.report",
+        "journey-candidate-latest.csv"
+      ]
+    },
+    {
+      "id": "journey-candidate-long",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-long",
+      "status": "accepted_budget",
+      "indexedArtifacts": [
+        "journey-candidate-long.report",
+        "journey-candidate-long.csv"
+      ]
+    },
+    {
+      "id": "ci",
+      "path": "/private/tmp/engmanager-css-ci-external-git",
+      "status": "accepted_local_required_ci_with_retained_initial_failure",
+      "indexedArtifacts": [
+        "ci.acceptance",
+        "ci.generated-assets",
+        "ci.initial-run",
+        "ci.npm-ci",
+        "ci.npm-test",
+        "ci.published",
+        "ci.release",
+        "ci.release-diff",
+        "ci.fmt",
+        "ci.clippy",
+        "ci.tests",
+        "ci.tests-after-cache-expectation",
+        "ci.clippy-after-comment"
+      ]
+    },
+    {
+      "id": "build-locks",
+      "path": "/private/tmp/engmanager-css-build-locks",
+      "status": "frozen_dependency_provenance",
+      "indexedArtifacts": [
+        "build-locks.candidate-Cargo.lock",
+        "build-locks.upgrade-Cargo.lock",
+        "build-locks.README.txt"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "id": "body.report",
+      "path": "/private/tmp/engmanager-css-coherent-final-inventory/report.json",
+      "kind": "report",
+      "bytes": 1418557,
+      "sha256": "b610188f052b3fcc8bec0acb79987abcf7a8ae463be00d2e1ccbab2cfbe88687"
+    },
+    {
+      "id": "warm.report",
+      "path": "/private/tmp/engmanager-css-coherent-final-warm/report.json",
+      "kind": "report",
+      "bytes": 840554,
+      "sha256": "1eb050eb1f0299f4366ac42319a27fa12dec8bf0724bc2fce4a8c357d9477159"
+    },
+    {
+      "id": "native.report",
+      "path": "/private/tmp/engmanager-css-reader-final-native/report.json",
+      "kind": "report",
+      "bytes": 21631293,
+      "sha256": "85d897dd3dd18b9dfaae32b7bfe02ad8be6f8190173ce44ba17c0f4acc181a35"
+    },
+    {
+      "id": "first-native.report",
+      "path": "/private/tmp/engmanager-css-coherent-final-native/report.json",
+      "kind": "report",
+      "bytes": 18427862,
+      "sha256": "0eaeb63b3f9c107bf1c43b29d1078fd9e120c37b8b900d389a39e1c32c06018e"
+    },
+    {
+      "id": "warm-counterexample.report",
+      "path": "/private/tmp/engmanager-css-warm-coherence-counterexample/report.json",
+      "kind": "report",
+      "bytes": 770669,
+      "sha256": "3e92d7a93b534e087aa837d39bc6073352f100d50e5487bff51d599febc29598"
+    },
+    {
+      "id": "heroes.report",
+      "path": "/private/tmp/engmanager-css-final-heroes/report.json",
+      "kind": "report",
+      "bytes": 32399,
+      "sha256": "f06c41177323497e53cf61a72a6010c2b85e9a535eea39d2b2ab9a11488e6f30"
+    },
+    {
+      "id": "diagrams.report",
+      "path": "/private/tmp/engmanager-css-final-diagrams/report.json",
+      "kind": "report",
+      "bytes": 23528,
+      "sha256": "71962f8166049ffabf5fe95c4776fef8636f5de5e3133f768547eefb3343fd8b"
+    },
+    {
+      "id": "guard.freeze.json",
+      "path": "/private/tmp/engmanager-css-guard-control/freeze.json",
+      "kind": "freeze",
+      "bytes": 15116,
+      "sha256": "6453e39d7b101437daaec427807f8cbe8d98d230466838c75bb31c2dc87f8b30"
+    },
+    {
+      "id": "guard.css-compact-input.json",
+      "path": "/private/tmp/engmanager-css-guard-control/css-compact-input.json",
+      "kind": "project_input",
+      "bytes": 682996,
+      "sha256": "e474dbeeb854381dfe161bdf17a72705cdc5a446c2781e5e687c22f88d036ca5"
+    },
+    {
+      "id": "guard.css-compact-output.json",
+      "path": "/private/tmp/engmanager-css-guard-control/css-compact-output.json",
+      "kind": "compiled_project",
+      "bytes": 882861,
+      "sha256": "39952af9f5d402126aeafe10cb2e88fde956552da737b4e6e34f41f2e00b4851"
+    },
+    {
+      "id": "naming.freeze.json",
+      "path": "/private/tmp/engmanager-css-naming-control/freeze.json",
+      "kind": "freeze",
+      "bytes": 15118,
+      "sha256": "c1b90fb1cb9f18bf08f6c10ee6f1d34755dd8fd141ce4d27b0c583b183dfd3d7"
+    },
+    {
+      "id": "naming.css-compact-input.json",
+      "path": "/private/tmp/engmanager-css-naming-control/css-compact-input.json",
+      "kind": "project_input",
+      "bytes": 682996,
+      "sha256": "e474dbeeb854381dfe161bdf17a72705cdc5a446c2781e5e687c22f88d036ca5"
+    },
+    {
+      "id": "naming.css-compact-output.json",
+      "path": "/private/tmp/engmanager-css-naming-control/css-compact-output.json",
+      "kind": "compiled_project",
+      "bytes": 830004,
+      "sha256": "4319a604d43c3c6b34187901292cfb243e341ee4265005fe40c9eee8fbee93d5"
+    },
+    {
+      "id": "compact.freeze.json",
+      "path": "/private/tmp/engmanager-css-compact/freeze.json",
+      "kind": "freeze",
+      "bytes": 15104,
+      "sha256": "2acac38c230619fe0f3e3c137597634e0ceb0195dfdb96ea00e996aeff435ca4"
+    },
+    {
+      "id": "compact.css-compact-input.json",
+      "path": "/private/tmp/engmanager-css-compact/css-compact-input.json",
+      "kind": "project_input",
+      "bytes": 682996,
+      "sha256": "e474dbeeb854381dfe161bdf17a72705cdc5a446c2781e5e687c22f88d036ca5"
+    },
+    {
+      "id": "compact.css-compact-output.json",
+      "path": "/private/tmp/engmanager-css-compact/css-compact-output.json",
+      "kind": "compiled_project",
+      "bytes": 833305,
+      "sha256": "d6ce506b70ba4c42f62656b5ee1b0ffdd838ef04bf7f9b4c5d281af4f9abec15"
+    },
+    {
+      "id": "journey-baseline-latest.report",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-latest/report.json",
+      "kind": "report",
+      "bytes": 1356663,
+      "sha256": "44a5b51c9fbad101234d8f61606601923f61cfa3b3a77213baa3c74f7bbf422d"
+    },
+    {
+      "id": "journey-baseline-latest.csv",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-latest/phases.csv",
+      "kind": "phase_csv",
+      "bytes": 9916,
+      "sha256": "5a7b71371e200c1c21a8e764767f92d062951721c12d31038762cb36095e1458"
+    },
+    {
+      "id": "journey-baseline-long.report",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-long/report.json",
+      "kind": "report",
+      "bytes": 1368085,
+      "sha256": "caa4c5bebaa0c15e043009b75fbd8bc40bc814a63c66073995ee61f106610dca"
+    },
+    {
+      "id": "journey-baseline-long.csv",
+      "path": "/private/tmp/engmanager-css-final-journey-baseline-long/phases.csv",
+      "kind": "phase_csv",
+      "bytes": 9287,
+      "sha256": "f6c0b760751cf7e62bb183e2f9348f713c0e2648e75df2a60ed42e88b7ee6e38"
+    },
+    {
+      "id": "journey-candidate-latest.report",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-latest/report.json",
+      "kind": "report",
+      "bytes": 1356328,
+      "sha256": "bcf5df6009ce5130992c8f8fdbc557cbd744831a1e1b6689f6f168bfaf9d2f79"
+    },
+    {
+      "id": "journey-candidate-latest.csv",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-latest/phases.csv",
+      "kind": "phase_csv",
+      "bytes": 9921,
+      "sha256": "576d0d8a7a00fff3ceb20fcbb4fc4cebb67718ae9be5035ff68d7fa577ed8ba3"
+    },
+    {
+      "id": "journey-candidate-long.report",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-long/report.json",
+      "kind": "report",
+      "bytes": 1363773,
+      "sha256": "a1f2aaf4d4622ae4a7d5bba11297e3410c5ad0adc009d9f9bebd97794388b112"
+    },
+    {
+      "id": "journey-candidate-long.csv",
+      "path": "/private/tmp/engmanager-css-final-journey-candidate-long/phases.csv",
+      "kind": "phase_csv",
+      "bytes": 9436,
+      "sha256": "7d832b807521b1a962284d1eb70bc271da0731f9c1e20305f4cdc488d41fba1a"
+    },
+    {
+      "id": "source.scripts/eval-css-site.mjs",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/scripts/eval-css-site.mjs",
+      "kind": "probe_source",
+      "bytes": 72878,
+      "sha256": "3619bc83db7467c27f0d1090a21a3ac3ae2e6acb46f9ba6f9ea99e4a8e58e2ca"
+    },
+    {
+      "id": "source.scripts/css-manifest-bindings.mjs",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/scripts/css-manifest-bindings.mjs",
+      "kind": "probe_source",
+      "bytes": 3690,
+      "sha256": "1d81daba661d8f91fda64e7a0389f6502dfefca4ed37070413ed182ddc8cd335"
+    },
+    {
+      "id": "source.scripts/profile-journey.mjs",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/scripts/profile-journey.mjs",
+      "kind": "probe_source",
+      "bytes": 37048,
+      "sha256": "b6abbe75958aae97b262b6019c8e8693ccd62deab050bcb95074ef5140e25e60"
+    },
+    {
+      "id": "source.scripts/journey-performance-metrics.mjs",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/scripts/journey-performance-metrics.mjs",
+      "kind": "probe_source",
+      "bytes": 16199,
+      "sha256": "3a7b92cfe5f9fe44864fee93dccdf5fb132dff61924f9dc127ae739fd2c3818d"
+    },
+    {
+      "id": "source.scripts/parse-chrome-trace.mjs",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/scripts/parse-chrome-trace.mjs",
+      "kind": "probe_source",
+      "bytes": 2103,
+      "sha256": "ba5874e6ca37cb81f88743582be364009fdd5d92bf9d2df41bd0f2e7ace67328"
+    },
+    {
+      "id": "source.website/compat/css-generation-2061afa3/manifest.json",
+      "path": "/Users/matthewharwood/Documents/GitHub/engmanager.xyz/website/compat/css-generation-2061afa3/manifest.json",
+      "kind": "compatibility_manifest",
+      "bytes": 16013,
+      "sha256": "e3c95277e96048e5190388503e47514960cdf3830e164ce6327d551f93f7aa1c"
+    },
+    {
+      "id": "ci.acceptance",
+      "path": "/private/tmp/engmanager-css-ci-external-git/acceptance.json",
+      "kind": "acceptance",
+      "bytes": 691,
+      "sha256": "77701fbed65abde93e1451d86bfefba6bd02464becfc222f0e47915294792fff"
+    },
+    {
+      "id": "ci.generated-assets",
+      "path": "/private/tmp/engmanager-css-ci-external-git/generated-assets-after-corrections.json",
+      "kind": "generated_asset_proof",
+      "bytes": 8275,
+      "sha256": "b0124c256f2aff15528eb3c132f5e399348a94d77570d652517809ebc9bbf0d9"
+    },
+    {
+      "id": "ci.initial-run",
+      "path": "/private/tmp/engmanager-css-ci-external-git/report.json",
+      "kind": "historical_gate_report",
+      "bytes": 2460,
+      "sha256": "e046c94b37d93145418417eeab235a55379b68fb6b137737064061f6fd5929da"
+    },
+    {
+      "id": "ci.npm-ci",
+      "path": "/private/tmp/engmanager-css-ci-external-git/npm-ci.log",
+      "kind": "gate_log",
+      "bytes": 75,
+      "sha256": "82ea6ea281c2beff50d5211133662270c08b05107fbfa0989824426cfa0f1380"
+    },
+    {
+      "id": "ci.npm-test",
+      "path": "/private/tmp/engmanager-css-ci-external-git/npm-test.log",
+      "kind": "gate_log",
+      "bytes": 39009,
+      "sha256": "de5663a0b7fb7c055155f7d6048ea4905b11e19fb8815f15edba0d953c22a4c5"
+    },
+    {
+      "id": "ci.published",
+      "path": "/private/tmp/engmanager-css-ci-external-git/published.log",
+      "kind": "gate_log",
+      "bytes": 70,
+      "sha256": "32338b7d4bdf90c90da4badf5ca22b6ba7532c50eb09e04df7b8049d5a2589d9"
+    },
+    {
+      "id": "ci.release",
+      "path": "/private/tmp/engmanager-css-ci-external-git/release.log",
+      "kind": "gate_log",
+      "bytes": 88,
+      "sha256": "6681b769af8b0256d8709ff74c8ec6e3c09e4b3ea6d883e0dd80bda175bd5f1a"
+    },
+    {
+      "id": "ci.release-diff",
+      "path": "/private/tmp/engmanager-css-ci-external-git/release-diff.log",
+      "kind": "gate_log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "ci.fmt",
+      "path": "/private/tmp/engmanager-css-ci-external-git/fmt.log",
+      "kind": "gate_log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "ci.clippy",
+      "path": "/private/tmp/engmanager-css-ci-external-git/clippy.log",
+      "kind": "gate_log",
+      "bytes": 420,
+      "sha256": "236a9bfdaaa7475a98c1b451a9e5995f2d29a60f1b941669bcad68c6503a4fcb"
+    },
+    {
+      "id": "ci.tests",
+      "path": "/private/tmp/engmanager-css-ci-external-git/tests.log",
+      "kind": "gate_log",
+      "bytes": 15811,
+      "sha256": "fb47bc26dba76f89161525c0831c31ea2b9aa5f910a7f3270a9a79287c81ea7b"
+    },
+    {
+      "id": "ci.tests-after-cache-expectation",
+      "path": "/private/tmp/engmanager-css-ci-external-git/tests-after-cache-expectation.log",
+      "kind": "gate_log",
+      "bytes": 20250,
+      "sha256": "4d357d7748c312b06eb64676bd6787684560f215d309c48ee47cfe1f2a701bd1"
+    },
+    {
+      "id": "ci.clippy-after-comment",
+      "path": "/private/tmp/engmanager-css-ci-external-git/clippy-after-comment.log",
+      "kind": "gate_log",
+      "bytes": 419,
+      "sha256": "c71a9253e322f066bf31f5709f1daf9c5af421de194f61b4ecebc2ae4262004e"
+    },
+    {
+      "id": "build-locks.candidate-Cargo.lock",
+      "path": "/private/tmp/engmanager-css-build-locks/candidate-Cargo.lock",
+      "kind": "dependency_lock",
+      "bytes": 110285,
+      "sha256": "456d0b6dde5dccd1f8e578d4df9777c1a9058054217c46622e7605c4c99bd809"
+    },
+    {
+      "id": "build-locks.upgrade-Cargo.lock",
+      "path": "/private/tmp/engmanager-css-build-locks/upgrade-Cargo.lock",
+      "kind": "dependency_lock",
+      "bytes": 102261,
+      "sha256": "16e0f6d05d8020e141c2770b7928d6f757635417f5955dde8ea22309827d9091"
+    },
+    {
+      "id": "build-locks.README.txt",
+      "path": "/private/tmp/engmanager-css-build-locks/README.txt",
+      "kind": "provenance_note",
+      "bytes": 190,
+      "sha256": "5379cb37ea582a4e36982657c9a6cd0c191330fdfdeb1ad987457141a1bf91c3"
+    }
+  ]
+}

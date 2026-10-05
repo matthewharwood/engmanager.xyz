@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 /* A page-scoped WebGPU armillary. One draw call, capped pixels and vsync animation.
  * Static SVG survives unsupported GPU, shader failure or device loss.
  * The sound button is the only path that creates/resumes Web Audio. */
@@ -99,7 +103,7 @@ fn turn(p: vec3f) -> vec3f {
      cachedMesh=data;return cachedMesh;
     }
     function mount() {
-        const host=document.querySelector('[data-armillary]');
+        const host=document.querySelector(cssSelector('[data-armillary]'));
         if(current?.host===host) return current.ready;
         current?.dispose(); current=null;
         if(!host || document.prerendering) return;
@@ -107,16 +111,16 @@ fn turn(p: vec3f) -> vec3f {
         return current.ready;
     }
     function create(host) {
-        const canvas=host.querySelector('[data-armillary-canvas]');
-        const play=host.querySelector('[data-armillary-motion]');
-        const sound=host.querySelector('[data-armillary-sound]');
-        const status=host.querySelector('[data-armillary-audio-status]');
+        const canvas=host.querySelector(cssSelector('[data-armillary-canvas]'));
+        const play=host.querySelector(cssSelector('[data-armillary-motion]'));
+        const sound=host.querySelector(cssSelector('[data-armillary-sound]'));
+        const status=host.querySelector(cssSelector('[data-armillary-audio-status]'));
         const events=new AbortController(),gpuWork=new AbortController();
         let device,context,vertices,uniform,texture,color,depth,colorView,depthView,pipeline,bind,vertexCount;
         const sceneValues=new Float32Array(4);
         let stopped=false,gpuFailed=false,paused=motion.matches,visible=true,raf=0,last=0,time=0,audio=null;
         let observer,resize,firstPaint;
-        let journeyHold=window.__engNav?.busy===true || document.body?.classList.contains('journey-revealing')===true;
+        let journeyHold=window.__engNav?.busy===true || document.body?.classList.contains(cssToken('journey-revealing'))===true;
         const painted=new Promise(resolve=>{firstPaint=resolve;});
         host.dataset.renderer='poster';play.hidden=true;
         const mute=()=>{

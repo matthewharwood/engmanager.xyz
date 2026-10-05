@@ -26,7 +26,9 @@ const SHOP_CACHE_CONTROL: &str =
 // rotated per direction in CSS, so back / prev / next / up / down all share the
 // exact same icon. pathLength="1" normalizes the stroke so a 0..1 dash offset
 // "draws" it in (the native take on anime.js's path animation).
-const CHEVRON_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+const CHEVRON_SVG: &str = css_html!(
+    r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##
+);
 
 fn chevron() -> HtmlFragment {
     HtmlFragment::new(CHEVRON_SVG.to_string())
@@ -35,13 +37,17 @@ fn chevron() -> HtmlFragment {
 // Close (X) + plus glyphs in the same stroked language as the chevron — same
 // viewBox, weight, round caps, and pathLength normalization (so they draw-in
 // on hover/focus exactly like the arrows).
-const X_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+const X_SVG: &str = css_html!(
+    r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##
+);
 
 fn x_icon() -> HtmlFragment {
     HtmlFragment::new(X_SVG.to_string())
 }
 
-const PLUS_SVG: &str = r##"<svg class="shop-chevron shop-plus-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M8 3.5 V12.5 M3.5 8 H12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+const PLUS_SVG: &str = css_html!(
+    r##"<svg class="shop-chevron shop-plus-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M8 3.5 V12.5 M3.5 8 H12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##
+);
 
 fn plus_icon() -> HtmlFragment {
     HtmlFragment::new(PLUS_SVG.to_string())
@@ -105,36 +111,36 @@ fn page(checkout: &crate::stripe::Checkout) -> String {
     scripts.add_js("js/shop.js");
 
     let body = view! {
-        <header class="shop-topbar" aria-label="Store controls">
-            <a class="shop-home-link"
+        <header class={ classes!("shop-topbar") } aria-label="Store controls">
+            <a class={ classes!("shop-home-link") }
                href="/feed"
                aria-label="Back to ENGMANAGER.XYZ">
                 { chevron() }
             </a>
             { theme_picker() }
-            <div class="shop-top-actions">
-                <button class="shop-cart-button"
+            <div class={ classes!("shop-top-actions") }>
+                <button class={ classes!("shop-cart-button") }
                         type="button"
                         data-cart-toggle
                         aria-label="Open cart"
                         aria-expanded="false">
-                    <span class="shop-cart-icon" aria-hidden="true"></span>
-                    <span class="shop-cart-count" data-cart-count>"0"</span>
+                    <span class={ classes!("shop-cart-icon") } aria-hidden="true"></span>
+                    <span class={ classes!("shop-cart-count") } data-cart-count>"0"</span>
                 </button>
             </div>
         </header>
-        <main id="main" class="shop-shell">
-            <h1 id="shop-title" class="sr-only">"Dad Caps"</h1>
-            <section class="shop-grid" data-shop-grid aria-label="Dad cap products">
+        <main id="main" class={ classes!("shop-shell") }>
+            <h1 id="shop-title" class={ classes!("sr-only") }>"Dad Caps"</h1>
+            <section class={ classes!("shop-grid") } data-shop-grid aria-label="Dad cap products">
                 { products }
             </section>
         </main>
         { render_product_panel() }
         { render_bag() }
-        <div class="shop-backdrop" data-shop-backdrop hidden></div>
+        <div class={ classes!("shop-backdrop") } data-shop-backdrop hidden></div>
     };
 
-    PageShell::new(SHOP_TITLE, "shop-page")
+    PageShell::new(SHOP_TITLE, classes!("shop-page"))
         .raw_meta(preview_meta)
         .assets(assets)
         .scripts(scripts)
@@ -159,12 +165,12 @@ fn render_product_card(product: &ShopProduct, first_row: bool) -> HtmlFragment {
     let alt = format!("{} embroidered dad cap front view", product.name);
 
     view! {
-        <a class="shop-card"
+        <a class={ classes!("shop-card") }
            href={ href }
            data-product-card={ product.slug }
            data-slug={ product.slug }
            aria-label={ format!("Open {}", product.name) }>
-            <span class="shop-card-figure">
+            <span class={ classes!("shop-card-figure") }>
                 <img src={ image }
                      srcset={ srcset }
                      sizes="(min-width: 114rem) 17rem, (min-width: 44rem) 15vw, 30vw"
@@ -175,11 +181,11 @@ fn render_product_card(product: &ShopProduct, first_row: bool) -> HtmlFragment {
                      loading="lazy"
                      decoding="async" />
             </span>
-            <span class="shop-card-meta">
-                <span class="shop-card-name">{ product.name }</span>
-                <span class="shop-card-price">{ price }</span>
+            <span class={ classes!("shop-card-meta") }>
+                <span class={ classes!("shop-card-name") }>{ product.name }</span>
+                <span class={ classes!("shop-card-price") }>{ price }</span>
             </span>
-            <span class="shop-card-colors" aria-label="Cap colors">
+            <span class={ classes!("shop-card-colors") } aria-label="Cap colors">
                 <span style={ format!("--swatch: {}", product.cap_color) }></span>
                 <span style={ format!("--swatch: {}", product.thread_color) }></span>
                 <span style={ format!("--swatch: {}", product.accent_color) }></span>
@@ -190,7 +196,7 @@ fn render_product_card(product: &ShopProduct, first_row: bool) -> HtmlFragment {
 
 fn render_product_panel() -> HtmlFragment {
     view! {
-    <aside class="shop-product-panel"
+    <aside class={ classes!("shop-product-panel") }
            data-product-panel
            role="dialog"
            aria-modal="true"
@@ -198,41 +204,41 @@ fn render_product_panel() -> HtmlFragment {
            aria-hidden="true"
            tabindex="-1"
            hidden>
-        <div class="shop-product-frame">
-            <header class="shop-panel-head">
-                <button class="shop-icon-button"
+        <div class={ classes!("shop-product-frame") }>
+            <header class={ classes!("shop-panel-head") }>
+                <button class={ classes!("shop-icon-button") }
                         type="button"
                         data-close-product
                         aria-label="Close product">
                     { x_icon() }
                 </button>
                 { theme_picker() }
-                <button class="shop-cart-button"
+                <button class={ classes!("shop-cart-button") }
                         type="button"
                         data-cart-toggle
                         aria-label="Open cart"
                         aria-expanded="false">
-                    <span class="shop-cart-icon" aria-hidden="true"></span>
-                    <span class="shop-cart-count" data-cart-count>"0"</span>
+                    <span class={ classes!("shop-cart-icon") } aria-hidden="true"></span>
+                    <span class={ classes!("shop-cart-count") } data-cart-count>"0"</span>
                 </button>
-                <h2 id="shop-product-title" class="sr-only" data-product-title>"Select a cap"</h2>
+                <h2 id="shop-product-title" class={ classes!("sr-only") } data-product-title>"Select a cap"</h2>
             </header>
-            <div class="shop-product-layout">
-                <section class="shop-carousel" aria-label="Product images">
-                    <button class="shop-carousel-button shop-carousel-prev"
+            <div class={ classes!("shop-product-layout") }>
+                <section class={ classes!("shop-carousel") } aria-label="Product images">
+                    <button class={ classes!("shop-carousel-button shop-carousel-prev") }
                             type="button"
                             data-image-prev
                             aria-label="Previous product image">
                         { chevron() }
                     </button>
-                    <figure class="shop-carousel-stage">
-                        <button class="shop-image-advance"
+                    <figure class={ classes!("shop-carousel-stage") }>
+                        <button class={ classes!("shop-image-advance") }
                                 type="button"
                                 data-image-advance
                                 aria-label="Next product image">
-                            <div class="shop-carousel-track" data-carousel-track>
-                                <img class="shop-carousel-cell" data-cell="prev" alt="" width="900" height="1100" decoding="async" />
-                                <img class="shop-carousel-cell"
+                            <div class={ classes!("shop-carousel-track") } data-carousel-track>
+                                <img class={ classes!("shop-carousel-cell") } data-cell="prev" alt="" width="900" height="1100" decoding="async" />
+                                <img class={ classes!("shop-carousel-cell") }
                                      data-product-image
                                      data-cell="main"
                                      src=""
@@ -240,25 +246,25 @@ fn render_product_panel() -> HtmlFragment {
                                      width="900"
                                      height="1100"
                                      decoding="async" />
-                                <img class="shop-carousel-cell" data-cell="next" alt="" width="900" height="1100" decoding="async" />
+                                <img class={ classes!("shop-carousel-cell") } data-cell="next" alt="" width="900" height="1100" decoding="async" />
                             </div>
                         </button>
                         <figcaption data-image-caption>"Choose a cap."</figcaption>
                     </figure>
-                    <button class="shop-carousel-button shop-carousel-next"
+                    <button class={ classes!("shop-carousel-button shop-carousel-next") }
                             type="button"
                             data-image-next
                             aria-label="Next product image">
                         { chevron() }
                     </button>
-                    <div class="shop-thumbs" data-image-thumbs aria-label="Product image views"></div>
+                    <div class={ classes!("shop-thumbs") } data-image-thumbs aria-label="Product image views"></div>
                 </section>
-                <section class="shop-product-copy" aria-label="Product details">
-                    <div class="shop-product-summary" data-size-summary>
-                        <p class="shop-product-copy-title" data-product-copy-title></p>
-                        <p class="shop-product-copy-price" data-product-price></p>
-                        <p class="shop-product-copy-description" data-product-description></p>
-                        <dl class="shop-specs">
+                <section class={ classes!("shop-product-copy") } aria-label="Product details">
+                    <div class={ classes!("shop-product-summary") } data-size-summary>
+                        <p class={ classes!("shop-product-copy-title") } data-product-copy-title></p>
+                        <p class={ classes!("shop-product-copy-price") } data-product-price></p>
+                        <p class={ classes!("shop-product-copy-description") } data-product-description></p>
+                        <dl class={ classes!("shop-specs") }>
                             <div>
                                 <dt>"Blank"</dt>
                                 <dd>"Low profile dad cap"</dd>
@@ -272,8 +278,8 @@ fn render_product_panel() -> HtmlFragment {
                                 <dd>"One size / adjustable"</dd>
                             </div>
                         </dl>
-                        <div class="shop-panel-actions">
-                            <button class="shop-plus-button"
+                        <div class={ classes!("shop-panel-actions") }>
+                            <button class={ classes!("shop-plus-button") }
                                     type="button"
                                     data-size-toggle
                                     aria-label="Add to cart">
@@ -284,9 +290,9 @@ fn render_product_panel() -> HtmlFragment {
                     </section>
                 </div>
             </div>
-            <div class="shop-paginate" aria-hidden="true">
-                <span class="shop-paginate-arrow shop-paginate-up" data-edge-arrow="up">{ chevron() }</span>
-                <span class="shop-paginate-arrow shop-paginate-down" data-edge-arrow="down">{ chevron() }</span>
+            <div class={ classes!("shop-paginate") } aria-hidden="true">
+                <span class={ classes!("shop-paginate-arrow shop-paginate-up") } data-edge-arrow="up">{ chevron() }</span>
+                <span class={ classes!("shop-paginate-arrow shop-paginate-down") } data-edge-arrow="down">{ chevron() }</span>
             </div>
         </aside>
     }
@@ -298,7 +304,7 @@ fn render_product_panel() -> HtmlFragment {
 // rail (left) + the inline Stripe Elements flow (right).
 fn render_bag() -> HtmlFragment {
     view! {
-        <aside class="shop-bag"
+        <aside class={ classes!("shop-bag") }
                data-bag
                data-bag-state="closed"
                role="dialog"
@@ -306,39 +312,39 @@ fn render_bag() -> HtmlFragment {
                aria-label="Your bag and checkout"
                aria-hidden="true"
                hidden>
-            <div class="shop-bag-scrim" data-bag-scrim></div>
-            <div class="shop-bag-sheet">
-                <section class="shop-bag-pane shop-bag-cart" data-bag-cart aria-label="Your bag">
-                    <header class="shop-cart-head">
+            <div class={ classes!("shop-bag-scrim") } data-bag-scrim></div>
+            <div class={ classes!("shop-bag-sheet") }>
+                <section class={ classes!("shop-bag-pane shop-bag-cart") } data-bag-cart aria-label="Your bag">
+                    <header class={ classes!("shop-cart-head") }>
                         <h2 id="shop-cart-title">"Your bag"</h2>
-                        <button class="shop-icon-button"
+                        <button class={ classes!("shop-icon-button") }
                                 type="button"
                                 data-close-bag
                                 aria-label="Close bag">
                             { x_icon() }
                         </button>
                     </header>
-                    <div class="shop-cart-items" data-cart-items>
-                        <p class="shop-cart-empty">"Your cap stack is empty."</p>
+                    <div class={ classes!("shop-cart-items") } data-cart-items>
+                        <p class={ classes!("shop-cart-empty") }>"Your cap stack is empty."</p>
                     </div>
-                    <footer class="shop-cart-foot" data-cart-foot>
-                        <div class="shop-cart-foot-row">
+                    <footer class={ classes!("shop-cart-foot") } data-cart-foot>
+                        <div class={ classes!("shop-cart-foot-row") }>
                             <p data-cart-total>"$0"</p>
                             <button type="button" data-cart-clear>"Clear"</button>
                         </div>
-                        <button class="shop-cart-checkout" type="button" data-bag-checkout hidden>
+                        <button class={ classes!("shop-cart-checkout") } type="button" data-bag-checkout hidden>
                             "Checkout"
                         </button>
                     </footer>
-                    <div class="shop-bag-stamp" data-bag-stamp aria-hidden="true">"PAID"</div>
+                    <div class={ classes!("shop-bag-stamp") } data-bag-stamp aria-hidden="true">"PAID"</div>
                 </section>
 
-                <section class="shop-bag-pane shop-bag-checkout"
+                <section class={ classes!("shop-bag-pane shop-bag-checkout") }
                          data-bag-checkout-pane
                          aria-label="Checkout"
                          aria-hidden="true">
-                    <header class="shop-cart-head shop-checkout-head">
-                        <button class="shop-icon-button"
+                    <header class={ classes!("shop-cart-head shop-checkout-head") }>
+                        <button class={ classes!("shop-icon-button") }
                                 type="button"
                                 data-bag-back
                                 aria-label="Back to bag">
@@ -346,15 +352,15 @@ fn render_bag() -> HtmlFragment {
                         </button>
                         <h2 id="shop-checkout-title">"Checkout"</h2>
                     </header>
-                    <div class="shop-checkout-scroll">
-                        <div class="shop-checkout-notice" data-checkout-disabled hidden>
+                    <div class={ classes!("shop-checkout-scroll") }>
+                        <div class={ classes!("shop-checkout-notice") } data-checkout-disabled hidden>
                             <p>"Payments aren’t switched on in this environment yet. The caps are still very real."</p>
                         </div>
-                        <form class="shop-checkout-form"
+                        <form class={ classes!("shop-checkout-form") }
                               data-checkout-form
                               aria-labelledby="shop-checkout-title"
                               novalidate>
-                            <div class="shop-checkout-field">
+                            <div class={ classes!("shop-checkout-field") }>
                                 <label for="shop-checkout-email">"Email"</label>
                                 <input id="shop-checkout-email"
                                        name="email"
@@ -366,39 +372,39 @@ fn render_bag() -> HtmlFragment {
                                        aria-describedby="shop-checkout-email-hint"
                                        data-checkout-email
                                        required />
-                                <p id="shop-checkout-email-hint" class="shop-checkout-hint">"Your confirmation and tracking land here."</p>
+                                <p id="shop-checkout-email-hint" class={ classes!("shop-checkout-hint") }>"Your confirmation and tracking land here."</p>
                             </div>
-                            <div class="shop-checkout-block">
-                                <h3 class="shop-checkout-legend">"Ship to"</h3>
-                                <div class="shop-checkout-element" data-address-element>
-                                    <div class="shop-checkout-skeleton" aria-hidden="true"></div>
+                            <div class={ classes!("shop-checkout-block") }>
+                                <h3 class={ classes!("shop-checkout-legend") }>"Ship to"</h3>
+                                <div class={ classes!("shop-checkout-element") } data-address-element>
+                                    <div class={ classes!("shop-checkout-skeleton") } aria-hidden="true"></div>
                                 </div>
                             </div>
-                            <div class="shop-checkout-block">
-                                <h3 class="shop-checkout-legend">"Payment"</h3>
-                                <div class="shop-checkout-element" data-payment-element>
-                                    <div class="shop-checkout-skeleton" aria-hidden="true"></div>
+                            <div class={ classes!("shop-checkout-block") }>
+                                <h3 class={ classes!("shop-checkout-legend") }>"Payment"</h3>
+                                <div class={ classes!("shop-checkout-element") } data-payment-element>
+                                    <div class={ classes!("shop-checkout-skeleton") } aria-hidden="true"></div>
                                 </div>
                             </div>
-                            <p class="shop-checkout-error" data-checkout-error role="alert" aria-live="assertive" hidden></p>
-                            <button class="shop-checkout-pay"
+                            <p class={ classes!("shop-checkout-error") } data-checkout-error role="alert" aria-live="assertive" hidden></p>
+                            <button class={ classes!("shop-checkout-pay") }
                                     type="submit"
                                     data-checkout-pay
                                     aria-describedby="shop-checkout-secure"
                                     disabled>
-                                <span class="shop-checkout-pay-spinner" aria-hidden="true" data-pay-spinner hidden></span>
+                                <span class={ classes!("shop-checkout-pay-spinner") } aria-hidden="true" data-pay-spinner hidden></span>
                                 <span data-pay-label>"Pay"</span>
                             </button>
-                            <p id="shop-checkout-secure" class="shop-checkout-secure">
+                            <p id="shop-checkout-secure" class={ classes!("shop-checkout-secure") }>
                                 "🔒 Encrypted by Stripe · test card 4242 4242 4242 4242"
                             </p>
                         </form>
-                        <div class="shop-checkout-done" data-checkout-done role="status" aria-live="polite" hidden>
-                            <div class="shop-checkout-check" aria-hidden="true"></div>
-                            <p class="shop-checkout-done-kicker">"ORDER CONFIRMED"</p>
-                            <h3 class="shop-checkout-done-title">"Shipped to the embroidery queue"</h3>
-                            <p class="shop-checkout-done-sub" data-checkout-done-sub></p>
-                            <button class="shop-cart-checkout" type="button" data-bag-done-close>"Keep shopping"</button>
+                        <div class={ classes!("shop-checkout-done") } data-checkout-done role="status" aria-live="polite" hidden>
+                            <div class={ classes!("shop-checkout-check") } aria-hidden="true"></div>
+                            <p class={ classes!("shop-checkout-done-kicker") }>"ORDER CONFIRMED"</p>
+                            <h3 class={ classes!("shop-checkout-done-title") }>"Shipped to the embroidery queue"</h3>
+                            <p class={ classes!("shop-checkout-done-sub") } data-checkout-done-sub></p>
+                            <button class={ classes!("shop-cart-checkout") } type="button" data-bag-done-close>"Keep shopping"</button>
                         </div>
                     </div>
                 </section>

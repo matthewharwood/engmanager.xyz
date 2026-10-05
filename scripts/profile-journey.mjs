@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto';
 import { analyzeTrace, distribution, intervals, networkAggregates, pixelWarnings } from './journey-performance-metrics.mjs';
 import { Cdp } from './local-chrome-cdp.mjs';
 import { parseChromeTrace } from './parse-chrome-trace.mjs';
+import { loadCssManifestBindings } from './css-manifest-bindings.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).map((arg) => {
     const [name, ...value] = arg.replace(/^--/, '').split('=');
@@ -17,6 +18,10 @@ const options = Object.fromEntries(process.argv.slice(2).map((arg) => {
 }));
 const origin = new URL(options.url || 'http://127.0.0.1:3092');
 if (!['127.0.0.1', 'localhost', '[::1]'].includes(origin.hostname)) throw new Error('Profile an explicitly local test server only');
+const cssBindings = await loadCssManifestBindings(options['css-manifest']);
+// Existing public data hooks describe the same stage/art/preview nodes in
+// ordinary and compiled releases; no CSS identity is needed for the probe.
+const assetFingerprintExpression = `(()=>{${cssBindings.generation ? `if(document.querySelector('meta[name="eng-css-generation"]')?.content!==${JSON.stringify(cssBindings.generation)})throw Error('Served CSS generation differs from profiling manifest');` : ''}return [...document.head.querySelectorAll('script[src],link[rel=stylesheet][href]')].map(node=>node.src||node.href)})()`;
 const output = resolve(options.output || join(tmpdir(), `journey-perf-${Date.now()}`));
 const cpu = Number(options.cpu || 4);
 const passes = Number(options.passes || 2);
@@ -87,7 +92,7 @@ const probe = `(() => {
     const animate=Element.prototype.animate;
     Element.prototype.animate=function(...args){
         const animation=animate.apply(this,args);
-        if(p.phase&&this.classList.contains('journey-stage')&&args[1]?.duration===620){
+        if(p.phase&&this.matches('[data-journey-next]')&&args[1]?.duration===620){
             const name=p.phase+':handoff-animation';const record={name,start:performance.now()};p.animations.push(record);
             performance.mark('journey-perf:'+name+':start');
             const end=()=>{record.end=performance.now();performance.mark('journey-perf:'+name+':end');};
@@ -119,14 +124,14 @@ const diagnosticProbe = options.diagnostic ? `(() => {
     }return node;};
     new MutationObserver(records=>{for(const record of records){
         if(record.type==='attributes'&&record.attributeName==='data-renderer')mark('hero-renderer-'+record.target.dataset.renderer,{scene:record.target.dataset.heroScene});
-        if(record.type==='attributes'&&record.attributeName==='data-preview-ready'&&record.target.matches('iframe.journey-preview'))mark('preview-ready',{width:record.target.contentWindow.innerWidth,height:record.target.contentWindow.innerHeight,scroll:record.target.contentWindow.scrollY,transform:record.target.style.transform});
-        for(const node of record.addedNodes||[]){if(node.nodeType!==1)continue;for(const iframe of [node,...node.querySelectorAll('iframe')].filter(node=>node.matches('iframe.journey-preview'))){
+        if(record.type==='attributes'&&record.attributeName==='data-preview-ready'&&record.target.matches('[data-journey-previous] iframe[sandbox="allow-same-origin"]'))mark('preview-ready',{width:record.target.contentWindow.innerWidth,height:record.target.contentWindow.innerHeight,scroll:record.target.contentWindow.scrollY,transform:record.target.style.transform});
+        for(const node of record.addedNodes||[]){if(node.nodeType!==1)continue;for(const iframe of [node,...node.querySelectorAll('iframe')].filter(node=>node.matches('[data-journey-previous] iframe[sandbox="allow-same-origin"]'))){
             mark('preview-connected');if(mode==='hold-preview'){iframe.remove();mark('preview-held');}
         }}
     }}).observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-renderer','data-preview-ready']});
     const context=HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext=function(...args){if(mode==='hold-hero'&&this.matches('.article-hero-canvas')&&/webgl/.test(args[0])){mark('hero-held');return null;}return context.apply(this,args);};
-    for(const Type of [window.WebGLRenderingContext,window.WebGL2RenderingContext])if(Type){const seen=new WeakSet(),draw=Type.prototype.drawArrays;Type.prototype.drawArrays=function(...args){const value=draw.apply(this,args);if(this.canvas.matches?.('.article-hero-canvas')&&!seen.has(this.canvas)){seen.add(this.canvas);mark('hero-first-draw');}return value;};}
+    HTMLCanvasElement.prototype.getContext=function(...args){if(mode==='hold-hero'&&this.matches('[data-article-hero] > canvas')&&/webgl/.test(args[0])){mark('hero-held');return null;}return context.apply(this,args);};
+    for(const Type of [window.WebGLRenderingContext,window.WebGL2RenderingContext])if(Type){const seen=new WeakSet(),draw=Type.prototype.drawArrays;Type.prototype.drawArrays=function(...args){const value=draw.apply(this,args);if(this.canvas.matches?.('[data-article-hero] > canvas')&&!seen.has(this.canvas)){seen.add(this.canvas);mark('hero-first-draw');}return value;};}
     if(window.GPUDevice){const devices=new WeakMap(),pipeline=GPUDevice.prototype.createRenderPipelineAsync,buffer=GPUDevice.prototype.createBuffer;
         GPUDevice.prototype.createRenderPipelineAsync=function(...args){const promise=pipeline.apply(this,args);if(args[0]?.vertex?.entryPoint==='vertex'&&!args[0]?.label){devices.set(this,'armillary');promise.then(()=>mark('armillary-pipeline-resolved'),()=>{});}return promise;};
         GPUDevice.prototype.createBuffer=function(...args){if(devices.get(this)==='armillary'&&(args[0]?.usage&GPUBufferUsage.VERTEX))mark('armillary-vertex-buffer',{bytes:args[0].size});return buffer.apply(this,args);};
@@ -246,6 +251,7 @@ try {
     const metadata = { label:options.label||'working-tree',origin:origin.href,cpuThrottle:cpu,network:{downloadMbps:4,uploadMbps:1,latencyMs:120},viewport:{width:390,height:844,dpr:2},
         browser:await browser.command('Browser.getVersion'),system:await browser.command('SystemInfo.getInfo'),started:new Date().toISOString(),
         harnessSHA256:createHash('sha256').update(await readFile(new URL('profile-journey.mjs',import.meta.url))).digest('hex'),
+        bindingSourceSHA256:createHash('sha256').update(await readFile(new URL('css-manifest-bindings.mjs',import.meta.url))).digest('hex'),cssManifest:cssBindings.provenance,
         serviceWorker:'Bypassed and registration disabled: page-target CDP shaping does not throttle separate worker network requests. HTTP cache is enabled; cold begins with a new profile and cleared cache, warm reuses it.',
         diagnostic:options.diagnostic||null,armillaryRemount:options['armillary-remount']==='true',
         caveat:'Native desktop GPU with mobile viewport and CPU/network emulation; this is repeatable comparative evidence, not a physical Android device certification. Compositor draw cadence is separate from RAF and GPU submission cadence.' };
@@ -268,7 +274,7 @@ try {
         if(articleIndex<0)throw new Error(`Unknown public article slug: ${options.article}`);
         if(articleIndex)await evaluate(`window.__journeyArticles.articles.slice(0,${articleIndex}).forEach(article=>window.__engReading.complete(article.slug))`);
         const destinations=[roster[articleIndex].path,'/shop','/coach','/subscribe','/feed'];
-        const fingerprints=await evaluate('[...document.head.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(node=>node.src||node.href)');
+        const fingerprints=await evaluate(assetFingerprintExpression);
         const run={name:passName,startupMs:Date.now()-loadStarted,startupNetwork:networkSummary(loadStarted),legs:[]};
         run.startupAssetFingerprints=fingerprints;
         for(let leg=0;leg<Math.min(legs,destinations.length);leg++) {
@@ -283,11 +289,11 @@ try {
                 await until('document.querySelector("[data-journey-next][data-preview-ready]")&&!window.__engNav.busy','ready reveal poster');
             });
             await phase(`${name}:model-loading`,async()=>{
-                await until('document.querySelector(".journey-poster-art[data-rendered]")','actual WebGPU poster initialization',30000);
+                await until('document.querySelector("[data-journey-next] [role=img][data-rendered]")','actual WebGPU poster initialization',30000);
             });
             await screenshot(`${name}-poster`);
             await phase(`${name}:scroll`,async()=>{for(let i=0;i<3;i++){await gesture(75,140);await gesture(-75,140);}});
-            const before = await evaluate('({path:location.pathname,still:!!document.querySelector(".journey-poster-art[data-rendered]"),canvas:[...document.querySelectorAll(".journey-poster-art canvas")].map(c=>({width:c.width,height:c.height,rect:{width:c.clientWidth,height:c.clientHeight}})),curtain:!!document.querySelector("[data-journey-curtain]"),overflow:document.documentElement.scrollWidth>innerWidth+1})');
+            const before = await evaluate('({path:location.pathname,still:!!document.querySelector("[data-journey-next] [role=img][data-rendered]"),canvas:[...document.querySelectorAll("[data-journey-next] [role=img] canvas")].map(c=>({width:c.width,height:c.height,rect:{width:c.clientWidth,height:c.clientHeight}})),curtain:!!document.querySelector("[data-journey-curtain]"),overflow:document.documentElement.scrollWidth>innerWidth+1})');
             before.decoderWorkers=await decoderWorkers();
             if(before.path!==from||!before.still||before.overflow)throw new Error(`Visual/readiness invariant failed: ${JSON.stringify(before)}`);
             await phase(`${name}:promotion`,async()=>{
@@ -308,7 +314,7 @@ try {
                 gpuSubmit:intervals(probeData.gpuSubmits.filter((frame)=>frame.phase===phase.name).map((frame)=>frame.time)),
                 gpuSubmitActive:distribution([...new Set(probeData.gpuSubmits.filter(frame=>frame.phase===phase.name&&frame.gesture!==null).map(frame=>frame.gesture))].flatMap(gesture=>{const times=probeData.gpuSubmits.filter(frame=>frame.phase===phase.name&&frame.gesture===gesture).map(frame=>frame.time);return times.slice(1).map((time,index)=>time-times[index]);})),
                 longTasks:probeData.longTasks.filter((task)=>task.phase===phase.name),longAnimationFrames:probeData.longFrames.filter((frame)=>frame.phase===phase.name)}));
-            const assetFingerprints=await evaluate('[...document.head.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(node=>node.src||node.href)');
+            const assetFingerprints=await evaluate(assetFingerprintExpression);
             run.legs.push({from,to:destination,visual:before,phases:samples,diagnosticActivations:currentProbe.activations||[],handoffAnimation:probeData.animations.filter(animation=>animation.name.startsWith(name)).map(animation=>({...animation,wallMs:animation.end-animation.start,longTasks:probeData.longTasks.filter(task=>task.startTime>=animation.start&&task.startTime<=animation.end)})),network:networkSummary(networkStarted),errors:probeData.errors,navigationErrors:navigationErrors.filter((event)=>event.probe.phase?.startsWith(name)).map((event)=>event.probe.errors),assetFingerprints});
             await writeFile(join(output,'report.json'),JSON.stringify({...report,runs:[...report.runs,run]},null,2));
             console.log(JSON.stringify(samples.map((phase)=>({phase:phase.name.split(':').at(-1),ms:phase.wallMs,rafP95:phase.raf.p95,submitP50:phase.gpuSubmit.p50,longTasks:phase.longTasks.length}))));
@@ -322,7 +328,7 @@ try {
                 await until('location.pathname==="/coach"&&window.__engNav?.ready&&!window.__engNav.busy','native Resume returns to Coach');
                 await evaluate('(()=>{const r=document.querySelector("[data-journey-runway]");scrollTo({top:scrollY+r.getBoundingClientRect().top-innerHeight*1.15,behavior:"instant"});})()');
                 await gesture(844*.8,220);
-                await until('document.querySelector("[data-journey-next][data-preview-ready] .journey-poster-art[data-rendered]")&&!window.__engNav.busy','native scroll reveals the returning Subscribe poster');
+                await until('document.querySelector("[data-journey-next][data-preview-ready] [role=img][data-rendered]")&&!window.__engNav.busy','native scroll reveals the returning Subscribe poster');
                 const next=await evaluate('(()=>{const r=document.querySelector("[data-journey-promote]").getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()');
                 await page.command('Input.synthesizeTapGesture',{...next,gestureSourceType:'touch'});
                 await until('location.pathname==="/subscribe"&&window.__engNav?.ready&&!window.__engNav.busy&&document.querySelector("[data-journey-current][data-journey-rendered=true]")','native Continue remounts Subscribe');

@@ -1,0 +1,2 @@
+(()=>{(()=>{let e=()=>matchMedia(`(min-width: 48rem)`).matches,t=new Set([`Shift`,`Control`,`Alt`,`Meta`,`CapsLock`,`Tab`,`Escape`,`ContextMenu`,`NumLock`,`ScrollLock`]),n=e=>e.metaKey||e.ctrlKey||e.altKey?!1:!t.has(e.key),r=t=>{t.querySelectorAll(`[data-search-form] input[type='search']`).forEach(t=>{t.dataset.keyclickBound||(t.dataset.keyclickBound=`true`,t.addEventListener(`keydown`,t=>{e()&&n(t)&&window.__engAudio?.play(`keyclick`,window.__engSfxUrls?.keyclick,{volume:.35})}))})};r(document),window.__engNav?.onSwap?.(r)})();
+})();

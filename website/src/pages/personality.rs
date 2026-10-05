@@ -42,8 +42,8 @@ pub async fn page(Path(step): Path<String>) -> Response {
         route,
         label,
         view! {
-            <section class="page-intro">
-                <p class="eyebrow">"The Big Six-Seven"</p><h1>{ *label }</h1>
+            <section class={ classes!("page-intro") }>
+                <p class={ classes!("eyebrow") }>"The Big Six-Seven"</p><h1>{ *label }</h1>
                 <p>"Opening your private workspace…"</p>
                 <noscript><p>"The questionnaire needs JavaScript to score and save answers on this device. You can still read the introduction and research without it."</p>
                     <a href=ARTICLE_PATH>"Read the introduction"</a>
@@ -60,7 +60,7 @@ pub fn not_found() -> Response {
             "not-found",
             "Page not found",
             view! {
-                <section class="page-intro"><p class="eyebrow">"404"</p>
+                <section class={ classes!("page-intro") }><p class={ classes!("eyebrow") }>"404"</p>
                     <h1>"This page is not in your questionnaire."</h1>
                     <p><a href="/personality/prepare">"Return to the beginning"</a></p>
                 </section>
@@ -79,13 +79,13 @@ pub async fn article() -> Response {
         pulldown_cmark::Parser::new_ext(&markdown, pulldown_cmark::Options::ENABLE_TABLES),
     );
     let mut response = Html(render("article", "Why understand yourself?", view! {
-        <article class="personality-article prose">
-            <p class="eyebrow">"A field guide to understanding yourself"</p>
+        <article class={ classes!("personality-article prose") }>
+            <p class={ classes!("eyebrow") }>"A field guide to understanding yourself"</p>
             <h1>"The Big Six-Seven"</h1>
-            <p class="lede">"Big Five personality + work interests + personal values"</p>
+            <p class={ classes!("lede") }>"Big Five personality + work interests + personal values"</p>
             { article_hero::render("big-personality") }
             { HtmlFragment::new(html) }
-            <div class="actions"><a class="button primary" href="/personality/prepare">"Start with yourself →"</a>
+            <div class={ classes!("actions") }><a class={ classes!("button primary") } href="/personality/prepare">"Start with yourself →"</a>
                 <a href="/personality/library">"Open your saved reports"</a></div>
             // This document deliberately keeps form-action 'none'. The signup
             // link reaches the ordinary newsletter form without weakening it.
@@ -97,6 +97,11 @@ pub async fn article() -> Response {
 }
 
 fn render(route: &str, label: &str, content: HtmlFragment) -> String {
+    let generated_head = if route == "article" {
+        super::shell::css_generation_meta()
+    } else {
+        HtmlFragment::empty()
+    };
     let article_assets = if route == "article" {
         view! {
             <link rel="stylesheet" href={ asset_url("css/article-newsletter.css") } />
@@ -108,11 +113,11 @@ fn render(route: &str, label: &str, content: HtmlFragment) -> String {
     };
     let mut navigation = HtmlFragment::empty();
     navigation.push_fragment(view! {
-        <a href=ARTICLE_PATH class="sidebar-link" data-route="article"><span class="nav-icon" aria-hidden="true">"○"</span><span class="nav-label">"The introduction"</span></a>
+        <a href=ARTICLE_PATH class={ classes!("sidebar-link") } data-route="article"><span class={ classes!("nav-icon") } aria-hidden="true">"○"</span><span class={ classes!("nav-label") }>"The introduction"</span></a>
     });
     for (step, name) in STEPS {
         navigation.push_fragment(view! {
-            <a href={ format!("/personality/{step}") } class="sidebar-link" data-route={ *step }><span class="nav-icon" aria-hidden="true">"○"</span><span class="nav-label">{ *name }</span></a>
+            <a href={ format!("/personality/{step}") } class={ classes!("sidebar-link") } data-route={ *step }><span class={ classes!("nav-icon") } aria-hidden="true">"○"</span><span class={ classes!("nav-label") }>{ *name }</span></a>
         });
     }
     let canonical = if route == "article" {
@@ -132,6 +137,7 @@ fn render(route: &str, label: &str, content: HtmlFragment) -> String {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                { generated_head }
                 <meta name="referrer" content="no-referrer" />
                 <meta name="description" content=description />
                 <meta name="robots" content=robots />
@@ -153,17 +159,17 @@ fn render(route: &str, label: &str, content: HtmlFragment) -> String {
                 { article_assets }
                 <script type="module" src="/assets/personality/v7/bootstrap.mjs"></script>
             </head>
-            <body class="personality" data-personality-route=route>
-                <a class="skip-link" href="#personality-app">"Skip to content"</a>
-                <div class="personality-layout">
-                    <aside id="personality-sidebar" class="personality-sidebar">
-                        <a class="sidebar-brand" href=ARTICLE_PATH><span class="brand-mark">"6–7"</span><span class="brand-copy"><strong>"The Big Six-Seven"</strong><small>"A FIELD GUIDE TO YOURSELF"</small></span></a>
-                        <p class="nav-group-label">"YOUR FIELD GUIDE"</p>
+            <body class={ classes!("personality") } data-personality-route=route>
+                <a class={ classes!("skip-link") } href="#personality-app">"Skip to content"</a>
+                <div class={ classes!("personality-layout") }>
+                    <aside id="personality-sidebar" class={ classes!("personality-sidebar") }>
+                        <a class={ classes!("sidebar-brand") } href=ARTICLE_PATH><span class={ classes!("brand-mark") }>"6–7"</span><span class={ classes!("brand-copy") }><strong>"The Big Six-Seven"</strong><small>"A FIELD GUIDE TO YOURSELF"</small></span></a>
+                        <p class={ classes!("nav-group-label") }>"YOUR FIELD GUIDE"</p>
                         <nav aria-label="Your self-understanding journey">{ navigation }</nav>
-                        <div class="sidebar-local"><strong>"On this device"</strong><p>"Your answers stay with you. No account needed."</p></div><a class="sidebar-return" href="/">"← ENG MANAGER"</a>
+                        <div class={ classes!("sidebar-local") }><strong>"On this device"</strong><p>"Your answers stay with you. No account needed."</p></div><a class={ classes!("sidebar-return") } href="/">"← ENG MANAGER"</a>
                     </aside>
-                    <div class="personality-sheet">
-                        <header class="personality-header">
+                    <div class={ classes!("personality-sheet") }>
+                        <header class={ classes!("personality-header") }>
                             <button id="sidebar-toggle" type="button" aria-expanded="true" aria-controls="personality-sidebar" aria-label="Toggle sidebar">"☰"</button>
                             <span id="page-crumb">{ label }</span>
                             <span id="save-status" role="status" aria-live="polite">{ if route == "article" { "No account needed" } else { "Opening local storage…" } }</span>
@@ -199,6 +205,8 @@ mod tests {
             assert!(html.contains(expected), "missing {expected}");
         }
         for excluded in [
+            "eng-css-generation",
+            "/assets/css-generation-recovery.js",
             "fonts.googleapis",
             "unpkg",
             "__engNav",

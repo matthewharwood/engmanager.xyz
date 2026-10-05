@@ -31,7 +31,7 @@ pub fn render() -> Rendered {
     // `data-swap-region` (ledger #14): names this body-level island for the
     // soft-navigation router's region reconcile.
     let markup = view! {
-        <div class="discovery-toasts"
+        <div class={ classes!("discovery-toasts") }
              data-discovery-toasts
              aria-live="polite"
              aria-atomic="false"
@@ -54,7 +54,7 @@ mod tests {
     fn renders_live_region_container() {
         let rendered = render();
         let html = rendered.markup.into_string();
-        assert!(html.contains(r#"class="discovery-toasts""#));
+        assert!(html.contains(css_html!(r#"class="discovery-toasts""#)));
         assert!(html.contains("data-discovery-toasts"));
         assert!(html.contains(r#"aria-live="polite""#));
     }

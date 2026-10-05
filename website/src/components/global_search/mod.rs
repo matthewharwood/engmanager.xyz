@@ -35,15 +35,15 @@ pub struct Props {
 /// Pure render: `Props -> Rendered`.
 pub fn render(props: Props) -> Rendered {
     let markup = view! {
-        <dialog id="site-search-overlay" class="site-search-overlay" aria-label="Search" data-search-overlay>
-          <div class="site-search-panel">
-            <header class="site-search-heading">
+        <dialog id="site-search-overlay" class={ classes!("site-search-overlay") } aria-label="Search" data-search-overlay>
+          <div class={ classes!("site-search-panel") }>
+            <header class={ classes!("site-search-heading") }>
                 <span>"Search ENGMANAGER"</span>
-                <button class="site-search-close" type="button" aria-label="Close search" data-search-close>"×"</button>
+                <button class={ classes!("site-search-close") } type="button" aria-label="Close search" data-search-close>"×"</button>
             </header>
-            <form class="site-search" action="/search" method="get" role="search" data-search-form>
-            <label class="sr-only" for="site-search-input">"Search the site"</label>
-            <input class="site-search-input"
+            <form class={ classes!("site-search") } action="/search" method="get" role="search" data-search-form>
+            <label class={ classes!("sr-only") } for="site-search-input">"Search the site"</label>
+            <input class={ classes!("site-search-input") }
                    id="site-search-input"
                    type="search"
                    name="q"
@@ -53,33 +53,33 @@ pub fn render(props: Props) -> Rendered {
                    aria-controls="site-search-results"
                    aria-autocomplete="list"
                    placeholder={ props.placeholder } />
-            <div class="site-search-filters" role="group" aria-label="Content type">
+            <div class={ classes!("site-search-filters") } role="group" aria-label="Content type">
                 <button type="button" data-search-kind="" aria-pressed="true">"All"</button>
                 <button type="button" data-search-kind="article" aria-pressed="false">"Articles"</button>
                 <button type="button" data-search-kind="product" aria-pressed="false">"Store"</button>
                 <button type="button" data-search-kind="coaching" aria-pressed="false">"Coaching"</button>
                 <button type="button" data-search-kind="subscription" aria-pressed="false">"Subscription"</button>
             </div>
-            <div class="site-search-body">
-                <div class="site-search-list-column">
-                    <ul class="site-search-results"
+            <div class={ classes!("site-search-body") }>
+                <div class={ classes!("site-search-list-column") }>
+                    <ul class={ classes!("site-search-results") }
                         id="site-search-results"
                         role="listbox"
                         aria-label="Search results"
                         hidden
                         data-search-results></ul>
-                    <p class="site-search-empty" data-search-empty>"Start with a topic, or choose a category."</p>
+                    <p class={ classes!("site-search-empty") } data-search-empty>"Start with a topic, or choose a category."</p>
                 </div>
-                <aside class="site-search-preview" aria-label="Result preview" data-search-preview>
-                    <p class="site-search-preview-placeholder">"A closer look."<br />"Focus a result to preview it here."</p>
+                <aside class={ classes!("site-search-preview") } aria-label="Result preview" data-search-preview>
+                    <p class={ classes!("site-search-preview-placeholder") }>"A closer look."<br />"Focus a result to preview it here."</p>
                 </aside>
             </div>
-            <span class="sr-only" role="status" data-search-status></span>
+            <span class={ classes!("sr-only") } role="status" data-search-status></span>
             <noscript>
-                <button class="site-search-submit" type="submit">"Search"</button>
+                <button class={ classes!("site-search-submit") } type="submit">"Search"</button>
             </noscript>
             </form>
-            <p class="site-search-hint">"↑ ↓ to browse · Enter to open · Esc to close"</p>
+            <p class={ classes!("site-search-hint") }>"↑ ↓ to browse · Enter to open · Esc to close"</p>
           </div>
         </dialog>
     };
@@ -104,7 +104,7 @@ mod tests {
         .markup
         .into_string();
         assert!(html.contains(
-            r#"<form class="site-search" action="/search" method="get" role="search" data-search-form>"#
+            css_html!(r#"<form class="site-search" action="/search" method="get" role="search" data-search-form>"#)
         ));
         assert!(html.contains(r#"placeholder="Search""#));
         assert!(html.contains("data-search-results"));

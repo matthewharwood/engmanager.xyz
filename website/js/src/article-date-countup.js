@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // A short trip from Matthew's birthday to each article's published date.
 // One shared RAF, no timers/imports/promises; each mount owns its observer,
 // listeners and rolling animations, and releases them even when interrupted.
@@ -35,7 +39,7 @@
             return;
         }
         const nodes = [...root.querySelectorAll(SELECTOR)].filter(node =>
-            node.dataset.dateCountup !== 'done' && !node.closest('[inert], [hidden], [aria-hidden="true"]'));
+            node.dataset.dateCountup !== 'done' && !node.closest(cssSelector('[inert], [hidden], [aria-hidden="true"]')));
         if (!nodes.length) return;
         const lifetime = new AbortController(), { signal } = lifetime;
         const records = new Map();
@@ -113,10 +117,10 @@
             }
             const original = node.textContent;
             const accessible = document.createElement('span');
-            accessible.className = 'article-date-countup-accessible sr-only';
+            accessible.className = cssClasses('article-date-countup-accessible sr-only');
             accessible.textContent = original;
             const label = document.createElement('span');
-            label.className = 'article-date-countup-label';
+            label.className = cssClasses('article-date-countup-label');
             label.setAttribute('aria-hidden', 'true');
             label.textContent = original;
             node.replaceChildren(accessible, label);
