@@ -2,12 +2,10 @@
 
 Application styles stay in `website/css` as ordinary CSS. `website/build/compact.rs` inventories explicit Rust, JavaScript, and Markdown bindings, then calls the public `lightningcss-compact` library. Every stylesheet stays in its existing asset and loading boundary. Published personality releases, vendor namespaces, email markup, and self-contained error/offline documents retain their identities.
 
-Before publication, the website consumes the external repository at
-`https://github.com/eng-manager-xyz/lightningcss-compact`, pinned to
-`c6be50175cfb3995c9c9b82f3991900a0a251066`. This integration proves the package
-without a sibling checkout or path dependency. After both repositories pass
-their checks and crate `0.1.0` is published, replace the Git dependency with
-the exact registry version `=0.1.0` and validate that final dependency again.
+The website consumes the published crates.io package at the exact registry
+version `=0.1.0`, with no sibling checkout or path dependency. The standalone
+release and native CLI archives are available from
+[lightningcss-compact v0.1.0](https://github.com/eng-manager-xyz/lightningcss-compact/releases/tag/v0.1.0).
 
 Rust view attributes use literal bindings:
 

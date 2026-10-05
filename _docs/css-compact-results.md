@@ -1,5 +1,45 @@
 # Website compression results
 
+The final website consumes the published crates.io library at **`=0.1.0`**. It saves **47,908 Brotli bytes (1.77%)** and **52,649 gzip bytes (1.81%)** across the complete 49-route HTML/CSS/JavaScript body inventory. All 42 managed routes shrink in both codecs; the seven published/offline boundaries remain unchanged.
+
+The final five-build native matrix passes all **480 captures**, with zero strict style/layout differences, native errors, or overflow cases. All 96 candidate actual cold/warm transfer comparisons pass. Both latest- and long-article profiles pass the existing `--assert` budgets across all **20 candidate legs**, including native presentations, sculpture submissions, decoder workers, and settled work. Native graphics pass again on the final generation. These results do not establish a rendering-speed improvement or certify physical Android hardware.
+
+All eight required local workflow gates pass on the exact registry dependency: 381 Node tests, published-release verification, formatting, Clippy, and 203 Rust tests across 17 targets with `REQUIRE_BROWSER_TESTS=1`. The debug project input/output, 25 CSS assets, 43 JavaScript assets, and 12 compiled articles exactly match the frozen release artifacts. [GitHub PR 84 checks](https://github.com/matthewharwood/engmanager.xyz/pull/84/checks) are authoritative for its final head; the completed remote attestation is published separately.
+
+## Final registry body inventory
+
+| Component | Original raw | Final raw | Original Brotli | Final Brotli | Original gzip | Final gzip |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| html | 2,830,518 | 2,733,420 | 511,004 | 507,696 | 569,832 | 562,994 |
+| css | 3,817,952 | 3,536,955 | 823,023 | 798,705 | 880,506 | 856,582 |
+| javascript | 4,081,853 | 3,949,282 | 1,378,463 | 1,358,181 | 1,456,303 | 1,434,416 |
+| combined | 10,730,323 | 10,219,657 | 2,712,490 | 2,664,582 | 2,906,641 | 2,853,992 |
+
+| Adjacent control | Raw delta | Brotli delta | Gzip delta |
+| --- | ---: | ---: | ---: |
+| baseline → upgrade-control | 0 | 0 | 0 |
+| upgrade-control → guard-control | -80,657 | -11,664 | -13,099 |
+| guard-control → naming-control | -430,009 | -36,243 | -39,549 |
+| naming-control → candidate | 0 | -1 | -1 |
+
+Naming and complete optimization emit identical CSS, JavaScript, compiled articles, and portable manifests. Zero website declaration extractions are accepted. The observed one-byte naming/complete body variation comes from `/search` ordering two articles with the same publication date differently between the frozen servers; its exact raw payloads are preserved and it receives no factoring credit. The guard-only control also includes the mobile correctness fix, coherence metadata, Oxc, and GLSL changes; those costs and gains are separate from plugin naming.
+
+## Main-build correction
+
+The linked [main CI failure](https://github.com/matthewharwood/engmanager.xyz/actions/runs/37232139377/job/111523940196) exposed an entrance overshoot on a tall 320 px reveal card. Independent native inspection of frozen `2061afa3` finds 30 overflowing samples. The mobile entrance now grows monotonically into its final bounds; the final native capture has **zero overflow in 67 samples**, with actual WebGL drawing. The Chrome regression fixture observes the initiating focus/click and every live entrance frame, then renders 33 explicit animation phases. It retains all card/popover/content bounds, native scrolling, visible-control, reduced-motion, disposal, and fallback assertions.
+
+The reading-cycle fixture also establishes managed/native font readiness and six unchanged ResizeObserver frames before choosing scroll coordinates after viewport changes. The original Continue hit test remains strict, with geometry/inert/actual-hit diagnostics. The initial failed full-suite log is retained; the complete required command passes after this correction.
+
+## Final evidence and distribution
+
+The [public 0.1.0 release](https://github.com/eng-manager-xyz/lightningcss-compact/releases/tag/v0.1.0) provides Cargo installation and five verified native archives for Linux, macOS, and Windows. The downloaded macOS ARM archive and a fresh crates.io install both compile the packaged example. All six shipping Rust library/CLI sources match tested merge commit `5afa7909`; the registry archive checksum is `37e00551f483140d71249fd6f2e42a18512015d2b28664a89688e5aa9617bcd1`. Original code is MIT OR Apache-2.0, with dependency notices.
+
+The [registry evidence supplement](https://github.com/eng-manager-xyz/lightningcss-compact/releases/download/v0.1.0/engmanager-css-registry-evidence-2026-10-04.tar.gz) (SHA-256 `e3d80f755fde229044d5b8a356a86dccad64cc7a218083f8f8e326b989c11fde`; 3,453 payload files) preserves `/tmp/engmanager-css-registry-v2-{inventory,native}`, all four `*-journey` directories, current graphics/reveal proofs, all three frozen compiler modes, the complete corrected CI logs/lock, registry/archive installation proofs, and the detected main-release counterexample. Its manifest maps absolute capture paths into portable archive paths and verifies every payload. The original 6,576-file archive remains immutable at [the release attachment](https://github.com/eng-manager-xyz/lightningcss-compact/releases/download/v0.1.0/engmanager-css-evidence-2026-10-04.tar.gz), SHA-256 `e1fd3d3f65a6e70969a00826622e7035f40bbdabc9f55c071e922aaebe4294d2`.
+
+The machine report's `registryAcceptance` records these final results and their exact provenance. The following section preserves the prepublication measurements that were publicly reviewable before either PR; its bytes and timing tables describe that earlier cohort.
+
+## Prepublication cohort (295ab3f)
+
 The frozen candidate saves **47,998 Brotli bytes (1.77%)** and **52,732 gzip
 bytes (1.81%)** across the 49-route body inventory. All 42 application routes
 shrink in both codecs; seven published personality/offline boundaries remain
@@ -11,8 +51,8 @@ pass the unchanged scroll/fade/settled-work budgets across all 20 candidate
 legs; native heroes pass 24 normal/reduced-motion scenes and diagrams pass 12
 actual cases plus lifecycle checks. The final five-variant **480-case native
 inspection passes**, including 96 candidate transfer comparisons without
-growth or incomplete measurements. All required local CI gates pass; remote
-PR checks and registry release installation remain pending. Historical failed
+growth or incomplete measurements. The prepublication local gates passed. Those PR checks subsequently passed
+on `295ab3f`; registry installation is verified in the final cohort above. Historical failed
 captures remain preserved and are explained below. This report makes no
 rendering-speed claim.
 
@@ -332,9 +372,9 @@ debug manifest and all 25 CSS, 43 JavaScript, and 12 compiled article files
 equal the frozen complete build, with
 generation `3989985d2d1bea141900fd9fdaed0c5f10eb7ccbf16b17b42706f41661417790`.
 
-These local gates validate the pinned external Git dependency. Registry
-`0.1.0` consumption/installation and remote checks on the PR's current head
-remain separate pending gates; no release or merge is claimed by this report.
+These historical gates validated the external Git dependency. The final
+registry dependency and its complete required local gates are recorded above.
+GitHub remains the authority for checks on the final PR head.
 
 ## Reproduce and preserve the evidence
 
@@ -372,12 +412,11 @@ Preserve the following directories without replacing failed captures:
   failed cache expectation, its passing complete rerun, and final Clippy.
 - `/tmp/engmanager-css-build-locks`: candidate and upgrade-only Cargo locks,
   preserving the exact external compiler dependency graphs.
-- Registry release installation and remote current-head checks: add paths
-  and acceptance results when complete.
+- Final registry captures, native profiles, installation and corrected CI:
+  see the final cohort and its separate release evidence supplement above.
 
-The readable report can be committed before either PR. Raw evidence remains
-available for inspection; publish a SHA-256-indexed archive with the actual
-`0.1.0` release after all gates pass. The evidence packager accepts only
+This readable report was published before either PR. The SHA-256-indexed
+original raw archive is now published with the `0.1.0` release. The evidence packager accepts only
 explicitly named input directories/files and writes a separate output, keeping
 raw bytes intact. Its manifest and verification command establish integrity
 after downloading; executable digests and source hashes tie captures to the
@@ -387,8 +426,8 @@ frozen builds without requiring native binaries inside the public archive.
 machine-readable results. [`css-compact-evidence.json`](css-compact-evidence.json)
 indexes explicit reports, manifests, and probe sources with SHA-256 digests.
 That small index does not hash every screenshot/trace or replace the complete
-release archive; remote checks, registry installation, and archive publication
-stay marked pending.
+release archive. Registry installation and archive publication are now
+complete; current-head remote CI is attested separately on GitHub.
 
 After all captures finish, package only the completed evidence directories:
 

@@ -26,7 +26,7 @@ hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
 lightningcss = { version = "=1.0.0-alpha.72", features = ["visitor"] }
-lightningcss-compact = { git = "https://github.com/eng-manager-xyz/lightningcss-compact", rev = "c6be50175cfb3995c9c9b82f3991900a0a251066", version = "0.1.0" }
+lightningcss-compact = "=0.1.0"
 syn = { version = "2", features = ["full"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 oxc_ast = "0.131"

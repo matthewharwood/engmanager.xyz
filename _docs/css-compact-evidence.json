@@ -2,10 +2,11 @@
   "schemaVersion": 1,
   "scope": "Explicit completed reports, phase CSVs, frozen project input/output manifests, freeze records, and probe sources only. Raw artifact directories are referenced, not exhaustively hashed.",
   "archivePublication": {
-    "status": "pending",
+    "status": "published",
     "release": "0.1.0",
-    "url": null,
-    "sha256": null
+    "url": "https://github.com/eng-manager-xyz/lightningcss-compact/releases/tag/v0.1.0",
+    "asset": "https://github.com/eng-manager-xyz/lightningcss-compact/releases/download/v0.1.0/engmanager-css-evidence-2026-10-04.tar.gz",
+    "sha256": "e1fd3d3f65a6e70969a00826622e7035f40bbdabc9f55c071e922aaebe4294d2"
   },
   "ci": {
     "status": "passed",
@@ -16,8 +17,8 @@
     "initialRunArtifact": "ci.initial-run",
     "correctedTestLogArtifact": "ci.tests-after-cache-expectation",
     "postCommentClippyArtifact": "ci.clippy-after-comment",
-    "registryInstallation": "pending",
-    "remoteCurrentHeadPRChecks": "pending"
+    "registryInstallation": "passed",
+    "remoteCurrentHeadPRChecks": "external-github-authority"
   },
   "artifactDirectories": [
     {
@@ -171,6 +172,91 @@
         "build-locks.upgrade-Cargo.lock",
         "build-locks.README.txt"
       ]
+    },
+    {
+      "id": "registry-body",
+      "path": "/private/tmp/engmanager-css-registry-v2-inventory",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-native",
+      "path": "/private/tmp/engmanager-css-registry-v2-native",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-ci",
+      "path": "/private/tmp/engmanager-css-ci-registry-final-corrected",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-prior-ci-failure",
+      "path": "/private/tmp/engmanager-css-ci-registry-final",
+      "status": "historical_detected_failure"
+    },
+    {
+      "id": "registry-install",
+      "path": "/private/tmp/lightningcss-compact-registry-validation",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "archive-install",
+      "path": "/private/tmp/lightningcss-compact-archive-validation",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "main-mobile-counterexample",
+      "path": "/private/tmp/engmanager-main-reveal-baseline-counterexample",
+      "status": "historical_detected_failure"
+    },
+    {
+      "id": "main-mobile-current",
+      "path": "/private/tmp/engmanager-main-reveal-registry-v2-native",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-heroes",
+      "path": "/private/tmp/engmanager-css-registry-v2-heroes",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-diagrams",
+      "path": "/private/tmp/engmanager-css-registry-v2-diagrams",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-freeze-guard-control",
+      "path": "/private/tmp/engmanager-css-registry-v2-guard-control",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-freeze-naming-control",
+      "path": "/private/tmp/engmanager-css-registry-v2-naming-control",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-freeze-compact",
+      "path": "/private/tmp/engmanager-css-registry-v2-compact",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-profile-baseline-latest",
+      "path": "/private/tmp/engmanager-css-registry-v2-baseline-latest-journey",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-profile-baseline-long",
+      "path": "/private/tmp/engmanager-css-registry-v2-baseline-long-journey",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-profile-candidate-latest",
+      "path": "/private/tmp/engmanager-css-registry-v2-candidate-latest-journey",
+      "status": "accepted_final_registry_evidence"
+    },
+    {
+      "id": "registry-profile-candidate-long",
+      "path": "/private/tmp/engmanager-css-registry-v2-candidate-long-journey",
+      "status": "accepted_final_registry_evidence"
     }
   ],
   "files": [
@@ -495,6 +581,167 @@
       "kind": "provenance_note",
       "bytes": 190,
       "sha256": "5379cb37ea582a4e36982657c9a6cd0c191330fdfdeb1ad987457141a1bf91c3"
+    },
+    {
+      "id": "registry.0",
+      "path": "/tmp/engmanager-css-registry-v2-inventory/report.json",
+      "sha256": "b1995d907fb1335b5f347620c799af3d4bf17528d31c6ef464b6032724df4f0c",
+      "bytes": 1416993
+    },
+    {
+      "id": "registry.1",
+      "path": "/tmp/engmanager-css-registry-v2-native/report.json",
+      "sha256": "7173ac0b20f4e37e8ba281a0fe8766f04b6af6f2d4c924648dd0b6c350f8cdba",
+      "bytes": 21619231
+    },
+    {
+      "id": "registry.2",
+      "path": "/tmp/engmanager-css-ci-registry-final-corrected/acceptance.json",
+      "sha256": "5d19697cc5f544f654bfcc55090d125dfbb0fd3865c169f3e543a9fca093cf60",
+      "bytes": 2962
+    },
+    {
+      "id": "registry.3",
+      "path": "/tmp/engmanager-css-ci-registry-final-corrected/generated-assets.json",
+      "sha256": "fe06234484f0f8face6873d77e10f6bfc452d19898d112bd23d4551b0620eed2",
+      "bytes": 917
+    },
+    {
+      "id": "registry.4",
+      "path": "/tmp/lightningcss-compact-registry-validation/report.json",
+      "sha256": "f8e44a22c2e116ee886367b42af90d6ca791b2d51c52b56c8d766a42c67224aa",
+      "bytes": 1169
+    },
+    {
+      "id": "registry.5",
+      "path": "/tmp/lightningcss-compact-registry-validation/source-equivalence.json",
+      "sha256": "815b6ec467eb976e09a5b2d17146fef27776a270d07b415da59254c3232e9b63",
+      "bytes": 1021
+    },
+    {
+      "id": "registry.6",
+      "path": "/tmp/lightningcss-compact-archive-validation/report.json",
+      "sha256": "d29521a2ac353487c3a8272aa78d23f1c2d22b6d569e8291ea768c97572847e6",
+      "bytes": 1000
+    },
+    {
+      "id": "registry.7",
+      "path": "/tmp/engmanager-main-reveal-baseline-counterexample/report.json",
+      "sha256": "1818ca0d9a99cd5b19890de2eab8b2709d40993a08a4ef0b2ef1df14f7e44f16",
+      "bytes": 36225
+    },
+    {
+      "id": "registry.8",
+      "path": "/tmp/engmanager-main-reveal-registry-v2-native/report.json",
+      "sha256": "6c3c4cae54d1a1469161d1b9bdeef52ea6591cbc7a9a1e078faa5f10fa179423",
+      "bytes": 24769
+    },
+    {
+      "id": "registry.9",
+      "path": "/tmp/engmanager-css-registry-v2-heroes/report.json",
+      "sha256": "70cad3d1887eb3258be23e34cdea0849b59c218f51c29b179e796d01f46c1121",
+      "bytes": 32411
+    },
+    {
+      "id": "registry.10",
+      "path": "/tmp/engmanager-css-registry-v2-diagrams/report.json",
+      "sha256": "95dde7ae0b25a266d43bfa62d7c90d25ed2d19a6c1c162c52777dff1f9aad54d",
+      "bytes": 23540
+    },
+    {
+      "id": "registry.11",
+      "path": "/tmp/engmanager-css-registry-v2-baseline-latest-journey/report.json",
+      "sha256": "4045ac57175cf1ade13f83f2c4f52ce9736015d41f86d751a607f90d9e7ff690",
+      "bytes": 1356102
+    },
+    {
+      "id": "registry.12",
+      "path": "/tmp/engmanager-css-registry-v2-candidate-latest-journey/report.json",
+      "sha256": "1b6edfe0a9cc93c7c8e053720313b08b78f75b33f7cf15c5e7e974e69159b0e5",
+      "bytes": 1355557
+    },
+    {
+      "id": "registry.13",
+      "path": "/tmp/engmanager-css-registry-v2-baseline-long-journey/report.json",
+      "sha256": "5ebbe281d8398a12bf639e6c60ffc9db9569892dc886b6dc023882813735b518",
+      "bytes": 1358304
+    },
+    {
+      "id": "registry.14",
+      "path": "/tmp/engmanager-css-registry-v2-candidate-long-journey/report.json",
+      "sha256": "11d41a106968eb8d61c5bf730a13b9b5d0ebea695840b2648a2217ff1d970bbd",
+      "bytes": 1367357
+    },
+    {
+      "id": "registry.15",
+      "path": "/tmp/engmanager-css-registry-v2-guard-control/freeze.json",
+      "sha256": "5df5e4723ff205b082ef91a63c5c9b91bed1aaa53977a8f0fa986d4d41323f8b",
+      "bytes": 17102
+    },
+    {
+      "id": "registry.16",
+      "path": "/tmp/engmanager-css-registry-v2-guard-control/css-compact-input.json",
+      "sha256": "bda3dc76bc2b575faa5feaa7659228e97b19f6109dce0e7926e22775e99741d0",
+      "bytes": 684503
+    },
+    {
+      "id": "registry.17",
+      "path": "/tmp/engmanager-css-registry-v2-guard-control/css-compact-output.json",
+      "sha256": "fd13f82512e7c4f6725985e78e36c45475fed66b80f2d4d26d4dc0111769697e",
+      "bytes": 884217
+    },
+    {
+      "id": "registry.18",
+      "path": "/tmp/engmanager-css-registry-v2-naming-control/freeze.json",
+      "sha256": "1d841c99af19fb6b11c02374b2da48123e9ee6622974d126636b9378052887fe",
+      "bytes": 17104
+    },
+    {
+      "id": "registry.19",
+      "path": "/tmp/engmanager-css-registry-v2-naming-control/css-compact-input.json",
+      "sha256": "bda3dc76bc2b575faa5feaa7659228e97b19f6109dce0e7926e22775e99741d0",
+      "bytes": 684503
+    },
+    {
+      "id": "registry.20",
+      "path": "/tmp/engmanager-css-registry-v2-naming-control/css-compact-output.json",
+      "sha256": "a0fc5f9d554f71de65c85aece361e253ee918b6861a371b3aa0b55499097ca37",
+      "bytes": 831328
+    },
+    {
+      "id": "registry.21",
+      "path": "/tmp/engmanager-css-registry-v2-compact/freeze.json",
+      "sha256": "cd389382251c73a46d9fe276adf7892935ffc0001d0dc4d34af6fe53fd834476",
+      "bytes": 17090
+    },
+    {
+      "id": "registry.22",
+      "path": "/tmp/engmanager-css-registry-v2-compact/css-compact-input.json",
+      "sha256": "bda3dc76bc2b575faa5feaa7659228e97b19f6109dce0e7926e22775e99741d0",
+      "bytes": 684503
+    },
+    {
+      "id": "registry.23",
+      "path": "/tmp/engmanager-css-registry-v2-compact/css-compact-output.json",
+      "sha256": "9e09a36f1c8d7da747a211296080e95ca4c9db295d486fea26dff54d9ff7709b",
+      "bytes": 834629
     }
-  ]
+  ],
+  "registryAcceptance": {
+    "source": "css-compact-results.json:registryAcceptance",
+    "generation": "c65689df26f4ea06682c976b54ca8a20b77d6ed016c1c7d78c0894158a5a82fe",
+    "ci": "/tmp/engmanager-css-ci-registry-final-corrected",
+    "body": "/tmp/engmanager-css-registry-v2-inventory",
+    "native": "/tmp/engmanager-css-registry-v2-native",
+    "remoteAuthority": "https://github.com/matthewharwood/engmanager.xyz/pull/84/checks",
+    "archivePublication": {
+      "file": "engmanager-css-registry-evidence-2026-10-04.tar.gz",
+      "bytes": 661758209,
+      "sha256": "e3d80f755fde229044d5b8a356a86dccad64cc7a218083f8f8e326b989c11fde",
+      "url": "https://github.com/eng-manager-xyz/lightningcss-compact/releases/download/v0.1.0/engmanager-css-registry-evidence-2026-10-04.tar.gz",
+      "payloadFiles": 3453,
+      "payloadBytes": 1760106914,
+      "manifestSha256": "1141be721ef3a08efc38d1253af4c4b496819720d9cfe40ceede4263e0bc5d8a"
+    }
+  }
 }

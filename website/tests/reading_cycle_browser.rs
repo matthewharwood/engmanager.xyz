@@ -35,11 +35,17 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate,label){const deadline=performance.now()+12000;while(performance.now()<deadline){if(predicate())return;await delay(40);}throw new Error('Timed out: '+label);}
 async function hard(path){const old=doc();frame.src=path;await until(()=>doc()!==old&&win().location.pathname===path.split('?')[0]&&doc().readyState==='complete'&&settled(),'hard load '+path);}
 async function navigate(path){await win().__engNav.navigate(path);await until(()=>win().location.pathname===path&&settled(),'navigate '+path);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');
+  // A viewport/font change can move the runway after navigation settles.
+  // Establish native font and ResizeObserver readiness before choosing the
+  // scroll destination; preserve the actual pointer hit assertion below.
+  const geometry=await stableGeometry([query('[data-journey-current]'),runway]);
+  const rect=runway.getBoundingClientRect();geometry.dispose();
+  win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
   if(query('[data-journey-current="feed"]')){
     assert(!visible(query('.trash'))&&!visible(query('.avatar-button')),'feed controls yield to the revealed article cover');
     const link=query('[data-journey-promote]'),box=link.getBoundingClientRect(),hit=doc().elementFromPoint(box.left+12,box.top+box.height/2);
-    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile');
+    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile: '+JSON.stringify({box,hit:hit?.outerHTML.slice(0,300),inert:!!link.closest('[inert]'),runwayTop:runway.getBoundingClientRect().top,pageBottom:query('[data-journey-current]').getBoundingClientRect().bottom,scrollY:win().scrollY,fontStatus:doc().fonts.status}));
   }
 }
 async function promote(path){const link=query('[data-journey-promote]');assert(link&&new URL(link.href).pathname===path,'Continue points to '+path);link.click();await until(()=>win().location.pathname===path&&settled(),'promote '+path);}

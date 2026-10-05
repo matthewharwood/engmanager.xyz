@@ -717,6 +717,20 @@ body[data-dragging="true"] {
     100% { opacity: 1; transform: scale(1) rotate(0); }
 }
 
+@media (max-width: 42rem), (hover: none), (pointer: coarse) {
+    /* A tall sheet's rotated corners and spring overshoot can exceed a
+     * phone's gutter. Grow into its final bounds throughout the entrance. */
+    .reveal-card-frame {
+        animation-name: reveal-card-in-mobile;
+        animation-timing-function: ease-out;
+    }
+}
+
+@keyframes reveal-card-in-mobile {
+    from { opacity: 0; transform: scale(0.62); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .reveal-card-frame,
     .reveal-card::backdrop {

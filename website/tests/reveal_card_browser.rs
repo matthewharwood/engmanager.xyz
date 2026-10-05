@@ -51,7 +51,7 @@ const query=selector=>document.querySelector(selector);
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(value,message)=>{if(!value)throw Error(message);checks.push(message);result.textContent='RUNNING\n'+checks.slice(-8).join('\n');};
 async function until(predicate,label){for(let i=0;i<200;i++){if(predicate())return;await delay(40);}throw Error('Timed out: '+label);}
-async function open(link){link.focus();link.click();await until(()=>query('#article-reveal')?.matches(':popover-open'),'unread article reveal opens');await until(()=>query('[data-reveal-continue]')===document.activeElement,'Read receives focus');return query('.reveal-card-frame');}
+async function open(link,onOpen=()=>{}){link.focus();link.click();onOpen(query('.reveal-card-frame'));await until(()=>query('#article-reveal')?.matches(':popover-open'),'unread article reveal opens');await until(()=>query('[data-reveal-continue]')===document.activeElement,'Read receives focus');return query('.reveal-card-frame');}
 async function closed(frame,canvas){query('.reveal-card-close').click();await until(()=>!query('#article-reveal').matches(':popover-open'),'close dismisses reveal');await delay(80);const draws=canvas.__clothProbe?.draws||0;await delay(180);assert((canvas.__clothProbe?.draws||0)===draws,'closed popover stops shader drawing');assert(frame.dataset.clothMotion!=='running','closed popover clears its running state');}
 try{
   await until(()=>document.readyState==='complete'&&window.__engNav?.ready&&!window.__engNav.busy&&query('.article-fluid-link'),'homepage and router ready');
@@ -97,11 +97,56 @@ try{
 
   window.__journeyViewport=320;await until(()=>innerWidth===320,'320px mobile viewport');
   const mobileLink=[...document.querySelectorAll('.article-fluid-link')].find(node=>!node.classList.contains('is-visited'));
-  const mobileFrame=await open(mobileLink),content=mobileFrame.querySelector('.reveal-card-content');
+  const entranceSamples=[],focusSamples=[];
+  const sampleEntrance=frame=>{
+    const bounds=frame.getBoundingClientRect(),popover=query('#article-reveal');
+    entranceSamples.push({left:bounds.left,right:bounds.right,width:innerWidth,
+      pageWidth:document.documentElement.scrollWidth,cardWidth:frame.scrollWidth,cardClient:frame.clientWidth,
+      popoverWidth:popover.scrollWidth,popoverClient:popover.clientWidth,
+      transform:getComputedStyle(frame).transform});
+  };
+  let entrance;
+  const mobileFrame=await open(mobileLink,frame=>{
+    const deadline=performance.now()+8000;
+    let observedOpen=false;
+    entrance=new Promise((resolve,reject)=>{
+      const sample=()=>{
+        const isOpen=query('#article-reveal').matches(':popover-open');
+        focusSamples.push({width:innerWidth,pageWidth:document.documentElement.scrollWidth});
+        if(isOpen&&!observedOpen){
+          const summary=query('[data-reveal-summary]');summary.textContent=(summary.textContent+' ').repeat(12);
+          observedOpen=true;
+        }
+        if(isOpen)sampleEntrance(frame);
+        if(observedOpen&&!frame.getAnimations().some(animation=>animation.playState==='running'||animation.pending))return resolve();
+        if(performance.now()>deadline)return reject(Error('Timed out: mobile reveal entrance'));
+        requestAnimationFrame(sample);
+      };
+      sample();
+    });
+  }),content=mobileFrame.querySelector('.reveal-card-content');
+  await entrance;
+  // Render every bounded entrance phase as well as sampling the initiating
+  // focus/click's real animation. This catches overshoot even on a busy host
+  // that presents only a few frames before the animation finishes.
+  const animation=mobileFrame.getAnimations().find(animation=>animation.effect.target===mobileFrame);
+  if(animation){
+    animation.pause();
+    for(let step=0;step<=32;step++){
+      animation.currentTime=animation.effect.getTiming().duration*step/32;
+      await new Promise(resolve=>requestAnimationFrame(resolve));sampleEntrance(mobileFrame);
+    }
+    animation.finish();
+  }
+  const outside=entranceSamples.find(sample=>sample.left<-1||sample.right>321);
+  assert(entranceSamples.length>0&&!outside,
+    'cloth modal fits a 320px mobile viewport throughout its entrance'+(outside?': '+JSON.stringify(outside):''));
+  assert(focusSamples.every(sample=>sample.pageWidth<=sample.width+1)&&
+    entranceSamples.every(sample=>sample.pageWidth<=sample.width+1&&
+    sample.cardWidth<=sample.cardClient+1&&sample.popoverWidth<=sample.popoverClient+1),
+    'initiating focus and cloth entrance preserve page, card, and popover horizontal bounds');
   const mobileRead=query('[data-reveal-continue]'),mobileClose=query('.reveal-card-close');
   assert(content&&!content.contains(mobileRead)&&!content.contains(mobileClose),'article copy scrolls independently of the fixed Close and Read controls');
-  const summary=query('[data-reveal-summary]');summary.textContent=(summary.textContent+' ').repeat(12);
-  await delay(650);
   const bounds=mobileFrame.getBoundingClientRect();
   assert(bounds.left>=-1&&bounds.right<=321,'cloth modal fits a 320px mobile viewport');
   assert(mobileFrame.scrollWidth<=mobileFrame.clientWidth+1,'shader overscan does not expand the interactive card scroll width');
