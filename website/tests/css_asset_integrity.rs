@@ -30,10 +30,9 @@ fn short_urls_cannot_alias_distinct_generation_bodies() {
 
 #[test]
 fn archived_files_and_current_dist_pass_the_same_build_gate() {
-    let root =
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("compat/css-generation-2061afa3");
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("compat");
     let dist = std::path::Path::new(env!("OUT_DIR"));
-    asset_integrity::verify_compatibility_assets(
+    asset_integrity::verify_compatibility_archives(
         &root,
         &dist.join("css-dist"),
         &dist.join("js-dist"),

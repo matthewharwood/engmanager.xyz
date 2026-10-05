@@ -1,5 +1,6 @@
 //! Verify legacy immutable bodies once, and reject short-URL hash collisions.
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -57,6 +58,31 @@ pub fn verify_compatibility_assets(root: &Path, css: &Path, js: &Path) -> Result
             let body = fs::read(current).map_err(|error| error.to_string())?;
             let current_digest = format!("{:x}", Sha256::digest(body));
             reject_short_hash_collision(url, &digest, &current_digest)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn verify_compatibility_archives(root: &Path, css: &Path, js: &Path) -> Result<(), String> {
+    let mut historical: BTreeMap<String, String> = BTreeMap::new();
+    for directory in ["css-generation-2061afa3", "css-generation-c65689df"] {
+        let archive = root.join(directory);
+        verify_compatibility_assets(&archive, css, js)?;
+        let manifest: serde_json::Value = serde_json::from_slice(
+            &fs::read(archive.join("manifest.json")).map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        for entry in manifest["assets"]
+            .as_array()
+            .expect("verified asset entries")
+        {
+            let url = entry["path"].as_str().expect("verified asset URL");
+            let digest = entry["sha256"].as_str().expect("verified asset SHA");
+            if let Some(previous) = historical.get(url) {
+                reject_short_hash_collision(url, previous, digest)?;
+            } else {
+                historical.insert(url.to_owned(), digest.to_owned());
+            }
         }
     }
     Ok(())

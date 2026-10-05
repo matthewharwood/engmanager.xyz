@@ -73,7 +73,7 @@ struct ComponentAssets {
 }
 
 fn main() {
-    println!("cargo:rerun-if-changed=compat/css-generation-2061afa3");
+    println!("cargo:rerun-if-changed=compat");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR not set by cargo"));
     let css_dist = reset_dist_dir(&out_dir, CSS_DIST_SUBDIR);
     let js_dist = reset_dist_dir(&out_dir, JS_DIST_SUBDIR);
@@ -123,12 +123,8 @@ fn main() {
             }
         }
     });
-    asset_integrity::verify_compatibility_assets(
-        Path::new("compat/css-generation-2061afa3"),
-        &css_dist,
-        &js_dist,
-    )
-    .unwrap_or_else(|error| panic!("compatibility asset integrity: {error}"));
+    asset_integrity::verify_compatibility_archives(Path::new("compat"), &css_dist, &js_dist)
+        .unwrap_or_else(|error| panic!("compatibility asset integrity: {error}"));
 }
 
 fn reset_dist_dir(out_dir: &Path, subdir: &str) -> PathBuf {
