@@ -157,6 +157,7 @@ async function checkWaveRules(){
   await doc().fonts.ready;
   win().scrollTo({top:0,behavior:'instant'});await scrollSettled();
   const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
+  assert(win().matchMedia('(hover: hover)').matches&&win().matchMedia('(pointer: fine)').matches,'the native mouse fixture exposes desktop hover and fine-pointer capabilities');
   const sample=(node,pseudo='::after')=>{const style=win().getComputedStyle(node,pseudo);return{state:style.animationPlayState,position:style.maskPosition,image:style.maskImage};};
   const check=async(node,hoverNode=node)=>{
     await hoverAt(5,win().innerHeight-5);

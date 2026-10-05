@@ -386,3 +386,14 @@ The profiling protocol now requires recording stable AC power on laptops.
   The release build, formatting and both required normal/reduced-motion Chrome
   journey fixtures pass for this adjustment. The AC-powered timing comparison
   remains pending the power setup recorded for the preceding cursor review.
+
+- The first Linux CI runs of these wave checks exposed a desktop-fixture
+  configuration gap: headless Chrome reported `(hover: none)` and
+  `(pointer: none)` while native mouse input correctly hovered the navigation.
+  The desktop Chrome harness now sets Blink's fine-pointer and hover
+  capabilities explicitly, and the journey fixture asserts both capabilities
+  before exercising the unchanged normal/reduced-motion wave assertions.
+  A native control against the frozen final release reproduces the failure
+  with no-device capabilities, animates with desktop capabilities, and stays
+  paused with reduced motion; all three retain their phase on pointer leave.
+  Logs and controls are preserved in `/tmp/engmanager-morning-pr-review`.

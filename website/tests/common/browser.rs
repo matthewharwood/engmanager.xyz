@@ -213,6 +213,11 @@ async fn dump_dom_with_options(
         "--window-size=1400,1200",
         "--remote-debugging-port=0",
     ]);
+    // These desktop fixtures send native CDP mouse input. Linux headless
+    // hosts can have no attached pointing device, so make that capability
+    // explicit instead of skipping hover assertions. Chromium's Blink
+    // PointerType::kPointerFineType is 4; HoverType::kHoverHoverType is 2.
+    command.arg("--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2");
     if webgl {
         command.args(["--use-angle=swiftshader", "--enable-unsafe-swiftshader"]);
     } else {
