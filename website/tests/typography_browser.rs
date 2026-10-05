@@ -130,8 +130,13 @@ try{
  assert(posterHeading&&win().getComputedStyle(posterHeading).fontFamily.includes('PP Eiko'),'journey poster inherits the decoded theme face');
  await win().__engNav.navigate('/feed',{source:'reveal'});
  await layout();feedTitleFonts('retained feed after soft navigation');
- await until(()=>doc().querySelector('.journey-previous .journey-preview')?.contentDocument?.documentElement?.dataset.fontTheme==='luxury','previous preview font');
- assert(true,'the retained previous-page preview uses the same decoded theme face');
+ const resumeTab=doc().querySelector('[data-journey-previous]');
+ assert(resumeTab&&!resumeTab.querySelector('iframe'),'the previous-page tab uses text without an extra font-decoding document');
+ resumeTab.querySelector('[data-journey-resume]').click();
+ await until(()=>win().location.pathname==='/coach'&&!win().__engNav.busy,'resume retained coaching');
+ assert(root().dataset.fontTheme==='luxury'&&win().getComputedStyle(doc().querySelector('.coach-reader-text')).fontFamily.includes('PP Eiko'),'resuming the retained page uses the same decoded theme face');
+ assert(win().__fontRequests.length===0,'the resume tab and retained page do not download cached theme fonts again');
+ await win().__engNav.navigate('/feed',{source:'reveal'});await layout();
  for(const width of [320,390,1200]){await resizeFeed(width);feedTitleFonts(width+'px feed');}
  const thresholdTitle=doc().querySelector('.article-fluid-link[data-slug="big-personality"] .article-fluid-svg');
  assert(thresholdTitle?.classList.contains('is-too-small'),'long title uses the readable HTML fallback at desktop width');

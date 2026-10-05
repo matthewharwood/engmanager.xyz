@@ -327,7 +327,7 @@ async fn dump_dom_with_options(
             );
         }
         let expression = if Instant::now() < deadline {
-            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyViewport ? {viewport:window.__journeyViewport} : window.__journeyGesture ? {gesture:window.__journeyGesture} : window.__journeyKey ? {key:window.__journeyKey} : null"
+            "document.body?.dataset.testResult ? {html:document.documentElement.outerHTML} : window.__journeyViewport ? {viewport:window.__journeyViewport} : window.__journeyPointer ? {pointer:window.__journeyPointer} : window.__journeyGesture ? {gesture:window.__journeyGesture} : window.__journeyKey ? {key:window.__journeyKey} : null"
         } else {
             "({html:document.documentElement.outerHTML})"
         };
@@ -370,6 +370,22 @@ async fn dump_dom_with_options(
                 nonce as u32,
                 "Runtime.evaluate",
                 serde_json::json!({"expression":"delete window.__journeyViewport"}),
+            );
+        }
+        if let Some(pointer) = value.get("pointer") {
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Input.dispatchMouseEvent",
+                serde_json::json!({"type":"mouseMoved","x":pointer["x"],"y":pointer["y"]}),
+            );
+            cdp_command(
+                &mut socket,
+                &mut id,
+                nonce as u32,
+                "Runtime.evaluate",
+                serde_json::json!({"expression":"delete window.__journeyPointer"}),
             );
         }
         if let Some(gesture) = value.get("gesture") {

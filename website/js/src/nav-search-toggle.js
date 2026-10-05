@@ -11,6 +11,11 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
 // guard). The dialog contains keyboard focus and handles Escape.
 
 (() => {
+    // CSS owns the wave phase, including pausing without rewinding. Hidden
+    // documents stop it even if the pointer remains over the navigation.
+    const pauseWaves = () => document.documentElement.toggleAttribute('data-wave-paused', document.hidden);
+    pauseWaves();
+    document.addEventListener('visibilitychange', pauseWaves);
     // Active instance: { nav, toggle, overlay, close, isOpen() } — null on pages
     // without a search toggle.
     let current = null;

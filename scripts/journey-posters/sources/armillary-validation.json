@@ -1,0 +1,213 @@
+{
+  "source": "Original procedural geometry: rebuild_armillary.py",
+  "copyright": "A Little Perspective \u2014 original marble armillary for engmanager.xyz, 2026. Authored in Blender: a faceted stone globe, four carved orbital bands, a polar spindle and a turned museum plinth. No third-party geometry. Shared honed ivory material, studio and vertex cavity shading from the journey series.",
+  "intentional_closed_components": {
+    "Faceted carved globe": {
+      "vertices": 15360,
+      "faces": 15362,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        15360
+      ],
+      "signed_volume": 1.0606056047466585
+    },
+    "Carved orbital band 1": {
+      "vertices": 6144,
+      "faces": 6144,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6144
+      ],
+      "signed_volume": 0.02415811479806441
+    },
+    "Carved orbital band 2": {
+      "vertices": 6144,
+      "faces": 6144,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6144
+      ],
+      "signed_volume": 0.04080789287102681
+    },
+    "Carved orbital band 3": {
+      "vertices": 6144,
+      "faces": 6144,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6144
+      ],
+      "signed_volume": 0.019825812080968824
+    },
+    "Carved orbital band 4": {
+      "vertices": 6144,
+      "faces": 6144,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        6144
+      ],
+      "signed_volume": 0.012882085410882326
+    },
+    "Polar stone spindle": {
+      "vertices": 1920,
+      "faces": 1730,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        1920
+      ],
+      "signed_volume": 0.017344283528817263
+    },
+    "Turned foot": {
+      "vertices": 1920,
+      "faces": 1730,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        1920
+      ],
+      "signed_volume": 0.01300048818765835
+    },
+    "Upper plinth bevel": {
+      "vertices": 1920,
+      "faces": 1730,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        1920
+      ],
+      "signed_volume": 0.03491213061284006
+    },
+    "Museum plinth": {
+      "vertices": 1920,
+      "faces": 1730,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        1920
+      ],
+      "signed_volume": 0.08428837823948171
+    }
+  },
+  "simplified_closed_components": {
+    "Faceted carved globe": {
+      "vertices": 5838,
+      "faces": 9741,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        5838
+      ],
+      "signed_volume": 1.0605636061250874
+    },
+    "Carved orbital band 1": {
+      "vertices": 921,
+      "faces": 1762,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        921
+      ],
+      "signed_volume": 0.024075241551920305
+    },
+    "Carved orbital band 2": {
+      "vertices": 921,
+      "faces": 1753,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        921
+      ],
+      "signed_volume": 0.04067512634048981
+    },
+    "Carved orbital band 3": {
+      "vertices": 921,
+      "faces": 1753,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        921
+      ],
+      "signed_volume": 0.01966412432818463
+    },
+    "Carved orbital band 4": {
+      "vertices": 921,
+      "faces": 1752,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        921
+      ],
+      "signed_volume": 0.012728655918328263
+    },
+    "Polar stone spindle": {
+      "vertices": 730,
+      "faces": 1079,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        730
+      ],
+      "signed_volume": 0.017340571389748587
+    },
+    "Turned foot": {
+      "vertices": 730,
+      "faces": 1026,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        730
+      ],
+      "signed_volume": 0.012996685345792444
+    },
+    "Upper plinth bevel": {
+      "vertices": 730,
+      "faces": 1124,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        730
+      ],
+      "signed_volume": 0.034902395352521945
+    },
+    "Museum plinth": {
+      "vertices": 730,
+      "faces": 1118,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "island_vertex_counts": [
+        730
+      ],
+      "signed_volume": 0.08426513628106677
+    }
+  },
+  "export": {
+    "vertices": 12442,
+    "faces": 21108,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      5838,
+      921,
+      921,
+      921,
+      921,
+      730,
+      730,
+      730,
+      730
+    ],
+    "signed_volume": 1.3072115426331474
+  },
+  "linear_cavity": {
+    "minimum": 0.6499999761581421,
+    "mean": 0.969089150428772,
+    "maximum": 1.0
+  },
+  "source_preserved": true,
+  "export_simplified_separately": true
+}

@@ -1,0 +1,79 @@
+{
+  "review_date": "2026-10-05",
+  "method": "Actual native Chrome WebGPU rendering with the exact served journey-poster-renderer.js, unchanged WGSL, back-face culling and exported GLBs. A local six-model gallery serializes mounts through the bounded decoder, waits for returned first-submission promises, fonts and decoded fallback images, and uses setRotation at 0, pi/4 and pi/2. Static images are hidden during GPU inspection.",
+  "browser": "Chrome/154.0.8037.93",
+  "gpu": [
+    {
+      "vendorId": 4203,
+      "deviceId": 0,
+      "vendorString": "Google Inc. (Apple)",
+      "deviceString": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Version 15.7.4 (Build 24G517))",
+      "driverVendor": "Apple",
+      "driverVersion": "15.7.4"
+    }
+  ],
+  "asset_sha256": {
+    "shop": {
+      "glb": "cf3e2c58bab76f49b1e710832023317cecdc895f8d33e33a1adf3e81d7f8659e",
+      "webp": "0b2a3bfd84346af67bd6bc352d447a07e625db5558f90ecefed7935004c8b038"
+    },
+    "coach": {
+      "glb": "7f277983f19e0e9df107ed8472fc30fd14cb7ac817032051873c38dd79a6d0ba",
+      "webp": "022f241eb473b2d1515eb6642751d57a0ef24f6e91696a4f2a86ff2ff89112e1"
+    },
+    "subscribe": {
+      "glb": "de423f4df1bb912bd2e05025aa52ae6076bebf2163d77bd70f0f326a662c1e6c",
+      "webp": "b56549ecafafafca4b4dacb14f15c801e90ff31d5a5244a5d2f63be273589339"
+    },
+    "feed": {
+      "glb": "3f931b2303128e2d5247e534dc054780fc5974e8cd7da32772f79785f7484d5a",
+      "webp": "a411426fc832e4cbf9261d12c52ecca4a39a46da6d38f913a5c30b82bc8902d9"
+    },
+    "article": {
+      "glb": "48b4282d95a53e9d57c890204946a83281be2cf233e5ff038ffa2cba9cff6e8b",
+      "webp": "938150d1035717e4e3110f4055b279288cb075780bed841b7536c94c1938733b"
+    },
+    "armillary": {
+      "glb": "621c51872f23d20c294cc8e2c60fdc6fcaa935692b95af7a04e9b1b709363279",
+      "webp": "981b2fcf3dcb84124bed9e3866e535b3247a6eb288aa7dd0a9e70d2b64797887"
+    }
+  },
+  "observations": {
+    "all_six_front_profile_three_quarter": "Closed, visible silhouettes with no missing front or side faces. The original armillary agrees with the existing series in ivory material, fine grain, cavity shading and shadows.",
+    "armillary": "Faceted globe, four distinct orbital bands, connected polar spindle and turned base remain visible in every angle.",
+    "reduced_motion": "All six native gallery models remain static after angle input and reach zero queued animation frames.",
+    "fallbacks": "Every WebP was decoded and inspected with its canvas hidden; gallery rendering stops scheduling frames.",
+    "renderer_disposal": "All six devices, buffers, textures, contexts and queued frames are released after gallery disposal in both motion modes.",
+    "newsletter_lifecycle": [
+      {
+        "label": "paused native orbit",
+        "submissions": 40
+      },
+      {
+        "label": "offscreen native orbit",
+        "submissions": 54
+      },
+      {
+        "label": "reduced native orbit",
+        "submissions": 55
+      },
+      {
+        "label": "revealed poster holds native orbit",
+        "submissions": 55
+      },
+      {
+        "label": "retained save-data",
+        "renderer": "poster"
+      },
+      {
+        "label": "retained unavailable-gpu",
+        "renderer": "poster"
+      }
+    ],
+    "production_csp": "The ordinary /subscribe page loads its GLB and the same-origin decoding Worker and submits actual native WGSL frames under the served production policy.",
+    "navigation_cleanup": "Leaving the newsletter destroys its GPU device. Resuming the retained DOM with Save-Data or unavailable GPU uses the decoded poster, hides orbit controls and resets sound to off.",
+    "gpu_errors": []
+  },
+  "evidence": "/tmp/engmanager-marble-subscribe-review/native: raw report, actual front/profile/three-quarter captures, fallback captures and desktop/mobile newsletter captures. Blender source studies are in the sibling blender directory.",
+  "scope": "Export appearance and native renderer/newsletter lifecycle proof. Integrated navigation, CSS Continue effects, performance budgets and the complete CI suite are verified separately."
+}

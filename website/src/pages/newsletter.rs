@@ -40,7 +40,7 @@ pub fn page(status: Option<&str>) -> String {
         search_toggle: render_nav_search_toggle(),
         theme_picker: theme_picker(),
     });
-    let sculpture = armillary::render(asset_url("newsletter/sunburst.webp"));
+    let sculpture = armillary::render();
     let mut assets = Head::new();
     assets.add(&sculpture);
     assets.add_css("css/newsletter.css");

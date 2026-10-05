@@ -55,10 +55,6 @@
         margin-block: -2rem 2.25rem;
         padding-block: 0.75rem;
         padding-inline: 1rem;
-        background: color-mix(in oklab, var(--surface-1) 78%, transparent);
-        -webkit-backdrop-filter: saturate(180%) blur(14px);
-        backdrop-filter: saturate(180%) blur(14px);
-        border-block-end: 1px solid var(--border-subtle);
     }
 
     .site-nav-brand {

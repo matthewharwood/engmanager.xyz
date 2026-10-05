@@ -1,0 +1,34 @@
+{
+  "source": {
+    "vertices": 152635,
+    "faces": 152485,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      152635
+    ],
+    "signed_volume": 0.8613896561177795
+  },
+  "export": {
+    "vertices": 12975,
+    "faces": 24090,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "island_vertex_counts": [
+      12975
+    ],
+    "signed_volume": 0.8611669970799816
+  },
+  "provenance": "Original Blender sculpture for engmanager.xyz (2026), after God's right hand in Michelangelo's public-domain Creation of Adam. No reused 3D geometry. Reference and anatomical photograph credits: _docs/cursors/README.md.",
+  "anchor_vertex": 6384,
+  "cavity": {
+    "minimum": 0.7315754890441895,
+    "mean": 0.9805253744125366,
+    "maximum": 1.0
+  },
+  "asset": {
+    "bytes": 887940,
+    "sha256": "6e8118d79a26cb80823349d8d73853354230ce84fa44b07d7effa1253b6e0a5e",
+    "triangles": 25946
+  }
+}

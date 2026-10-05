@@ -418,6 +418,7 @@
         let needsResize = true;
         let needsRender = true;
         let progress = 0;
+        let rotation = null;
         let pixelWidth = 0;
         let pixelHeight = 0;
         let lastError;
@@ -570,8 +571,8 @@
                     if (needsResize) resize();
                     const aspect = pixelWidth / pixelHeight;
                     const fit = Math.min(0.88 / (model.height + model.radius * 0.09), 0.86 * aspect / model.radius);
-                    sceneData[0] = -0.30 + (staticMotion() ? 0 : progress * 1.05);
-                    sceneData[1] = -0.08;
+                    sceneData[0] = staticMotion() ? -0.30 : (rotation?.yaw ?? -0.30 + progress * 1.05);
+                    sceneData[1] = staticMotion() ? -0.08 : (rotation?.pitch ?? -0.08);
                     sceneData[4] = fit / aspect;
                     sceneData[5] = fit;
                     sceneData[8] = Math.cos(sceneData[0]); sceneData[9] = Math.sin(sceneData[0]);
@@ -647,6 +648,14 @@
                     const next = Math.min(1, Math.max(0, value));
                     if (progress === next) return;
                     progress = next;
+                    if (!staticMotion()) { needsRender = true; schedule(); }
+                },
+                setRotation(yaw, pitch = -0.08) {
+                    if (!Number.isFinite(yaw) || !Number.isFinite(pitch)) return;
+                    yaw %= 2 * Math.PI; pitch %= 2 * Math.PI;
+                    if (rotation?.yaw === yaw && rotation.pitch === pitch) return;
+                    if (!rotation) rotation = { yaw, pitch };
+                    else { rotation.yaw = yaw; rotation.pitch = pitch; }
                     if (!staticMotion()) { needsRender = true; schedule(); }
                 },
                 destroy,

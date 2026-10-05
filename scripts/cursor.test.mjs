@@ -216,6 +216,21 @@ test('unsupported GPU, accessibility preferences, data saving, and non-homepages
   }
 });
 
+test('the exposed journey curtain hides the mouse sculpture and stops its frames until dismissed', async () => {
+  const page = browser();
+  page.pointer(); await page.tick(10);
+  assert.equal(page.active(), true);
+  page.window.dispatchEvent({type: 'eng:journeyexposure', detail: {active: true}});
+  assert.equal(page.active(), false);
+  assert.equal(page.frames.size, 0);
+  const draws = page.renderers[0].renders.length;
+  page.pointer(); await page.tick(30);
+  assert.equal(page.renderers[0].renders.length, draws);
+  page.window.dispatchEvent({type: 'eng:journeyexposure', detail: {active: false}});
+  await page.tick(2);
+  assert.equal(page.active(), true);
+});
+
 test('model loading is lazy and native cursor remains until the first successful frame', async () => {
   const creation = deferred(), page = browser({creation});
   assert.equal(page.calls.length, 0);

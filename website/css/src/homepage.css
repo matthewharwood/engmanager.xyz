@@ -431,7 +431,8 @@ body[data-dragging="true"] {
 }
 
 .resume-strike {
-    text-decoration: line-through;
+    text-decoration: line-through wavy;
+    text-decoration-thickness: 1px;
     color: var(--ctp-subtext0);
 }
 
@@ -1189,24 +1190,15 @@ body[data-dragging="true"] .marquee-track {
     transform: scale(1) rotate(0);
 }
 
-/* Strike-through bar that scales in horizontally over the fluid SVG
- * title when the article's been visited. Painted in the accent
- * (same color as the title text) with a chunky white halo around it
- * via box-shadow so it reads as a sticker laid on top of the title
- * rather than a knock-out through it. */
+/* The shared sine stroke crosses both the SVG and minimum-size HTML title.
+ * The wrapper owns the first-read sweep; its child owns the paused hover
+ * timeline so one animation cannot replace the other. */
 .article-strike {
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 0;
     inset-inline-end: 0;
-    block-size: var(--title-strike-size);
-    /* Strike in the high-contrast text color so it stays visible across
-     * every theme. The SVG title fills with --accent (currentColor), so
-     * pinning the strike to that color makes them merge — text-1 keeps
-     * them distinct. Halo in the page bg knockouts the title text
-     * underneath, giving the sticker effect. */
-    background: var(--text-1);
-    box-shadow: 0 0 0 var(--title-strike-halo) var(--surface-1);
+    block-size: 18px;
     transform: translateY(-50%) scaleX(0);
     transform-origin: left center;
     pointer-events: none;
@@ -1216,6 +1208,15 @@ body[data-dragging="true"] .marquee-track {
      * View Transitions can't trigger a stale snapshot → live reveal
      * regression where the strike blinks in and then animates back
      * to zero (the bug this comment exists to fix). */
+}
+
+.article-fluid-link .article-strike::after {
+    inset-block-end: 0;
+    background: var(--text-1);
+    /* Keep a halo along the curve to separate the thin stroke from
+     * headline glyphs, without restoring the old rectangular bar. */
+    filter: drop-shadow(0 var(--title-strike-halo) 0 var(--surface-1))
+        drop-shadow(0 calc(-1 * var(--title-strike-halo)) 0 var(--surface-1));
 }
 
 @media (max-width: 42rem) {
@@ -1304,9 +1305,8 @@ body[data-dragging="true"] .marquee-track {
     cursor: grabbing;
 }
 
-/* Bottom-LEFT avatar popover trigger + #bio anchored popover. Moved
- * to the left edge so the right side belongs to the search marker +
- * mobile quick-actions FAB. */
+/* The accessible bio trigger rests bottom-left without motion enhancement.
+ * Its viewport-bounded foreground orbit is independent of document scrolling. */
 .avatar-button {
     position: fixed;
     inset-block-end: 1rem;
@@ -1316,10 +1316,18 @@ body[data-dragging="true"] .marquee-track {
     border: none;
     background: transparent;
     cursor: pointer;
-    z-index: 10;
+    z-index: 90;
     line-height: 0;
     anchor-name: --avatar;
 }
+
+.homepage .avatar-button[data-avatar-floating] {
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inset-block-end: auto;
+    inset-inline-end: auto;
+}
+.avatar-button[data-avatar-moving] { will-change: transform; }
 
 .avatar-button:focus-visible {
     outline: 2px solid #5b21b6;
@@ -1337,16 +1345,20 @@ body[data-dragging="true"] .marquee-track {
 
 #bio {
     position: fixed;
+    box-sizing: border-box;
     top: auto;
     right: auto;
     left: 4rem;
     bottom: 4rem;
     margin: 0;
     width: max-content;
-    max-width: 26rem;
+    max-width: min(26rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
     height: auto;
     position-anchor: --avatar;
     position-area: top right;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline, --bio-viewport;
     padding: 1.25rem 1.5rem;
     border: var(--border) solid var(--ctp-surface0);
     border-radius: var(--radius-box);
@@ -1355,12 +1367,23 @@ body[data-dragging="true"] .marquee-track {
     box-shadow: var(--surface-shadow);
 }
 
+@position-try --bio-viewport {
+    position-area: none;
+    inset: 1rem;
+    margin: auto;
+}
+
 #bio::backdrop {
     background: transparent;
 }
 
 #bio .resume {
     margin-block-start: 0;
+}
+
+#bio .resume-line {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 /* Only a successfully rendered mouse cursor may suppress the native one. */

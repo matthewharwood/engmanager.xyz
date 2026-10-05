@@ -1,4 +1,83 @@
 /* Navigation control styles; structural layout lives in critical.css. */
+/* Two seamless 24px sine periods: 1px stroke, 16px crest-to-trough. Masks
+ * inherit each theme's separator color without introducing SVG filters.
+ * Paused CSS timelines retain their exact phase between hover sessions. */
+:root {
+    --rule-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='18' viewBox='0 0 48 18'%3E%3Cpath d='M0 9C4 -1.667 8 -1.667 12 9S20 19.667 24 9S32 -1.667 36 9S44 19.667 48 9' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E");
+    --glass-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='18' viewBox='0 0 48 18'%3E%3Cpath d='M0 9C4 -1.667 8 -1.667 12 9S20 19.667 24 9S32 -1.667 36 9S44 19.667 48 9V0H0Z'/%3E%3C/svg%3E");
+}
+
+.site-nav::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 0 -9px;
+    pointer-events: none;
+    background: color-mix(in oklab, var(--surface-1) 78%, transparent);
+    backdrop-filter: saturate(180%) blur(14px);
+    mask-image: linear-gradient(black, black), var(--glass-wave);
+    mask-size: 100% calc(100% - 18px), 48px 18px;
+    mask-position: left top, 0 bottom;
+    mask-repeat: no-repeat, repeat-x;
+    animation: glass-wave-drift 8s linear infinite paused;
+}
+
+.site-nav::after,
+.article-meta::after,
+.article-toc-list::after,
+.article-strike::after,
+hr::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -9px;
+    block-size: 18px;
+    background: var(--ctp-surface0, var(--border-subtle));
+    mask-image: var(--rule-wave);
+    mask-size: 48px 18px;
+    mask-repeat: repeat-x;
+    mask-position: 0 0;
+    animation: rule-wave-drift 8s linear infinite paused;
+}
+
+.site-nav::after { background: var(--border-subtle); }
+.article-toc-list::after { inset-block-end: -25px; }
+hr { position: relative; block-size: 18px; border: 0; overflow: hidden; }
+hr::after { inset-block-end: 0; }
+
+@keyframes rule-wave-drift {
+    to { mask-position: 48px 0; }
+}
+@keyframes glass-wave-drift {
+    to { mask-position: left top, 48px bottom; }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .site-nav:hover::before,
+    .site-nav:hover::after,
+    .article-meta:hover::after,
+    .article-toc-list:hover::after,
+    .article-toc-list:has(+ .article-meta-tools:hover)::after,
+    .article-fluid-link.is-visited:hover .article-strike::after,
+    hr:hover::after,
+    :hover + hr::after {
+        animation-play-state: running;
+    }
+}
+
+html[data-wave-paused] :is(.site-nav, .article-meta, .article-toc-list, .article-strike, hr)::after,
+html[data-wave-paused] .site-nav::before,
+html[data-journey-loading] :is(.site-nav, .article-meta, .article-toc-list, .article-strike, hr)::after,
+html[data-journey-loading] .site-nav::before,
+.journey-revealing :is(.site-nav, .article-meta, .article-toc-list, .article-strike, hr)::after,
+.journey-revealing .site-nav::before {
+    animation-play-state: paused;
+}
+
+@media print {
+    .article-meta::after, .article-toc-list::after, .article-strike::after, hr::after { animation: none; }
+}
+
 .site-nav-newsletter {
     display: inline-grid;
     place-items: center;

@@ -59,9 +59,8 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
             css: doc.querySelector('meta[name="eng-css-generation"]')?.content,
             bodyClass: doc.body.className, nextUrl: page.dataset.engNext,
             assets: assetTags(doc).map((tag) => tag.cloneNode(true)),
-            inlineStyles: [...doc.head.querySelectorAll(cssSelector('style'))].map((tag) => tag.cloneNode(true)),
             metadata: [...doc.head.querySelectorAll(META)].map((tag) => tag.cloneNode(true)),
-            configs, scroll: 0, width: innerWidth, height: innerHeight, focus: null,
+            configs, scroll: 0, focus: null,
         };
     }
 
@@ -79,8 +78,6 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
     function remember() {
         current.scroll = scrollY;
         current.url = location.href;
-        current.width = innerWidth;
-        current.height = innerHeight;
         current.focus = current.page.contains(document.activeElement) ? document.activeElement : null;
         writeState(true, current);
     }
@@ -204,104 +201,6 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         return rec;
     }
 
-    // Build the resume snapshot once, inside its script-free sandbox. The old
-    // path cloned into a temporary document, serialized the entire page, then
-    // parsed and laid it out a second time immediately after every handoff.
-    function preview(rec, scroll = 0) {
-        const iframe = document.createElement('iframe');
-        const cancelled = new Set();
-        iframe._dispose = () => { for (const finish of [...cancelled]) finish(); cancelled.clear(); };
-        iframe.className = cssClasses('journey-preview');
-        iframe.setAttribute('sandbox', 'allow-same-origin');
-        iframe.setAttribute('tabindex', '-1');
-        iframe.setAttribute('aria-hidden', 'true');
-        iframe.title = `Preview of ${rec.title}`;
-        function idlePopulation() {
-            return new Promise((resolve) => {
-                let idle = 0, retry = 0;
-                const finish = (ready = false) => {
-                    if (idle) cancelIdleCallback(idle);
-                    clearTimeout(retry); cancelled.delete(finish); resolve(ready);
-                };
-                function run(deadline) {
-                    idle = 0;
-                    if (!iframe.isConnected) { finish(); return; }
-                    if (nav.busy || revealExposure || overlayActive || document.hidden || (deadline && deadline.timeRemaining() < 10)) {
-                        retry = setTimeout(schedule, 120); return;
-                    }
-                    finish(true);
-                }
-                function schedule() {
-                    retry = 0;
-                    if (window.requestIdleCallback) idle = requestIdleCallback(run);
-                    else retry = setTimeout(() => run(null), 32);
-                }
-                cancelled.add(finish); schedule();
-            });
-        }
-        iframe.addEventListener('load', async () => {
-            if (!iframe.isConnected || !await idlePopulation()) return;
-            try {
-                const doc = iframe.contentDocument;
-                const base = doc.createElement('base'); base.href = rec.url; doc.head.append(base);
-                doc.title = rec.title;
-                doc.head.append(...rec.inlineStyles.map((tag) => tag.cloneNode(true)));
-                const sheets = [];
-                for (const tag of rec.assets) if (tag.tagName === 'LINK') {
-                    const link = tag.cloneNode(true);
-                    link.media = 'all'; link.removeAttribute('onload');
-                    sheets.push(new Promise((resolve) => {
-                        const finish = () => { clearTimeout(timer); cancelled.delete(finish); link.onload = link.onerror = null; resolve(); };
-                        const timer = setTimeout(finish, 5000);
-                        cancelled.add(finish); link.onload = link.onerror = finish;
-                    }));
-                    doc.head.append(link);
-                }
-                const theme = document.documentElement.getAttribute('data-theme');
-                if (theme) doc.documentElement.setAttribute('data-theme', theme);
-                const css = doc.createElement('style');
-                css.textContent = 'html{scroll-behavior:auto!important}body{pointer-events:none!important}*{animation:none!important;transition:none!important;will-change:auto!important;caret-color:transparent!important}.liquid-title{transform:none!important}::-webkit-scrollbar{display:none}.shop-card-meta{opacity:1!important;transform:none!important}[data-journey-current]{box-shadow:none!important}';
-                doc.head.append(css);
-                await Promise.all(sheets);
-                if (!iframe.isConnected || !await idlePopulation()) return;
-                // Reuse decoded faces before the snapshot enters layout. An
-                // unstyled body followed by stylesheet/font/scroll changes
-                // paints the thumbnail repeatedly while its assets settle.
-                window.__engTypography?.syncDocument(doc);
-                doc.body.className = rec.bodyClass;
-                const copy = rec.page.cloneNode(true);
-                // A resume preview has no interactive overlays. Excluding the
-                // hidden receipt/search/product trees also keeps it small.
-                copy.querySelectorAll(cssSelector('script,iframe,object,embed,audio,video,dialog,[popover],[role="dialog"][aria-modal="true"],[data-journey-fallback]')).forEach((node) => node.remove());
-                copy.querySelectorAll(cssSelector('[autofocus]')).forEach((node) => node.removeAttribute('autofocus'));
-                doc.body.append(copy);
-                // CSS animation:none does not stop SVG's own timeline. Keep
-                // the full authored snapshot, but stop its decorative SMIL
-                // filters from repainting the thumbnail every display frame.
-                doc.querySelectorAll(cssSelector('svg')).forEach((svg) => svg.pauseAnimations?.());
-                iframe.contentWindow.scrollTo(0, scroll);
-                await doc.fonts?.ready;
-                if (!iframe.isConnected) return;
-                iframe.contentWindow.scrollTo(0, scroll);
-                const viewport = iframe.contentWindow;
-                const images = [...doc.images].filter((image) => {
-                    const rect = image.getBoundingClientRect();
-                    return rect.width > 0 && rect.height > 0 && rect.bottom > 0
-                        && rect.top < viewport.innerHeight && rect.right > 0 && rect.left < viewport.innerWidth;
-                });
-                await Promise.all(images.map((image) => {
-                    image.loading = 'eager'; image.fetchPriority = 'low';
-                    return image.decode?.().catch(() => {}) || Promise.resolve();
-                }));
-                if (iframe.isConnected) iframe.dataset.previewReady = 'true';
-            } catch { /* A resume button remains useful if the optional snapshot fails. */ }
-        }, { once: true });
-        // Inline handlers on the cloned nodes cannot run: allow-scripts is
-        // intentionally absent. Scripts/embeds/forms never activate here.
-        iframe.srcdoc = '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>';
-        return iframe;
-    }
-
     // A slow image must not be mistaken for a rendered destination. Actual
     // decode errors settle to the page's native fallback; a hung request keeps
     // the poster up until the normal hard-navigation recovery takes over.
@@ -422,7 +321,17 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         const promote = document.createElement('a');
         promote.className = cssClasses('journey-promote'); promote.href = url;
         promote.dataset.journeyPromote = '';
-        promote.textContent = `Continue to ${label(kind)} ↗`;
+        const actionLabel = `Continue to ${label(kind)} ↗`;
+        promote.setAttribute('aria-label', actionLabel);
+        const text = document.createElement('span'); text.className = cssClasses('journey-promote-text');
+        const plain = document.createElement('span'); plain.className = cssClasses('journey-promote-label');
+        plain.textContent = actionLabel;
+        const marquee = document.createElement('span'); marquee.className = cssClasses('journey-promote-marquee');
+        marquee.setAttribute('aria-hidden', 'true');
+        for (let copy = 0; copy < 2; copy++) {
+            const item = document.createElement('span'); item.textContent = actionLabel; marquee.append(item);
+        }
+        text.append(plain, marquee); promote.append(text);
         promote.addEventListener('click', (event) => {
             if (modified(event)) return;
             if (promote.hasAttribute('data-hard-nav')) return;
@@ -711,7 +620,6 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
     }
 
     function removePreviousCard() {
-        previousCard?._dispose?.();
         previousCard?.remove(); previousCard = null;
     }
 
@@ -732,42 +640,16 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         const resume = document.createElement('button');
         resume.type = 'button'; resume.className = cssClasses('journey-resume'); resume.dataset.journeyResume = '';
         resume.setAttribute('aria-label', `Resume ${rec.title} where you left off`);
-        const viewport = document.createElement('span'); viewport.className = cssClasses('journey-previous-viewport'); viewport.inert = true;
-        // The small semantic card is immediate. Its optional full-page snapshot
-        // waits for idle time, away from the poster fade and first input frame.
-        let thumbnail, resize, idle = 0, retry = 0, disposed = false;
-        function hydrate(deadline) {
-            idle = 0;
-            if (disposed || !card.isConnected) return;
-            if (nav.busy || revealExposure || overlayActive || document.hidden || (deadline && deadline.timeRemaining() < 10)) {
-                retry = setTimeout(schedule, 120);
-                return;
-            }
-            thumbnail = preview(rec, rec.scroll);
-            thumbnail.style.width = `${rec.width}px`; thumbnail.style.height = `${rec.height}px`;
-            // Set the captured viewport and thumbnail transform together,
-            // before attachment. CSS zoom changes an iframe's internal CSS
-            // viewport in Chrome and would alter its typography and scroll.
-            thumbnail.style.transform = `scale(${viewport.clientWidth / rec.width})`;
-            viewport.append(thumbnail);
-            resize = new ResizeObserver(() => thumbnail.style.transform = `scale(${viewport.clientWidth / rec.width})`);
-            resize.observe(viewport);
-        }
-        function schedule() {
-            retry = 0;
-            if (disposed) return;
-            if (window.requestIdleCallback) idle = requestIdleCallback(hydrate);
-            else retry = setTimeout(() => hydrate(null), 32);
-        }
-        card._dispose = () => {
-            disposed = true;
-            if (idle) cancelIdleCallback(idle);
-            clearTimeout(retry); resize?.disconnect(); thumbnail?._dispose?.();
-        };
-        const caption = document.createElement('span'); caption.className = cssClasses('journey-previous-caption');
-        const name = document.createElement('strong'); name.textContent = rec.title.replace(/\s*[·|]\s*ENGMANAGER\.XYZ.*$/i, '');
-        const hint = document.createElement('span'); hint.textContent = '↖ Resume where you left off';
-        caption.append(name, hint); resume.append(viewport, caption);
+        const article = rec.page.querySelector(cssSelector('[data-article-slug]'));
+        const slug = article?.dataset.articleSlug;
+        const label = slug
+            ? slug.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+            : ({ feed: 'Feed', shop: 'Shop', coach: 'Coaching', subscribe: 'Newsletter' }[rec.kind]
+                || rec.title.replace(/\s*[·|]\s*ENGMANAGER\.XYZ.*$/i, ''));
+        const arrow = document.createElement('span'); arrow.textContent = '←'; arrow.setAttribute('aria-hidden', 'true');
+        const name = document.createElement('span'); name.className = cssClasses('journey-previous-title'); name.textContent = label;
+        resume.title = `Resume ${label} where you left off`;
+        resume.append(arrow, name);
         resume.addEventListener('click', () => { if (!card.dataset.swiped) navigate(rec.url, { source: 'resume', record: rec }); });
         const close = document.createElement('button'); close.type = 'button'; close.className = cssClasses('journey-dismiss'); close.dataset.journeyDismiss = '';
         close.setAttribute('aria-label', 'Dismiss previous page'); close.textContent = '×';
@@ -799,7 +681,6 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         }
         card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
         previousCard = card; runtime.append(card);
-        schedule();
         syncOverlay();
     }
 

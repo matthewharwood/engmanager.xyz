@@ -119,13 +119,13 @@
 
 /* Vercel-flavored author meta header. */
 .article-meta {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-block: 0.75rem 2.5rem;
     padding-block-end: 1.25rem;
-    border-block-end: 1px solid var(--ctp-surface0);
 }
 
 .article-meta-avatar {
@@ -667,7 +667,6 @@ html[data-article-reveal="running"]
 
 .article hr {
     border: none;
-    border-block-start: 1px solid var(--ctp-surface0);
     margin-block: 3rem;
 }
 
