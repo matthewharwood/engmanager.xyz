@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Bottom-right "to top" button. Mounted on every article page; CSS
 // hides it on mobile (mobile users have system-level tap-status-bar-
 // to-scroll-up). Becomes visible once the reader has scrolled past
@@ -10,11 +14,11 @@
 // singletons that lazily read the CURRENT button — registered once per
 // real page load, never stacked, and a no-op on pages without one.
 (() => {
-    let button = document.querySelector(".to-top");
+    let button = document.querySelector(cssSelector(".to-top"));
 
     const recompute = () => {
         if (!button) return;
-        button.classList.toggle("is-visible", window.scrollY > window.innerHeight);
+        button.classList.toggle(cssToken("is-visible"), window.scrollY > window.innerHeight);
     };
 
     let queued = false;
@@ -42,7 +46,7 @@
     recompute();
 
     window.__engNav?.onSwap?.((root) => {
-        button = root.querySelector(".to-top");
+        button = root.querySelector(cssSelector(".to-top"));
         bind();
         recompute();
     });

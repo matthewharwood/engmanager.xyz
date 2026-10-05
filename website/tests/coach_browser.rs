@@ -8,6 +8,8 @@
 //! Skips when none is found, unless `REQUIRE_BROWSER_TESTS=1` (set in CI),
 //! where a missing browser fails the run instead.
 
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use std::io::Read;

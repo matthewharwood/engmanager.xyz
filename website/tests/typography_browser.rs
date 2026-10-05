@@ -4,6 +4,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -52,7 +54,8 @@ window.fetch=async(url,options={})=>{
 };
 </script>"#;
 
-const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"></head><body>
+const FIXTURE: &str = css_html!(
+    r##"<!doctype html><html><head><meta charset="utf-8"></head><body>
 <pre id="result">Running typography checks</pre><iframe id="app" style="width:1200px;height:900px"></iframe>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
@@ -158,7 +161,8 @@ try{
  await layout();feedTitleFonts('mobile display recovery');
  result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nSTATE: '+JSON.stringify(root()?.dataset)+'\nSTATES: '+JSON.stringify(win()?.__fontStates)+'\nREQUESTS: '+JSON.stringify(win()?.__fontRequests)+'\nDISPLAY: '+JSON.stringify([...doc().fonts].map(face=>({family:face.family,status:face.status,weight:face.weight})))+'\nBOUNDS: '+window.__fallbackBounds+' -> '+doc().querySelector('svg.fluid-display-svg')?.getAttribute('viewBox')+'\nCHECKS: '+checks.join('\n');document.body.dataset.testResult='failed'}
-</script></body></html>"##;
+</script></body></html>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

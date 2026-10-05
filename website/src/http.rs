@@ -24,43 +24,29 @@ pub fn json_error(status: StatusCode, message: &str) -> Response {
     no_store((status, Json(json!({ "error": message }))))
 }
 
-// Cache-Control for HTML responses.
-//   max-age=60       → browser caches 1 min (so reload is snappy but fresh-ish)
-//   s-maxage=3600    → Cloudflare caches at edge for 1 hour
-//   stale-while-revalidate=86400 → CF can serve a day-old cached copy while
-//                                  re-fetching in the background
-// Cloudflare still needs a Cache Rule to opt HTML into edge caching, but
-// once enabled it will honor these s-maxage / SWR directives.
+// Successful HTML retains its original browser freshness horizon. Generated
+// application documents override shared-cache policy separately below.
 pub const HTML_CACHE_CONTROL: &str =
     "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
-
-// Cloudflare-specific cache policy stamped alongside HTML_CACHE_CONTROL:
-// same 1h edge horizon and 1-day SWR window, plus stale-if-error so the edge
-// can keep serving HTML for 3 days through an origin outage. Cache-Tag lets
-// a deploy purge all HTML at once without touching immutable assets.
 const DEFAULT_CDN_CACHE_CONTROL: &str =
     "max-age=3600, stale-while-revalidate=86400, stale-if-error=259200";
+
 const STALE_IF_ERROR_SECS: u32 = 259_200;
 
 const CLOUDFLARE_CDN_CACHE_CONTROL: HeaderName =
     HeaderName::from_static("cloudflare-cdn-cache-control");
 const CACHE_TAG: HeaderName = HeaderName::from_static("cache-tag");
 
-// Cache policy for HTML responses:
-// - Success (2xx) HTML with no handler-set Cache-Control gets the sitewide
-//   HTML_CACHE_CONTROL plus the Cloudflare pair (CDN cache control + the
-//   "html" Cache-Tag).
-// - Non-2xx HTML with no Cache-Control gets `no-store` — error pages must
-//   never be publicly cached (a 404 cached at the edge would shadow a real
-//   page for an hour).
-// - Success HTML where the handler set its own PUBLIC Cache-Control (e.g.
-//   the shop page) keeps that value byte-for-byte and additionally gains the
-//   Cloudflare pair, with the CDN max-age derived from the page's own
-//   s-maxage horizon. `no-store`/`no-cache` lifetimes are retained.
-// - Assessment and server error HTML also gain no-transform to prevent edge
-//   script injection, including when a payment-return policy was applied.
+// A fresh browser document and its exact content-addressed assets form a
+// coherent generation. Missing unarchived assets fail closed; soft navigation
+// checks generations before loading or promotion. Keep
+// ordinary browser freshness while preventing CDN storage of generated HTML.
+// Private/payment-return policies remain no-store.
+// Published assessment and standalone offline documents retain their own
+// policies. Assessment and server errors also prevent edge transformation.
 pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response {
     let personality_boundary = crate::pages::personality::is_boundary(req.uri().path());
+    let standalone_offline = req.uri().path() == "/offline.html";
     let stripe_return = req.uri().query().is_some_and(has_stripe_return_params);
     let mut response = next.run(req).await;
     if stripe_return {
@@ -90,7 +76,9 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
     }
 
     let is_success = response.status().is_success();
-    if personality_boundary
+    // The reduced public assessment article still uses generated application
+    // CSS, but shares the assessment marker that prohibits edge rewriting.
+    let prevent_transform = personality_boundary
         || response
             .extensions()
             .get::<crate::pages::personality::PrivateDocument>()
@@ -99,10 +87,59 @@ pub(crate) async fn html_cache_layer(req: Request<Body>, next: Next) -> Response
             .extensions()
             .get::<crate::pages::server_error::ServerErrorDocument>()
             .is_some()
-    {
+        || response
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| {
+                value
+                    .split(',')
+                    .any(|directive| directive.trim().eq_ignore_ascii_case("no-transform"))
+            });
+    let generated_document = !personality_boundary
+        || response
+            .extensions()
+            .get::<crate::pages::personality::PrivateDocument>()
+            .is_some();
+    if is_success && generated_document && !standalone_offline {
+        let cache_control = response
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or(HTML_CACHE_CONTROL)
+            .to_owned();
+        let policy = cache_control.to_ascii_lowercase();
+        if !policy.contains("no-store") && !policy.contains("private") {
+            let headers = response.headers_mut();
+            headers.insert(
+                header::CACHE_CONTROL,
+                if prevent_transform
+                    && !policy
+                        .split(',')
+                        .any(|directive| directive.trim() == "no-transform")
+                {
+                    HeaderValue::from_str(&format!("{cache_control}, no-transform"))
+                        .expect("extending the browser cache policy")
+                } else {
+                    HeaderValue::from_str(&cache_control).expect("existing browser cache policy")
+                },
+            );
+            headers.insert(
+                CLOUDFLARE_CDN_CACHE_CONTROL,
+                HeaderValue::from_static("no-store"),
+            );
+            headers.insert(
+                HeaderName::from_static("cdn-cache-control"),
+                HeaderValue::from_static("no-store"),
+            );
+            headers.remove(CACHE_TAG);
+            return response;
+        }
+    }
+    if prevent_transform {
         // Prevent edge HTML rewriting, including automatic analytics injection.
-        // The public introduction keeps the normal blog cache lifetime; private
-        // documents retain no-store. The response marker covers encoded slugs.
+        // Private documents retain no-store; published standalone documents
+        // retain their own policy. The response marker covers encoded slugs.
         let cache_control = response
             .headers()
             .get(header::CACHE_CONTROL)
@@ -323,7 +360,62 @@ pub(crate) async fn rum_handler(body: Bytes) -> Response {
 
 #[cfg(test)]
 mod tests {
-    use super::cdn_cache_control_for;
+    use super::{HTML_CACHE_CONTROL, cdn_cache_control_for, html_cache_layer};
+
+    #[tokio::test]
+    async fn generated_html_keeps_browser_horizons_and_blocks_cdn_storage() {
+        use axum::Router;
+        use axum::body::Body;
+        use axum::http::{HeaderValue, Request, header};
+        use axum::response::{Html, IntoResponse};
+        use axum::routing::get;
+        use tower::ServiceExt;
+
+        for browser_policy in [
+            None,
+            Some("public, max-age=300, s-maxage=86400, stale-while-revalidate=604800"),
+            Some("public, no-cache, max-age=0, must-revalidate"),
+            Some("public, max-age=60, no-transform"),
+        ] {
+            let router = Router::new()
+                .route(
+                    "/",
+                    get(move || async move {
+                        let mut response = Html("<!doctype html><p>Document</p>").into_response();
+                        if let Some(policy) = browser_policy {
+                            response
+                                .headers_mut()
+                                .insert(header::CACHE_CONTROL, HeaderValue::from_static(policy));
+                        }
+                        response.headers_mut().insert(
+                            "cdn-cache-control",
+                            HeaderValue::from_static("max-age=3600"),
+                        );
+                        response.headers_mut().insert(
+                            "cloudflare-cdn-cache-control",
+                            HeaderValue::from_static("max-age=3600"),
+                        );
+                        response
+                            .headers_mut()
+                            .insert("cache-tag", HeaderValue::from_static("html"));
+                        response
+                    }),
+                )
+                .layer(axum::middleware::from_fn(html_cache_layer));
+            let response = router
+                .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(
+                response.headers()[header::CACHE_CONTROL],
+                browser_policy.unwrap_or(HTML_CACHE_CONTROL)
+            );
+            for name in ["cdn-cache-control", "cloudflare-cdn-cache-control"] {
+                assert_eq!(response.headers()[name], "no-store");
+            }
+            assert!(!response.headers().contains_key("cache-tag"));
+        }
+    }
 
     // The shop page's own horizon must map onto the CDN header exactly:
     // s-maxage → max-age, SWR carried over, stale-if-error appended.

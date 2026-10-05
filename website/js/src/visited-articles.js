@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Persisted read-state + gacha-style reveal card for the homepage
 // article stack.
 //
@@ -64,9 +68,9 @@ const saveVisited = (set) => {
     // strike + checkmark are already in place at first paint.
     const hydrate = (root) => {
         const completed = new Set(window.__engReading?.snapshot?.().completed || []);
-        root.querySelectorAll(".article-fluid-link").forEach((link) => {
+        root.querySelectorAll(cssSelector(".article-fluid-link")).forEach((link) => {
             const slug = link.dataset.slug;
-            link.classList.toggle("is-visited", !!slug && (visited.has(slug) || completed.has(slug)));
+            link.classList.toggle(cssToken("is-visited"), !!slug && (visited.has(slug) || completed.has(slug)));
         });
     };
 
@@ -79,7 +83,7 @@ const saveVisited = (set) => {
     // -in article links are covered without re-binding, and re-inits
     // can never stack handlers.
     document.addEventListener("click", (event) => {
-        const link = event.target?.closest?.(".article-fluid-link");
+        const link = event.target?.closest?.(cssSelector(".article-fluid-link"));
         if (!link) return;
 
         const slug = link.dataset.slug;
@@ -100,14 +104,14 @@ const saveVisited = (set) => {
         ) {
             visited.add(slug);
             saveVisited(visited);
-            link.classList.add("is-visited");
+            link.classList.add(cssToken("is-visited"));
             return;
         }
 
         event.preventDefault();
         visited.add(slug);
         saveVisited(visited);
-        link.classList.add("is-visited", "is-visited-fresh");
+        link.classList.add(cssToken("is-visited"), cssToken("is-visited-fresh"));
 
         // Notifies the Broadcast Channel experience so other tabs
         // get the same strike-through in real time.
@@ -172,12 +176,12 @@ function openReveal(slug, data, href) {
     set("[data-reveal-date]", data.date || "");
     set("[data-reveal-summary]", data.summary || "");
 
-    const tagsEl = modal.querySelector("[data-reveal-tags]");
+    const tagsEl = modal.querySelector(cssSelector("[data-reveal-tags]"));
     if (tagsEl) {
         tagsEl.replaceChildren();
         (data.tags || []).forEach((tag) => {
             const chip = document.createElement("span");
-            chip.className = "reveal-card-tag";
+            chip.className = cssClasses("reveal-card-tag");
             const emoji = document.createElement("span");
             emoji.setAttribute("aria-hidden", "true");
             emoji.textContent = tag.emoji || "";
@@ -188,7 +192,7 @@ function openReveal(slug, data, href) {
         });
     }
 
-    const continueLink = modal.querySelector("[data-reveal-continue]");
+    const continueLink = modal.querySelector(cssSelector("[data-reveal-continue]"));
     if (continueLink) {
         continueLink.setAttribute("href", href || data.href || "#");
     }

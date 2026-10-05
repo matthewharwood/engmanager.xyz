@@ -11,6 +11,8 @@ use tokio::net::TcpListener;
 use tokio::sync::watch;
 use tracing_subscriber::EnvFilter;
 
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 pub mod assets;
 pub mod catalog;
 pub mod coaching;

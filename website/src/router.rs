@@ -483,14 +483,24 @@ mod tests {
         );
         assert_eq!(
             header_str(&response, "cloudflare-cdn-cache-control"),
-            Some("max-age=3600, stale-while-revalidate=86400, stale-if-error=259200")
+            Some("no-store")
         );
-        assert_eq!(header_str(&response, "cache-tag"), Some("html"));
+        assert_eq!(header_str(&response, "cdn-cache-control"), Some("no-store"));
+        assert!(header_str(&response, "cache-tag").is_none());
         assert_eq!(
             header_str(&response, "referrer-policy"),
             Some("no-referrer")
         );
         let body = body_string(response).await;
+        let generation = format!(
+            "<meta name=\"eng-css-generation\" content=\"{}\">",
+            crate::CSS_GENERATION
+        );
+        assert!(body.contains(&generation));
+        let generation_position = body.find(&generation).unwrap();
+        let stylesheet = body.find("/assets/css/article-newsletter.").unwrap();
+        assert!(generation_position < stylesheet);
+        assert!(!body.contains("<script>"));
         assert!(body.contains("data-personality-route=\"article\""));
         assert!(body.contains("Creating value and communicating value"));
         assert!(body.contains("/personality/prepare"));
@@ -508,6 +518,7 @@ mod tests {
         );
         assert_eq!(header_str(&encoded, "referrer-policy"), Some("no-referrer"));
         assert!(header_str(&encoded, "content-security-policy").is_some());
+        assert!(body_string(encoded).await.contains(&generation));
     }
 
     #[tokio::test]
@@ -730,9 +741,10 @@ mod tests {
         );
         assert_eq!(
             header_str(&response, "cloudflare-cdn-cache-control"),
-            Some("max-age=3600, stale-while-revalidate=86400, stale-if-error=259200")
+            Some("no-store")
         );
-        assert_eq!(header_str(&response, "cache-tag"), Some("html"));
+        assert!(header_str(&response, "cache-tag").is_none());
+        assert_eq!(header_str(&response, "cdn-cache-control"), Some("no-store"));
     }
 
     #[tokio::test]
@@ -817,6 +829,10 @@ mod tests {
             header_str(&response, "cache-control"),
             Some(HTML_CACHE_CONTROL)
         );
+        for name in ["cdn-cache-control", "cloudflare-cdn-cache-control"] {
+            assert_eq!(header_str(&response, name), Some("no-store"));
+        }
+        assert!(header_str(&response, "cache-tag").is_none());
         assert_eq!(header_str(&response, "x-frame-options"), Some("DENY"));
         assert!(
             header_str(&response, "content-security-policy-report-only")
@@ -824,6 +840,10 @@ mod tests {
             "CSP must allow the Google Calendar booking embed"
         );
         let body = body_string(response).await;
+        assert!(body.contains(&format!(
+            "<meta name=\"eng-css-generation\" content=\"{}\">",
+            crate::CSS_GENERATION
+        )));
         assert!(
             body.contains(r#"data-eng-config="__coach""#),
             "coach island missing"
@@ -854,22 +874,23 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn shop_host_serves_shop_markup_with_its_own_cdn_horizon() {
+    async fn shop_host_keeps_browser_freshness_with_a_coherent_class_map() {
         let router = test_router().await;
 
         let response = get(&router, SHOP_HOST, "/").await;
         assert_eq!(response.status(), StatusCode::OK);
-        // The shop page's handler-set Cache-Control stays byte-identical and
-        // gains the CDN pair derived from its OWN s-maxage horizon.
+        // Preserve the storefront's browser horizon while preventing edge
+        // storage; its document and exact hashed assets remain one generation.
         assert_eq!(
             header_str(&response, "cache-control"),
             Some("public, max-age=300, s-maxage=86400, stale-while-revalidate=604800")
         );
         assert_eq!(
             header_str(&response, "cloudflare-cdn-cache-control"),
-            Some("max-age=86400, stale-while-revalidate=604800, stale-if-error=259200")
+            Some("no-store")
         );
-        assert_eq!(header_str(&response, "cache-tag"), Some("html"));
+        assert_eq!(header_str(&response, "cdn-cache-control"), Some("no-store"));
+        assert!(header_str(&response, "cache-tag").is_none());
         let body = body_string(response).await;
         assert!(
             body.contains(r#"data-eng-config="__shopProducts""#),
@@ -879,6 +900,13 @@ mod tests {
         // Product deep links fall through to the shop SPA shell.
         let product = get(&router, SHOP_HOST, "/products/anything").await;
         assert_eq!(product.status(), StatusCode::OK);
+        assert_eq!(
+            header_str(&product, "cache-control"),
+            Some("public, max-age=300, s-maxage=86400, stale-while-revalidate=604800")
+        );
+        for name in ["cdn-cache-control", "cloudflare-cdn-cache-control"] {
+            assert_eq!(header_str(&product, name), Some("no-store"));
+        }
     }
 
     #[tokio::test]

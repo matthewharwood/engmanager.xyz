@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Trash-can drag-and-drop for homepage ephemera.
 //
 // Two surfaces feed the same bottom-right trash can:
@@ -30,7 +34,7 @@ let dvdState = null;
 function trashIdentity(original, type) {
     return type === "article"
         ? { type, key: original.dataset.slug }
-        : type === "chip" && original.classList.contains("chip-tag")
+        : type === "chip" && original.classList.contains(cssToken("chip-tag"))
           ? { type: "tag", key: original.dataset.chipId }
           : { type, key: original.dataset.chipId };
 }
@@ -101,7 +105,7 @@ function startChipDrag(event, chip) {
 
     const rect = chip.getBoundingClientRect();
     const ghost = chip.cloneNode(true);
-    ghost.classList.add("chip-ghost");
+    ghost.classList.add(cssToken("chip-ghost"));
     Object.assign(ghost.style, {
         position: "fixed",
         left: `${rect.left}px`,
@@ -138,7 +142,7 @@ function startArticleDrag(event, article, articleCheck) {
 
     const rect = article.getBoundingClientRect();
     const ghost = article.cloneNode(true);
-    ghost.classList.add("article-trash-ghost");
+    ghost.classList.add(cssToken("article-trash-ghost"));
     ghost.setAttribute("aria-hidden", "true");
     Object.assign(ghost.style, {
         position: "fixed",
@@ -176,7 +180,7 @@ function startDvdDrag(event) {
 
     const rect = logo.getBoundingClientRect();
     const ghost = logo.cloneNode(true);
-    ghost.classList.add("dvd-bouncer-ghost");
+    ghost.classList.add(cssToken("dvd-bouncer-ghost"));
     ghost.removeAttribute("data-dvd-bouncer");
     ghost.removeAttribute("data-caught");
     Object.assign(ghost.style, {
@@ -403,7 +407,7 @@ function hideChipCopies(original) {
 }
 
 function bumpTrashCounter() {
-    const countEl = document.querySelector("[data-trash-count]");
+    const countEl = document.querySelector(cssSelector("[data-trash-count]"));
     if (!countEl) return;
     const next = parseInt(countEl.textContent || "0", 10) + 1;
     countEl.textContent = String(next);
@@ -553,7 +557,7 @@ function initDvdBouncer() {
         raf: 0,
         paused: false,
         tone: 0,
-        exposed: document.body.classList.contains("journey-revealing"),
+        exposed: document.body.classList.contains(cssToken("journey-revealing")),
         observer: null,
     };
 
@@ -682,7 +686,7 @@ document.addEventListener("keydown", async (event) => {
     const completion = window.__engReadingCompletion?.snapshot();
     if (!completion?.active) return;
     const article = event.target.closest?.(ARTICLE_LINK_SELECTOR);
-    const chip = event.target.closest?.("[data-reading-completion-tags] .chip-tag");
+    const chip = event.target.closest?.(cssSelector("[data-reading-completion-tags] .chip-tag"));
     const original = article || chip;
     const type = article ? "article" : "chip";
     if (!original || original.dataset.trashed === "true" || original.dataset.trashPending === "true") return;
@@ -698,7 +702,7 @@ document.addEventListener("keydown", async (event) => {
     const rect = original.getBoundingClientRect();
     const ghost = original.cloneNode(true);
     ghost.setAttribute("aria-hidden", "true");
-    ghost.classList.add(article ? "article-trash-ghost" : "chip-ghost");
+    ghost.classList.add(article ? cssToken("article-trash-ghost") : cssToken("chip-ghost"));
     Object.assign(ghost.style, {
         position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`,
         width: `${rect.width}px`, height: `${rect.height}px`, margin: "0",
@@ -709,10 +713,10 @@ document.addEventListener("keydown", async (event) => {
     try {
         const consumed = await consume(ghost, trash, original, type);
         if (!consumed) return;
-        const root = document.querySelector("[data-journey-current]") || document;
-        const next = root.querySelector('.article-fluid-link:not([data-trashed])')
-            || root.querySelector('[data-reading-completion-tags] .chip-tag')
-            || root.querySelector('[data-reading-completion-reset]');
+        const root = document.querySelector(cssSelector("[data-journey-current]")) || document;
+        const next = root.querySelector(cssSelector('.article-fluid-link:not([data-trashed])'))
+            || root.querySelector(cssSelector('[data-reading-completion-tags] .chip-tag'))
+            || root.querySelector(cssSelector('[data-reading-completion-reset]'));
         next?.focus({ preventScroll: true });
     } catch {
         ghost.remove();
@@ -736,7 +740,7 @@ window.__engNav?.onBeforeSwap?.(() => {
         showOriginal(session.original);
         session.ghost.remove();
     }
-    document.querySelectorAll(".chip-ghost,.article-trash-ghost,.dvd-bouncer-ghost").forEach((ghost) => {
+    document.querySelectorAll(cssSelector(".chip-ghost,.article-trash-ghost,.dvd-bouncer-ghost")).forEach((ghost) => {
         ghost.getAnimations().forEach((animation) => animation.cancel());
         ghost.remove();
     });
@@ -758,7 +762,7 @@ document.addEventListener(
     "click",
     (event) => {
         if (!suppressNextArticleClick) return;
-        if (!event.target.closest?.(".article-fluid-link")) {
+        if (!event.target.closest?.(cssSelector(".article-fluid-link"))) {
             suppressNextArticleClick = false;
             return;
         }

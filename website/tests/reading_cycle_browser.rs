@@ -2,6 +2,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -20,7 +22,8 @@ impl Drop for ProxyTask {
     }
 }
 
-const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Reading cycle checks</title></head><body>
+const FIXTURE: &str = css_html!(
+    r##"<!doctype html><html><head><meta charset="utf-8"><title>Reading cycle checks</title></head><body>
 <pre id="result">RUNNING</pre><iframe id="app" title="Reading cycle under test" style="width:1200px;height:900px;border:0"></iframe>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
@@ -32,11 +35,17 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate,label){const deadline=performance.now()+12000;while(performance.now()<deadline){if(predicate())return;await delay(40);}throw new Error('Timed out: '+label);}
 async function hard(path){const old=doc();frame.src=path;await until(()=>doc()!==old&&win().location.pathname===path.split('?')[0]&&doc().readyState==='complete'&&settled(),'hard load '+path);}
 async function navigate(path){await win().__engNav.navigate(path);await until(()=>win().location.pathname===path&&settled(),'navigate '+path);}
-async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');const rect=runway.getBoundingClientRect();win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
+async function reveal(){const runway=query('[data-journey-runway]');assert(runway,'a next article or surface has a scroll runway');
+  // A viewport/font change can move the runway after navigation settles.
+  // Establish native font and ResizeObserver readiness before choosing the
+  // scroll destination; preserve the actual pointer hit assertion below.
+  const geometry=await stableGeometry([query('[data-journey-current]'),runway]);
+  const rect=runway.getBoundingClientRect();geometry.dispose();
+  win().scrollTo({top:win().scrollY+rect.top-win().innerHeight*.75,behavior:'instant'});await until(()=>visible(query('[data-journey-next][data-preview-ready]')),'scroll reveals a ready poster');
   if(query('[data-journey-current="feed"]')){
     assert(!visible(query('.trash'))&&!visible(query('.avatar-button')),'feed controls yield to the revealed article cover');
     const link=query('[data-journey-promote]'),box=link.getBoundingClientRect(),hit=doc().elementFromPoint(box.left+12,box.top+box.height/2);
-    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile');
+    assert(hit?.closest('[data-journey-promote]')===link,'the left side of Continue remains unobscured on mobile: '+JSON.stringify({box,hit:hit?.outerHTML.slice(0,300),inert:!!link.closest('[inert]'),runwayTop:runway.getBoundingClientRect().top,pageBottom:query('[data-journey-current]').getBoundingClientRect().bottom,scrollY:win().scrollY,fontStatus:doc().fonts.status}));
   }
 }
 async function promote(path){const link=query('[data-journey-promote]');assert(link&&new URL(link.href).pathname===path,'Continue points to '+path);link.click();await until(()=>win().location.pathname===path&&settled(),'promote '+path);}
@@ -174,7 +183,8 @@ try{
   assert([...doc().querySelectorAll('.article-fluid-link,.marquee .chip-tag')].every(node=>node.dataset.trashed!=='true')&&query('[data-trash-count]').textContent==='0'&&query('[data-journey-curtain]'),'restart restores rows, tag copies, bin and rag');
   result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nURL: '+win()?.location.href+'\nREADING: '+JSON.stringify(win()?.__engReading?.snapshot())+'\nCLEANUP: '+JSON.stringify(win()?.__engReadingCompletion?.snapshot())+'\nRECENT CHECKS:\n'+checks.slice(-12).join('\n');document.body.dataset.testResult='failed';}
-</script></body></html>"##;
+</script></body></html>"##
+);
 
 #[derive(Clone)]
 struct Proxy {

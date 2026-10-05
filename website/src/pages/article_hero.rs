@@ -94,9 +94,9 @@ pub fn render(slug: &str) -> HtmlFragment {
         .expect("article hero missing");
     let poster = HtmlFragment::new(spec.poster.to_owned());
     view! {
-        <figure class="article-hero-scene" data-article-hero=spec.slug role="img" aria-label=spec.description>
-            <svg class="article-hero-poster" viewBox="0 0 600 340" aria-hidden="true" focusable="false">{ poster }</svg>
-            <canvas class="article-hero-canvas" aria-hidden="true"></canvas>
+        <figure class={ classes!("article-hero-scene") } data-article-hero=spec.slug role="img" aria-label=spec.description>
+            <svg class={ classes!("article-hero-poster") } viewBox="0 0 600 340" aria-hidden="true" focusable="false">{ poster }</svg>
+            <canvas class={ classes!("article-hero-canvas") } aria-hidden="true"></canvas>
             <figcaption aria-hidden="true"><span>"FIELD STUDY / "{ slug }</span><strong>{ spec.name }</strong></figcaption>
         </figure>
     }

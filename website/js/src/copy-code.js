@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Injects a small "Copy" button into every <pre> code block on article pages,
 // then wires it up to copy the code to the clipboard via the Clipboard API.
 //
@@ -18,7 +22,7 @@ const ICON_SVG = `
 
 function makeButton() {
     const button = document.createElement("button");
-    button.className = "code-copy";
+    button.className = cssClasses("code-copy");
     button.type = "button";
     button.setAttribute("aria-label", "Copy code");
     button.innerHTML = `${ICON_SVG}<span>Copy</span>`;
@@ -44,13 +48,13 @@ async function copyCode(button, codeEl) {
             sel.removeAllRanges();
         }
     }
-    const label = button.querySelector("span");
+    const label = button.querySelector(cssSelector("span"));
     const original = label?.textContent;
     if (label) label.textContent = "Copied";
-    button.classList.add("is-copied");
+    button.classList.add(cssToken("is-copied"));
     setTimeout(() => {
         if (label && original) label.textContent = original;
-        button.classList.remove("is-copied");
+        button.classList.remove(cssToken("is-copied"));
     }, 1500);
 }
 
@@ -61,10 +65,10 @@ async function copyCode(button, codeEl) {
 let softNavigated = false;
 
 function install() {
-    const pres = document.querySelectorAll(".article pre");
+    const pres = document.querySelectorAll(cssSelector(".article pre"));
     pres.forEach((pre) => {
-        if (pre.querySelector(".code-copy")) return;
-        const code = pre.querySelector("code");
+        if (pre.querySelector(cssSelector(".code-copy"))) return;
+        const code = pre.querySelector(cssSelector("code"));
         if (!code) return;
         const button = makeButton();
         button.addEventListener("click", () => copyCode(button, code));

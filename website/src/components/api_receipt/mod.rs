@@ -37,13 +37,13 @@ pub fn render() -> Rendered {
     // `data-swap-region` (ledger #14): names this body-level island for the
     // soft-navigation router's region reconcile.
     let markup = view! {
-        <aside id="api-receipt-modal" popover="auto" class="api-receipt" data-swap-region="receipt">
-            <div class="api-receipt-frame">
-                <header class="api-receipt-head">
-                    <span class="api-receipt-glyph" aria-hidden="true">"⌬"</span>
-                    <h2 class="api-receipt-title">"Web API Receipt"</h2>
-                    <div class="api-receipt-stats" data-api-receipt-stats></div>
-                    <button class="api-receipt-close"
+        <aside id="api-receipt-modal" popover="auto" class={ classes!("api-receipt") } data-swap-region="receipt">
+            <div class={ classes!("api-receipt-frame") }>
+                <header class={ classes!("api-receipt-head") }>
+                    <span class={ classes!("api-receipt-glyph") } aria-hidden="true">"⌬"</span>
+                    <h2 class={ classes!("api-receipt-title") }>"Web API Receipt"</h2>
+                    <div class={ classes!("api-receipt-stats") } data-api-receipt-stats></div>
+                    <button class={ classes!("api-receipt-close") }
                             type="button"
                             popovertarget="api-receipt-modal"
                             popovertargetaction="hide"
@@ -51,8 +51,8 @@ pub fn render() -> Rendered {
                         "✕"
                     </button>
                 </header>
-                <div class="api-receipt-grid" data-api-receipt-grid></div>
-                <footer class="api-receipt-foot">
+                <div class={ classes!("api-receipt-grid") } data-api-receipt-grid></div>
+                <footer class={ classes!("api-receipt-foot") }>
                     <span>"Open from a discovery toast · "<kbd>"Esc"</kbd>" to close"</span>
                 </footer>
             </div>
@@ -77,7 +77,7 @@ mod tests {
         // Byte-parity pin updated DELIBERATELY for ledger #14: the modal
         // gained the additive data-swap-region attribute.
         assert!(html.contains(
-            r#"<aside id="api-receipt-modal" popover="auto" class="api-receipt" data-swap-region="receipt">"#
+            css_html!(r#"<aside id="api-receipt-modal" popover="auto" class="api-receipt" data-swap-region="receipt">"#)
         ));
         assert!(html.contains("data-api-receipt-stats"));
         assert!(html.contains("data-api-receipt-grid"));

@@ -913,6 +913,15 @@ mod tests {
             let body = to_bytes(response.into_body(), 100_000).await.unwrap();
             let body = std::str::from_utf8(&body).unwrap();
             assert!(!body.contains("__engNav") && !body.contains("experiences.js"));
+            if method == "GET" {
+                assert!(body.contains(&format!(
+                    "<meta name=\"eng-css-generation\" content=\"{}\">",
+                    crate::CSS_GENERATION
+                )));
+                assert!(body.contains("data-css-asset-recovery"));
+                assert!(body.contains("href=\"/unsubscribe\">Open newsletter preferences</a>"));
+                assert!(!body.contains("/assets/css-generation-recovery.js"));
+            }
         }
         assert_eq!(kit.call_count(), 0);
     }
@@ -938,6 +947,14 @@ mod tests {
                     serde_json::from_str::<Value>(body).unwrap(),
                     json!({"status":"unsubscribed"})
                 );
+            } else {
+                assert!(body.contains(&format!(
+                    "<meta name=\"eng-css-generation\" content=\"{}\">",
+                    crate::CSS_GENERATION
+                )));
+                assert!(body.contains("data-css-asset-recovery"));
+                assert!(body.contains("href=\"/unsubscribe\">Open newsletter preferences</a>"));
+                assert!(!body.contains("/assets/css-generation-recovery.js"));
             }
         }
         let calls = kit.state.calls.lock().unwrap();
@@ -945,6 +962,34 @@ mod tests {
         assert!(calls.iter().all(|call| call.method == "POST"
             && call.path == "/v4/subscribers/42/unsubscribe"
             && call.body == json!({})));
+    }
+
+    #[tokio::test]
+    async fn unsubscribe_html_errors_keep_the_private_compiled_document() {
+        let kit = MockKit::start(vec![MockReply::json(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            json!({"provider": "failure"}),
+        )])
+        .await;
+        let router = test_router(kit.signed_service());
+        let token = unsubscribe_token(TEST_SECRET.as_bytes(), 123, 42);
+        for (value, status, state) in [
+            ("invalid", StatusCode::BAD_REQUEST, "invalid"),
+            (token.as_str(), StatusCode::BAD_GATEWAY, "error"),
+        ] {
+            let response = submit_unsubscribe(&router, value, false).await;
+            assert_eq!(response.status(), status);
+            assert_private(&response);
+            let bytes = to_bytes(response.into_body(), 100_000).await.unwrap();
+            let body = std::str::from_utf8(&bytes).unwrap();
+            assert!(body.contains(&format!(
+                "<meta name=\"eng-css-generation\" content=\"{}\">",
+                crate::CSS_GENERATION
+            )));
+            assert!(body.contains(&format!("data-unsubscribe-state=\"{state}\"")));
+            assert!(!body.contains(&token) && !body.contains("provider"));
+        }
+        assert_eq!(kit.call_count(), 1);
     }
 
     #[tokio::test]

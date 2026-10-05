@@ -1,37 +1,24 @@
-// Build-time asset pipeline.
+// Build-time application asset pipeline.
 //
-// Three deterministic passes:
+// Plan the whole project once: ordinary CSS sources, explicit Rust/JavaScript
+// class bindings, actual Markdown HTML, dynamic identity tokens, and preserved
+// external names. lightningcss-compact selects and minifies one deterministic
+// class plan while retaining each stylesheet's existing delivery boundary.
 //
-//   1. CSS — every `*.css` in `website/css/src/` is parsed + minified by
-//      lightningcss (selector merging, value shortening, dead-rule removal,
-//      vendor-prefix dedup) and written to `$OUT_DIR/css-dist/{name}.css`.
+// Emit compiled Rust literals and Markdown plus portable input/output manifests
+// tied to the CSS generation. CSS jobs write the already optimized stylesheet
+// results. JavaScript jobs replace parsed bindings before Oxc compression and
+// mangling; no runtime class map is delivered.
 //
-//   2. JS  — every `*.js` in `website/js/src/` is parsed + compressed +
-//      mangled by oxc_minifier (constant folding, DCE, variable renaming,
-//      branch pruning) and written to `$OUT_DIR/js-dist/{name}.js`.
+// Flat css/src and js/src assets and co-located component style.css/script.js
+// share collision-checked output namespaces. Planning, cargo directives, and
+// component_assets.rs generation are single-threaded and sorted. The independent
+// emission jobs then run in parallel, with exactly one writer per output file.
 //
-//   3. Components — every co-located `src/components/<feature>/style.css`
-//      and `script.js` is emitted as `c-<feature>.css/js` into the same dist
-//      dirs, so a component can declare its own runtime dependencies. The
-//      dist names are also generated into `$OUT_DIR/component_assets.rs`
-//      (one `pub mod <feature>` of `STYLE`/`SCRIPT` consts), included by
-//      `src/components/mod.rs`, so a renamed folder fails compilation
-//      instead of 404ing at runtime.
-//
-// The passes are PLANNED single-threaded — sorted file lists, one collision
-// namespace per dist dir across all passes, cargo directives, the generated
-// consts file — then the three minify workloads run in parallel via
-// `std::thread::scope`. Every output file is written exactly once from
-// pre-registered names, so parallelism cannot change the emitted bytes.
-//
-// Both output directories are picked up by rust-embed structs in main.rs
-// (CssDist, JsDist). The runtime hashing layer (`asset_url`) maps
-// `css/{name}` and `js/{name}` paths to content-addressed URLs.
-// The dist dirs are wiped first; stale deleted assets never get embedded.
-//
-// Over-the-wire brotli/gzip is handled at request time by the tower-http
-// CompressionLayer in main.rs, so this build step only shrinks
-// bytes-on-disk.
+// RustEmbed consumes $OUT_DIR/css-dist and js-dist; runtime asset_url produces
+// verified content-addressed URLs. Both directories are cleared before emission.
+// A final full-SHA compatibility gate validates frozen legacy bytes and rejects
+// short-URL collisions. HTTP Brotli/gzip remains the CompressionLayer's job.
 
 use std::collections::{BTreeMap, HashSet};
 use std::env;
@@ -40,7 +27,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::thread;
 
-use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
+#[path = "build/asset_integrity.rs"]
+mod asset_integrity;
+#[path = "build/compact.rs"]
+mod compact;
+#[path = "build/shaders.rs"]
+mod shaders;
 use oxc_allocator::Allocator;
 use oxc_codegen::{Codegen, CodegenOptions, CommentOptions};
 use oxc_mangler::MangleOptions;
@@ -81,6 +73,7 @@ struct ComponentAssets {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=compat/css-generation-2061afa3");
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR not set by cargo"));
     let css_dist = reset_dist_dir(&out_dir, CSS_DIST_SUBDIR);
     let js_dist = reset_dist_dir(&out_dir, JS_DIST_SUBDIR);
@@ -99,15 +92,29 @@ fn main() {
     // include!s it unconditionally.
     write_component_assets_rs(&out_dir, &features);
 
+    let css_inventory = css_jobs
+        .iter()
+        .chain(&component_css_jobs)
+        .map(|job| (job.src.clone(), job.out_name.clone()))
+        .collect::<Vec<_>>();
+    let js_inventory = js_jobs
+        .iter()
+        .chain(&component_js_jobs)
+        .map(|job| job.src.clone())
+        .collect::<Vec<_>>();
+    let adapter = compact::Adapter::collect(&css_inventory, &js_inventory);
+    let compiled = adapter.compile();
+    adapter.emit(&compiled, &out_dir);
+
     // Minify in parallel — names are already registered and collision-checked,
     // so each thread only reads sources and writes its own pre-claimed files.
     thread::scope(|scope| {
         let handles = [
-            scope.spawn(|| run_css_jobs(&css_jobs, &css_dist)),
-            scope.spawn(|| run_js_jobs(&js_jobs, &js_dist)),
+            scope.spawn(|| run_css_jobs(&css_jobs, &css_dist, &compiled)),
+            scope.spawn(|| run_js_jobs(&js_jobs, &js_dist, &adapter, &compiled)),
             scope.spawn(|| {
-                run_css_jobs(&component_css_jobs, &css_dist);
-                run_js_jobs(&component_js_jobs, &js_dist);
+                run_css_jobs(&component_css_jobs, &css_dist, &compiled);
+                run_js_jobs(&component_js_jobs, &js_dist, &adapter, &compiled);
             }),
         ];
         for handle in handles {
@@ -116,6 +123,12 @@ fn main() {
             }
         }
     });
+    asset_integrity::verify_compatibility_assets(
+        Path::new("compat/css-generation-2061afa3"),
+        &css_dist,
+        &js_dist,
+    )
+    .unwrap_or_else(|error| panic!("compatibility asset integrity: {error}"));
 }
 
 fn reset_dist_dir(out_dir: &Path, subdir: &str) -> PathBuf {
@@ -271,57 +284,41 @@ fn write_component_assets_rs(out_dir: &Path, features: &BTreeMap<String, Compone
     fs::write(&path, src).unwrap_or_else(|e| panic!("write {}: {e}", path.display()));
 }
 
-fn run_css_jobs(jobs: &[Job], dist_dir: &Path) {
+fn run_css_jobs(jobs: &[Job], dist_dir: &Path, compiled: &lightningcss_compact::CompiledProject) {
     for job in jobs {
-        let css = fs::read_to_string(&job.src)
-            .unwrap_or_else(|e| panic!("read {}: {e}", job.src.display()));
-        let minified = minify_css(&css, &job.src);
         let out_path = dist_dir.join(&job.out_name);
-        fs::write(&out_path, minified)
+        fs::write(&out_path, &compiled.stylesheets[&job.out_name])
             .unwrap_or_else(|e| panic!("write {}: {e}", out_path.display()));
     }
 }
 
-fn run_js_jobs(jobs: &[Job], dist_dir: &Path) {
+fn run_js_jobs(
+    jobs: &[Job],
+    dist_dir: &Path,
+    adapter: &compact::Adapter,
+    compiled: &lightningcss_compact::CompiledProject,
+) {
     for job in jobs {
         let source = fs::read_to_string(&job.src)
             .unwrap_or_else(|e| panic!("read {}: {e}", job.src.display()));
-        let minified = minify_js(&source, &job.src);
+        let transformed = adapter.javascript(&job.src, &source, compiled);
+        let transformed = shaders::compact_literals(&transformed, &job.src);
+        let minified = minify_js(&transformed, &job.src);
         let out_path = dist_dir.join(&job.out_name);
         fs::write(&out_path, minified)
             .unwrap_or_else(|e| panic!("write {}: {e}", out_path.display()));
     }
 }
 
-fn minify_css(source: &str, src_path: &Path) -> Vec<u8> {
-    let filename = src_path.display().to_string();
-    // Thread the source filename through ParserOptions so every error's
-    // location renders as `file:line:column` (lightningcss Display includes
-    // the location when present).
-    let mut stylesheet = StyleSheet::parse(
-        source,
-        ParserOptions {
-            filename: filename.clone(),
-            ..ParserOptions::default()
-        },
-    )
-    .unwrap_or_else(|e| panic!("parse css {filename}: {e}"));
-    stylesheet
-        .minify(MinifyOptions::default())
-        .unwrap_or_else(|e| panic!("minify css {filename}: {e}"));
-    let result = stylesheet
-        .to_css(PrinterOptions {
-            minify: true,
-            ..PrinterOptions::default()
-        })
-        .unwrap_or_else(|e| panic!("print css {filename}: {e}"));
-    result.code.into_bytes()
-}
-
 fn minify_js(source: &str, path: &Path) -> String {
+    // The emitted assets already have this private lexical scope. Establish
+    // it before compression so Oxc can remove source-only CSS binding helpers
+    // and mangle private top-level declarations instead of preserving globals.
+    // The newline also keeps a trailing source comment from swallowing `}`.
+    let source = format!("(()=>{{{source}\n}})();");
     let source_type = SourceType::from_path(path).unwrap_or_else(|_| SourceType::default());
     let allocator = Allocator::default();
-    let parser_ret = Parser::new(&allocator, source, source_type).parse();
+    let parser_ret = Parser::new(&allocator, &source, source_type).parse();
     if !parser_ret.errors.is_empty() {
         // Render each diagnostic through miette's report (`with_source_code`
         // attaches the source for a labeled snippet with line/column); the
@@ -343,7 +340,7 @@ fn minify_js(source: &str, path: &Path) -> String {
     };
     let minifier_ret = Minifier::new(minifier_options).minify(&allocator, &mut program);
 
-    let code = Codegen::new()
+    Codegen::new()
         .with_options(CodegenOptions {
             minify: true,
             comments: CommentOptions::disabled(),
@@ -351,13 +348,7 @@ fn minify_js(source: &str, path: &Path) -> String {
         })
         .with_scoping(minifier_ret.scoping)
         .build(&program)
-        .code;
-
-    // Each file is served as its own classic script tag, which means
-    // top-level `let`/`const` declarations share the page's global lexical
-    // scope. Scope every emitted asset so common names like STORAGE_KEY or
-    // ANIME_URL cannot collide across independently loaded scripts.
-    format!("(()=>{{{code}\n}})();")
+        .code
 }
 
 fn direct_child_files_with_extension(root: &Path, extension: &str) -> Vec<PathBuf> {

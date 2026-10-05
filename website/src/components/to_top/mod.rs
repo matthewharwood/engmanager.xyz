@@ -29,8 +29,8 @@ pub fn render(_props: Props) -> Rendered {
     // soft-navigation router's region reconcile (the button mounts on article
     // surfaces only, so the router adds/removes it across swaps).
     let markup = view! {
-        <button class="to-top" type="button" aria-label="Scroll to top" data-swap-region="to-top">
-            <svg class="to-top-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <button class={ classes!("to-top") } type="button" aria-label="Scroll to top" data-swap-region="to-top">
+            <svg class={ classes!("to-top-icon") } viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"
                       fill="none"
                       stroke="currentColor"
@@ -56,8 +56,8 @@ mod tests {
     #[test]
     fn renders_to_top_button() {
         let html = render(Props).markup.into_string();
-        assert!(html.contains(r#"class="to-top""#));
-        assert!(html.contains(r#"class="to-top-icon""#));
+        assert!(html.contains(css_html!(r#"class="to-top""#)));
+        assert!(html.contains(css_html!(r#"class="to-top-icon""#)));
         assert!(html.contains("M8 12 L8 4 M3.5 8 L8 3.5 L12.5 8"));
     }
 

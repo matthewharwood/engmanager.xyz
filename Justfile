@@ -12,7 +12,7 @@ bootstrap-tools:
 # Live-reload dev server.
 #   systemfd holds the TCP socket open across restarts (so the port doesn't
 #   flap and in-flight requests aren't dropped).
-#   watchexec watches the tree and restarts the child on .rs/.toml/.css/.js/.svg
+#   watchexec watches the tree and restarts the child on .rs/.toml/.css/.js/.svg/.html/.md
 #   changes — assets are embedded into the binary via rust-embed, so they
 #   require a rebuild to take effect.
 dev:
@@ -20,8 +20,10 @@ dev:
     @command -v watchexec >/dev/null || { echo "watchexec is required. Run 'just bootstrap-tools' or 'cargo install watchexec-cli --locked'." >&2; exit 1; }
     systemfd --no-pid -s http::{{port}} -- \
         watchexec --restart \
-            --exts rs,toml,css,js,svg,html \
+            --exts rs,toml,css,js,svg,html,md \
             --watch website/src \
+            --watch website/build.rs \
+            --watch website/build \
             --watch website/css/src \
             --watch website/js/src \
             --watch website/assets \

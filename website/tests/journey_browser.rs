@@ -4,6 +4,8 @@
 
 #[path = "common/browser.rs"]
 mod browser;
+include!(concat!(env!("OUT_DIR"), "/compact_bindings.rs"));
+
 mod common;
 
 use axum::body::Body;
@@ -26,8 +28,9 @@ impl Drop for ProxyTask {
     }
 }
 
-const FIXTURE: &str = r##"<!doctype html><html><head><meta charset="utf-8"><title>Journey browser checks</title></head><body>
-<pre id="result">RUNNING</pre><iframe id="app" title="Journey under test" style="width:1200px;height:900px;border:0"></iframe>
+const FIXTURE: &str = css_html!(
+    r##"<!doctype html><html><head><meta charset="utf-8"><title>Journey browser checks</title></head><body>
+<pre id="result" style="block-size:1lh;overflow:hidden">RUNNING</pre><iframe id="app" title="Journey under test" style="width:1200px;height:900px;border:0"></iframe>
 <script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result'),checks=[];
 const doc=()=>frame.contentDocument,win=()=>frame.contentWindow;
@@ -35,13 +38,15 @@ const query=selector=>doc()?.querySelector(selector);
 const previous=()=>query('[data-journey-previous]');
 const settled=()=>win().__engNav?.ready&&!win().__engNav.busy;
 const visible=node=>!!node&&!node.hidden&&win().getComputedStyle(node).display!=='none'&&win().getComputedStyle(node).visibility!=='hidden';
-const assert=(value,message)=>{if(!value)throw new Error(message);checks.push(message);};
+const assert=(value,message)=>{if(!value)throw new Error(message);checks.push(message);result.textContent='RUNNING\n'+checks.slice(-5).join('\n');};
+const phaseTimings=[];const phase=label=>{const began=performance.now();return()=>{phaseTimings.push({label,ms:Math.round(performance.now()-began)});window.__journeyPhaseTimings=phaseTimings;};};
+setInterval(()=>{let panel=document.querySelector('#phase-diagnostics');if(!panel){panel=document.createElement('pre');panel.id='phase-diagnostics';panel.hidden=true;document.body.append(panel);}panel.textContent=JSON.stringify({phases:phaseTimings,mounts:win()?.__journeyMountTimings?.filter(entry=>entry.state==='pending'||entry.ms>100).slice(-20)});},1000);
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function until(predicate,label){for(let i=0;i<240;i++){try{if(predicate())return;}catch{}await delay(50);}throw new Error('Timed out: '+label);}
+async function until(predicate,label){const finish=phase(label);for(let i=0;i<240;i++){try{if(predicate()){finish();return;}}catch{}await delay(50);}finish();throw new Error('Timed out: '+label);}
 async function scrollSettled(){let last=-1,steady=0;for(let i=0;i<100;i++){await delay(50);const position=win().scrollY;steady=position===last?steady+1:0;if(steady>=5)return;last=position;}throw new Error('Scrolling did not settle');}
 async function load(path){frame.src=path;await until(()=>win().location.pathname===path.split('?')[0]&&doc()?.readyState==='complete','load '+path);}
 async function ready(path){await load(path);await until(()=>win().__engNav?.ready&&!win().__engNav.busy&&query('[data-journey-current]'),'journey ready '+path);}
-async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;await win().__engNav.navigate(path,options);await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
+async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;const done=phase('navigate '+path);await win().__engNav.navigate(path,options);done();await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
 async function checkVisibleDiagrams(article){
@@ -170,7 +175,7 @@ async function checkArticleReveal(path,width,action,slug='the-execution-marketpl
   // closure, so changing storage alone would skip the unread-click path.
   await until(()=>doc()!==oldDocument&&win().location.pathname===path&&doc()?.readyState==='complete'&&settled(),'fresh unread '+path+' at '+width);
   await Promise.allSettled([win().__engTypography?.ready,win().__engTypography?.displayReady,doc().fonts.ready]);
-  const target='/articles/'+slug,link=query('.article-fluid-link[data-slug="'+slug+'"]');
+  const target='/articles/'+slug,link=[...doc().querySelectorAll('.article-fluid-link')].find(link=>link.dataset.slug===slug);
   const popover=query('#article-reveal'),card=popover.querySelector('.reveal-card-frame');
   const content=card.querySelector('.reveal-card-content');
   assert(link&&!link.classList.contains('is-visited'),'article begins unread at '+path+' '+width);
@@ -455,7 +460,7 @@ try{
   heading.scrollIntoView({behavior:'instant'});await delay(250);
   const firstHash=win().location.hash,firstHashScroll=win().scrollY;
   const nextHeading=doc().querySelectorAll('.article h2[id]')[2];
-  const tocLink=doc().querySelector('.article-toc a[href="#'+nextHeading.id+'"]');
+  const tocLink=[...doc().querySelectorAll('.article-toc a')].find(link=>link.hash==='#'+nextHeading.id);
   assert(tocLink,'the article supplies a real native table-of-contents link');tocLink.click();
   await until(()=>win().location.hash==='#'+nextHeading.id&&nextHeading.getBoundingClientRect().top>=0&&nextHeading.getBoundingClientRect().top<win().innerHeight*.5,'native heading link scrolls within the article');
   await scrollSettled();const nextHash=win().location.hash,nextHashScroll=win().scrollY;
@@ -775,6 +780,38 @@ try{
     await click('[data-search-close]');
   }
 
+  // A class map and its HTML are a deployment unit. A new document may
+  // arrive before a cached old one is replaced; never promote mixed classes.
+  const mismatchedFetch=actual=>async(input,options)=>{
+    const response=await actual(input,options);
+    if(!response.headers.get('content-type')?.includes('text/html'))return response;
+    const html=await response.text(),parsed=new (win().DOMParser)().parseFromString(html,'text/html');
+    const marker=parsed.querySelector('meta[name="eng-css-generation"]');
+    assert(marker,'current public HTML declares a CSS generation');
+    marker.content='synthetic-next-generation';
+    const replacement=new (win().Response)('<!doctype html>'+parsed.documentElement.outerHTML,{status:response.status,headers:response.headers});
+    Object.defineProperty(replacement,'url',{value:response.url});
+    return replacement;
+  };
+  const beforeGenerationRecovery=doc();
+  win().fetch=mismatchedFetch(win().fetch.bind(win()));
+  await win().__engNav.navigate('/shop?__css_test=1',{source:'reveal'});
+  await until(()=>doc()!==beforeGenerationRecovery&&win().location.pathname==='/shop'&&settled(),'mixed generation hard recovery');
+  assert(doc().querySelector('meta[name="eng-css-generation"]').content!=='synthetic-next-generation','a mixed generation recovers through a fresh whole document');
+  const recoveredDocument=doc(),recoveredFetch=win().fetch.bind(win());
+  win().fetch=mismatchedFetch(recoveredFetch);
+  await win().__engNav.navigate('/shop?__css_test=1');
+  assert(doc()===recoveredDocument&&query('[data-journey-runtime] [role="status"]').textContent.includes('updated'),'the same generation pair cannot cause a second automatic reload');
+  const onlineDescriptor=Object.getOwnPropertyDescriptor(win().navigator,'onLine');
+  Object.defineProperty(win().navigator,'onLine',{configurable:true,value:false});
+  try{
+    await win().__engNav.navigate('/coach?__css_test=2');
+    assert(doc()===recoveredDocument&&query('[data-journey-current="shop"]')&&query('[data-journey-runtime] [role="status"]').textContent.includes('Reconnect'),'offline generation mismatch leaves the current surface readable');
+  }finally{
+    win().fetch=recoveredFetch;
+    if(onlineDescriptor)Object.defineProperty(win().navigator,'onLine',onlineDescriptor);else delete win().navigator.onLine;
+  }
+
   const publicDocument=doc();await win().__engNav.navigate('/articles/big-personality');
   await until(()=>win().location.pathname==='/articles/big-personality'&&doc().readyState==='complete','private boundary navigation');
   assert(doc()!==publicDocument,'entering the private personality experience starts a separate document');
@@ -782,24 +819,29 @@ try{
   assert(!win().__engNav?.navigate,'private personality document does not load the public router');
   result.textContent='PASS\n'+checks.join('\n');document.body.dataset.testResult='passed';
 }catch(error){result.textContent='FAIL\n'+error.stack+'\nURL: '+win()?.location.href+'\nSCROLL: '+win()?.scrollY+' '+JSON.stringify(window.__scrollDiagnostic||{})+'\nHISTORY: '+JSON.stringify(win()?.history.state)+'\nRECENT CHECKS:\n'+checks.slice(-10).join('\n');document.body.dataset.testResult='failed';}
-</script></body></html>"##;
+</script></body></html>"##
+);
 
 // Deterministic provider contract for native lifecycle/viewport assertions.
 // scripts/verify-article-diagrams.mjs separately exercises the real CDN module.
-const MERMAID_FIXTURE: &str = r##"
+const MERMAID_FIXTURE: &str = concat!(
+    r##"
 const state=window.__diagramFixture||={loads:0,calls:[]};state.loads++;
 let configuration;
 export default {
   initialize(value){configuration=value;},
   async render(id,source,scratch){
-    state.calls.push({source,busy:window.__engNav?.busy,revealing:document.body.classList.contains('journey-revealing')});
+    state.calls.push({source,busy:window.__engNav?.busy,revealing:document.body.classList.contains('"##,
+    token!("journey-revealing"),
+    r##"')});
     if(!scratch.isConnected)throw Error('Diagram scratch must belong to the current article');
     const labels=[...source.matchAll(/\["([^"]+)"\]/g)].map(match=>match[1]);
     const escape=value=>value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
     return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 ${Math.max(120,labels.length*30)}" role="img"><rect width="100%" height="100%" fill="${configuration.themeVariables.primaryColor}"/>${labels.map((label,index)=>`<text x="10" y="${25+index*30}" fill="${configuration.themeVariables.primaryTextColor}">${escape(label)}</text>`).join('')}</svg>`};
   }
 };
-"##;
+"##
+);
 
 #[derive(Clone)]
 struct Proxy {
@@ -822,6 +864,11 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
         Err(error) => return (StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
     };
     let status = response.status();
+    let is_html = response
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.contains("text/html"));
     let mut headers = response.headers().clone();
     headers.remove(header::CONTENT_LENGTH);
     headers.remove(header::TRANSFER_ENCODING);
@@ -845,6 +892,10 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
             ),
         )
             .into_response(),
+        Ok(bytes) if is_html && std::env::var("ENG_JOURNEY_DIAGNOSTICS").is_ok() => {
+            let html = String::from_utf8_lossy(&bytes).replace("try{return c(m)}catch{}", "try{const entry={source:c.toString().slice(0,300),start:performance.now(),state:'pending'};(window.__journeyMountTimings||=[]).push(entry);const result=c(m);Promise.resolve(result).then(()=>{entry.ms=Math.round(performance.now()-entry.start);entry.state='fulfilled'},()=>{entry.ms=Math.round(performance.now()-entry.start);entry.state='rejected'});return result}catch{}");
+            (status, headers, html).into_response()
+        }
         Ok(bytes) => (status, headers, bytes).into_response(),
         Err(error) => (StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
     }
@@ -887,10 +938,21 @@ async fn exercise_journey(reduced_motion: bool) {
     )
     .await;
     let diagnostic = dom
-        .split("<pre id=\"result\">")
+        .split("<pre id=\"result\"")
         .nth(1)
+        .and_then(|value| value.split_once('>').map(|(_, content)| content))
         .and_then(|value| value.split("</pre>").next())
         .unwrap_or(&dom);
+    if std::env::var("ENG_JOURNEY_DIAGNOSTICS").is_ok() {
+        std::fs::write(
+            format!(
+                "/tmp/engmanager-journey-{}.html",
+                if reduced_motion { "reduced" } else { "normal" }
+            ),
+            &dom,
+        )
+        .unwrap();
+    }
     assert!(
         dom.contains("data-test-result=\"passed\""),
         "Journey browser checks did not pass:\n{diagnostic}"

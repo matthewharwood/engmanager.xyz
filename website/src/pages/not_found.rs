@@ -24,29 +24,29 @@ fn page() -> String {
     scripts.add(&sculpture);
     let sculpture_markup = sculpture.markup;
     let body = view! {
-        <main class="not-found-shell" aria-labelledby="not-found-title">
-            <header class="not-found-header">
-                <a class="identity-wordmark" href="/" aria-label="ENGMANAGER home">
+        <main class={ classes!("not-found-shell") } aria-labelledby="not-found-title">
+            <header class={ classes!("not-found-header") }>
+                <a class={ classes!("identity-wordmark") } href="/" aria-label="ENGMANAGER home">
                     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 10 18H2Z" stroke="currentColor" /><path d="M7 14q5-6 10 0-5 5-10 0Z" stroke="currentColor" /><circle cx="12" cy="14" r="1.5" fill="currentColor" /></svg>
                     "ENGMANAGER"
                 </a>
-                <span class="not-found-header-note">"A change in perspective"</span>
+                <span class={ classes!("not-found-header-note") }>"A change in perspective"</span>
             </header>
-            <div class="not-found-copy">
-                <p class="not-found-kicker">"You’ve wandered off the map"</p>
-                <h1 id="not-found-title">"404"<span class="sr-only">" · Page not found"</span></h1>
+            <div class={ classes!("not-found-copy") }>
+                <p class={ classes!("not-found-kicker") }>"You’ve wandered off the map"</p>
+                <h1 id="not-found-title">"404"<span class={ classes!("sr-only") }>" · Page not found"</span></h1>
                 <h2>"Even a good eye"<br />"can lose its way."</h2>
-                <p class="not-found-description">"The page you’re looking for isn’t here. Let’s find a familiar place."</p>
-                <a class="not-found-home" href="/">"Back home"<span aria-hidden="true">"↗"</span></a>
+                <p class={ classes!("not-found-description") }>"The page you’re looking for isn’t here. Let’s find a familiar place."</p>
+                <a class={ classes!("not-found-home") } href="/">"Back home"<span aria-hidden="true">"↗"</span></a>
             </div>
-            <div class="not-found-art">{ sculpture_markup }</div>
-            <footer class="not-found-footer"><span>"404 / Page not found"</span><span>"A little perspective changes everything."</span></footer>
+            <div class={ classes!("not-found-art") }>{ sculpture_markup }</div>
+            <footer class={ classes!("not-found-footer") }><span>"404 / Page not found"</span><span>"A little perspective changes everything."</span></footer>
             { theme_picker() }
         </main>
     };
     PageShell::new(
         "404 Page Not Found · engmanager.xyz",
-        "not-found-page identity-page",
+        classes!("not-found-page identity-page"),
     )
     .pre_title_meta(view! { <meta name="robots" content="noindex,nofollow" /> })
     .assets(assets)
@@ -65,7 +65,7 @@ mod tests {
         assert_eq!(response().status(), StatusCode::NOT_FOUND);
         let html = page();
         assert!(html.contains("Page not found"));
-        assert!(html.contains("class=\"not-found-home\" href=\"/\""));
+        assert!(html.contains(css_html!("class=\"not-found-home\" href=\"/\"")));
         assert!(html.contains("sigil-poster"));
         assert!(html.contains("data-sigil-quiet=\"false\""));
         assert!(!html.contains("__wisp404"));

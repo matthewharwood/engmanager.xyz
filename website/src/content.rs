@@ -11,7 +11,7 @@ use rust_embed::RustEmbed;
 // the binary at compile time alongside the rest of the static content (so the
 // .md source isn't HTTP-exposed under /assets/ — only the rendered HTML ships).
 #[derive(RustEmbed)]
-#[folder = "articles/"]
+#[folder = "$OUT_DIR/compiled-articles/"]
 struct ArticleSources;
 
 // =============================================================================

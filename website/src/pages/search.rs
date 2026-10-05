@@ -124,7 +124,7 @@ fn render_page(
     } else {
         let product_results = render_product_results(&results.product_hits);
         view! {
-            <section class="search-result-group search-result-group-caps">
+            <section class={ classes!("search-result-group search-result-group-caps") }>
                 <h2>"Store"</h2>
                 { product_results }
             </section>
@@ -132,11 +132,11 @@ fn render_page(
     };
     let service_sections: HtmlFragment = results.service_hits.iter().map(|hit| {
         view! {
-            <section class="search-result-group">
+            <section class={ classes!("search-result-group") }>
                 <h2>{ if hit.kind == "coaching" { "Coaching" } else { "Subscription" } }</h2>
-                <article class="search-result">
-                    <a class="search-result-title" href={ hit.url.clone() }>{ hit.title.clone() }</a>
-                    <div class="search-result-meta">{ hit.meta.clone() }</div>
+                <article class={ classes!("search-result") }>
+                    <a class={ classes!("search-result-title") } href={ hit.url.clone() }>{ hit.title.clone() }</a>
+                    <div class={ classes!("search-result-meta") }>{ hit.meta.clone() }</div>
                     <p>{ hit.detail.clone() }</p>
                 </article>
             </section>
@@ -148,7 +148,7 @@ fn render_page(
         && results.service_hits.is_empty()
     {
         view! {
-            <section class="search-empty">
+            <section class={ classes!("search-empty") }>
                 <h2>"No matches"</h2>
                 <p>"Try a broader phrase or remove a filter."</p>
             </section>
@@ -205,22 +205,22 @@ fn render_page(
 
     let body = view! {
         { nav_markup }
-        <main id="main" class="search-shell" tabindex="-1">
-                    <header class="search-header">
+        <main id="main" class={ classes!("search-shell") } tabindex="-1">
+                    <header class={ classes!("search-header") }>
                         <h1>"Search"</h1>
                         <p>{ summary }</p>
                     </header>
-                    <form class="search-workbench" action="/search" method="get">
-                        <section class="search-query-panel">
-                            <label class="sr-only" for="search-page-input">"Search"</label>
+                    <form class={ classes!("search-workbench") } action="/search" method="get">
+                        <section class={ classes!("search-query-panel") }>
+                            <label class={ classes!("sr-only") } for="search-page-input">"Search"</label>
                             <input id="search-page-input"
-                                   class="search-page-input"
+                                   class={ classes!("search-page-input") }
                                    type="search"
                                    name="q"
                                    value={ params.q.clone() }
                                    placeholder="Search articles"
                                    autocomplete="off" />
-                            <div class="search-date-row">
+                            <div class={ classes!("search-date-row") }>
                                 <label>
                                     <span>"From"</span>
                                     <input type="date" name="from" value={ params.from.clone().unwrap_or_default() } />
@@ -234,10 +234,10 @@ fn render_page(
                         </section>
                         { filters }
                     </form>
-                    <div class="search-results-grid">
+                    <div class={ classes!("search-results-grid") }>
                         { service_sections }
                         { product_section }
-                        <section class="search-result-group">
+                        <section class={ classes!("search-result-group") }>
                             <h2>"Articles"</h2>
                             { article_results }
                         </section>
@@ -247,7 +247,7 @@ fn render_page(
     };
 
     Html(
-        PageShell::new(title, "search-page")
+        PageShell::new(title, classes!("search-page"))
             .assets(assets)
             .scripts(scripts)
             .speculation_rules(true)
@@ -295,8 +295,8 @@ fn render_filters(
     };
 
     view! {
-        <aside class="search-filters" aria-label="Search filters">
-            <div class="search-filter-head">
+        <aside class={ classes!("search-filters") } aria-label="Search filters">
+            <div class={ classes!("search-filter-head") }>
                 <h2>"Filters"</h2>
                 <a href={ clear_href }>"Clear"</a>
             </div>
@@ -317,7 +317,7 @@ fn render_category_control(category: Category, count: usize, selected: bool) -> 
     let count_label = count.to_string();
     if selected {
         view! {
-            <label class="search-filter-option is-selected">
+            <label class={ classes!("search-filter-option is-selected") }>
                 <input type="checkbox" name="category" value={ category.slug() } checked />
                 <span>{ label }</span>
                 <span>{ count_label }</span>
@@ -325,7 +325,7 @@ fn render_category_control(category: Category, count: usize, selected: bool) -> 
         }
     } else {
         view! {
-            <label class="search-filter-option">
+            <label class={ classes!("search-filter-option") }>
                 <input type="checkbox" name="category" value={ category.slug() } />
                 <span>{ label }</span>
                 <span>{ count_label }</span>
@@ -339,7 +339,7 @@ fn render_tag_control(tag: Tag, count: usize, selected: bool) -> HtmlFragment {
     let count_label = count.to_string();
     if selected {
         view! {
-            <label class="search-filter-option is-selected">
+            <label class={ classes!("search-filter-option is-selected") }>
                 <input type="checkbox" name="tag" value={ tag.slug() } checked />
                 <span>{ label }</span>
                 <span>{ count_label }</span>
@@ -347,7 +347,7 @@ fn render_tag_control(tag: Tag, count: usize, selected: bool) -> HtmlFragment {
         }
     } else {
         view! {
-            <label class="search-filter-option">
+            <label class={ classes!("search-filter-option") }>
                 <input type="checkbox" name="tag" value={ tag.slug() } />
                 <span>{ label }</span>
                 <span>{ count_label }</span>
@@ -358,7 +358,7 @@ fn render_tag_control(tag: Tag, count: usize, selected: bool) -> HtmlFragment {
 
 fn render_article_results(hits: &[ArticleSearchHit]) -> HtmlFragment {
     if hits.is_empty() {
-        return view! { <p class="search-muted">"No article matches."</p> };
+        return view! { <p class={ classes!("search-muted") }>"No article matches."</p> };
     }
     hits.iter()
         .map(|hit| {
@@ -367,17 +367,17 @@ fn render_article_results(hits: &[ArticleSearchHit]) -> HtmlFragment {
             let tag_chips: HtmlFragment = hit
                 .tags
                 .iter()
-                .map(|tag| view! { <span class="search-chip">{ tag.label() }</span> })
+                .map(|tag| view! { <span class={ classes!("search-chip") }>{ tag.label() }</span> })
                 .collect();
             view! {
-                <article class="search-result">
-                    <a class="search-result-title" href={ href }>{ hit.title.clone() }</a>
-                    <div class="search-result-meta">
+                <article class={ classes!("search-result") }>
+                    <a class={ classes!("search-result-title") } href={ href }>{ hit.title.clone() }</a>
+                    <div class={ classes!("search-result-meta") }>
                         <span>{ hit.category.label() }</span>
                         <time datetime={ hit.date.iso() }>{ date }</time>
                     </div>
                     <p>{ hit.snippet.clone() }</p>
-                    <div class="search-chip-row">{ tag_chips }</div>
+                    <div class={ classes!("search-chip-row") }>{ tag_chips }</div>
                 </article>
             }
         })
@@ -396,16 +396,16 @@ fn render_product_results(hits: &[ProductSearchHit]) -> HtmlFragment {
                 hit.cap_color, hit.thread_color, hit.accent_color
             );
             view! {
-                <article class="search-result search-result-product">
-                    <a class="search-result-title" href={ hit.url.clone() }>
-                        <span class="search-cap-chip" style={ chip_style } aria-hidden="true">
-                            <span class="search-cap-crown"></span>
-                            <span class="search-cap-brim"></span>
-                            <span class="search-cap-dot"></span>
+                <article class={ classes!("search-result search-result-product") }>
+                    <a class={ classes!("search-result-title") } href={ hit.url.clone() }>
+                        <span class={ classes!("search-cap-chip") } style={ chip_style } aria-hidden="true">
+                            <span class={ classes!("search-cap-crown") }></span>
+                            <span class={ classes!("search-cap-brim") }></span>
+                            <span class={ classes!("search-cap-dot") }></span>
                         </span>
                         { hit.name.clone() }
                     </a>
-                    <div class="search-result-meta">
+                    <div class={ classes!("search-result-meta") }>
                         <span>"Dad cap"</span>
                         <span>{ price }</span>
                     </div>

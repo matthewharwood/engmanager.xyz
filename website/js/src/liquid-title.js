@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 const THEME_EVENT = "engmanager:themechange";
 const titles = new Set();
 let refreshQueued = false;
@@ -58,7 +62,7 @@ function initTitle(title) {
 }
 
 onReady(() => {
-    document.querySelectorAll("[data-liquid-title]").forEach(initTitle);
+    document.querySelectorAll(cssSelector("[data-liquid-title]")).forEach(initTitle);
 });
 
 // Soft navigation: prune detached titles from the Set (so theme
@@ -68,7 +72,7 @@ window.__engNav?.onSwap?.((root) => {
     titles.forEach((title) => {
         if (!title.isConnected) titles.delete(title);
     });
-    root.querySelectorAll("[data-liquid-title]").forEach(initTitle);
+    root.querySelectorAll(cssSelector("[data-liquid-title]")).forEach(initTitle);
 });
 
 window.addEventListener(THEME_EVENT, scheduleRefresh);

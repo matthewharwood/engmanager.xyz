@@ -6,7 +6,7 @@
 // before first paint. This file only observes, animates, and cleans up.
 
 const ANIME_URL = "https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm";
-const SELECTOR = ".article-reveal-section[data-article-reveal]";
+var cssSelector = value => value;
 const MAX_CHILD_TARGETS = 8;
 const ANIME_TIMEOUT_MS = 700;
 const CLEANUP_DELAY_MS = 1200;
@@ -21,10 +21,10 @@ const startArticleSectionReveal = () => {
     if (root.dataset.articleReveal !== "pending") return;
 
     const sections = Array.from(
-        document.querySelectorAll(`${SELECTOR}:not([data-reveal-preload])`),
+        document.querySelectorAll(cssSelector(".article-reveal-section[data-article-reveal]:not([data-reveal-preload])")),
     );
     const preloadSections = Array.from(
-        document.querySelectorAll(`${SELECTOR}[data-reveal-preload]`),
+        document.querySelectorAll(cssSelector(".article-reveal-section[data-article-reveal][data-reveal-preload]")),
     );
 
     preloadSections.forEach((section) => {

@@ -55,12 +55,20 @@ const SITE_ORIGIN: &str = "https://engmanager.xyz";
 /// card reserves the space before the image arrives (no layout shift).
 const AVATAR_PX: u16 = 56;
 
-const X_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
-const CHEVRON_SVG: &str = r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
+const X_SVG: &str = css_html!(
+    r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M5 5 L11 11 M11 5 L5 11" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##
+);
+const CHEVRON_SVG: &str = css_html!(
+    r##"<svg class="shop-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="shop-chevron-path" d="M10.5 3.5 L5.5 8 L10.5 12.5" pathLength="1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>"##
+);
 const RESTART_SVG: &str = r##"<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4.5 10a5.5 5.5 0 1 0 1.6-3.9M4.5 3.5v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
 const BACK_SVG: &str = r##"<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M9.5 5 4.5 10l5 5M15.5 5l-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>"##;
-const PAUSE_SVG: &str = r##"<svg class="coach-icon-pause" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 4.5v11M13 4.5v11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>"##;
-const PLAY_SVG: &str = r##"<svg class="coach-icon-play" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6.5 4.5v11l9-5.5z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>"##;
+const PAUSE_SVG: &str = css_html!(
+    r##"<svg class="coach-icon-pause" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 4.5v11M13 4.5v11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>"##
+);
+const PLAY_SVG: &str = css_html!(
+    r##"<svg class="coach-icon-play" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6.5 4.5v11l9-5.5z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>"##
+);
 
 /// Posts worth reading before a session, with a plain-language reason each.
 /// Titles and dates come from the article registry.
@@ -130,13 +138,13 @@ fn page_at(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> Stri
     scripts.add_js("js/coach.js");
 
     let body = view! {
-        <header class="shop-topbar coach-topbar" aria-label="Coaching controls">
-            <a class="shop-home-link" href="/feed" aria-label="Back to ENGMANAGER.XYZ">
+        <header class={ classes!("shop-topbar coach-topbar") } aria-label="Coaching controls">
+            <a class={ classes!("shop-home-link") } href="/feed" aria-label="Back to ENGMANAGER.XYZ">
                 { HtmlFragment::new(CHEVRON_SVG.to_string()) }
             </a>
             { theme_picker() }
-            <div class="shop-top-actions">
-                <button class="coach-book-chip"
+            <div class={ classes!("shop-top-actions") }>
+                <button class={ classes!("coach-book-chip") }
                         type="button"
                         data-book-open
                         aria-controls="coach-booking"
@@ -145,9 +153,9 @@ fn page_at(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> Stri
                 </button>
             </div>
         </header>
-        <main id="main" class="coach-main">
+        <main id="main" class={ classes!("coach-main") }>
             { render_reader(booking, mode, path) }
-            <div class="coach-below">
+            <div class={ classes!("coach-below") }>
                 { render_testimonials() }
                 { render_reads() }
                 { render_community() }
@@ -172,7 +180,7 @@ fn page_at(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -> Stri
             .to_string()
     };
 
-    PageShell::new(mode.page_title(), "shop-page coach-page")
+    PageShell::new(mode.page_title(), classes!("shop-page coach-page"))
         .meta(MetaTags {
             description: Some(description),
             canonical: Some(canonical.clone()),
@@ -208,7 +216,7 @@ fn render_mode_switch(mode: SessionMode, path: &str) -> HtmlFragment {
         .map(|option| {
             let current = *option == mode;
             view! {
-                <a class="coach-mode-option"
+                <a class={ classes!("coach-mode-option") }
                    href={ if option.is_group() { format!("{path}?group=1") } else { path.to_string() } }
                    data-active={ if current { "true" } else { "false" } }
                    aria-current={ if current { "page" } else { "false" } }>
@@ -219,21 +227,21 @@ fn render_mode_switch(mode: SessionMode, path: &str) -> HtmlFragment {
         .collect();
 
     view! {
-        <div class="coach-mode" data-mode={ if mode.is_group() { "group" } else { "solo" } }>
-            <span class="coach-mode-caption" id="coach-mode-caption">"Who is coming?"</span>
-            <div class="coach-mode-options" role="group" aria-labelledby="coach-mode-caption">
+        <div class={ classes!("coach-mode") } data-mode={ if mode.is_group() { "group" } else { "solo" } }>
+            <span class={ classes!("coach-mode-caption") } id="coach-mode-caption">"Who is coming?"</span>
+            <div class={ classes!("coach-mode-options") } role="group" aria-labelledby="coach-mode-caption">
                 { options }
             </div>
             // Hover reveals it, focus reveals it, and tapping the button
             // focuses it — so touch works without a line of JavaScript.
-            <span class="coach-mode-info">
-                <button class="coach-mode-info-trigger"
+            <span class={ classes!("coach-mode-info") }>
+                <button class={ classes!("coach-mode-info-trigger") }
                         type="button"
                         aria-describedby="coach-group-note"
                         aria-label="How group sessions work">
                     "i"
                 </button>
-                <span class="coach-mode-note" id="coach-group-note" role="tooltip">
+                <span class={ classes!("coach-mode-note") } id="coach-group-note" role="tooltip">
                     { group_disclaimer() }
                 </span>
             </span>
@@ -263,7 +271,7 @@ fn render_reader(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -
         .iter()
         .map(|wpm| {
             view! {
-                <button class="coach-pill"
+                <button class={ classes!("coach-pill") }
                         type="button"
                         data-reader-speed={ *wpm }
                         aria-pressed={ if *wpm == READER_DEFAULT_WPM { "true" } else { "false" } }>
@@ -274,61 +282,61 @@ fn render_reader(booking: Option<&BookingPage>, mode: SessionMode, path: &str) -
         .collect();
 
     view! {
-        <section class="coach-reader" data-reader aria-labelledby="coach-title">
-            <div class="coach-reader-stage">
-                <p class="coach-kicker coach-reader-kicker">{ mode.kicker() }</p>
-                <h1 id="coach-title" class="coach-reader-title">{ title }</h1>
-                <div class="coach-rsvp" aria-hidden="true">
-                    <span class="coach-rsvp-line"></span>
-                    <p class="coach-rsvp-word" data-reader-word>
-                        <span class="coach-rsvp-pre" data-reader-pre>{ pre }</span>
-                        <span class="coach-rsvp-pivot" data-reader-pivot>{ pivot }</span>
-                        <span class="coach-rsvp-post" data-reader-post>{ post }</span>
+        <section class={ classes!("coach-reader") } data-reader aria-labelledby="coach-title">
+            <div class={ classes!("coach-reader-stage") }>
+                <p class={ classes!("coach-kicker coach-reader-kicker") }>{ mode.kicker() }</p>
+                <h1 id="coach-title" class={ classes!("coach-reader-title") }>{ title }</h1>
+                <div class={ classes!("coach-rsvp") } aria-hidden="true">
+                    <span class={ classes!("coach-rsvp-line") }></span>
+                    <p class={ classes!("coach-rsvp-word") } data-reader-word>
+                        <span class={ classes!("coach-rsvp-pre") } data-reader-pre>{ pre }</span>
+                        <span class={ classes!("coach-rsvp-pivot") } data-reader-pivot>{ pivot }</span>
+                        <span class={ classes!("coach-rsvp-post") } data-reader-post>{ post }</span>
                     </p>
-                    <span class="coach-rsvp-line coach-rsvp-line-end">
-                        <span class="coach-rsvp-progress" data-reader-progress></span>
+                    <span class={ classes!("coach-rsvp-line coach-rsvp-line-end") }>
+                        <span class={ classes!("coach-rsvp-progress") } data-reader-progress></span>
                     </span>
                 </div>
-                <div class="coach-reader-text" data-reader-text>
+                <div class={ classes!("coach-reader-text") } data-reader-text>
                     <p>{ problem }</p>
                     <p>{ help }</p>
                 </div>
-                <div class="coach-reader-actions">
+                <div class={ classes!("coach-reader-actions") }>
                     { render_mode_switch(mode, path) }
-                    <a class="shop-cart-checkout coach-cta"
+                    <a class={ classes!("shop-cart-checkout coach-cta") }
                        href={ cta_href }
                        data-book-open
                        aria-controls="coach-booking">
                         { cta_label(mode) }
                     </a>
-                    <p class="coach-reader-meta">
+                    <p class={ classes!("coach-reader-meta") }>
                         { format!("{} · {} · {}", OFFER.duration_label(), OFFER.window_label(), OFFER.meeting) }
                     </p>
-                    <p class="coach-local-window" data-local-window hidden></p>
+                    <p class={ classes!("coach-local-window") } data-local-window hidden></p>
                 </div>
             </div>
-            <div class="coach-reader-rail" role="group" aria-label="Reader settings">
-                <div class="coach-rail-group">
-                    <span class="coach-rail-caption" aria-hidden="true">"Mode"</span>
-                    <div class="coach-pills" role="group" aria-label="How to read">
-                        <button class="coach-pill" type="button" data-reader-mode-option="speed" aria-pressed="true">"Speed"</button>
-                        <button class="coach-pill" type="button" data-reader-mode-option="read" aria-pressed="false">"Read"</button>
+            <div class={ classes!("coach-reader-rail") } role="group" aria-label="Reader settings">
+                <div class={ classes!("coach-rail-group") }>
+                    <span class={ classes!("coach-rail-caption") } aria-hidden="true">"Mode"</span>
+                    <div class={ classes!("coach-pills") } role="group" aria-label="How to read">
+                        <button class={ classes!("coach-pill") } type="button" data-reader-mode-option="speed" aria-pressed="true">"Speed"</button>
+                        <button class={ classes!("coach-pill") } type="button" data-reader-mode-option="read" aria-pressed="false">"Read"</button>
                     </div>
                 </div>
-                <div class="coach-rail-group coach-rail-speed">
-                    <span class="coach-rail-caption" aria-hidden="true">"WPM"</span>
-                    <div class="coach-pills" role="group" aria-label="Words per minute">{ speeds }</div>
+                <div class={ classes!("coach-rail-group coach-rail-speed") }>
+                    <span class={ classes!("coach-rail-caption") } aria-hidden="true">"WPM"</span>
+                    <div class={ classes!("coach-pills") } role="group" aria-label="Words per minute">{ speeds }</div>
                 </div>
-                <div class="coach-rail-group coach-rail-transport">
-                    <span class="coach-rail-caption" aria-hidden="true">"Play"</span>
-                    <div class="coach-transport" role="group" aria-label="Playback">
-                        <button class="coach-round" type="button" data-reader-restart aria-label="Restart from the beginning">
+                <div class={ classes!("coach-rail-group coach-rail-transport") }>
+                    <span class={ classes!("coach-rail-caption") } aria-hidden="true">"Play"</span>
+                    <div class={ classes!("coach-transport") } role="group" aria-label="Playback">
+                        <button class={ classes!("coach-round") } type="button" data-reader-restart aria-label="Restart from the beginning">
                             { HtmlFragment::new(RESTART_SVG.to_string()) }
                         </button>
-                        <button class="coach-round" type="button" data-reader-back aria-label="Back 5 seconds">
+                        <button class={ classes!("coach-round") } type="button" data-reader-back aria-label="Back 5 seconds">
                             { HtmlFragment::new(BACK_SVG.to_string()) }
                         </button>
-                        <button class="coach-round coach-round-primary" type="button" data-reader-toggle data-playing="true" aria-label="Pause">
+                        <button class={ classes!("coach-round coach-round-primary") } type="button" data-reader-toggle data-playing="true" aria-label="Pause">
                             { HtmlFragment::new(PAUSE_SVG.to_string()) }
                             { HtmlFragment::new(PLAY_SVG.to_string()) }
                         </button>
@@ -349,27 +357,27 @@ fn render_spectrum() -> HtmlFragment {
         .enumerate()
         .map(|(i, stop)| {
             view! {
-                <span class="coach-pip"
+                <span class={ classes!("coach-pip") }
                       data-spectrum-stop={ stop.id }
                       data-active={ if i == index { "true" } else { "false" } }
                       style={ format!("--i: {i}") }>
-                    <span class="coach-pip-label">{ stop.label }</span>
+                    <span class={ classes!("coach-pip-label") }>{ stop.label }</span>
                 </span>
             }
         })
         .collect();
 
     view! {
-        <div class="coach-spectrum" data-spectrum style={ format!("--last: {last}; --value: {index}") }>
-            <div class="coach-spectrum-head">
-                <label class="coach-kicker" for="coach-spectrum-input">"Where do you live?"</label>
-                <span id="coach-spectrum-hint" class="coach-spectrum-hint">"Drag to change the story"</span>
-                <span class="coach-spectrum-current" data-spectrum-current aria-hidden="true">{ persona.label }</span>
+        <div class={ classes!("coach-spectrum") } data-spectrum style={ format!("--last: {last}; --value: {index}") }>
+            <div class={ classes!("coach-spectrum-head") }>
+                <label class={ classes!("coach-kicker") } for="coach-spectrum-input">"Where do you live?"</label>
+                <span id="coach-spectrum-hint" class={ classes!("coach-spectrum-hint") }>"Drag to change the story"</span>
+                <span class={ classes!("coach-spectrum-current") } data-spectrum-current aria-hidden="true">{ persona.label }</span>
             </div>
-            <div class="coach-spectrum-track">
-                <span class="coach-spectrum-rule" aria-hidden="true"></span>
+            <div class={ classes!("coach-spectrum-track") }>
+                <span class={ classes!("coach-spectrum-rule") } aria-hidden="true"></span>
                 <input id="coach-spectrum-input"
-                       class="coach-spectrum-input"
+                       class={ classes!("coach-spectrum-input") }
                        type="range"
                        min="0"
                        max={ last }
@@ -378,7 +386,7 @@ fn render_spectrum() -> HtmlFragment {
                        aria-describedby="coach-spectrum-hint"
                        aria-valuetext={ persona.audience }
                        data-spectrum-input />
-                <div class="coach-spectrum-pips" aria-hidden="true">{ pips }</div>
+                <div class={ classes!("coach-spectrum-pips") } aria-hidden="true">{ pips }</div>
             </div>
         </div>
     }
@@ -388,11 +396,11 @@ fn render_testimonials() -> HtmlFragment {
     let cards: HtmlFragment = TESTIMONIALS.iter().map(render_testimonial).collect();
 
     view! {
-        <section class="coach-proof" aria-labelledby="coach-proof-title">
-            <p class="coach-kicker">"Proof · LinkedIn recommendations"</p>
-            <h2 id="coach-proof-title" class="coach-h2">"Don’t take it from me."</h2>
-            <p class="coach-sub">"Two engineers who reported to me wrote these on LinkedIn, under their own names, on their own profiles. Quoted in full, nothing trimmed — click through and check."</p>
-            <ul class="coach-proof-list">{ cards }</ul>
+        <section class={ classes!("coach-proof") } aria-labelledby="coach-proof-title">
+            <p class={ classes!("coach-kicker") }>"Proof · LinkedIn recommendations"</p>
+            <h2 id="coach-proof-title" class={ classes!("coach-h2") }>"Don’t take it from me."</h2>
+            <p class={ classes!("coach-sub") }>"Two engineers who reported to me wrote these on LinkedIn, under their own names, on their own profiles. Quoted in full, nothing trimmed — click through and check."</p>
+            <ul class={ classes!("coach-proof-list") }>{ cards }</ul>
         </section>
     }
 }
@@ -407,7 +415,7 @@ fn render_testimonial(person: &'static Testimonial) -> HtmlFragment {
     // (those are signed and expire).
     let photo = match person.photo {
         Some(path) => view! {
-            <img class="coach-proof-photo"
+            <img class={ classes!("coach-proof-photo") }
                  src={ asset_url(path) }
                  alt=""
                  width={ AVATAR_PX }
@@ -420,8 +428,8 @@ fn render_testimonial(person: &'static Testimonial) -> HtmlFragment {
     // Decorative: the name sits right next to it, so AT gets nothing useful
     // from the picture.
     let avatar = view! {
-        <span class="coach-proof-avatar" aria-hidden="true">
-            <span class="coach-proof-monogram">{ person.initials }</span>
+        <span class={ classes!("coach-proof-avatar") } aria-hidden="true">
+            <span class={ classes!("coach-proof-monogram") }>{ person.initials }</span>
             { photo }
         </span>
     };
@@ -432,32 +440,32 @@ fn render_testimonial(person: &'static Testimonial) -> HtmlFragment {
         .collect();
 
     view! {
-        <li class="coach-proof-card" id={ format!("proof-{}", person.id) }>
-            <h3 class="coach-proof-takeaway">{ person.takeaway }</h3>
-            <figure class="coach-proof-figure">
-                <blockquote class="coach-proof-quote" cite={ LINKEDIN_RECOMMENDATIONS_URL }>
+        <li class={ classes!("coach-proof-card") } id={ format!("proof-{}", person.id) }>
+            <h3 class={ classes!("coach-proof-takeaway") }>{ person.takeaway }</h3>
+            <figure class={ classes!("coach-proof-figure") }>
+                <blockquote class={ classes!("coach-proof-quote") } cite={ LINKEDIN_RECOMMENDATIONS_URL }>
                     { paragraphs }
                 </blockquote>
-                <figcaption class="coach-proof-who">
+                <figcaption class={ classes!("coach-proof-who") }>
                     { avatar }
-                    <span class="coach-proof-id">
-                        <a class="coach-proof-name"
+                    <span class={ classes!("coach-proof-id") }>
+                        <a class={ classes!("coach-proof-name") }
                            href={ person.profile_url }
                            target="_blank"
                            rel="noopener">
                             { person.name }
                         </a>
-                        <span class="coach-proof-headline">{ person.headline }</span>
-                        <span class="coach-proof-school">{ person.school }</span>
+                        <span class={ classes!("coach-proof-headline") }>{ person.headline }</span>
+                        <span class={ classes!("coach-proof-school") }>{ person.school }</span>
                     </span>
                 </figcaption>
             </figure>
-            <p class="coach-proof-meta">
+            <p class={ classes!("coach-proof-meta") }>
                 { person.relationship }
                 " · "
                 <time datetime={ person.date_iso }>{ person.date_label }</time>
             </p>
-            <a class="coach-text-link coach-proof-link"
+            <a class={ classes!("coach-text-link coach-proof-link") }
                href={ LINKEDIN_RECOMMENDATIONS_URL }
                target="_blank"
                rel="noopener">
@@ -474,11 +482,11 @@ fn render_reads() -> HtmlFragment {
         .map(|(article, blurb)| {
             view! {
                 <li>
-                    <a class="coach-read-card" href={ format!("{SITE_ORIGIN}/articles/{}", article.slug) }>
-                        <time class="coach-read-date" datetime={ article.date.iso() }>{ article.date.label() }</time>
-                        <h3 class="coach-read-title">{ article.title }</h3>
-                        <p class="coach-read-blurb">{ blurb }</p>
-                        <span class="coach-read-more" aria-hidden="true">"Read the post →"</span>
+                    <a class={ classes!("coach-read-card") } href={ format!("{SITE_ORIGIN}/articles/{}", article.slug) }>
+                        <time class={ classes!("coach-read-date") } datetime={ article.date.iso() }>{ article.date.label() }</time>
+                        <h3 class={ classes!("coach-read-title") }>{ article.title }</h3>
+                        <p class={ classes!("coach-read-blurb") }>{ blurb }</p>
+                        <span class={ classes!("coach-read-more") } aria-hidden="true">"Read the post →"</span>
                     </a>
                 </li>
             }
@@ -486,10 +494,10 @@ fn render_reads() -> HtmlFragment {
         .collect();
 
     view! {
-        <section class="coach-reads" aria-labelledby="coach-reads-title">
-            <p class="coach-kicker">"Free reading"</p>
-            <h2 id="coach-reads-title" class="coach-h2">"Start here, for free."</h2>
-            <ul class="coach-read-list">{ cards }</ul>
+        <section class={ classes!("coach-reads") } aria-labelledby="coach-reads-title">
+            <p class={ classes!("coach-kicker") }>"Free reading"</p>
+            <h2 id="coach-reads-title" class={ classes!("coach-h2") }>"Start here, for free."</h2>
+            <ul class={ classes!("coach-read-list") }>{ cards }</ul>
         </section>
     }
 }
@@ -497,15 +505,15 @@ fn render_reads() -> HtmlFragment {
 fn render_community() -> HtmlFragment {
     let invite = format!("https://discord.gg/{}", crate::AUTEURS_INVITE_CODE);
     view! {
-        <section class="coach-community" aria-labelledby="coach-community-title">
-            <div class="coach-community-copy">
-                <p class="coach-kicker">"Auteurs · free Discord"</p>
-                <h2 id="coach-community-title" class="coach-h2">"Don’t job hunt alone."</h2>
-                <p class="coach-sub">"Auteurs is my Discord group for engineers, designers, and product people. We share what we are building, trade feedback, and keep each other going. It is free, and you can join today."</p>
+        <section class={ classes!("coach-community") } aria-labelledby="coach-community-title">
+            <div class={ classes!("coach-community-copy") }>
+                <p class={ classes!("coach-kicker") }>"Auteurs · free Discord"</p>
+                <h2 id="coach-community-title" class={ classes!("coach-h2") }>"Don’t job hunt alone."</h2>
+                <p class={ classes!("coach-sub") }>"Auteurs is my Discord group for engineers, designers, and product people. We share what we are building, trade feedback, and keep each other going. It is free, and you can join today."</p>
             </div>
-            <div class="coach-community-actions">
-                <a class="coach-secondary-cta" href={ invite } target="_blank" rel="noopener">"Join the Discord"</a>
-                <a class="coach-text-link" href={ format!("{SITE_ORIGIN}/articles/auteurs") }>"What is Auteurs?"</a>
+            <div class={ classes!("coach-community-actions") }>
+                <a class={ classes!("coach-secondary-cta") } href={ invite } target="_blank" rel="noopener">"Join the Discord"</a>
+                <a class={ classes!("coach-text-link") } href={ format!("{SITE_ORIGIN}/articles/auteurs") }>"What is Auteurs?"</a>
             </div>
         </section>
     }
@@ -514,13 +522,13 @@ fn render_community() -> HtmlFragment {
 fn render_calendar(booking: Option<&BookingPage>) -> HtmlFragment {
     let Some(booking) = booking else {
         return view! {
-            <div class="shop-checkout-notice coach-notice" data-booking-unavailable>
+            <div class={ classes!("shop-checkout-notice coach-notice") } data-booking-unavailable>
                 <p>"The booking calendar is being connected. Friday slots open here shortly."</p>
             </div>
         };
     };
     let external = view! {
-        <a class="coach-text-link coach-external"
+        <a class={ classes!("coach-text-link coach-external") }
            href={ booking.href() }
            target="_blank"
            rel="noopener"
@@ -530,8 +538,8 @@ fn render_calendar(booking: Option<&BookingPage>) -> HtmlFragment {
     };
     match booking.embed_src() {
         Some(src) => view! {
-            <div class="coach-calendar" data-booking-calendar>
-                <iframe class="coach-calendar-frame"
+            <div class={ classes!("coach-calendar") } data-booking-calendar>
+                <iframe class={ classes!("coach-calendar-frame") }
                         title="Google Calendar booking page for 1:1 coaching"
                         data-booking-frame
                         data-src={ src }
@@ -540,7 +548,7 @@ fn render_calendar(booking: Option<&BookingPage>) -> HtmlFragment {
             { external }
         },
         None => view! {
-            <div class="coach-calendar coach-calendar-link" data-booking-calendar>
+            <div class={ classes!("coach-calendar coach-calendar-link") } data-booking-calendar>
                 <p>"Friday slots live on my Google Calendar booking page."</p>
                 { external }
             </div>
@@ -551,7 +559,7 @@ fn render_calendar(booking: Option<&BookingPage>) -> HtmlFragment {
 fn render_booking_sheet(booking: Option<&BookingPage>, mode: SessionMode) -> HtmlFragment {
     view! {
         <aside id="coach-booking"
-               class="shop-bag coach-booking"
+               class={ classes!("shop-bag coach-booking") }
                data-booking
                data-booking-state="closed"
                role="dialog"
@@ -559,26 +567,26 @@ fn render_booking_sheet(booking: Option<&BookingPage>, mode: SessionMode) -> Htm
                aria-labelledby="coach-booking-title"
                aria-hidden="true"
                hidden>
-            <div class="shop-bag-scrim" data-booking-scrim></div>
+            <div class={ classes!("shop-bag-scrim") } data-booking-scrim></div>
             // Always light: Google's booking embed has no dark theme, so the
             // sheet matches it instead of framing a white page in dark chrome.
-            <div class="shop-bag-sheet coach-booking-sheet" data-theme="light">
-                <section class="coach-booking-pane">
-                    <header class="shop-cart-head">
+            <div class={ classes!("shop-bag-sheet coach-booking-sheet") } data-theme="light">
+                <section class={ classes!("coach-booking-pane") }>
+                    <header class={ classes!("shop-cart-head") }>
                         <h2 id="coach-booking-title">"Book a session"</h2>
-                        <button class="shop-icon-button" type="button" data-booking-close aria-label="Close booking">
+                        <button class={ classes!("shop-icon-button") } type="button" data-booking-close aria-label="Close booking">
                             { HtmlFragment::new(X_SVG.to_string()) }
                         </button>
                     </header>
-                    <ol class="coach-progress" aria-label="Booking steps">
+                    <ol class={ classes!("coach-progress") } aria-label="Booking steps">
                         <li data-progress-step="calendar">"1 · Pick a Friday"</li>
                         <li data-progress-step="calendar">{ format!("2 · Pay {}", OFFER.price.label()) }</li>
                         <li data-progress-step="icebreakers">"3 · Icebreakers"</li>
                     </ol>
-                    <div class="coach-booking-view" data-booking-view="calendar">
+                    <div class={ classes!("coach-booking-view") } data-booking-view="calendar">
                         { if mode.is_group() {
                             view! {
-                                <p class="coach-group-note" data-group-note>
+                                <p class={ classes!("coach-group-note") } data-group-note>
                                     <strong>"Booking for a group."</strong>
                                     " "
                                     { group_disclaimer() }
@@ -588,16 +596,16 @@ fn render_booking_sheet(booking: Option<&BookingPage>, mode: SessionMode) -> Htm
                             HtmlFragment::empty()
                         } }
                         { render_calendar(booking) }
-                        <footer class="coach-booking-foot">
-                            <p class="shop-checkout-hint">"Payment runs on Google’s booking page through Stripe. Your confirmation email has the Meet link."</p>
-                            <button class="shop-cart-checkout" type="button" data-booking-next>"I booked · Next step"</button>
+                        <footer class={ classes!("coach-booking-foot") }>
+                            <p class={ classes!("shop-checkout-hint") }>"Payment runs on Google’s booking page through Stripe. Your confirmation email has the Meet link."</p>
+                            <button class={ classes!("shop-cart-checkout") } type="button" data-booking-next>"I booked · Next step"</button>
                         </footer>
                     </div>
-                    <div class="coach-booking-view coach-icebreakers" data-booking-view="icebreakers" hidden>
-                        <div class="shop-bag-stamp coach-stamp" data-booking-stamp aria-hidden="true">"BOOKED"</div>
-                        <p class="coach-kicker">"LAST STEP · BEFORE WE MEET"</p>
-                        <h3 class="coach-h3">"Send your resume and Icebreakers doc"</h3>
-                        <ol class="coach-intake-steps">
+                    <div class={ classes!("coach-booking-view coach-icebreakers") } data-booking-view="icebreakers" hidden>
+                        <div class={ classes!("shop-bag-stamp coach-stamp") } data-booking-stamp aria-hidden="true">"BOOKED"</div>
+                        <p class={ classes!("coach-kicker") }>"LAST STEP · BEFORE WE MEET"</p>
+                        <h3 class={ classes!("coach-h3") }>"Send your resume and Icebreakers doc"</h3>
+                        <ol class={ classes!("coach-intake-steps") }>
                             <li>"Open the template and click “Make a copy”."</li>
                             <li>"Fill it out, and paste in a link to your resume."</li>
                             <li>"Reply to your booking confirmation email with your copy."</li>
@@ -607,17 +615,17 @@ fn render_booking_sheet(booking: Option<&BookingPage>, mode: SessionMode) -> Htm
                                 HtmlFragment::empty()
                             } }
                         </ol>
-                        <p class="coach-recap" data-spectrum-recap>"Tell me where you live on the spectrum, and why."</p>
-                        <a class="shop-cart-checkout"
+                        <p class={ classes!("coach-recap") } data-spectrum-recap>"Tell me where you live on the spectrum, and why."</p>
+                        <a class={ classes!("shop-cart-checkout") }
                            href={ intake_copy_url() }
                            target="_blank"
                            rel="noopener"
                            data-intake-copy>
                             "Make my copy"
                         </a>
-                        <div class="coach-icebreakers-links">
-                            <a class="coach-text-link" href={ intake_preview_url() } target="_blank" rel="noopener">"Preview the template"</a>
-                            <button class="coach-text-button" type="button" data-booking-back>"Back to the calendar"</button>
+                        <div class={ classes!("coach-icebreakers-links") }>
+                            <a class={ classes!("coach-text-link") } href={ intake_preview_url() } target="_blank" rel="noopener">"Preview the template"</a>
+                            <button class={ classes!("coach-text-button") } type="button" data-booking-back>"Back to the calendar"</button>
                         </div>
                     </div>
                 </section>
@@ -758,15 +766,17 @@ mod tests {
         assert!(html.contains("<title>1:1 Coaching · ENGMANAGER.XYZ</title>"));
         assert!(html.contains(r#"<link rel="canonical" href="https://coach.engmanager.xyz/">"#));
         assert!(html.contains(r#"<meta name="robots" content="index,follow">"#));
-        assert!(html.contains(r#"<body class="shop-page coach-page">"#));
+        assert!(html.contains(css_html!(r#"<body class="shop-page coach-page">"#)));
         // Same UI system as the shop: its stylesheet, the theme picker, the bag sheet.
         assert!(html.contains("/assets/css/shop."));
         assert!(html.contains("/assets/css/coach."));
         assert!(html.contains("/assets/js/coach."));
         assert!(html.contains("data-theme-cycle"));
-        assert!(html.contains(r#"class="shop-bag coach-booking""#));
+        assert!(html.contains(css_html!(r#"class="shop-bag coach-booking""#)));
         // The booking sheet is pinned light to match Google's embed.
-        assert!(html.contains(r#"class="shop-bag-sheet coach-booking-sheet" data-theme="light""#));
+        assert!(html.contains(css_html!(
+            r#"class="shop-bag-sheet coach-booking-sheet" data-theme="light""#
+        )));
         // Offer terms.
         assert!(html.contains("35 min"));
         assert!(html.contains("$100"));
@@ -833,7 +843,7 @@ mod tests {
         assert!(html.contains(
             r#"data-src="https://calendar.google.com/calendar/appointments/schedules/AcZssZTest123?gv=true""#
         ));
-        assert!(!html.contains(r#"<iframe class="coach-calendar-frame" src="#));
+        assert!(!html.contains(css_html!(r#"<iframe class="coach-calendar-frame" src="#)));
         assert!(html.contains(
             r#"href="https://calendar.google.com/calendar/appointments/schedules/AcZssZTest123" target="_blank""#
         ));
@@ -878,7 +888,7 @@ mod tests {
             // fallback the reader sees if the image never arrives.
             assert!(
                 html.contains(&format!(
-                    r#"<span class="coach-proof-monogram">{}</span>"#,
+                    css_html!(r#"<span class="coach-proof-monogram">{}</span>"#),
                     person.initials
                 )),
                 "{} has no monogram underneath their photo",
@@ -896,7 +906,9 @@ mod tests {
         );
         // Decorative: the name is right beside it, so the img carries no alt
         // text and the wrapper is hidden from assistive tech.
-        assert!(html.contains(r#"<span class="coach-proof-avatar" aria-hidden="true">"#));
+        assert!(html.contains(css_html!(
+            r#"<span class="coach-proof-avatar" aria-hidden="true">"#
+        )));
     }
 
     #[test]
@@ -938,7 +950,7 @@ mod tests {
         assert!(html.contains("<title>1:1 Coaching · ENGMANAGER.XYZ</title>"));
         assert!(html.contains("/assets/og/coach."));
         assert!(!html.contains("/assets/og/coach-group."));
-        assert!(html.contains(r#"<div class="coach-mode" data-mode="solo">"#));
+        assert!(html.contains(css_html!(r#"<div class="coach-mode" data-mode="solo">"#)));
         assert!(html.contains(r#"href="/" data-active="true""#));
         // No group-only copy leaks into the default page.
         assert!(!html.contains("Booking for a group."));
@@ -984,7 +996,7 @@ mod tests {
 
         // The switch reflects the state, and the sheet carries the disclaimer
         // where the money actually changes hands.
-        assert!(html.contains(r#"<div class="coach-mode" data-mode="group">"#));
+        assert!(html.contains(css_html!(r#"<div class="coach-mode" data-mode="group">"#)));
         assert!(html.contains(r#"href="/?group=1" data-active="true""#));
         assert!(html.contains("Booking for a group."));
         assert!(html.contains("Everyone joining sends their own copy"));
@@ -1002,9 +1014,9 @@ mod tests {
         // the booking sheet.
         let html = page(Some(&booking()), SessionMode::Group);
         assert_eq!(html.matches(&note).count(), 2);
-        assert!(
-            html.contains(r#"<span class="coach-mode-note" id="coach-group-note" role="tooltip">"#)
-        );
+        assert!(html.contains(css_html!(
+            r#"<span class="coach-mode-note" id="coach-group-note" role="tooltip">"#
+        )));
         assert!(html.contains(r#"aria-describedby="coach-group-note""#));
         assert!(!html.contains("<style>"));
     }
@@ -1015,8 +1027,10 @@ mod tests {
         // behaves, and the page works with scripting off.
         for mode in [SessionMode::Solo, SessionMode::Group] {
             let html = page(Some(&booking()), mode);
-            assert!(html.contains(r#"<a class="coach-mode-option" href="/""#));
-            assert!(html.contains(r#"<a class="coach-mode-option" href="/?group=1""#));
+            assert!(html.contains(css_html!(r#"<a class="coach-mode-option" href="/""#)));
+            assert!(html.contains(css_html!(
+                r#"<a class="coach-mode-option" href="/?group=1""#
+            )));
         }
         // With no booking page configured the CTA is a plain link, and it has
         // to carry the mode with it.

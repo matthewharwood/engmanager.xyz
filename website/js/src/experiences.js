@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Web API Experiences — every entry in website/experiences/manifest.toml
 // has a matching `register({ id: "..." })` below. The Rust unit test in
 // website/src/experiences.rs enforces parity at `cargo test` time.
@@ -68,27 +72,27 @@ function showNextToast() {
     if (toastShowing) return;
     const next = toastQueue.shift();
     if (!next) return;
-    const root = document.querySelector("[data-discovery-toasts]");
+    const root = document.querySelector(cssSelector("[data-discovery-toasts]"));
     if (!root) return;
     toastShowing = true;
     const node = document.createElement("div");
-    node.className = "discovery-toast";
+    node.className = cssClasses("discovery-toast");
     node.innerHTML =
-        `<span class="discovery-toast-glyph" aria-hidden="true">⌬</span>` +
-        `<span class="discovery-toast-tag">Found</span>` +
+        cssHtml(`<span class="discovery-toast-glyph" aria-hidden="true">⌬</span>`) +
+        cssHtml(`<span class="discovery-toast-tag">Found</span>`) +
         `<span class="discovery-toast-name">${escape(next.name)}</span>` +
         `<span class="discovery-toast-count">${discoveries.size}/${registry.items.length}</span>` +
-        `<button class="discovery-toast-open" type="button">Open log</button>`;
+        cssHtml(`<button class="discovery-toast-open" type="button">Open log</button>`);
     root.appendChild(node);
     // Force layout, then animate in.
     void node.offsetWidth;
-    node.classList.add("is-visible");
+    node.classList.add(cssToken("is-visible"));
     let dismissed = false;
     let removalFallback = null;
     const dismissToast = () => {
         if (dismissed) return;
         dismissed = true;
-        node.classList.remove("is-visible");
+        node.classList.remove(cssToken("is-visible"));
         const finish = (event) => {
             if (event && event.target !== node) return;
             clearTimeout(removalFallback);
@@ -102,7 +106,7 @@ function showNextToast() {
     const timer = setTimeout(() => {
         dismissToast();
     }, 5200);
-    node.querySelector(".discovery-toast-open")?.addEventListener("click", () => {
+    node.querySelector(cssSelector(".discovery-toast-open"))?.addEventListener("click", () => {
         clearTimeout(timer);
         openReceipt();
         dismissToast();
@@ -615,8 +619,8 @@ function renderReceiptModal() {
     const modal = document.getElementById("api-receipt-modal");
     if (!modal) return;
 
-    const statsEl = modal.querySelector("[data-api-receipt-stats]");
-    const gridEl = modal.querySelector("[data-api-receipt-grid]");
+    const statsEl = modal.querySelector(cssSelector("[data-api-receipt-stats]"));
+    const gridEl = modal.querySelector(cssSelector("[data-api-receipt-grid]"));
     if (!statsEl || !gridEl) return;
 
     const total = registry.items.length;
@@ -646,7 +650,14 @@ function renderReceiptModal() {
         if (!entries) continue;
         const items = entries
             .map((e) => {
-                const cls = `api-cell api-cell-${e.status}${e.discovered ? " api-cell-discovered" : ""}`;
+                const stateClass = {
+                    [STATUS.UNSUPPORTED]: cssToken("api-cell-unsupported"),
+                    [STATUS.ACTIVE]: cssToken("api-cell-active"),
+                    [STATUS.PASSIVE]: cssToken("api-cell-passive"),
+                    [STATUS.ERROR]: cssToken("api-cell-error"),
+                }[e.status];
+                const cls = [cssClasses("api-cell"), stateClass,
+                    e.discovered ? cssToken("api-cell-discovered") : ""].filter(Boolean).join(" ");
                 const lines = receipt
                     .filter((r) => r.api === e.name)
                     .map((r) => `${r.label}: ${r.value}`)
@@ -681,7 +692,7 @@ function escape(s) {
 
 function openReceipt() {
     const modal = document.getElementById("api-receipt-modal");
-    if (!modal || modal.matches(":popover-open")) return;
+    if (!modal || modal.matches(cssSelector(":popover-open"))) return;
     modal.showPopover();
 }
 
@@ -825,9 +836,9 @@ register({
         channel.addEventListener("message", (event) => {
             const slug = event.data?.slug;
             if (!slug) return;
-            document
-                .querySelectorAll(`.article-fluid-link[data-slug="${CSS.escape(slug)}"]`)
-                .forEach((link) => link.classList.add("is-visited"));
+            [...document.querySelectorAll(cssSelector(".article-fluid-link"))]
+                .filter((link) => link.dataset.slug === slug)
+                .forEach((link) => link.classList.add(cssToken("is-visited")));
             // Receiving from another tab proves cross-tab sync works.
             api.discover();
         });
@@ -855,7 +866,7 @@ register({
         // (JS_ROUTER_CONSTRAINTS §2.15c). setUp() runs at most once —
         // on a non-article first load it is deferred until a swap
         // first lands on an article page.
-        let article = document.querySelector(".article");
+        let article = document.querySelector(cssSelector(".article"));
         let ready = false;
         const setUp = () => {
             if (ready) return;
@@ -895,7 +906,7 @@ register({
         };
 
         onSoftNav((root) => {
-            article = root.querySelector(".article");
+            article = root.querySelector(cssSelector(".article"));
             if (article) setUp();
         });
 
@@ -1163,7 +1174,7 @@ register({
     group: "meta",
     isSupported: () => "document" in globalThis,
     init: (api) => {
-        api.log("nodes", document.querySelectorAll("*").length);
+        api.log("nodes", document.querySelectorAll(cssSelector("*")).length);
     },
 });
 
@@ -1338,7 +1349,7 @@ register({
     isSupported: () => "requestFullscreen" in Element.prototype,
     init: (api) => {
         bindPageNodes("[data-fullscreen]", (button) => {
-            const target = document.querySelector(".article");
+            const target = document.querySelector(cssSelector(".article"));
             if (!target) return;
             button.hidden = false;
             button.addEventListener("click", () => {
@@ -1946,7 +1957,7 @@ register({
     group: "graphics",
     isSupported: () => "SVGSVGElement" in globalThis,
     init: (api) => {
-        api.log("in-tree", document.querySelectorAll("svg").length);
+        api.log("in-tree", document.querySelectorAll(cssSelector("svg")).length);
     },
 });
 
@@ -1980,7 +1991,7 @@ register({
         let dispose = () => {};
         const bind = (root) => {
             dispose();
-            const article = root.querySelector(".article");
+            const article = root.querySelector(cssSelector(".article"));
             if (!article) return;
             const lifetime = new AbortController();
             let sentinel = null;
@@ -2073,7 +2084,7 @@ register({
         // edits show up on next reload without manual DevTools work.
         // The dev marker is emitted by render_dev_meta() in pages/mod.rs.
         const isDev =
-            document.querySelector('meta[name="engmanager-mode"]')?.content ===
+            document.querySelector(cssSelector('meta[name="engmanager-mode"]'))?.content ===
             "dev";
         if (isDev) {
             try {
@@ -2128,8 +2139,8 @@ register({
     init: (api) => {
         // Journey pages own their one upcoming outlet. Do not launch another
         // document (or duplicate its network work) behind that live surface.
-        if (document.querySelector("[data-eng-page]")) {
-            document.querySelectorAll('script[type="speculationrules"]').forEach((node) => node.remove());
+        if (document.querySelector(cssSelector("[data-eng-page]"))) {
+            document.querySelectorAll(cssSelector('script[type="speculationrules"]')).forEach((node) => node.remove());
             api.log("rules", "journey loader");
             return false;
         }
@@ -2147,10 +2158,10 @@ register({
         // Returns a summary string, or false when there are no
         // candidates (nothing injected).
         const inject = () => {
-            if (document.querySelector("[data-eng-page]")) return false;
+            if (document.querySelector(cssSelector("[data-eng-page]"))) return false;
             const articleNavUrls = [
                 ...document.querySelectorAll(
-                    'a[rel="next"], a[rel="prev"], .article-related-link',
+                    cssSelector('a[rel="next"], a[rel="prev"], .article-related-link'),
                 ),
             ]
                 .map((link) => sameOriginPath(link.href))
@@ -2181,7 +2192,7 @@ register({
         onSoftNav(() => {
             if (
                 document.querySelector(
-                    'script[type="speculationrules"][data-server]',
+                    cssSelector('script[type="speculationrules"][data-server]'),
                 )
             ) {
                 return;
@@ -2194,7 +2205,7 @@ register({
         // Server island present (ledger #17: defer, never inject a
         // duplicate). The API-hunt detection/registration above stays
         // exactly as before.
-        if (document.querySelector('script[type="speculationrules"]')) {
+        if (document.querySelector(cssSelector('script[type="speculationrules"]'))) {
             api.log("rules", "server-provided");
             return;
         }
@@ -2329,7 +2340,7 @@ register({
         bindPageNodes(".article blockquote", (quote) => {
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "share-quote";
+            button.className = cssClasses("share-quote");
             button.textContent = "Share quote";
             button.addEventListener("click", async () => {
                 const text = Array.from(quote.childNodes)
@@ -2351,7 +2362,7 @@ register({
             });
             quote.appendChild(button);
         });
-        api.log("blockquotes", document.querySelectorAll(".article blockquote").length);
+        api.log("blockquotes", document.querySelectorAll(cssSelector(".article blockquote")).length);
     },
 });
 
@@ -2423,7 +2434,7 @@ register({
     isSupported: () => "vibrate" in navigator,
     init: (api) => {
         document.addEventListener("click", (event) => {
-            if (event.target.closest(".article-fluid-link .article-check")) {
+            if (event.target.closest(cssSelector(".article-fluid-link .article-check"))) {
                 try {
                     navigator.vibrate(25);
                     api.discover();
@@ -2502,7 +2513,7 @@ register({
         let played = false;
         document.addEventListener("click", (event) => {
             if (played) return;
-            if (!event.target.closest(".article-fluid-link .article-check")) return;
+            if (!event.target.closest(cssSelector(".article-fluid-link .article-check"))) return;
             played = true;
             try {
                 const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -2551,7 +2562,7 @@ register({
     init: async (api) => {
         // Hash the article body off-main-thread if a worker URL was
         // injected by the page; otherwise hash inline.
-        const article = document.querySelector(".article");
+        const article = document.querySelector(cssSelector(".article"));
         if (!article) {
             // Hash the page title instead so every page emits a hash.
             const bytes = new TextEncoder().encode(document.title);
@@ -2657,7 +2668,7 @@ register({
     isSupported: () => "speechSynthesis" in window,
     init: (api) => {
         bindPageNodes("[data-read-aloud]", (button) => {
-            const article = document.querySelector(".article");
+            const article = document.querySelector(cssSelector(".article"));
             if (!article) return;
             button.hidden = false;
             let speaking = false;
@@ -2884,7 +2895,7 @@ function mountScavengerHooks() {
     let clickStreak = 0;
     let clickResetTimer = null;
     document.addEventListener("click", (event) => {
-        if (event.target.closest(".api-cell-hint")) return;
+        if (event.target.closest(cssSelector(".api-cell-hint"))) return;
         clickStreak++;
         clearTimeout(clickResetTimer);
         clickResetTimer = setTimeout(() => (clickStreak = 0), 400);
@@ -2999,7 +3010,7 @@ function mountScavengerHooks() {
     // a handful of dormant APIs as "found" all at once.
     let glyphStreak = 0;
     document.addEventListener("click", (event) => {
-        const target = event.target.closest(".api-receipt-glyph");
+        const target = event.target.closest(cssSelector(".api-receipt-glyph"));
         if (!target) return;
         glyphStreak++;
         if (glyphStreak >= 3) {
@@ -3021,7 +3032,7 @@ function mountScavengerHooks() {
     // links (discover() is idempotent — a stray double bind on a
     // surviving node is harmless).
     const bindHoverDiscover = (root) =>
-        root.querySelectorAll(".article-fluid-link").forEach(
+        root.querySelectorAll(cssSelector(".article-fluid-link")).forEach(
             (link) =>
                 link.addEventListener(
                     "pointerenter",

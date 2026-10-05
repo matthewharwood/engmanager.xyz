@@ -44,27 +44,27 @@ pub use super::asset_names::quick_actions::{SCRIPT, STYLE};
 /// sheet, which `PageShell` ships globally (see module docs).
 pub fn theme_picker() -> HtmlFragment {
     view! {
-        <button class="theme-picker"
+        <button class={ classes!("theme-picker") }
                 type="button"
                 data-theme-cycle
                 aria-label="Cycle theme · current: Auto">
-            <svg class="theme-picker-shapes"
+            <svg class={ classes!("theme-picker-shapes") }
                  aria-hidden="true"
                  viewBox="0 0 32 32"
                  focusable="false">
-                <circle class="theme-picker-shape theme-picker-shape-auto" cx="16" cy="16" r="10" />
-                <path class="theme-picker-shape theme-picker-shape-light" d="M16 10 A6 6 0 1 0 16 22 A6 6 0 1 0 16 10 M16 3 V7 M16 25 V29 M3 16 H7 M25 16 H29 M6.8 6.8 L9.6 9.6 M22.4 22.4 L25.2 25.2 M25.2 6.8 L22.4 9.6 M9.6 22.4 L6.8 25.2" />
-                <rect class="theme-picker-shape theme-picker-shape-dark" x="7" y="7" width="18" height="18" />
-                <path class="theme-picker-shape theme-picker-shape-catppuccin" d="M16 5 L25.5 10.5 V21.5 L16 27 L6.5 21.5 V10.5 Z" />
-                <path class="theme-picker-shape theme-picker-shape-synthwave" d="M16 5 L19.3 12.2 L27 13 L21.2 18.1 L22.9 25.7 L16 21.8 L9.1 25.7 L10.8 18.1 L5 13 L12.7 12.2 Z" />
-                <path class="theme-picker-shape theme-picker-shape-cyberpunk" d="M25 16 A9 9 0 0 1 16 25" />
-                <path class="theme-picker-shape theme-picker-shape-forest" d="M16 5 L27 16 L16 27 L5 16 Z" />
-                <path class="theme-picker-shape theme-picker-shape-lofi" d="M16 5 L26.5 12.6 L22.5 25 H9.5 L5.5 12.6 Z" />
-                <path class="theme-picker-shape theme-picker-shape-dracula" d="M16 4 L19.5 12.5 L28 16 L19.5 19.5 L16 28 L12.5 19.5 L4 16 L12.5 12.5 Z" />
-                <path class="theme-picker-shape theme-picker-shape-luxury" d="M10 6 H22 L28 16 L22 26 H10 L4 16 Z" />
+                <circle class={ classes!("theme-picker-shape theme-picker-shape-auto") } cx="16" cy="16" r="10" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-light") } d="M16 10 A6 6 0 1 0 16 22 A6 6 0 1 0 16 10 M16 3 V7 M16 25 V29 M3 16 H7 M25 16 H29 M6.8 6.8 L9.6 9.6 M22.4 22.4 L25.2 25.2 M25.2 6.8 L22.4 9.6 M9.6 22.4 L6.8 25.2" />
+                <rect class={ classes!("theme-picker-shape theme-picker-shape-dark") } x="7" y="7" width="18" height="18" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-catppuccin") } d="M16 5 L25.5 10.5 V21.5 L16 27 L6.5 21.5 V10.5 Z" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-synthwave") } d="M16 5 L19.3 12.2 L27 13 L21.2 18.1 L22.9 25.7 L16 21.8 L9.1 25.7 L10.8 18.1 L5 13 L12.7 12.2 Z" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-cyberpunk") } d="M25 16 A9 9 0 0 1 16 25" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-forest") } d="M16 5 L27 16 L16 27 L5 16 Z" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-lofi") } d="M16 5 L26.5 12.6 L22.5 25 H9.5 L5.5 12.6 Z" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-dracula") } d="M16 4 L19.5 12.5 L28 16 L19.5 19.5 L16 28 L12.5 19.5 L4 16 L12.5 12.5 Z" />
+                <path class={ classes!("theme-picker-shape theme-picker-shape-luxury") } d="M10 6 H22 L28 16 L22 26 H10 L4 16 Z" />
             </svg>
-            <span class="theme-picker-emoji" aria-hidden="true" data-theme-emoji>"🪄"</span>
-            <span class="sr-only" data-theme-current-label>"Auto"</span>
+            <span class={ classes!("theme-picker-emoji") } aria-hidden="true" data-theme-emoji>"🪄"</span>
+            <span class={ classes!("sr-only") } data-theme-current-label>"Auto"</span>
         </button>
     }
 }
@@ -75,18 +75,18 @@ pub fn render() -> Rendered {
     // `data-swap-region` (ledger #14): names this body-level island for the
     // soft-navigation router's region reconcile.
     let markup = view! {
-        <div class="quick-actions"
+        <div class={ classes!("quick-actions") }
              data-quick-actions
              data-state="collapsed"
              data-swap-region="quick-actions">
-            <button class="quick-actions-peek"
+            <button class={ classes!("quick-actions-peek") }
                     type="button"
                     data-quick-actions-toggle
                     aria-label="Open quick actions"
                     aria-expanded="false">
-                <span class="quick-actions-arrow" aria-hidden="true">"←"</span>
+                <span class={ classes!("quick-actions-arrow") } aria-hidden="true">"←"</span>
             </button>
-            <div class="quick-actions-bubbles" aria-label="Theme controls">
+            <div class={ classes!("quick-actions-bubbles") } aria-label="Theme controls">
                 { theme_picker() }
             </div>
         </div>
@@ -107,12 +107,12 @@ mod tests {
     #[test]
     fn renders_theme_cluster_without_receipt_entry_point() {
         let html = render().markup.into_string();
-        assert!(html.contains(r#"class="quick-actions""#));
+        assert!(html.contains(css_html!(r#"class="quick-actions""#)));
         assert!(html.contains("data-quick-actions"));
         assert!(html.contains(r#"data-state="collapsed""#));
         assert!(html.contains("data-quick-actions-toggle"));
         // The theme control is the only action in this cluster.
-        assert!(html.contains(r#"class="theme-picker""#));
+        assert!(html.contains(css_html!(r#"class="theme-picker""#)));
         assert!(!html.contains("api-receipt-modal"));
     }
 

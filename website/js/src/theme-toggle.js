@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Theme cycler.
 //
 // One button (`.theme-picker[data-theme-cycle]`). Click advances
@@ -68,12 +72,12 @@ function syncLabel(theme) {
     const label = entry ? entry[1] : theme;
     const emoji = entry ? entry[2] : "";
     document
-        .querySelectorAll("[data-theme-current-label]")
+        .querySelectorAll(cssSelector("[data-theme-current-label]"))
         .forEach((el) => (el.textContent = label));
     document
-        .querySelectorAll("[data-theme-emoji]")
+        .querySelectorAll(cssSelector("[data-theme-emoji]"))
         .forEach((el) => (el.textContent = emoji));
-    document.querySelectorAll("[data-theme-cycle]").forEach((btn) => {
+    document.querySelectorAll(cssSelector("[data-theme-cycle]")).forEach((btn) => {
         btn.setAttribute("aria-label", `Cycle theme · current: ${label}`);
         btn.dataset.themeShape = theme;
     });
@@ -113,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // router-swapped regions work without re-binding
     // (JS_ROUTER_CONSTRAINTS §2.16).
     document.addEventListener("click", (event) => {
-        if (!event.target.closest?.("[data-theme-cycle]")) return;
+        if (!event.target.closest?.(cssSelector("[data-theme-cycle]"))) return;
         const current = readStored();
         const next = nextTheme(current);
         apply(next);

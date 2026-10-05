@@ -1,0 +1,10 @@
+(()=>{const ICON_SVG=`<svg class="code-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+</svg>`;function makeButton(){let e=document.createElement(`button`);return e.className=`code-copy`,e.type=`button`,e.setAttribute(`aria-label`,`Copy code`),e.innerHTML=`<svg class="code-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+</svg><span>Copy</span>`,e}async function copyCode(e,t){let n=t.innerText||t.textContent||``;try{await navigator.clipboard.writeText(n)}catch{let e=document.createRange();e.selectNodeContents(t);let n=window.getSelection();n.removeAllRanges(),n.addRange(e);try{document.execCommand(`copy`)}catch{return}finally{n.removeAllRanges()}}let r=e.querySelector(`span`),i=r?.textContent;r&&(r.textContent=`Copied`),e.classList.add(`is-copied`),setTimeout(()=>{r&&i&&(r.textContent=i),e.classList.remove(`is-copied`)},1500)}let softNavigated=!1;function install(){document.querySelectorAll(`.article pre`).forEach(e=>{if(e.querySelector(`.code-copy`))return;let r=e.querySelector(`code`);if(!r)return;let i=makeButton();i.addEventListener(`click`,()=>copyCode(i,r)),e.appendChild(i)}),softNavigated&&window.Prism&&Prism.highlightAllUnder&&Prism.highlightAllUnder(document)}document.readyState===`loading`?document.addEventListener(`DOMContentLoaded`,install,{once:!0}):install(),window.__engNav?.onSwap?.(()=>{softNavigated=!0,install()}),window.addEventListener(`eng:optionalasset`,e=>{String(e.detail?.url||``).includes(`prism`)&&(softNavigated=!0,install())});
+})();

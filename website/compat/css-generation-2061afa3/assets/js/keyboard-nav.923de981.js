@@ -1,0 +1,2 @@
+(()=>{(function(){document.addEventListener(`keydown`,e=>{if(e.key!==`ArrowDown`&&e.key!==`ArrowUp`)return;let t=e.target&&e.target.tagName;if(t===`INPUT`||t===`TEXTAREA`||t===`SELECT`||!document.body||!document.body.classList.contains(`homepage`))return;let n=Array.from(document.querySelectorAll(`.article-fluid-link`));if(!n.length)return;let r=document.activeElement,i=n.indexOf(r),a=n.length-1,o;o=e.key===`ArrowDown`?i<0?0:(i+1)%n.length:i<0?a:(i-1+n.length)%n.length,e.preventDefault(),n[o].focus()})})();
+})();

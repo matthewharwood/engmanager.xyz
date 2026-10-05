@@ -130,18 +130,18 @@ fn render_page(mode: Mode, state: &AppState) -> String {
     scripts.add_js("js/checkout.js");
 
     let body = view! {
-        <header class="checkout-topbar" aria-label="Checkout controls">
-            <a class="checkout-back" href="/" aria-label="Back to the store">
-                <span class="checkout-back-arrow" aria-hidden="true">"‹"</span>
-                <span class="checkout-back-label">"Store"</span>
+        <header class={ classes!("checkout-topbar") } aria-label="Checkout controls">
+            <a class={ classes!("checkout-back") } href="/" aria-label="Back to the store">
+                <span class={ classes!("checkout-back-arrow") } aria-hidden="true">"‹"</span>
+                <span class={ classes!("checkout-back-label") }>"Store"</span>
             </a>
-            <p class="checkout-wordmark">"ENGMANAGER.XYZ"</p>
+            <p class={ classes!("checkout-wordmark") }>"ENGMANAGER.XYZ"</p>
             { theme_picker() }
         </header>
         { body_main }
     };
 
-    PageShell::new(title, "checkout-page")
+    PageShell::new(title, classes!("checkout-page"))
         .meta(MetaTags {
             description: Some(CHECKOUT_DESCRIPTION.to_string()),
             robots: Some("noindex,nofollow"),
@@ -155,36 +155,36 @@ fn render_page(mode: Mode, state: &AppState) -> String {
 
 fn render_checkout_main() -> HtmlFragment {
     view! {
-        <main id="main" class="checkout-shell" data-checkout>
-            <div class="checkout-state checkout-state-loading" data-checkout-loading>
-                <div class="checkout-spinner-lg" aria-hidden="true"></div>
+        <main id="main" class={ classes!("checkout-shell") } data-checkout>
+            <div class={ classes!("checkout-state checkout-state-loading") } data-checkout-loading>
+                <div class={ classes!("checkout-spinner-lg") } aria-hidden="true"></div>
                 <p>"Loading your cart…"</p>
             </div>
 
-            <div class="checkout-state checkout-notice" data-checkout-disabled hidden>
+            <div class={ classes!("checkout-state checkout-notice") } data-checkout-disabled hidden>
                 <h1>"Checkout is warming up"</h1>
                 <p>"Payments aren’t switched on in this environment yet. The caps are still very real."</p>
-                <a class="checkout-button-link" href="/">"Back to the caps"</a>
+                <a class={ classes!("checkout-button-link") } href="/">"Back to the caps"</a>
             </div>
 
-            <div class="checkout-state checkout-empty" data-checkout-empty hidden>
-                <div class="checkout-empty-cap" aria-hidden="true"></div>
+            <div class={ classes!("checkout-state checkout-empty") } data-checkout-empty hidden>
+                <div class={ classes!("checkout-empty-cap") } aria-hidden="true"></div>
                 <h1>"Your cap stack is empty"</h1>
                 <p>"Nothing to check out yet. Go stitch a few strong opinions onto your head."</p>
-                <a class="checkout-button-link" href="/">"Browse the caps"</a>
+                <a class={ classes!("checkout-button-link") } href="/">"Browse the caps"</a>
             </div>
 
-            <div class="checkout-grid" data-checkout-grid hidden>
-                <section class="checkout-flow" aria-label="Checkout details">
-                    <h1 class="checkout-h1">"Checkout"</h1>
-                    <p class="checkout-lede">"Three steps to a freshly embroidered opinion."</p>
-                    <form class="checkout-form" data-checkout-form novalidate>
-                        <section class="checkout-step" data-step="1">
-                            <header class="checkout-step-head">
-                                <span class="checkout-step-num" aria-hidden="true">"1"</span>
+            <div class={ classes!("checkout-grid") } data-checkout-grid hidden>
+                <section class={ classes!("checkout-flow") } aria-label="Checkout details">
+                    <h1 class={ classes!("checkout-h1") }>"Checkout"</h1>
+                    <p class={ classes!("checkout-lede") }>"Three steps to a freshly embroidered opinion."</p>
+                    <form class={ classes!("checkout-form") } data-checkout-form novalidate>
+                        <section class={ classes!("checkout-step") } data-step="1">
+                            <header class={ classes!("checkout-step-head") }>
+                                <span class={ classes!("checkout-step-num") } aria-hidden="true">"1"</span>
                                 <h2>"Contact"</h2>
                             </header>
-                            <div class="checkout-field">
+                            <div class={ classes!("checkout-field") }>
                                 <label for="checkout-email">"Email"</label>
                                 <input id="checkout-email"
                                        name="email"
@@ -196,39 +196,39 @@ fn render_checkout_main() -> HtmlFragment {
                                        aria-describedby="checkout-email-hint"
                                        data-checkout-email
                                        required />
-                                <p id="checkout-email-hint" class="checkout-field-hint">"Your confirmation and tracking land here."</p>
+                                <p id="checkout-email-hint" class={ classes!("checkout-field-hint") }>"Your confirmation and tracking land here."</p>
                             </div>
                         </section>
 
-                        <section class="checkout-step" data-step="2">
-                            <header class="checkout-step-head">
-                                <span class="checkout-step-num" aria-hidden="true">"2"</span>
+                        <section class={ classes!("checkout-step") } data-step="2">
+                            <header class={ classes!("checkout-step-head") }>
+                                <span class={ classes!("checkout-step-num") } aria-hidden="true">"2"</span>
                                 <h2>"Ship to"</h2>
                             </header>
-                            <div class="checkout-element" data-address-element>
-                                <div class="checkout-element-skeleton" aria-hidden="true"></div>
+                            <div class={ classes!("checkout-element") } data-address-element>
+                                <div class={ classes!("checkout-element-skeleton") } aria-hidden="true"></div>
                             </div>
                         </section>
 
-                        <section class="checkout-step" data-step="3">
-                            <header class="checkout-step-head">
-                                <span class="checkout-step-num" aria-hidden="true">"3"</span>
+                        <section class={ classes!("checkout-step") } data-step="3">
+                            <header class={ classes!("checkout-step-head") }>
+                                <span class={ classes!("checkout-step-num") } aria-hidden="true">"3"</span>
                                 <h2>"Payment"</h2>
                             </header>
-                            <div class="checkout-element" data-payment-element>
-                                <div class="checkout-element-skeleton" aria-hidden="true"></div>
+                            <div class={ classes!("checkout-element") } data-payment-element>
+                                <div class={ classes!("checkout-element-skeleton") } aria-hidden="true"></div>
                             </div>
-                            <p class="checkout-error" data-checkout-error role="alert" aria-live="assertive" hidden></p>
-                            <button class="checkout-pay"
+                            <p class={ classes!("checkout-error") } data-checkout-error role="alert" aria-live="assertive" hidden></p>
+                            <button class={ classes!("checkout-pay") }
                                     type="submit"
                                     data-checkout-pay
                                     aria-describedby="checkout-secure"
                                     disabled>
-                                <span class="checkout-pay-spinner" aria-hidden="true" data-pay-spinner hidden></span>
-                                <span class="checkout-pay-label" data-pay-label>"Pay"</span>
+                                <span class={ classes!("checkout-pay-spinner") } aria-hidden="true" data-pay-spinner hidden></span>
+                                <span class={ classes!("checkout-pay-label") } data-pay-label>"Pay"</span>
                             </button>
-                            <p id="checkout-secure" class="checkout-secure">
-                                <span class="checkout-secure-lock" aria-hidden="true">"🔒"</span>
+                            <p id="checkout-secure" class={ classes!("checkout-secure") }>
+                                <span class={ classes!("checkout-secure-lock") } aria-hidden="true">"🔒"</span>
                                 "Encrypted and processed by Stripe. Test mode — try card 4242 4242 4242 4242."
                             </p>
                         </section>
@@ -238,11 +238,11 @@ fn render_checkout_main() -> HtmlFragment {
                 { render_receipt_panel() }
             </div>
 
-            <div class="checkout-done" data-checkout-done role="status" aria-live="polite" hidden>
-                <div class="checkout-done-inner">
-                    <div class="checkout-check" aria-hidden="true"></div>
-                    <p class="checkout-done-kicker">"PAYMENT CONFIRMED"</p>
-                    <p class="checkout-done-text" data-done-text>"Stamping your receipt…"</p>
+            <div class={ classes!("checkout-done") } data-checkout-done role="status" aria-live="polite" hidden>
+                <div class={ classes!("checkout-done-inner") }>
+                    <div class={ classes!("checkout-check") } aria-hidden="true"></div>
+                    <p class={ classes!("checkout-done-kicker") }>"PAYMENT CONFIRMED"</p>
+                    <p class={ classes!("checkout-done-text") } data-done-text>"Stamping your receipt…"</p>
                 </div>
             </div>
         </main>
@@ -251,28 +251,28 @@ fn render_checkout_main() -> HtmlFragment {
 
 fn render_success_main() -> HtmlFragment {
     view! {
-        <main id="main" class="checkout-shell checkout-shell-success" data-checkout-success>
-            <div class="checkout-state checkout-state-loading" data-confirm-loading>
-                <div class="checkout-spinner-lg" aria-hidden="true"></div>
+        <main id="main" class={ classes!("checkout-shell checkout-shell-success") } data-checkout-success>
+            <div class={ classes!("checkout-state checkout-state-loading") } data-confirm-loading>
+                <div class={ classes!("checkout-spinner-lg") } aria-hidden="true"></div>
                 <p>"Confirming your order…"</p>
             </div>
 
-            <div class="checkout-state checkout-notice" data-confirm-error hidden>
+            <div class={ classes!("checkout-state checkout-notice") } data-confirm-error hidden>
                 <h1>"We couldn’t find that order"</h1>
                 <p data-confirm-error-msg>"This confirmation link looks expired or incomplete."</p>
-                <a class="checkout-button-link" href="/">"Back to the store"</a>
+                <a class={ classes!("checkout-button-link") } href="/">"Back to the store"</a>
             </div>
 
-            <div class="checkout-confirm" data-confirm-ok hidden>
-                <header class="checkout-confirm-head">
-                    <div class="checkout-check" aria-hidden="true"></div>
-                    <p class="checkout-confirm-kicker">"ORDER CONFIRMED"</p>
-                    <h1 class="checkout-confirm-title">"Shipped to the embroidery queue"</h1>
-                    <p class="checkout-confirm-lede" data-confirm-email></p>
+            <div class={ classes!("checkout-confirm") } data-confirm-ok hidden>
+                <header class={ classes!("checkout-confirm-head") }>
+                    <div class={ classes!("checkout-check") } aria-hidden="true"></div>
+                    <p class={ classes!("checkout-confirm-kicker") }>"ORDER CONFIRMED"</p>
+                    <h1 class={ classes!("checkout-confirm-title") }>"Shipped to the embroidery queue"</h1>
+                    <p class={ classes!("checkout-confirm-lede") } data-confirm-email></p>
                 </header>
                 { render_receipt_panel() }
-                <div class="checkout-confirm-actions">
-                    <a class="checkout-button-link" href="/">"Keep shopping"</a>
+                <div class={ classes!("checkout-confirm-actions") }>
+                    <a class={ classes!("checkout-button-link") } href="/">"Keep shopping"</a>
                 </div>
             </div>
         </main>
@@ -285,42 +285,42 @@ fn render_success_main() -> HtmlFragment {
 // cart on /checkout, from the PaymentIntent on /checkout/success.
 fn render_receipt_panel() -> HtmlFragment {
     view! {
-        <aside class="checkout-receipt" aria-label="Order summary">
-            <div class="receipt" data-receipt>
-                <div class="receipt-paper">
-                    <header class="receipt-head">
-                        <p class="receipt-logo">"ENGMANAGER.XYZ"</p>
-                        <p class="receipt-sub">"DAD CAP DIVISION · STORE #1"</p>
-                        <p class="receipt-meta" data-receipt-meta>"ORDER PREVIEW"</p>
+        <aside class={ classes!("checkout-receipt") } aria-label="Order summary">
+            <div class={ classes!("receipt") } data-receipt>
+                <div class={ classes!("receipt-paper") }>
+                    <header class={ classes!("receipt-head") }>
+                        <p class={ classes!("receipt-logo") }>"ENGMANAGER.XYZ"</p>
+                        <p class={ classes!("receipt-sub") }>"DAD CAP DIVISION · STORE #1"</p>
+                        <p class={ classes!("receipt-meta") } data-receipt-meta>"ORDER PREVIEW"</p>
                     </header>
-                    <div class="receipt-rule" aria-hidden="true"></div>
-                    <ul class="receipt-lines" data-receipt-lines></ul>
-                    <div class="receipt-rule" aria-hidden="true"></div>
-                    <dl class="receipt-totals">
-                        <div class="receipt-row">
+                    <div class={ classes!("receipt-rule") } aria-hidden="true"></div>
+                    <ul class={ classes!("receipt-lines") } data-receipt-lines></ul>
+                    <div class={ classes!("receipt-rule") } aria-hidden="true"></div>
+                    <dl class={ classes!("receipt-totals") }>
+                        <div class={ classes!("receipt-row") }>
                             <dt>"Subtotal"</dt>
                             <dd data-receipt-subtotal>"$0"</dd>
                         </div>
-                        <div class="receipt-row">
+                        <div class={ classes!("receipt-row") }>
                             <dt>"Shipping"</dt>
                             <dd data-receipt-shipping>"Free"</dd>
                         </div>
-                        <div class="receipt-row">
+                        <div class={ classes!("receipt-row") }>
                             <dt>"Tax"</dt>
                             <dd data-receipt-tax>"—"</dd>
                         </div>
                     </dl>
-                    <div class="receipt-rule receipt-rule-bold" aria-hidden="true"></div>
-                    <dl class="receipt-grand">
-                        <div class="receipt-row">
+                    <div class={ classes!("receipt-rule receipt-rule-bold") } aria-hidden="true"></div>
+                    <dl class={ classes!("receipt-grand") }>
+                        <div class={ classes!("receipt-row") }>
                             <dt>"Total"</dt>
                             <dd data-receipt-total>"$0"</dd>
                         </div>
                     </dl>
-                    <p class="receipt-barcode" aria-hidden="true"></p>
-                    <p class="receipt-thanks" data-receipt-foot>"THANK YOU · NOW SHIP IT"</p>
+                    <p class={ classes!("receipt-barcode") } aria-hidden="true"></p>
+                    <p class={ classes!("receipt-thanks") } data-receipt-foot>"THANK YOU · NOW SHIP IT"</p>
                 </div>
-                <div class="receipt-stamp" data-receipt-stamp aria-hidden="true">"PAID"</div>
+                <div class={ classes!("receipt-stamp") } data-receipt-stamp aria-hidden="true">"PAID"</div>
             </div>
         </aside>
     }

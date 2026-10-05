@@ -53,9 +53,9 @@ pub fn render(headings: &[Heading]) -> Rendered {
             .iter()
             .map(|h| {
                 let class = if h.level == 3 {
-                    "article-toc-link is-h3"
+                    classes!("article-toc-link is-h3")
                 } else {
-                    "article-toc-link"
+                    classes!("article-toc-link")
                 };
                 view! {
                     <li>
@@ -68,9 +68,9 @@ pub fn render(headings: &[Heading]) -> Rendered {
             .collect();
 
         view! {
-            <aside class="article-toc" aria-label="On this page">
-                <div class="article-toc-heading">
-                    <svg class="article-toc-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <aside class={ classes!("article-toc") } aria-label="On this page">
+                <div class={ classes!("article-toc-heading") }>
+                    <svg class={ classes!("article-toc-icon") } viewBox="0 0 16 16" aria-hidden="true">
                         <g fill="none" stroke="currentColor" stroke-width="1.5"
                            stroke-linecap="round" stroke-linejoin="round">
                             <line x1="6" y1="4" x2="14" y2="4" />
@@ -83,7 +83,7 @@ pub fn render(headings: &[Heading]) -> Rendered {
                     </svg>
                     "On this page"
                 </div>
-                <ul class="article-toc-list">{ items }</ul>
+                <ul class={ classes!("article-toc-list") }>{ items }</ul>
             </aside>
         }
     };
@@ -118,12 +118,16 @@ mod tests {
     #[test]
     fn renders_sidebar_with_h3_indent_modifier() {
         let html = render(&headings()).markup.into_string();
-        assert!(html.contains(r#"<aside class="article-toc" aria-label="On this page">"#));
+        assert!(html.contains(css_html!(
+            r#"<aside class="article-toc" aria-label="On this page">"#
+        )));
         assert!(html.contains("On this page"));
-        assert!(html.contains(r##"<a class="article-toc-link" href="#intro">Intro</a>"##));
-        assert!(
-            html.contains(r##"<a class="article-toc-link is-h3" href="#details">Details</a>"##)
-        );
+        assert!(html.contains(css_html!(
+            r##"<a class="article-toc-link" href="#intro">Intro</a>"##
+        )));
+        assert!(html.contains(css_html!(
+            r##"<a class="article-toc-link is-h3" href="#details">Details</a>"##
+        )));
     }
 
     #[test]

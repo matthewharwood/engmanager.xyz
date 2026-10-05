@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Mobile quick-actions FAB.
 //
 // Desktop keeps the existing fixed chips. On narrow screens the same
@@ -13,12 +17,12 @@
 
 (() => {
     function init(scope) {
-        const root = scope.querySelector("[data-quick-actions]");
+        const root = scope.querySelector(cssSelector("[data-quick-actions]"));
         if (!root || root.dataset.qaBound) return;
         root.dataset.qaBound = "true";
 
-        const toggle = root.querySelector("[data-quick-actions-toggle]");
-        const peek = root.querySelector(".quick-actions-peek");
+        const toggle = root.querySelector(cssSelector("[data-quick-actions-toggle]"));
+        const peek = root.querySelector(cssSelector(".quick-actions-peek"));
         if (!toggle || !peek) return;
 
         const isOpen = () => root.dataset.state === "open";

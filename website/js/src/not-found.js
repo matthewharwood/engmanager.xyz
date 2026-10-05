@@ -1,5 +1,9 @@
-const stage = document.querySelector("[data-404-stage]");
-const bouncer = document.querySelector("[data-404-bouncer]");
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
+const stage = document.querySelector(cssSelector("[data-404-stage]"));
+const bouncer = document.querySelector(cssSelector("[data-404-bouncer]"));
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 if (stage) {

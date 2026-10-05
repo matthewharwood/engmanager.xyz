@@ -1,12 +1,16 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // A newsletter link opens an inert page; the visible page makes the change
 // with POST. Native form submission remains the fallback when JS is absent.
 (() => {
-    const form = document.querySelector('[data-unsubscribe-form]');
-    const main = document.querySelector('[data-unsubscribe-state]');
-    const heading = document.querySelector('[data-unsubscribe-heading]');
-    const message = document.querySelector('[data-unsubscribe-message]');
-    const mark = document.querySelector('[data-unsubscribe-mark]');
-    const button = document.querySelector('[data-unsubscribe-submit]');
+    const form = document.querySelector(cssSelector('[data-unsubscribe-form]'));
+    const main = document.querySelector(cssSelector('[data-unsubscribe-state]'));
+    const heading = document.querySelector(cssSelector('[data-unsubscribe-heading]'));
+    const message = document.querySelector(cssSelector('[data-unsubscribe-message]'));
+    const mark = document.querySelector(cssSelector('[data-unsubscribe-mark]'));
+    const button = document.querySelector(cssSelector('[data-unsubscribe-submit]'));
     if (!form || !main || !heading || !message || !button) return;
     if (typeof fetch !== 'function' || typeof FormData !== 'function'
         || typeof URLSearchParams !== 'function' || typeof AbortController !== 'function') return;

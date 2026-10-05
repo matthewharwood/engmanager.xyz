@@ -60,7 +60,7 @@ async function networkFirstNavigation(event) {
     try {
         const preload = await event.preloadResponse;
         const response = preload || await fetch(request);
-        if (canCache(response)) {
+        if (canCache(response, true)) {
             const cache = await caches.open(CACHE);
             cache.put(request, response.clone()).catch(() => {});
         }
@@ -85,6 +85,15 @@ async function cacheFirst(request) {
     return response;
 }
 
-function canCache(response) {
-    return response.ok && !/(?:^|,)\s*(?:no-store|private|no-cache)\b/i.test(response.headers.get("Cache-Control") || "");
+function canCache(response, navigation = false) {
+    const policy = response.headers.get("Cache-Control") || "";
+    if (!response.ok || /(?:^|,)\s*(?:no-store|private)\b/i.test(policy)) return false;
+    // Explicit Cache Storage is an offline fallback, not the online HTTP
+    // cache. Online retrieval respects each document's browser freshness;
+    // preserving its exact document and immutable assets lets
+    // a previously visited generation remain readable when disconnected.
+    if (/(?:^|,)\s*no-cache\b/i.test(policy)) {
+        return navigation && /(?:^|,)\s*public\b/i.test(policy);
+    }
+    return true;
 }

@@ -1,3 +1,7 @@
+// Build-time CSS bindings. Identity forms keep direct-source tests readable;
+// build.rs replaces calls with literals and Oxc removes unused helpers.
+var cssClasses = value => value, cssSelector = value => value, cssToken = value => value, cssHtml = value => value;
+
 // Homepage/feed cursor controller. Blender models and GPU resources are loaded
 // only after mouse input; native cursors remain until a frame is ready.
 (() => {
@@ -9,21 +13,21 @@
     let dispose = null;
 
     function eligible() {
-        return document.body?.classList.contains('homepage') && navigator.gpu
+        return document.body?.classList.contains(cssToken('homepage')) && navigator.gpu
             && mouse.matches && !motion.matches && !contrast.matches
             && !navigator.connection?.saveData;
     }
 
     function init() {
         if (dispose || !eligible() || !window.__engCursorRenderer) return;
-        const config = document.querySelector('[data-journey-current] [data-cursor-models]')
-            || document.querySelector('[data-cursor-models]');
+        const config = document.querySelector(cssSelector('[data-journey-current] [data-cursor-models]'))
+            || document.querySelector(cssSelector('[data-cursor-models]'));
         if (!config) return;
 
         const body = document.body;
         const abort = new AbortController();
         const cursor = document.createElement('div');
-        cursor.className = 'big-cursor';
+        cursor.className = cssClasses('big-cursor');
         cursor.dataset.cursorOverlay = '';
         cursor.dataset.mode = 'arrow';
         cursor.setAttribute('aria-hidden', 'true');
@@ -43,9 +47,9 @@
         const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
         function hide() {
-            body.classList.remove('cursor-3d-active');
+            body.classList.remove(cssToken('cursor-3d-active'));
             cursor.dataset.visible = 'false';
-            if (cursor.matches(':popover-open')) cursor.hidePopover();
+            if (cursor.matches(cssSelector(':popover-open'))) cursor.hidePopover();
             cancelAnimationFrame(frame);
             frame = 0;
             lastTime = 0;
@@ -94,9 +98,9 @@
                     return;
                 }
                 if (failed) return;
-                if (cursor.hasAttribute('popover') && !cursor.matches(':popover-open')) cursor.showPopover();
+                if (cursor.hasAttribute('popover') && !cursor.matches(cssSelector(':popover-open'))) cursor.showPopover();
                 cursor.dataset.visible = 'true';
-                body.classList.add('cursor-3d-active');
+                body.classList.add(cssToken('cursor-3d-active'));
             } catch {
                 fail();
                 return;
@@ -132,8 +136,8 @@
         }
 
         function overDvd() {
-            const logo = document.querySelector('[data-journey-current] [data-dvd-bouncer]')
-                || document.querySelector('[data-dvd-bouncer]');
+            const logo = document.querySelector(cssSelector('[data-journey-current] [data-dvd-bouncer]'))
+                || document.querySelector(cssSelector('[data-dvd-bouncer]'));
             if (!logo || logo.hidden || logo.dataset.trashed === 'true') return false;
             const rect = logo.getBoundingClientRect();
             return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
@@ -142,10 +146,10 @@
         function detectMode(target) {
             if (body.dataset.dragging === 'true') return 'grab';
             if (overDvd()) return 'open';
-            const chip = target?.closest?.('.marquee .chip');
+            const chip = target?.closest?.(cssSelector('.marquee .chip'));
             if (chip && chip.dataset.trashed !== 'true') return 'open';
-            if (target?.closest?.('.article-fluid-link.is-visited .article-check')) return 'open';
-            if (target?.closest?.(INTERACTIVE) && !target.closest(':disabled,[aria-disabled="true"]')) return 'open';
+            if (target?.closest?.(cssSelector('.article-fluid-link.is-visited .article-check'))) return 'open';
+            if (target?.closest?.(INTERACTIVE) && !target.closest(cssSelector(':disabled,[aria-disabled="true"]'))) return 'open';
             return 'arrow';
         }
 
@@ -226,7 +230,7 @@
         function onToggle(event) {
             if (event.target === cursor || event.newState !== 'open' || !renderer || !inPage || native) return;
             // Raise the cursor after a modal/popover enters the top layer.
-            if (cursor.matches(':popover-open')) cursor.hidePopover();
+            if (cursor.matches(cssSelector(':popover-open'))) cursor.hidePopover();
             wake();
         }
 
