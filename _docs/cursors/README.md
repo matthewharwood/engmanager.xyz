@@ -119,7 +119,15 @@ and verifies that the cursor resumes. Neither case calls `prepareNext`.
 
 Full required CI checks pass: 392 Node tests, immutable personality releases,
 formatting, Clippy, and the complete required Rust/Chrome suite. Native WebGPU
-reports and screenshots are preserved in the review directory. The candidate
-release and matching CSS manifest are frozen for the latest/long-article journey
-comparison; its AC-powered timing capture is pending the laptop power setup
-required by `scripts/JOURNEY_PERFORMANCE.md`. See `_docs/cyclic-navigation-plan.md`.
+reports and screenshots are preserved in the review directory. The final
+combined release and exact CSS manifest pass AC-powered cold/warm latest and
+long-article journey comparisons on the same Chrome 154/M4 Max native GPU,
+390×844 touch DPR 2, 4× CPU and shaped 4G. Worst candidate scroll presentation
+p95 is 18.65 ms, visible fade draw p95 is 18.89 ms and active sculpture
+submission p95 is 19.10 ms; all strict budgets pass with no missing pixels or
+scroll/fade/settled long tasks. Raw laps, original CLI assertions, per-leg
+before/after results and artifact hashes are preserved in
+`/tmp/engmanager-morning-pr-review`. The final long warm lap's last idle
+observation includes an OS Maintenance Sleep; its full trace is retained and
+no idle cadence or total lap-duration claim is made. See
+`_docs/cyclic-navigation-plan.md` for the complete comparison and limitations.

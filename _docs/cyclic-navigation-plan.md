@@ -371,9 +371,9 @@ The profiling protocol now requires recording stable AC power on laptops.
   screenshots/reports, CI logs, source/export hashes, frozen release binaries
   and exact CSS manifests. The baseline reuses the preceding foreground-photo
   candidate's powered raw latest/long captures; binary and manifest match
-  byte-for-byte. The new candidate's AC-powered cold/warm journey capture is
-  pending the laptop power setup required by `scripts/JOURNEY_PERFORMANCE.md`;
-  its timing budgets are not claimed as verified yet.
+  byte-for-byte. The final combined release passes the AC-powered cold/warm
+  latest and long-article journey budgets; the recorded comparison below uses
+  that same baseline and analyzer.
 
 - 2026-10-05 wave-density adjustment: the shared sine period is reduced from
   96px to 24px (a 48px tile contains two periods). Navigation glass and stroke,
@@ -382,10 +382,10 @@ The profiling protocol now requires recording stable AC power on laptops.
   8-second timeline and retained hover phase remain unchanged. Native Chrome
   checks the actual SVG bounds and masks, hover/pause/resume, reduced motion,
   and desktop/mobile screenshots. Evidence and the frozen release/manifest are
-  in `/tmp/engmanager-tight-wave-review`; the local review is served on port 3095.
-  The release build, formatting and both required normal/reduced-motion Chrome
-  journey fixtures pass for this adjustment. The AC-powered timing comparison
-  remains pending the power setup recorded for the preceding cursor review.
+  in `/tmp/engmanager-tight-wave-review`. The final frozen release and matching
+  manifest are in `/tmp/engmanager-morning-pr-review/candidate`, served on port
+  3095. The release build, formatting, required normal/reduced-motion Chrome
+  journey fixtures and final AC-powered timing comparison pass.
 
 - The first Linux CI runs of these wave checks exposed a desktop-fixture
   configuration gap: headless Chrome reported `(hover: none)` and
@@ -397,3 +397,50 @@ The profiling protocol now requires recording stable AC power on laptops.
   with no-device capabilities, animates with desktop capabilities, and stays
   paused with reduced motion; all three retain their phase on pointer leave.
   Logs and controls are preserved in `/tmp/engmanager-morning-pr-review`.
+
+- Final combined morning-release performance acceptance: the latest article
+  (`your-gmail-avatar-is-part-of-your-job-search`) and long article
+  (`the-execution-marketplace`) each pass uninterrupted cold/warm native Chrome
+  laps with `--cpu=4 --passes=2 --assert`. Both captures record AC power before
+  and after. Baseline and candidate use Chrome 154.0.8037.93, Apple M4 Max Metal
+  on macOS 15.7.4, 390×844 touch at DPR 2, 4× CPU and 4/1 Mbps with 120 ms
+  latency. Their analyzer/parser fingerprints match byte-for-byte. The baseline
+  is the provenance-checked powered foreground-photo release preceding the hand
+  and tighter waves; its raw traces and original assertion outcomes are retained.
+
+| Article | Release | Worst scroll presentation p95 | Worst visible fade draw p95 | Worst active sculpture submission p95 | Worst touch-scroll drops | Captured encoded bytes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Latest | Pre-cursor baseline | 17.73 ms | 17.91 ms | 18.10 ms | 0.44% | 16,828,077 |
+| Latest | Final combined candidate | 18.59 ms | 18.86 ms | 19.10 ms | 0.88% | 16,829,214 |
+| Execution marketplace | Pre-cursor baseline | 18.22 ms | 18.28 ms | 18.30 ms | 0.44% | 16,845,416 |
+| Execution marketplace | Final combined candidate | 18.65 ms | 18.89 ms | 18.80 ms | 0.45% | 16,847,091 |
+
+All twenty candidate legs have no scroll/fade/settled missing pixels, no
+checkerboarding or hard-navigation fallback, and no scroll/fade/settled
+main-thread long tasks. Each active native presentation and sculpture-submission
+budget passes without changed flags, thresholds, timeouts, assertions or model
+quality. The same-origin decoder Worker is verified in the native traces.
+The final long-article warm lap's last settled observation extended to 901,158 ms
+when macOS entered Maintenance Sleep after the active scroll and fade had
+completed. The complete trace, matching power/sleep log and original passing
+CLI assertion remain intact. No idle frame-rate or total lap-duration claim is
+made; this is desktop GPU evidence with mobile emulation, not physical Android
+certification.
+
+Evidence is in `/tmp/engmanager-morning-pr-review`: `final-comparison.json`
+records both releases' per-leg scroll/fade/submission distributions, encoded
+bytes and raw-trace hashes; `candidate-latest` and `candidate-long` retain full
+lap traces, screenshots and original `report-cli.json`. The baseline captures
+remain in `/tmp/engmanager-marble-hand-review/baseline-latest` and `baseline-long`.
+`candidate-frozen.json` records source provenance and unchanged reviewed
+stylesheet/class identities and models. Frozen artifacts:
+
+- Candidate binary SHA-256:
+  `b3a6d213e94643f16eb0c1dddd26ad630aee5370c400fbbd1dd197e4b0f0261b`.
+- Candidate manifest SHA-256:
+  `308c3c2519e5d6a347b70b6fedc549dca6a1de6662c9f073dc8668474db0a2f1`;
+  generation `4aef2233a3a2697c608a90e1e96686065f0a45d8afda2662934df14dda354d57`.
+- Baseline binary SHA-256:
+  `cc66ed4efbc19de857a710f8da53fd6ca1111b2244b4fbcb79dcb4318e8defa3`.
+- Baseline manifest SHA-256:
+  `1b435531845bbc51607f5dae4301b886bdcec73ed985e07d6ee8aecdfab90b07`.
