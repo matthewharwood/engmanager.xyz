@@ -47,3 +47,11 @@ The article sculpture is original procedural geometry authored in Blender for en
 The shared honed ivory material, local cavity bake, scale, portrait camera and lighting come from the existing journey studio. `article.blend` retains all detailed authoring surfaces separately from the simplified display/export copy. The twenty interlocking parts are intentionally closed solids attached through the central binding; each is checked for positive signed volume and outward normals. `article-validation.json` records source component counts, export topology, intentional islands and baked color range. Extra disconnected fragments, open boundaries and nonmanifold edges fail the build.
 
 The original model's provenance is included in the GLB's `asset.copyright`, the Blender object's `attribution` property and the `ARTICLE SOURCE AND PROVENANCE` text block. The folio does not carry the Aristotle or HRA license because it does not contain their geometry. The front, profile and three-quarter study renders are written to the system temporary directory under `article-study/final` before packaging the transparent WebP fallback.
+
+## Newsletter page: A Little Perspective
+
+The armillary on `/subscribe` is original geometry authored in `rebuild_armillary.py`: a beveled faceted globe, four inclined stone orbital bands, a polar spindle, a turned foot and two museum plinth levels. No scan, third-party mesh or texture is included. The detailed authoring solids are retained separately from the simplified display/export copy in `armillary.blend`.
+
+It uses the existing series' procedural honed ivory material, portrait studio and linear grayscale cavity bake. Its own provenance is recorded in the GLB's `asset.copyright`, the Blender object's `attribution` property and the `ARMILLARY SOURCE AND PROVENANCE` text block. `armillary-validation.json` verifies all nine intentionally closed solids, outward normals, positive volume and absence of extra fragments before packaging.
+
+The runtime GLB and transparent WebP are saved under `website/assets/newsletter`. Front, profile and three-quarter study PNGs remain in the temporary review directory. This original armillary contains neither the Aristotle nor HRA geometry and does not claim their licenses. The messenger oracle remains the separately attributed newsletter transition sculpture.

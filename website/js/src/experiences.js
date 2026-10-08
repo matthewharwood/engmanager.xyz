@@ -1409,13 +1409,13 @@ register({
     group: "input",
     isSupported: () => "draggable" in HTMLElement.prototype,
     init: (api) => {
-        // Bottom-right avatar becomes draggable; position persists.
+        // Dragging can reposition the floating bio trigger; persist once per drop.
         bindPageNodes(".avatar-button", (button) => {
             button.draggable = true;
             const STORAGE = "engmanager.avatar-position";
             try {
                 const saved = JSON.parse(localStorage.getItem(STORAGE) || "null");
-                if (saved && typeof saved.x === "number") {
+                if (saved && typeof saved.x === "number" && !button.hasAttribute('data-avatar-bouncer')) {
                     button.style.right = "auto";
                     button.style.bottom = "auto";
                     button.style.left = `${saved.x}px`;
@@ -1425,6 +1425,7 @@ register({
             let offsetX = 0;
             let offsetY = 0;
             button.addEventListener("dragstart", (event) => {
+                window.__engAvatarBouncer?.hold(button, true);
                 const rect = button.getBoundingClientRect();
                 offsetX = event.clientX - rect.left;
                 offsetY = event.clientY - rect.top;
@@ -1433,15 +1434,19 @@ register({
                 } catch {}
             });
             button.addEventListener("dragend", (event) => {
+                window.__engAvatarBouncer?.hold(button, false);
                 if (!event.clientX && !event.clientY) return;
                 const x = Math.max(8, event.clientX - offsetX);
                 const y = Math.max(8, event.clientY - offsetY);
-                button.style.right = "auto";
-                button.style.bottom = "auto";
-                button.style.left = `${x}px`;
-                button.style.top = `${y}px`;
+                const placed = window.__engAvatarBouncer?.place(button, x, y);
+                if (!placed) {
+                    button.style.right = "auto";
+                    button.style.bottom = "auto";
+                    button.style.left = `${x}px`;
+                    button.style.top = `${y}px`;
+                }
                 try {
-                    localStorage.setItem(STORAGE, JSON.stringify({ x, y }));
+                    localStorage.setItem(STORAGE, JSON.stringify(placed || { x, y }));
                 } catch {}
                 api.discover();
             });

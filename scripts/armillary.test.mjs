@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import { referenceArmillaryMesh } from './fixtures/armillary-mesh-reference.mjs';
 const source = await readFile(new URL('../website/src/components/armillary/script.js', import.meta.url), 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function node() {
@@ -13,9 +11,9 @@ function node() {
     setAttribute(key,value) { this.attributes.set(key,value); },
   };
 }
-function harness({gpu,prerendering=false,resumeFailure=false,deferResume=false,journeyBusy=false,reduced=false}={}) {
+function harness({gpu,prerendering=false,resumeFailure=false,deferResume=false,journeyBusy=false,reduced=false,rendererMount}={}) {
   const host=node(),canvas=node(),play=node(),sound=node(),status=node(),document=node(),window=node(),motion=node();
-  host.dataset.texture='/assets/newsletter/sunburst.webp';play.hidden=true;sound.hidden=true;
+  host.dataset.model='/assets/newsletter/armillary.glb';play.hidden=true;sound.hidden=true;
   host.querySelector = selector => ({'[data-armillary-canvas]':canvas,'[data-armillary-motion]':play,'[data-armillary-sound]':sound,'[data-armillary-audio-status]':status}[selector]);
   document.querySelector=()=>activeHost;document.prerendering=prerendering;document.hidden=false;motion.matches=reduced;document.body={classList:{contains:()=>false}};
   const contexts=[],timers=new Map(),hooks={},oscillators=[],navigator={gpu},observers=[],resizes=[];
@@ -30,6 +28,7 @@ function harness({gpu,prerendering=false,resumeFailure=false,deferResume=false,j
     async resume(){if(resumeFailure)throw Error('blocked');if(deferResume)await new Promise(resolve=>{resolveResume=resolve;});this.state='running';}
     async close(){this.state='closed';}
   }
+  window.__engJourneyPoster={mount:rendererMount||(()=>Promise.reject(Error('No test renderer')))};
   window.AudioContext=AudioContext;window.__engNav={busy:journeyBusy,onBeforeSwap(fn){hooks.before=fn;},onSwap(fn){hooks.swap=fn;}};
   canvas.getBoundingClientRect=()=>({width:620,height:600});
   canvas.getContext=()=>({configure(){},unconfigure(){},getCurrentTexture:()=>({createView:()=>({})})});
@@ -50,10 +49,9 @@ test('unsupported GPU retains the poster and creates no audio before opt-in',asy
   assert.equal(h.sound.attributes.get('aria-pressed'),'true');
   h.sound.emit('click');h.flush();assert.equal(h.contexts[0].state,'closed');assert.equal(h.sound.attributes.get('aria-pressed'),'false');
 });
-test('shader failure keeps audio controls usable and falls back to static artwork',async()=>{
-  const device={lost:new Promise(()=>{}),destroyed:false,destroy(){this.destroyed=true;},addEventListener(){},createShaderModule(){return {};},createRenderPipelineAsync:async()=>{throw Error('shader');}};
-  const gpu={requestAdapter:async()=>({requestDevice:async()=>device}),getPreferredCanvasFormat:()=> 'bgra8unorm'};
-  const h=harness({gpu});await tick();assert.equal(h.host.dataset.renderer,'poster');assert.equal(device.destroyed,true);
+test('shared marble renderer failure retains static artwork and opt-in audio',async()=>{
+  const h=harness({gpu:{},rendererMount:async()=>{throw Error('shader');}});await tick();
+  assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
   h.sound.emit('click');await tick();assert.equal(h.contexts[0].state,'running');
   h.sound.emit('click');h.flush();assert.equal(h.contexts[0].state,'closed');
 });
@@ -72,27 +70,25 @@ test('navigation during audio resume cannot start orphaned oscillators',async()=
 test('audio resume rejection reports failure and never claims sound is on',async()=>{
   const h=harness({resumeFailure:true});h.sound.emit('click');await tick();h.flush();assert.equal(h.sound.attributes.get('aria-pressed'),'false');assert.match(h.status.textContent,/unavailable/);assert.equal(h.contexts[0].state,'closed');
 });
-test('prerendering creates neither GPU work nor audio until activation',()=>{
-  let requests=0;const h=harness({prerendering:true,gpu:{requestAdapter(){requests++;return Promise.resolve(null);}}});
+test('prerendering starts neither marble loading nor audio until activation',()=>{
+  let requests=0;const h=harness({prerendering:true,gpu:{},rendererMount(){requests++;return new Promise(()=>{});}});
   assert.equal(requests,0);assert.equal(h.contexts.length,0);h.document.prerendering=false;h.document.emit('prerenderingchange');assert.equal(requests,1);
 });
 
 test('journey mount exposes pending GPU work and settles to a static fallback when it stalls',async()=>{
   let requests=0;
-  const h=harness({gpu:{requestAdapter(){requests++;return new Promise(()=>{});}}});
+  const h=harness({gpu:{},rendererMount(){requests++;return new Promise(()=>{});}});
   let ready=false;const mounting=h.hooks.swap().then(()=>{ready=true;});
   await tick();assert.equal(requests,1);assert.equal(ready,false);
   h.flush();await mounting;
   assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
   assert.equal(h.sound.hidden,false,'falling back does not remove the opt-in sound control');
 });
-test('leaving during a pending GPU mount settles readiness and disposes a late device',async()=>{
-  let releaseDevice;
-  const device={destroyed:0,destroy(){this.destroyed++;}};
-  const gpu={requestAdapter:async()=>({requestDevice:()=>new Promise(resolve=>{releaseDevice=resolve;})})};
-  const h=harness({gpu});await tick();
+test('leaving during a pending marble load settles readiness and disposes a late renderer',async()=>{
+  let release;const candidate={destroyed:0,destroy(){this.destroyed++;}};
+  const h=harness({gpu:{},rendererMount:()=>new Promise(resolve=>{release=resolve;})});await tick();
   const mounting=h.hooks.swap();h.hooks.before();await mounting;
-  releaseDevice(device);await tick();assert.equal(device.destroyed,1);
+  release(candidate);await tick();assert.equal(candidate.destroyed,1);
   h.setHost(null);assert.equal(h.hooks.swap(),undefined,'pages without a newsletter keep no mounted scene');
 });
 test('returning to the newsletter installs fresh controls without duplicate audio listeners',async()=>{
@@ -103,116 +99,93 @@ test('returning to the newsletter installs fresh controls without duplicate audi
 });
 
 function renderedGpu(submitted=Promise.resolve()) {
-  const state={draws:0,values:[],uniformArrays:[],resourceViews:0,textures:0,meshUploads:[],resources:[],deviceDisposals:0};
-  const resource=()=>{const item={destroy(){this.destroyed=true;},createView(){state.resourceViews++;return {};}};state.resources.push(item);return item;};
-  const device={lost:new Promise(()=>{}),destroy(){state.deviceDisposals++;},addEventListener(){},
-    createShaderModule:()=>({}),createRenderPipelineAsync:async()=>({getBindGroupLayout:()=>({})}),
-    createBuffer:resource,createTexture(){state.textures++;return resource();},createSampler:()=>({}),createBindGroup:()=>({}),
-    createCommandEncoder:()=>({beginRenderPass:()=>({setPipeline(){},setBindGroup(){},setVertexBuffer(){},draw(){state.draws++;},end(){}}),finish:()=>({})}),
-    queue:{writeBuffer(_buffer,_offset,data){if(data.length===4){state.values.push([...data]);state.uniformArrays.push(data);}else state.meshUploads.push(data);},copyExternalImageToTexture(){},submit(){},onSubmittedWorkDone:()=>submitted},
+  const state={poses:[],visible:[],mounts:[],controllers:[]};
+  const rendererMount=async(canvas,options)=>{
+    state.mounts.push({canvas,options});
+    const controller={destroyed:false,setRotation(yaw,pitch){state.poses.push([yaw,pitch]);},setVisible(value){state.visible.push(value);},destroy(){this.destroyed=true;}};
+    state.controllers.push(controller);options.signal.addEventListener('abort',()=>controller.destroy(),{once:true});
+    await submitted;return controller;
   };
-  const gpu={requestAdapter:async()=>({requestDevice:async()=>device}),getPreferredCanvasFormat:()=> 'bgra8unorm'};
-  return {state,gpu};
+  return {state,gpu:{},rendererMount};
 }
 
-test('packed armillary geometry preserves every byte of the authored mesh',()=>{
-  const begin=source.indexOf('    const norm ='),end=source.indexOf('    function mount()',begin);
-  const mesh=Function(source.slice(begin,end)+'\nreturn mesh;')();
-  const actual=mesh(),reference=referenceArmillaryMesh();
-  assert.equal(actual.length,7232*3*12,'all facets, full 144-segment rings, normals and UVs remain');
-  assert.equal(actual.byteLength,1041408,'one bounded geometry cache retains no duplicate JS number array');
-  assert.deepEqual(Buffer.from(actual.buffer),Buffer.from(reference.buffer),'packing, normals, UV seams, winding and barycentrics are byte-exact');
-  assert.equal(createHash('sha256').update(Buffer.from(actual.buffer)).digest('hex'),'829809f4cfb87413a3e126fb26c61bbfcb07775d31f73e5898196eeb2b5507bc');
-  assert.equal(mesh(),actual,'only the completed private geometry is reused');
-});
-
-test('retained newsletter mounts reuse immutable geometry while disposing each GPU allocation',async()=>{
-  const {state,gpu}=renderedGpu();const h=harness({gpu});await h.hooks.swap();
-  const geometry=state.meshUploads[0],before=Buffer.from(geometry.buffer).slice();
-  const firstResources=[...state.resources];h.hooks.before();
-  assert.ok(firstResources.every(resource=>resource.destroyed),'leaving frees every buffer and texture');
-  assert.equal(state.deviceDisposals,1);assert.equal(h.frames.size,0);
+test('every newsletter mount uses its actual Blender model and owns fresh renderer resources',async()=>{
+  const setup=renderedGpu(),h=harness(setup);await h.hooks.swap();
+  assert.equal(setup.state.mounts[0].options.url,h.host.dataset.model);
+  h.hooks.before();assert(setup.state.controllers[0].destroyed);assert.equal(h.frames.size,0);
   h.navigator.connection={saveData:true};await h.hooks.swap();
-  assert.equal(state.meshUploads.length,1,'static resume never uploads the cached geometry');h.hooks.before();
+  assert.equal(setup.state.mounts.length,1,'Save-Data creates no model request');h.hooks.before();
   delete h.navigator.connection;await h.hooks.swap();
-  assert.equal(state.meshUploads.length,2);assert.equal(state.meshUploads[1],geometry,'a fresh device receives the same immutable geometry bytes');
-  assert.deepEqual(Buffer.from(geometry.buffer),before,'frame uniforms and remounting never mutate vertex storage');
-  assert.ok(state.resources.slice(firstResources.length).every(resource=>!resource.destroyed),'the resumed scene owns fresh GPU allocations');
-  h.hooks.before();assert.ok(state.resources.every(resource=>resource.destroyed));assert.equal(state.deviceDisposals,2);assert.equal(h.frames.size,0);
+  assert.equal(setup.state.mounts.length,2);assert(!setup.state.controllers[1].destroyed);
+  h.hooks.before();assert(setup.state.controllers.every(c=>c.destroyed));
 });
 
-test('newsletter readiness waits for its submitted frame and orbit begins after the handoff settles',async()=>{
-  let releaseSubmission;
-  const submitted=new Promise(resolve=>{releaseSubmission=resolve;});
-  const {state,gpu}=renderedGpu(submitted);
-  const h=harness({gpu,journeyBusy:true});
-  let ready=false;const mounting=h.hooks.swap().then(()=>{ready=true;});
-  await tick();assert.equal(state.draws,1);assert.equal(ready,false);assert.equal(h.frames.size,0);
-  assert.equal(h.host.dataset.renderer,'webgpu');assert.equal(state.values.at(-1)[2],0);
-  releaseSubmission();await mounting;assert.equal(ready,true);
+test('newsletter readiness waits for the marble frame and orbit starts after handoff',async()=>{
+  let release;const setup=renderedGpu(new Promise(resolve=>{release=resolve;}));
+  const h=harness({...setup,journeyBusy:true});let ready=false;
+  const mounting=h.hooks.swap().then(()=>{ready=true;});await tick();
+  assert.equal(ready,false);assert.equal(h.frames.size,0);assert.equal(h.host.dataset.renderer,'poster');
+  release();await mounting;assert.equal(ready,true);assert.equal(h.host.dataset.renderer,'webgpu');
+  assert.equal(h.frames.size,0);assert.equal(setup.state.visible.at(-1),false);
   h.window.__engNav.busy=false;h.window.emit('eng:journeysettled');h.advance(100);h.advance(150);
-  assert(state.draws>1&&state.values.at(-1)[2]>0,'a covered scene stays still until its page is shown');
-  h.hooks.before();assert.equal(h.frames.size,0,'leaving removes every scheduled GPU frame');
-});
-
-test('a retained GPU newsletter resets motion controls when resumed in Save-Data or without GPU',async()=>{
-  const {gpu}=renderedGpu();const h=harness({gpu});await h.hooks.swap();
-  assert.equal(h.host.dataset.renderer,'webgpu');assert.equal(h.play.hidden,false);
-  h.hooks.before();h.navigator.connection={saveData:true};await h.hooks.swap();
-  assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
-  assert.equal(h.sound.hidden,false,'static mode retains the separate sound control');
-  h.hooks.before();delete h.navigator.connection;h.navigator.gpu=undefined;await h.hooks.swap();
-  assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
-  h.sound.emit('click');await tick();assert.equal(h.contexts.length,1,'only the fresh sound handler remains');
-  h.hooks.before();h.flush();
-});
-
-
-test('armillary submits every vsync orbit pose using one uniform array and cached render views',async()=>{
-  const {state,gpu}=renderedGpu();const h=harness({gpu});
-  let rendererWrites=0;const dataset=h.host.dataset;
-  h.host.dataset=new Proxy(dataset,{set(target,key,value){if(key==='renderer'&&value==='webgpu')rendererWrites++;target[key]=value;return true;}});
-  await h.hooks.swap();const initial=state.draws,views=state.resourceViews,textures=state.textures;
-  for(let i=1;i<=8;i++){h.advance(i*1000/60);assert.equal(state.draws,initial+i,'each display frame advances the ongoing orbit');}
-  assert.equal(new Set(state.uniformArrays).size,1,'frame updates reuse the scene uniform array');
-  assert.equal(state.resourceViews,views,'color/depth views are not recreated per frame');
-  assert.equal(rendererWrites,1,'unchanged renderer state never rewrites the DOM attribute');
-  h.resizes[0].fn();assert.equal(state.textures,textures,'unchanged observed dimensions do not reallocate MSAA targets');
+  assert(setup.state.poses.at(-1)[0]>-.30);
   h.hooks.before();assert.equal(h.frames.size,0);
 });
 
-test('armillary yields its ongoing orbit to the next poster and resumes without hidden time',async()=>{
-  const {state,gpu}=renderedGpu();const h=harness({gpu});await h.hooks.swap();
-  h.advance(100);h.advance(120);const heldTime=state.values.at(-1)[2],heldCount=state.draws;
+test('retained newsletter resets controls for Save-Data and unavailable GPU',async()=>{
+  const setup=renderedGpu(),h=harness(setup);await h.hooks.swap();
+  assert.equal(h.host.dataset.renderer,'webgpu');assert.equal(h.play.hidden,false);
+  h.play.emit('click');assert.equal(h.play.attributes.get('aria-pressed'),'true');
+  h.hooks.before();h.navigator.connection={saveData:true};await h.hooks.swap();
+  assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
+  assert.equal(h.play.attributes.get('aria-pressed'),'false','retained pause state is reset before initialization');
+  h.hooks.before();delete h.navigator.connection;h.navigator.gpu=undefined;await h.hooks.swap();
+  assert.equal(h.host.dataset.renderer,'poster');assert.equal(h.play.hidden,true);
+  h.sound.emit('click');await tick();assert.equal(h.contexts.length,1);
+  h.hooks.before();h.flush();
+});
+
+test('armillary forwards each vsync pose to the shared marble renderer without layout reads',async()=>{
+  const setup=renderedGpu(),h=harness(setup);await h.hooks.swap();
+  h.canvas.getBoundingClientRect=()=>{throw Error('Unexpected animation layout read');};
+  for(let i=1;i<=8;i++){h.advance(i*1000/60);assert.equal(setup.state.poses.length,i);}
+  assert(setup.state.poses.at(-1)[0]>setup.state.poses[0][0]);
+  h.play.emit('click');h.advance(200);const paused=setup.state.poses.at(-1)[0];
+  assert.equal(h.frames.size,0);h.advance(500);assert.equal(setup.state.poses.at(-1)[0],paused);
+  h.play.emit('click');h.advance(1000);assert.equal(setup.state.poses.at(-1)[0],paused,'resume does not jump through hidden time');
+  h.hooks.before();assert.equal(h.frames.size,0);
+});
+
+test('armillary yields to the next poster and resumes without hidden time',async()=>{
+  const setup=renderedGpu(),h=harness(setup);await h.hooks.swap();
+  h.advance(100);h.advance(120);const held=setup.state.poses.at(-1)[0],count=setup.state.poses.length;
   h.window.emit('eng:journeyexposure',{detail:{active:true}});
-  assert.equal(h.frames.size,0);h.advance(10000);assert.equal(state.draws,heldCount);
-  h.window.emit('eng:journeyexposure',{detail:{active:false}});h.advance(10020);
-  assert.equal(state.draws,heldCount+1);assert.equal(state.values.at(-1)[2],heldTime);
-  h.advance(10040);assert.ok(state.values.at(-1)[2]>heldTime&&state.values.at(-1)[2]<heldTime+.03);
-  h.window.__engNav.busy=true;h.window.emit('eng:journeyexposure',{detail:{active:false}});assert.equal(h.frames.size,0,'ongoing handoff stays held even if exposure changes');
+  assert.equal(h.frames.size,0);assert.equal(setup.state.visible.at(-1),false);h.advance(10000);assert.equal(setup.state.poses.length,count);
+  h.window.emit('eng:journeyexposure',{detail:{active:false}});h.advance(10020);assert.equal(setup.state.poses.at(-1)[0],held);
+  h.advance(10040);assert(setup.state.poses.at(-1)[0]>held);
+  h.window.__engNav.busy=true;h.window.emit('eng:journeyexposure',{detail:{active:false}});assert.equal(h.frames.size,0);
   h.window.__engNav.busy=false;h.window.emit('eng:journeysettled');h.advance(10100);assert.equal(h.frames.size,1);
   h.hooks.before();assert.equal(h.frames.size,0);
 });
 
-test('armillary hidden/offscreen/reduced states schedule no ongoing GPU work and dispose both observers',async()=>{
-  const {state,gpu}=renderedGpu();const h=harness({gpu});await h.hooks.swap();
+test('hidden, offscreen, reduced and disposed armillary scenes stop scheduling orbit work',async()=>{
+  const setup=renderedGpu(),h=harness(setup);await h.hooks.swap();
   h.document.hidden=true;h.document.emit('visibilitychange');assert.equal(h.frames.size,0);
-  const hidden=state.draws;h.advance(1000);assert.equal(state.draws,hidden);
+  assert.equal(setup.state.visible.at(-1),false);
   h.document.hidden=false;h.document.emit('visibilitychange');h.advance(1100);assert.equal(h.frames.size,1);
   h.observers[0].fn([{isIntersecting:false}]);assert.equal(h.frames.size,0);
-  h.window.emit('eng:journeysettled');assert.equal(h.frames.size,0,'settled cannot wake an offscreen scene');
+  h.window.emit('eng:journeysettled');assert.equal(h.frames.size,0);
   h.observers[0].fn([{isIntersecting:true}]);h.advance(2000);assert.equal(h.frames.size,1);
-  h.motion.matches=true;h.motion.emit('change');h.advance(2020);assert.equal(h.frames.size,0,'reduced motion finishes its one static pose');
-  const reduced=state.draws;h.advance(2040);assert.equal(state.draws,reduced);
+  h.motion.matches=true;h.motion.emit('change');h.advance(2020);assert.equal(h.frames.size,0);assert(h.play.hidden);
+  const count=setup.state.poses.length;h.advance(2040);assert.equal(setup.state.poses.length,count);
   h.motion.matches=false;h.motion.emit('change');h.advance(2060);assert.equal(h.frames.size,1);
-  h.hooks.before();assert.equal(h.frames.size,0);assert.ok(h.observers[0].disconnected&&h.resizes[0].disconnected);
-  h.window.emit('eng:journeysettled');h.window.emit('eng:journeyexposure',{detail:{active:false}});assert.equal(h.frames.size,0,'disposed handlers never resurrect work');
+  h.hooks.before();assert(h.observers[0].disconnected);assert(setup.state.controllers[0].destroyed);
+  h.window.emit('eng:journeysettled');h.window.emit('eng:journeyexposure',{detail:{active:false}});assert.equal(h.frames.size,0);
 });
 
-test('a reduced-motion armillary submits its first readiness frame without an orbit loop',async()=>{
-  const {state,gpu}=renderedGpu();const h=harness({gpu,reduced:true,journeyBusy:true});await h.hooks.swap();
-  assert.equal(state.draws,1);assert.equal(state.values[0][2],0);assert.equal(h.frames.size,0);
-  h.window.__engNav.busy=false;h.window.emit('eng:journeysettled');h.advance(100);
-  assert.equal(state.values.at(-1)[2],0);assert.equal(h.frames.size,0);
-  h.hooks.before();
+test('reduced motion displays its first marble frame without an orbit loop',async()=>{
+  const setup=renderedGpu(),h=harness({...setup,reduced:true,journeyBusy:true});await h.hooks.swap();
+  assert.equal(h.host.dataset.renderer,'webgpu');assert.equal(h.frames.size,0);assert(h.play.hidden);
+  h.window.__engNav.busy=false;h.window.emit('eng:journeysettled');h.advance(100);assert.equal(h.frames.size,0);
+  assert.equal(setup.state.poses.at(-1)[0],-.30);h.hooks.before();
 });

@@ -49,4 +49,23 @@ Fine marble grain comes from the native WebGPU shader. The transparent WebP imag
 
 Blender renders are insufficient to validate browser geometry: also inspect the final GLB in Chrome with the real WebGPU shader, including front and side views, before publishing.
 
+## Newsletter armillary
+
+The artwork on `/subscribe` is an original marble armillary: a faceted globe, four carved orbital bands, a polar spindle and a turned museum base. It shares the series' honed ivory material, portrait studio, linear cavity bake and native WebGPU shader. The newsletter transition keeps its messenger sculpture.
+
+`armillary.blend` preserves the detailed authoring solids in a hidden collection and a separate simplified exhibition mesh. All nine intentional components are closed, outward-facing solids; `sources/armillary-validation.json` records their source and export topology. No third-party geometry was used. Runtime assets live in `website/assets/newsletter/{armillary.glb,armillary.webp}`; the decoded WebP remains visible when Save-Data, unavailable GPU, a failed load or device loss prevents enhancement.
+
+Rebuild the armillary independently of the five transition assets:
+
+```sh
+/Applications/Blender.app/Contents/MacOS/Blender \
+  --background --factory-startup --python-exit-code 1 \
+  --python scripts/journey-posters/rebuild_armillary.py \
+  -- --preview-dir /tmp/armillary-study
+```
+
+Append `--review-only` after `--` to save the editable source and front/profile/three-quarter studies without replacing runtime assets. The page uses the shared renderer's `setRotation` control for a slow orbit; pause, visibility, journey exposure, reduced motion and disposal stop its animation work. Audio remains opt-in.
+
+`sources/armillary-browser-review.json` records the native Chrome review of all six current GLBs at front, profile and three-quarter angles, reduced/static rendering, resource disposal and the ordinary newsletter's pause/resume and retained Save-Data/unavailable-GPU behavior. It fingerprints the exact assets; rebuilding requires renewed inspection.
+
 `sources/article-browser-review.json` records the 2026-10-04 native Chrome review, including the exact GLB/WebP hashes for all five models. All exported sculptures were inspected at front, three-quarter and profile angles with real WGSL and back-face culling, with static fallbacks hidden during GPU inspection. Reduced motion, decoded static WebPs, paused frames, renderer disposal and navigation cleanup were verified. These recorded results apply only to those asset hashes; rebuilding requires a new browser inspection. Integrated journey routing and title overlap are verified separately.

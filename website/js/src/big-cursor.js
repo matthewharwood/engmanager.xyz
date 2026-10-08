@@ -41,6 +41,7 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         let renderer = null, loading = false, failed = false, disposed = false;
         let frame = 0, lastTime = 0, modeTimer = 0, loadTimer = 0;
         let x = -300, y = -300, inPage = false, native = false, down = false;
+        let exposed = body.classList.contains(cssToken('journey-revealing'));
         let targetTiltX = 0, targetTiltY = 0, lastMove = 0;
         let tiltX = 0, tiltY = 0, velocityX = 0, velocityY = 0;
         let press = 0, pressVelocity = 0, grip = 0;
@@ -66,14 +67,17 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         }
 
         function wake() {
-            if (!frame && renderer && inPage && !native && !document.hidden && !failed && !disposed) {
+            if (!frame && renderer && inPage && !native && !exposed && !window.__engNav?.busy
+                && !document.hidden && !failed && !disposed) {
                 frame = requestAnimationFrame(paint);
             }
         }
 
         function paint(time) {
             frame = 0;
-            if (!renderer || disposed || failed || !inPage || native || document.hidden) return;
+            if (!renderer || disposed || failed || !inPage || native || exposed || window.__engNav?.busy || document.hidden) {
+                hide(); return;
+            }
             const dt = Math.min((time - (lastTime || time - 16.67)) / 1000, 1 / 30);
             lastTime = time;
             // Damped springs affect orientation only. Translation is exact so
@@ -114,7 +118,7 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         }
 
         async function load() {
-            if (loading || renderer || failed || disposed) return;
+            if (loading || renderer || failed || disposed || exposed || window.__engNav?.busy) return;
             loading = true;
             loadTimer = setTimeout(fail, 10000);
             try {
@@ -246,6 +250,12 @@ var cssClasses = value => value, cssSelector = value => value, cssToken = value 
         listen(document, 'pointerleave', leave);
         listen(document, 'visibilitychange', onVisibility);
         listen(document, 'toggle', onToggle, { capture: true });
+        listen(window, 'eng:journeyexposure', event => {
+            exposed = event.detail?.active === true;
+            if (exposed) hide();
+            else if (inPage && !native) { load(); wake(); }
+        });
+        listen(window, 'eng:journeysettled', () => { if (inPage && !native) { load(); wake(); } });
         const observer = new MutationObserver(() => {
             updateTarget(document.elementFromPoint(x, y));
             wake();

@@ -1,17 +1,15 @@
-//! Subscribe-only planetary sculpture. SVG is the no-script/device-loss fallback;
-//! WebGPU adds etched metal shading. Audio starts only from the sound button.
+//! Original Blender armillary, using the journey's marble renderer and a
+//! matching static fallback. Audio starts only from the sound button.
 use super::Rendered;
 pub use super::asset_names::armillary::{SCRIPT, STYLE};
 use eng_markup::view;
 
-pub fn render(texture_url: String) -> Rendered {
+pub fn render() -> Rendered {
     let markup = view! {
-        <div class={ classes!("armillary") } data-armillary data-texture={ texture_url.clone() }>
+        <div class={ classes!("armillary") } data-armillary data-model={ crate::asset_url("newsletter/armillary.glb") }>
             <div class={ classes!("armillary-art") } aria-hidden="true">
-                <img class={ classes!("armillary-sunburst") } src={ texture_url } width="768" height="768" alt="" decoding="async" />
                 <picture class={ classes!("armillary-poster") }>
-                    <source media="(max-width: 50rem)" srcset={ crate::asset_url("newsletter/observatory-mobile.svg") } />
-                    <img src={ crate::asset_url("newsletter/observatory-desktop.svg") } width="620" height="600" alt="" decoding="async" />
+                    <img src={ crate::asset_url("newsletter/armillary.webp") } width="1100" height="1300" alt="" decoding="async" />
                 </picture>
                 <canvas class={ classes!("armillary-canvas") } data-armillary-canvas></canvas>
             </div>
@@ -29,6 +27,6 @@ pub fn render(texture_url: String) -> Rendered {
         markup,
         critical_css: vec![STYLE],
         deferred_css: vec![],
-        js_deps: vec![SCRIPT],
+        js_deps: vec!["js/journey-poster-renderer.js", SCRIPT],
     }
 }

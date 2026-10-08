@@ -9,6 +9,15 @@ reads generated assets from disk, so copying only that binary does not freeze a
 baseline. For a CSS-adapter build, preserve its full `css-compact-output.json`
 from Cargo's `OUT_DIR` beside the frozen binary as well.
 
+On a laptop, connect AC power and record its power state before each capture
+(`pmset -g batt` on macOS). [Chrome's battery saver](https://developer.chrome.com/blog/memory-and-energy-saver-mode#energy_saver_mode) can change native rendering
+cadence mid-lap even in a fresh headless profile. In the foreground-avatar
+review, later legs ran at 30Hz while the Mac was below 20% battery; an unchanged
+frozen-baseline control also ran at 30Hz. Connecting AC restored 60Hz. Preserve
+those failed traces, restore
+stable power, and keep the existing presentation/submission budgets. Do not
+change application rendering or accept sparse evidence to hide a host cap.
+
 ```sh
 cargo build -p website --release
 # Start the binary on a local port, e.g. PORT=3092 /absolute/path/to/website.
@@ -118,15 +127,18 @@ budget's authority.
 Compare separate cold captures with `--diagnostic=hold-preview` or `hold-hero` to isolate
 one feature at a time. These controls deliberately alter the application and
 cannot be combined with `--assert`; they are never passing performance results.
-To prove the newsletter's separate per-document geometry cache, add
+For a focused retained-newsletter revisit, add
 `--passes=2 --legs=4 --diagnostic=observe --armillary-remount` to a focused run.
 After each four-leg lap ends at Subscribe, the fixture taps its native Resume
 control to return to Coach, scrolls the returning poster, and taps Continue
 back to Subscribe. It verifies that this revisit retains the same document
-and records native pipeline-resolution/first-vertex-buffer timestamps in
-`armillaryCacheRevisit`. Compare the first construction with this same-document
-revisit; the extra route is diagnostic only and is absent from the production
-latest/long-article performance protocol.
+and records diagnostic activations in `armillaryCacheRevisit`. The original
+procedural armillary's unlabeled pipeline-resolution/first-vertex-buffer marks
+apply to that older binary only. The Blender armillary now uses the shared
+GLB decoder and labeled marble pipeline: inspect decoded-model cache reuse,
+native Worker evidence and fresh GPU-resource disposal separately. The extra
+route is diagnostic only and is absent from the production latest/long-article
+performance protocol.
 
 Worker proof combines the native constructor URL, successful decoded typed-array
 replies matching transferred jobs, a live worker CDP target, and evaluation of

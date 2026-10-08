@@ -1,0 +1,1 @@
+self.addEventListener(`message`,async e=>{let t=e.ports[0],{text:n}=e.data||{};if(!n||!t){t?.postMessage(``);return}try{let e=new TextEncoder().encode(n),r=await self.crypto.subtle.digest(`SHA-256`,e),i=Array.from(new Uint8Array(r)).map(e=>e.toString(16).padStart(2,`0`)).join(``);t.postMessage(i)}catch{t.postMessage(``)}});

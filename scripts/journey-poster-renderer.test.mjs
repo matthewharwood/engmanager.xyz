@@ -145,6 +145,32 @@ function harness({ data = fixture(), deviceRequest, submission, reducedMotion = 
         state, device, document, motion, canvas, lost, advance };
 }
 
+test('continuous model rotation keeps finite uniforms, yields when hidden, and respects reduced motion', async () => {
+    const h = harness();
+    const renderer = await h.mount(); h.advance(0);
+    for (const yaw of [0, Math.PI / 2, Math.PI, 2 * Math.PI + .2, 1e300]) {
+        renderer.setRotation(yaw, .2); h.advance(100);
+        const values = h.state.writes.at(-1);
+        assert.ok(values.every(Number.isFinite), 'an orbit cannot overflow GPU uniforms');
+        assert.ok(Math.abs(values[8] - Math.cos(yaw % (2 * Math.PI))) < 1e-6);
+        assert.ok(Math.abs(values[1] - .2) < 1e-6);
+    }
+    const count = h.state.submissions;
+    renderer.setRotation(NaN); renderer.setRotation(0, Infinity); h.advance(120);
+    assert.equal(h.state.submissions, count);
+    renderer.setVisible(false); renderer.setRotation(1); h.advance(140);
+    assert.equal(h.state.submissions, count); assert.equal(h.state.frames.size, 0);
+    renderer.setVisible(true); h.advance(160);
+    h.motion.matches = true; h.motion.change(); h.advance(180);
+    const still = h.state.writes.at(-1);
+    assert.ok(Math.abs(still[0] + .3) < 1e-6 && Math.abs(still[1] + .08) < 1e-6);
+    renderer.setRotation(2); h.advance(200);
+    assert.equal(h.state.frames.size, 0);
+    assert.deepEqual(h.state.writes.at(-1), still);
+    renderer.destroy(); renderer.setRotation(3); h.advance(220);
+    assert.equal(h.state.frames.size, 0);
+});
+
 test('mount waits for submitted first frame, draws a shadow and surface, and bounds GPU size', async () => {
     const submitted = deferred();
     const h = harness({ submission: submitted.promise });
@@ -268,9 +294,10 @@ test('device loss reports once and stops frames so the poster can use its still'
     assert.equal(h.state.frames.size, 0);
 });
 
-for (const name of ['shop', 'coach', 'subscribe', 'feed', 'article']) {
+for (const name of ['shop', 'coach', 'subscribe', 'feed', 'article', 'armillary']) {
     test(`real Blender ${name} export satisfies the runtime GLB contract`, async () => {
-        const file = await readFile(new URL(`../website/assets/journey/${name}.glb`, import.meta.url));
+        const directory = name === 'armillary' ? 'newsletter' : 'journey';
+        const file = await readFile(new URL(`../website/assets/${directory}/${name}.glb`, import.meta.url));
         const h = harness({ data: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) });
         const renderer = await h.mount();
         const vertices = new Float32Array(h.state.buffers.find((buffer) => buffer.usage === 4).data);

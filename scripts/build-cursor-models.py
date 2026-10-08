@@ -1,8 +1,10 @@
 """Rebuild the architectural cursor meshes with Blender 5.x.
 
 /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \
-  --python scripts/build-cursor-models.py
+  --python-exit-code 1 --python scripts/build-cursor-models.py
 
+Legacy architectural source. Rebuild the current Creation hand with
+scripts/rebuild-marble-cursor.py; running this legacy script overwrites it.
 Only Blender's bundled Python/modules are required. All source meshes, material
 nodes, shape keys, and a presentation camera remain editable in cursors.blend.
 """

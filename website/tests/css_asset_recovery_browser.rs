@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 const LEGACY_FEED: &str = include_str!("../compat/css-generation-2061afa3/legacy-feed.html");
+const COMPACT_FEED: &str = include_str!("../compat/css-generation-c65689df/legacy-feed.html");
 
 const FIXTURE: &str = r#"<!doctype html><html><body><pre id="result">RUNNING</pre><iframe id="app"></iframe><script type="module">
 const frame=document.querySelector('#app'),result=document.querySelector('#result');
@@ -65,6 +66,17 @@ try{
  await frame.contentWindow.__engNav.navigate('/shop');
  await until(()=>frame.contentDocument!==legacy&&frame.contentWindow.location.pathname==='/shop'&&frame.contentWindow.__engNav?.ready,'legacy router hard-navigates across changed asset URLs');
  assert(frame.contentDocument.querySelector('meta[name="eng-css-generation"]')&&frame.contentDocument.querySelector('[data-shop-grid]'),'current destination mounts as a coherent new document');
+ await exercise('compiled');
+ await until(()=>frame.contentWindow.__engNav?.ready,'cached compact release boots exact archived assets');
+ const compiled=frame.contentDocument,compiledWindow=frame.contentWindow;
+ await compiled.fonts.ready;await compiledWindow.__engTypography?.ready;
+ assert(compiled.querySelector('meta[name="eng-css-generation"]').content==='c65689df26f4ea06682c976b54ca8a20b77d6ed016c1c7d78c0894158a5a82fe','cached compact HTML retains its published generation');
+ const nav=compiled.querySelector('nav[aria-label="Primary"]');
+ assert(compiledWindow.getComputedStyle(nav).position==='sticky'&&compiledWindow.getComputedStyle(nav).display==='grid','archived CSS applies the cached compact navigation class map');
+ assert([...compiled.querySelectorAll('a[href^="/articles/"]')].some(link=>link.textContent.trim()&&link.getBoundingClientRect().width>0),'cached compact article links remain visible');
+ await compiledWindow.__engNav.navigate('/shop');
+ await until(()=>frame.contentDocument!==compiled&&frame.contentWindow.location.pathname==='/shop'&&frame.contentWindow.__engNav?.ready,'cached compact router reloads across a changed generation');
+ assert(frame.contentDocument.querySelector('meta[name="eng-css-generation"]').content!=='c65689df26f4ea06682c976b54ca8a20b77d6ed016c1c7d78c0894158a5a82fe'&&frame.contentDocument.querySelector('[data-shop-grid]'),'cached compact navigation promotes a coherent current document');
  await exercise('worker');
  await frame.contentWindow.navigator.serviceWorker.register('/sw.js');
  await frame.contentWindow.navigator.serviceWorker.ready;
@@ -189,10 +201,10 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
     }
     let bytes = response.bytes().await.unwrap();
     if let Some(kind) = kind {
-        let mut html = if kind == "legacy" {
-            LEGACY_FEED.to_owned()
-        } else {
-            String::from_utf8(bytes.to_vec()).unwrap()
+        let mut html = match kind {
+            "legacy" => LEGACY_FEED.to_owned(),
+            "compiled" => COMPACT_FEED.to_owned(),
+            _ => String::from_utf8(bytes.to_vec()).unwrap(),
         };
         if kind == "alternate" {
             let marker = "<meta name=\"eng-css-generation\" content=\"";
@@ -200,7 +212,7 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
             let end = start + html[start..].find('"').unwrap();
             html.replace_range(start..end, "alternating-next-generation");
         }
-        let fresh = matches!(kind, "legacy" | "worker");
+        let fresh = matches!(kind, "legacy" | "compiled" | "worker");
         if !fresh {
             let script_name = if kind.starts_with("personality-") {
                 "article-heroes"

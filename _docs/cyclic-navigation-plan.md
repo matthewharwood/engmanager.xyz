@@ -17,11 +17,11 @@ fixed, framed, theme-aware and scaled to roughly 0.8. A completed deliberate
 scroll or the visible continue link promotes it, updates history without a
 refresh, and settles into full size with a restrained spring and content reveal.
 
-Only a reveal creates a previous-page card. It shows the former viewport and
-resumes its scroll position with a reverse transition. The card can be dismissed
-with its close button or a horizontal swipe, is landscape on desktop and taller
-on narrow screens, and temporarily hides behind product, bag and booking dialogs.
-Each new reveal replaces the previous card; there is no nested preview stack.
+Only a reveal creates a compact previous-page tab. Its left arrow and title-cased
+article slug (or surface name) resume the former scroll position with a reverse
+transition. The tab can be dismissed with its close button or a horizontal swipe,
+and temporarily hides behind product, bag and booking dialogs.
+Each new reveal replaces the previous tab; there is no thumbnail or preview stack.
 Normal browser Back/Forward continues to work independently. Direct navigation
 does not manufacture a previous card or a coaching upsell window.
 
@@ -157,3 +157,290 @@ is completed.
   passed every step for implementation commit `56c796e`: personality tests and
   immutable-release checks, formatting, clippy, and the complete Rust/browser
   suite. The reduced-motion fix also passed both local journey variants.
+
+- 2026-10-05: the previous-page thumbnail is replaced by a single-row resume
+  tab with a left arrow, title-cased article slug or surface name, close button,
+  and native swipe dismissal. It retains the page and its scroll position without
+  creating an iframe, cloning content, or scheduling thumbnail population.
+  Navigation keeps its glass blur with a matching sine-wave edge; metadata,
+  TOC and semantic horizontal rules share a 1px stroke and 16px crest-to-trough
+  wave. CSS timelines move right during hover, preserve their phase when paused,
+  and pause for hidden documents, journey transitions and reduced motion.
+- Native pointer checks cover hover, pause/resume, the content above a rule,
+  reduced motion, and overflow. Journey and typography browser fixtures verify
+  retained resume, dismissal, history, overlays and decoded-font reuse with the
+  text tab. All required CI gates pass: 381 Node tests, immutable releases,
+  regenerated v7 inventory without changes, formatting, Clippy, and the complete
+  `CHROME_BIN=... REQUIRE_BROWSER_TESTS=1 cargo test -p website` suite.
+- Native comparison evidence is saved at `/tmp/engmanager-wave-review`:
+  frozen release binaries and exact CSS manifests, SHA-256 fingerprints,
+  original CLI reports, reanalyzed reports, uninterrupted cold/warm traces,
+  per-phase CSVs, screenshots, and `comparison.json` with per-leg presentation,
+  TouchScroll drops, GPU submissions, fades and encoded transfer bytes.
+  Both builds used Chrome 154.0.8037.93 on an Apple M4 Max/Metal GPU,
+  390×844 touch viewport, DPR 2, 4× CPU and shaped 4G (4/1 Mbps, 120ms).
+  The service worker was bypassed for comparative network shaping; ordinary
+  service-worker and font-cache recovery remain covered by browser tests.
+  This is desktop emulation evidence, not physical Android certification.
+
+| Article fixture | Build | Worst scroll presentation p95 | Worst fade compositor p95 | Worst TouchScroll drops |
+| --- | --- | ---: | ---: | ---: |
+| Latest | Baseline | 18.02 ms | 18.75 ms | 0.45% |
+| Latest | Candidate | 18.70 ms | 18.84 ms | 0.44% |
+| Execution marketplace | Baseline | 17.75 ms | 18.56 ms | 0.45% |
+| Execution marketplace | Candidate | 18.40 ms | 19.17 ms | 0.44% |
+
+Both candidate `--assert` runs pass all budgets across ten legs each. All four
+captures have zero scroll/settled missing presentations, fade/settled main-thread
+long tasks, and hard-navigation fallbacks. Raw reports retain readiness time and
+opaque preparation separately from the actual visible poster fade.
+
+- 2026-10-05 follow-up: `/` and `/feed` read-title strikeouts use the same
+  sine-wave mask as the separators. The first-read sweep remains on the wrapper;
+  its child independently drifts right on row hover and retains its exact paused
+  phase. Touch, reduced motion, hidden documents and journey transitions keep
+  the wave paused. Small inline strikeout styles use native wavy text decoration
+  to preserve wrapping. Checkmarks and persisted reading state are unchanged.
+- Native Chrome checks exercise both feed routes, an actual first-read click,
+  hover/pause/resume, reduced motion, theme-font readiness, and 390px/320px
+  overflow. All required CI gates pass again, including 381 Node tests and the
+  complete required Chrome suite. Evidence is at
+  `/tmp/engmanager-wavy-strike-review`, with screenshots, frozen binary/manifest
+  hashes, original reports and uninterrupted cold/warm traces, analyzed reports,
+  and per-leg GPU, presentation, fade, drop and encoded-byte comparisons.
+- The pre-strike baseline reuses the preceding divider candidate's captures;
+  its frozen binary and CSS manifest match byte-for-byte. Both comparisons use
+  the same Chrome 154.0.8037.93, M4 Max/Metal GPU, 390×844/DPR 2 touch viewport,
+  4× CPU, shaped 4G and trace analyzer described above.
+
+| Article fixture | Build | Worst scroll presentation p95 | Worst fade compositor p95 | Worst TouchScroll drops |
+| --- | --- | ---: | ---: | ---: |
+| Latest | Pre-strike baseline | 18.70 ms | 18.84 ms | 0.44% |
+| Latest | Wavy strike candidate | 18.52 ms | 19.10 ms | 0.45% |
+| Execution marketplace | Pre-strike baseline | 18.40 ms | 19.17 ms | 0.44% |
+| Execution marketplace | Wavy strike candidate | 18.51 ms | 18.65 ms | 0.44% |
+
+Total captured encoded bytes across both laps are 16,405,648 → 16,405,670 for
+latest and 16,423,483 → 16,423,005 for the long article. Per-leg attribution is
+recorded separately: the same article model request can begin outside a marked
+phase, so summing phase windows does not measure the complete capture.
+
+Both new `--assert` captures pass all budgets across ten legs each, including
+zero scroll/settled missing presentations, fade/settled main-thread long tasks,
+and hard-navigation fallbacks. This remains a desktop emulation comparison;
+physical Android certification requires a separate device capture.
+
+
+- 2026-10-05 marble/button follow-up: the newsletter's inline armillary is now
+  original Blender geometry with a faceted globe, four carved orbital bands,
+  spindle and turned museum base. Its detailed source is preserved separately
+  from the simplified GLB. It uses the shared journey renderer's ivory grain,
+  cavity shading, shadows and MSAA; the five transition models are unchanged.
+  A matching decoded WebP survives Save-Data, unavailable GPU, load failure and
+  device loss. Native Chrome inspection covers all six actual GLBs at front,
+  profile and three-quarter angles, static/reduced rendering and disposal;
+  `scripts/journey-posters/sources/armillary-browser-review.json` fingerprints
+  the exact models and records newsletter pause/resume, offscreen/curtain holds
+  and retained fallback/control restoration.
+- Continue buttons use a CSS border pulse on the visible poster and a clipped,
+  repeating text marquee during mouse hover. The pulse decorates a fixed click
+  target; a single accessible label remains available. Both timelines pause
+  while hidden or committing, and reduced motion keeps the stationary label.
+  Native pointer tests sample button bounds, hit testing and horizontal overflow
+  throughout animation at desktop and 320px widths, in both motion variants.
+- All required CI gates pass: 382 Node tests, immutable personality releases,
+  unchanged regenerated v7 release inventory, formatting, Clippy, and the full
+  required Chrome/Rust suite. The retired procedural mesh-reference fixture is
+  replaced by actual GLB contract, rotation and renderer lifecycle checks.
+- Evidence is preserved at `/tmp/engmanager-marble-subscribe-review`: Blender
+  studies, native WebGPU screenshots/report, frozen release binaries and exact
+  CSS manifests with SHA-256 hashes, original CLI reports, uninterrupted
+  cold/warm traces, analyzed reports and per-leg encoded-byte/frame comparisons.
+  The pre-marble baseline reuses the preceding wavy-strike candidate captures;
+  its binary and manifest match byte-for-byte. Profiling and analysis sources
+  are unchanged. Both use Chrome 154.0.8037.93, Apple M4 Max/Metal, 390×844 touch
+  viewport, DPR 2, 4× CPU and shaped 4G (4/1 Mbps, 120ms), with the service worker
+  bypassed for comparative request shaping.
+
+| Article fixture | Build | Worst scroll presentation p95 | Worst fade compositor p95 | Worst TouchScroll drops |
+| --- | --- | ---: | ---: | ---: |
+| Latest | Pre-marble baseline | 18.52 ms | 19.10 ms | 0.45% |
+| Latest | Marble/button candidate | 18.60 ms | 19.02 ms | 0.44% |
+| Execution marketplace | Pre-marble baseline | 18.51 ms | 18.65 ms | 0.44% |
+| Execution marketplace | Marble/button candidate | 17.73 ms | 18.09 ms | 0.44% |
+
+Both candidate `--assert` captures pass every budget across ten legs each, with
+zero scroll/settled missing presentations, fade/settled main-thread long tasks,
+and hard-navigation fallbacks. Opaque preparation remains separately recorded
+from the actual visible fade. Total captured encoded bytes across cold/warm laps
+are 16,405,670 → 16,825,491 for latest and 16,423,005 → 16,842,266 for the long
+article. Per-leg attribution is retained in `comparison.json` and the raw
+reports; phase-window sums are not the complete capture. This is native desktop
+rendering with mobile emulation, not physical Android certification.
+
+- 2026-10-05 foreground-photo follow-up: the existing 48px bio trigger on `/`
+  and `/feed` now reflects off both viewport edges at the DVD's 38/27px-per-second
+  speeds. Its upright transform sits above navigation and article titles.
+  Hover, visible keyboard focus, an open bio and dragging independently pause
+  it. Hidden/offscreen/disposed pages, reduced motion, and journey exposure or
+  commits stop its RAF work; scrolling back and retained navigation resume one
+  controller at the existing position. An initial reduced-motion visit retains
+  the stationary docked button. Dragging persists once per drop, while moving
+  frames use cached dimensions and never write progress or read geometry.
+- The anchored bio wraps long lines, stays within the viewport, and tries
+  opposite edges or a bounded viewport placement. Native Chrome verifies the
+  actual CDN photo, foreground hit testing, every-edge bio placement, click and
+  Escape on both routes at 1200px, 390px and 320px widths, in both motion modes.
+  Real dragging saves one bounded position; a native phone tap pauses for the
+  open bio and resumes after dismissal. Unit checks cover independent holds,
+  visibility/preferences, reflected bounds, retained/disposed observers and
+  zero continuous layout/storage work. The real journey fixtures also cover
+  keyboard focus, automatic poster reveal, Continue hit testing and retained
+  restoration. Their restrictive proxy admits the public photo's CDN path;
+  responsive catalog decoding retries only an observed srcset replacement,
+  within the existing deadline, with the original transfer/size assertions.
+- Evidence is at `/tmp/engmanager-foreground-avatar-review`, including native
+  screenshots/report, actual gesture results, frozen binaries and exact CSS
+  manifests, source hashes, CI logs and raw performance captures. The baseline
+  reuses the preceding marble/button candidate captures; its frozen binary and
+  manifest match byte-for-byte, with unchanged profiling and analysis sources.
+
+All required CI gates pass again: 388 Node tests, published personality byte
+verification, unchanged regenerated v7 inventory, formatting, Clippy and the
+complete required Chrome/Rust suite. Powered native captures use the same
+Chrome 154.0.8037.93 and Apple M4 Max/Metal, 390×844 touch viewport, DPR 2, 4× CPU
+and shaped 4G (4/1 Mbps, 120ms), with the service worker bypassed for comparative
+shaping. Both candidate `--assert` captures pass all budgets across ten legs
+each. All four comparison reports have zero scroll/settled missing
+presentations, fade/settled main-thread long tasks and hard-navigation fallbacks.
+The original CLI reports and raw traces remain separate from analyzed reports.
+
+| Article fixture | Build | Worst scroll presentation p95 | Worst fade compositor p95 | Worst TouchScroll drops |
+| --- | --- | ---: | ---: | ---: |
+| Latest | Pre-photo baseline | 18.60 ms | 19.02 ms | 0.44% |
+| Latest | Foreground-photo candidate | 17.73 ms | 17.91 ms | 0.44% |
+| Execution marketplace | Pre-photo baseline | 17.73 ms | 18.09 ms | 0.44% |
+| Execution marketplace | Foreground-photo candidate | 18.22 ms | 18.28 ms | 0.44% |
+
+Total captured encoded bytes across cold/warm laps are 16,825,491 → 16,828,077
+for latest and 16,842,266 → 16,845,416 for the long article. Per-leg attribution
+remains in `comparison.json`; phase-window sums do not measure the full capture.
+This remains desktop native rendering with mobile emulation, not physical
+Android certification.
+
+The initial candidate capture dropped to 30Hz on later legs while the laptop
+was below 20% battery. A new control using the unchanged frozen baseline also
+ran at 30Hz, with zero missing pixels. Connecting AC restored 60Hz without
+changing runtime code, geometry, profiler flags or budgets. Those failed latest,
+long-article and baseline-control traces, their strict assertion results and
+power-state records are preserved alongside the passing powered captures.
+The profiling protocol now requires recording stable AC power on laptops.
+
+- 2026-10-05 marble cursor follow-up: the link/drag hand on `/` and `/feed` is
+  rebuilt in Blender as God's right-side hand from *The Creation of Adam*.
+  The index reaches left, the thumb crosses below it, and three relaxed curled
+  fingers preserve the painting's silhouette. The wrist is cut and capped.
+  Front, profile and three-quarter studies compare the painting and credited
+  public-domain anatomical photographs before material/export acceptance.
+- `_docs/cursors/creation-hand.blend` retains a detailed 152,635-vertex source
+  and an independent 12,975-vertex / 25,946-triangle browser copy. Both are one
+  outward closed solid with zero non-manifold/boundary edges; nails and folds
+  are carved relief. Original authored geometry, reference licenses, repeatable
+  modeling commands and the exact exported fingerprint are in the cursor README
+  and validation report. The 887,940-byte GLB is loaded only for fine mouse
+  intent; reduced motion, touch, Save-Data and unavailable GPU use native cursors.
+- The cursor renders high-key white marble with baked cavities, subtle veins,
+  soft lighting and 4× MSAA. Its left index tip stays at the exact `(36,54)`
+  canvas hotspot through movement, click and Grip. One bounded same-origin
+  decoder worker validates the actual core GLB, transfers typed arrays, cancels
+  with ownership, times out at 8 seconds and shuts down after 10 seconds idle.
+  Unavailable workers use the same strict validation cooperatively. Rendering
+  stops at rest, offscreen/hidden, during journey exposure and on disposal.
+- Native Chrome 154.0.8037.93 on Apple Metal verifies the actual exported GLB
+  and WGSL with back-face culling in front, true profile, three-quarter and Grip
+  views on dark/light surfaces. Both routes retain exact fingertip coordinates,
+  real photo clicks/Escape, topic-chip drag/Grip, idle suspension, disposed GPU
+  ownership and single-overlay retained restoration. Native reduced-motion,
+  Save-Data, GPU and worker fallbacks pass without CSP violations. A separate
+  native wheel case enters the automatic reveal, verifies Continue hit testing
+  and zero cursor submissions, and restores the cursor on scroll-back.
+- All required CI gates pass: 392 Node tests, immutable personality release
+  verification, unchanged regenerated v7 inventory, formatting, Clippy and the
+  complete required Chrome/Rust suite. Evidence is preserved in
+  `/tmp/engmanager-marble-hand-review`, including Blender studies, native GPU
+  screenshots/reports, CI logs, source/export hashes, frozen release binaries
+  and exact CSS manifests. The baseline reuses the preceding foreground-photo
+  candidate's powered raw latest/long captures; binary and manifest match
+  byte-for-byte. The final combined release passes the AC-powered cold/warm
+  latest and long-article journey budgets; the recorded comparison below uses
+  that same baseline and analyzer.
+
+- 2026-10-05 wave-density adjustment: the shared sine period is reduced from
+  96px to 24px (a 48px tile contains two periods). Navigation glass and stroke,
+  metadata/TOC separators, horizontal rules and homepage/feed strike-throughs
+  use the same tighter geometry. The 16px crest-to-trough height, 1px stroke,
+  8-second timeline and retained hover phase remain unchanged. Native Chrome
+  checks the actual SVG bounds and masks, hover/pause/resume, reduced motion,
+  and desktop/mobile screenshots. Evidence and the frozen release/manifest are
+  in `/tmp/engmanager-tight-wave-review`. The final frozen release and matching
+  manifest are in `/tmp/engmanager-morning-pr-review/candidate`, served on port
+  3095. The release build, formatting, required normal/reduced-motion Chrome
+  journey fixtures and final AC-powered timing comparison pass.
+
+- The first Linux CI runs of these wave checks exposed a desktop-fixture
+  configuration gap: headless Chrome reported `(hover: none)` and
+  `(pointer: none)` while native mouse input correctly hovered the navigation.
+  The desktop Chrome harness now sets Blink's fine-pointer and hover
+  capabilities explicitly, and the journey fixture asserts both capabilities
+  before exercising the unchanged normal/reduced-motion wave assertions.
+  A native control against the frozen final release reproduces the failure
+  with no-device capabilities, animates with desktop capabilities, and stays
+  paused with reduced motion; all three retain their phase on pointer leave.
+  Logs and controls are preserved in `/tmp/engmanager-morning-pr-review`.
+
+- Final combined morning-release performance acceptance: the latest article
+  (`your-gmail-avatar-is-part-of-your-job-search`) and long article
+  (`the-execution-marketplace`) each pass uninterrupted cold/warm native Chrome
+  laps with `--cpu=4 --passes=2 --assert`. Both captures record AC power before
+  and after. Baseline and candidate use Chrome 154.0.8037.93, Apple M4 Max Metal
+  on macOS 15.7.4, 390×844 touch at DPR 2, 4× CPU and 4/1 Mbps with 120 ms
+  latency. Their analyzer/parser fingerprints match byte-for-byte. The baseline
+  is the provenance-checked powered foreground-photo release preceding the hand
+  and tighter waves; its raw traces and original assertion outcomes are retained.
+
+| Article | Release | Worst scroll presentation p95 | Worst visible fade draw p95 | Worst active sculpture submission p95 | Worst touch-scroll drops | Captured encoded bytes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Latest | Pre-cursor baseline | 17.73 ms | 17.91 ms | 18.10 ms | 0.44% | 16,828,077 |
+| Latest | Final combined candidate | 18.59 ms | 18.86 ms | 19.10 ms | 0.88% | 16,829,214 |
+| Execution marketplace | Pre-cursor baseline | 18.22 ms | 18.28 ms | 18.30 ms | 0.44% | 16,845,416 |
+| Execution marketplace | Final combined candidate | 18.65 ms | 18.89 ms | 18.80 ms | 0.45% | 16,847,091 |
+
+All twenty candidate legs have no scroll/fade/settled missing pixels, no
+checkerboarding or hard-navigation fallback, and no scroll/fade/settled
+main-thread long tasks. Each active native presentation and sculpture-submission
+budget passes without changed flags, thresholds, timeouts, assertions or model
+quality. The same-origin decoder Worker is verified in the native traces.
+The final long-article warm lap's last settled observation extended to 901,158 ms
+when macOS entered Maintenance Sleep after the active scroll and fade had
+completed. The complete trace, matching power/sleep log and original passing
+CLI assertion remain intact. No idle frame-rate or total lap-duration claim is
+made; this is desktop GPU evidence with mobile emulation, not physical Android
+certification.
+
+Evidence is in `/tmp/engmanager-morning-pr-review`: `final-comparison.json`
+records both releases' per-leg scroll/fade/submission distributions, encoded
+bytes and raw-trace hashes; `candidate-latest` and `candidate-long` retain full
+lap traces, screenshots and original `report-cli.json`. The baseline captures
+remain in `/tmp/engmanager-marble-hand-review/baseline-latest` and `baseline-long`.
+`candidate-frozen.json` records source provenance and unchanged reviewed
+stylesheet/class identities and models. Frozen artifacts:
+
+- Candidate binary SHA-256:
+  `b3a6d213e94643f16eb0c1dddd26ad630aee5370c400fbbd1dd197e4b0f0261b`.
+- Candidate manifest SHA-256:
+  `308c3c2519e5d6a347b70b6fedc549dca6a1de6662c9f073dc8668474db0a2f1`;
+  generation `4aef2233a3a2697c608a90e1e96686065f0a45d8afda2662934df14dda354d57`.
+- Baseline binary SHA-256:
+  `cc66ed4efbc19de857a710f8da53fd6ca1111b2244b4fbcb79dcb4318e8defa3`.
+- Baseline manifest SHA-256:
+  `1b435531845bbc51607f5dae4301b886bdcec73ed985e07d6ee8aecdfab90b07`.

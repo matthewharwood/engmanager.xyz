@@ -328,7 +328,7 @@
     }
 
     .api-cell-discovered .api-cell-name {
-        text-decoration: line-through;
+        text-decoration: line-through wavy;
         text-decoration-color: var(--brand);
         text-decoration-thickness: 1.5px;
     }

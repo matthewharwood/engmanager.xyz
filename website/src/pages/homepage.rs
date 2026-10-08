@@ -423,7 +423,7 @@ pub async fn index() -> Html<String> {
                         <span class={ classes!("article-fluid-fallback") } aria-hidden="true">
                             { a.title.to_uppercase() }
                         </span>
-                        // Strike-through bar — scaleX 0 → 1 when the
+                        // Sine-wave strike — scaleX 0 → 1 when the
                         // parent link gets `.is-visited`.
                         <span class={ classes!("article-strike") } aria-hidden="true"></span>
                     </div>
@@ -474,6 +474,7 @@ pub async fn index() -> Html<String> {
     scripts.add_js("js/reveal-cloth.js");
     scripts.add_js("js/reading-completion.js");
     scripts.add_js("js/trash-drag.js");
+    scripts.add_js("js/avatar-bouncer.js");
     scripts.add(&site_nav);
     scripts.add_inline(render_experience_urls());
     scripts.add_js("js/experiences.js");
@@ -542,7 +543,7 @@ pub async fn index() -> Html<String> {
 
                 // Avatar is a popover trigger via the native HTML Popover API.
                 // Clicking toggles the #bio popover.
-                <button class={ classes!("avatar-button") } type="button" popovertarget="bio" aria-label="Open bio">
+                <button class={ classes!("avatar-button") } data-avatar-bouncer type="button" popovertarget="bio" aria-label="Open bio">
                     <img class={ classes!("avatar") }
                          src=AVATAR_SRC
                          srcset={ avatar_srcset(&[48, 96, 144]) }
@@ -550,6 +551,7 @@ pub async fn index() -> Html<String> {
                          alt="Matthew Harwood"
                          width="48"
                          height="48"
+                         draggable="false"
                          loading="eager"
                          decoding="async" />
                 </button>

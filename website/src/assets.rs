@@ -36,11 +36,11 @@ pub struct CssDist;
 #[folder = "$OUT_DIR/js-dist/"]
 pub struct JsDist;
 
-// Exact previous-generation bodies bridge HTML already cached before class
-// compilation was introduced. The archive is immutable and manifest-only;
+// Exact previous-generation bodies bridge cached HTML across class maps.
+// The archives are immutable and manifest-only;
 // unknown obsolete hashes still never alias today's bytes.
 #[derive(RustEmbed)]
-#[folder = "compat/css-generation-2061afa3/"]
+#[folder = "compat/"]
 struct CompatAssets;
 
 #[derive(serde::Deserialize)]
@@ -62,29 +62,46 @@ struct CompatEntry {
 fn lookup_compat_asset(path: &str) -> Option<EmbeddedFile> {
     static MANIFEST: std::sync::LazyLock<std::collections::BTreeMap<String, CompatEntry>> =
         std::sync::LazyLock::new(|| {
-            let manifest: CompatManifest = serde_json::from_str(include_str!(
-                "../compat/css-generation-2061afa3/manifest.json"
-            ))
-            .expect("verified previous-generation manifest");
-            assert_eq!(manifest.schema_version, 1);
-            assert_eq!(
-                manifest.source_commit,
-                "2061afa3aad1577e56f95cf665b49a3462f5d890"
-            );
-            assert_eq!(
-                manifest.source_binary_sha256,
-                "90bc3052acbd7eab31dc0c2e8dddd94bf12377a54a227d4131283d50b76ed62e"
-            );
-            let mut entries = std::collections::BTreeMap::new();
-            for entry in manifest.assets {
-                assert_eq!(entry.file, entry.path.trim_start_matches('/'));
-                assert!(
-                    entry.path.starts_with("/assets/css/") || entry.path.starts_with("/assets/js/")
-                );
-                assert!(
-                    entries.insert(entry.path.clone(), entry).is_none(),
-                    "duplicate compatibility URL"
-                );
+            let archives = [
+                (
+                    "css-generation-2061afa3",
+                    include_str!("../compat/css-generation-2061afa3/manifest.json"),
+                    "2061afa3aad1577e56f95cf665b49a3462f5d890",
+                    "90bc3052acbd7eab31dc0c2e8dddd94bf12377a54a227d4131283d50b76ed62e",
+                ),
+                (
+                    "css-generation-c65689df",
+                    include_str!("../compat/css-generation-c65689df/manifest.json"),
+                    "fd5c8495dd939ca9dcea38de82d677c17a301b8f",
+                    "86a6e87d11dd23eed061fce58e64ff10f3282e8250ff3b41fe1adc35b7cba7f7",
+                ),
+            ];
+            let mut entries: std::collections::BTreeMap<String, CompatEntry> =
+                std::collections::BTreeMap::new();
+            for (directory, source, commit, binary) in archives {
+                let manifest: CompatManifest =
+                    serde_json::from_str(source).expect("verified previous-generation manifest");
+                assert_eq!(manifest.schema_version, 1);
+                assert_eq!(manifest.source_commit, commit);
+                assert_eq!(manifest.source_binary_sha256, binary);
+                for mut entry in manifest.assets {
+                    assert_eq!(entry.file, entry.path.trim_start_matches('/'));
+                    assert!(
+                        entry.path.starts_with("/assets/css/")
+                            || entry.path.starts_with("/assets/js/")
+                    );
+                    entry.file = format!("{directory}/{}", entry.file);
+                    if let Some(previous) = entries.get(&entry.path) {
+                        assert_eq!(
+                            previous.sha256, entry.sha256,
+                            "conflicting compatibility URL"
+                        );
+                        assert_eq!(previous.bytes, entry.bytes);
+                        assert_eq!(previous.content_type, entry.content_type);
+                    } else {
+                        entries.insert(entry.path.clone(), entry);
+                    }
+                }
             }
             entries
         });

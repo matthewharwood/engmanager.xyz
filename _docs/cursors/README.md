@@ -1,106 +1,133 @@
-# Brutalist cursor models
+# Creation of Adam marble cursor
 
-Original, purpose-built geometry authored in Blender: a cast-concrete arrow and
-an articulated architectural hand. Single-segment chamfers, recessed graphite
-joints, and small oxide-red datum insets make the material and construction
-legible at cursor size. No textures, external models, or generated image assets
-are used.
+The link and drag cursor is an original Blender sculpture of God's right hand
+from Michelangelo's *The Creation of Adam*: index reaching left, thumb crossing
+below it, three relaxed curled fingers, and a closed cut at the wrist. The
+orientation and cropped width/height follow the hand on the painting's right.
+No forearm, robotic finger blocks, cuff, or reused 3D geometry is included.
 
-![Pointer and open hand](cursor-models-preview.jpg)
+![Front view of the marble hand](creation-hand-front.png)
 
-![Pointer and curled hand](cursor-grip-preview.jpg)
+![Three-quarter view](creation-hand-three-quarter.png)
 
-The previews are Blender renders of the actual exported geometry. Website
-lighting is supplied by its WebGPU renderer.
+![Anatomical side profile](creation-hand-profile.png)
 
-## Source and rebuilding
+These are Blender renders of the actual compact mesh. The browser independently
+renders its exported GLB with back-face culling, procedural fine marble grain,
+quiet veins, baked finger cavities, soft white lighting, and 4× MSAA. Its native
+Chrome review includes front, true side, three-quarter and Grip views on light
+and dark surfaces, plus the cursor on both `/` and `/feed`.
 
-- `scripts/build-cursor-models.py` is the reproducible Blender modeling source.
-- `cursors.blend` is the editable scene with materials, meshes, the `Grip` shape
-  key, and an orthographic presentation camera. The scene is saved in open pose.
-- `website/assets/cursors/v1/pointer.glb` and `hand.glb` are the browser assets.
+## Editable anatomy and reproducible export
 
-Run from the repository root with Blender 5.x:
+`creation-hand.blend` preserves the detailed unified source (152,635 vertices)
+in its own hidden collection. The browser copy is independently simplified to
+12,975 vertices / 25,946 triangles. Both meshes are one connected outward-facing
+closed solid with zero boundary or non-manifold edges. The wrist is bisected
+and capped; fingernails and folds are carved surface relief, with no detached
+nail shells. Each source and export has its own marble material.
+
+`scripts/rebuild-marble-cursor.py` is the reproducible modeling source. Anatomy
+lofts and rounded pads are fused into a continuous sculpted surface, then honed,
+carved and cropped. The detailed source remains intact when the export is
+simplified. Run from the repository root with Blender 5.1+:
 
 ```sh
 /Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \
-  --python scripts/build-cursor-models.py
+  --python-exit-code 1 --python scripts/rebuild-marble-cursor.py \
+  -- --preview-dir /tmp/engmanager-marble-hand-review/blender
 ```
 
-On other platforms, use the equivalent Blender executable. Its bundled Python
-is sufficient; no add-ons, pip dependencies, or downloaded resources are needed.
-Rebuilding regenerates both GLBs, the `.blend`, and the preview JPEGs. Make
-persistent model changes in the script before rebuilding.
+Use `--study-only` to render and inspect anatomy without packaging the GLB.
+`creation-hand-validation.json` records source/export topology, the exact GLB
+SHA-256, cavity range and export size (887,940 bytes before HTTP compression).
+Source and review images are authoring assets and are not shipped to readers.
+The older `cursors.blend`, architectural previews and
+`scripts/build-cursor-models.py` retain the original pointer's authoring source;
+the legacy builder would overwrite the current hand and is not the current
+hand's rebuild command.
 
-## Runtime contract
+## Reference credits
 
-Both assets use core glTF 2.0: one mesh, four material primitives, indexed
-triangles, float `POSITION` and `NORMAL` attributes, and PBR base-color factors.
-There are no textures, required extensions, cameras, lights, skins, or animation
-clips. Object transforms are baked; exported nodes have identity transforms.
+The preserved JPEGs in `references/` are visual references; none is a texture,
+mesh source, or shipped browser asset.
 
-Coordinates are **+X right, +Y up, +Z toward the viewer**. Export explicitly
-retains these axes instead of applying Blender's default Z-up conversion.
-The pointer tip and the hand's index fingertip each contain an actual vertex at
-`(0, 0, 0)`. This is the browser pointer hotspot.
+- **Pose:** Michelangelo, *The Creation of Adam*, circa 1511, Sistine Chapel.
+  [Wikimedia Commons hand crop](https://commons.wikimedia.org/wiki/File:Michelangelo_-_Creation_of_Adam_(hand_crop).jpg),
+  cropped by Joe bitten from the credited public-domain painting reproduction.
+  Commons records Public Domain Mark 1.0 / PD-Art. We studied God's hand on the
+  right, cropped at the wrist, and rebuilt its silhouette as original 3D anatomy.
+- **Palm and pointing anatomy:** Than Ball (Than217), own photograph, 2006.
+  [Index finger 2](https://commons.wikimedia.org/wiki/File:Index_finger_2.JPG).
+  The author released it into the public domain. Used to compare finger joints,
+  thumb mass and palm depth; the painting determines the pose.
+- **Dorsal anatomy:** Coolgirly88, own photograph, 2007, cropped by Amada44.
+  [Hand — Index finger](https://commons.wikimedia.org/wiki/File:Hand_-_Index_finger.jpg).
+  The author released it into the public domain. Used to compare knuckles,
+  extensor tendons, fingernails and the transition into a narrow wrist.
 
-`hand.glb` has a single `Grip` morph target with dense position and normal deltas
-on every primitive, default weight `0`. Interpolate to `1` for the curled pose.
-The same fingertip vertex remains at the origin throughout the interpolation;
-recessed joints and two concrete finger segments curl together. The grip can
-extend above the origin and behind the open hand, so the renderer should keep
-sufficient top padding and depth range.
+All sculpture geometry and relief are newly authored for engmanager.xyz.
+The high-key honed ivory treatment follows the site's existing marble series.
 
-| Asset / pose | Minimum XYZ | Maximum XYZ |
-| --- | --- | --- |
-| Pointer | `-0.021, -2.314, -0.273` | `1.502, 0, 0.049` |
-| Open hand | `-0.033, -2.427, -0.419` | `1.858, 0, 0.089` |
-| Gripping hand | `-0.033, -1.111, -1.353` | `1.552, 0.545, 0.113` |
+## Cursor contract and behavior
 
-The pointer is 168 triangles / 13,216 bytes. The hand is 736 triangles /
-85,728 bytes including its morph. Combined transfer size before HTTP compression
-is 98,944 bytes. Export-time checks validate the supported glTF subset, triangle
-indices, material primitives, morph attributes, and identity node transforms.
+The core glTF 2.0 asset has indexed triangles, baked identity transforms,
+`POSITION`, `NORMAL`, normalized `COLOR_0`, one ivory PBR material and a single
+`Grip` morph with dense position/normal deltas. There are no textures, skins,
+required extensions, cameras, lights or animation clips.
 
-![WebGPU arrow, open hand, and grip on light and dark surfaces](webgpu-preview.png)
+Coordinates remain +X right, +Y up, +Z toward the viewer. A real left index-tip
+vertex is exactly `(0, 0, 0)` in both poses. The Grip gently closes the three
+curled fingers in depth while preserving the iconic pointing silhouette and
+fingertip contact. Movement and click springs rotate around that same tip.
+The 192 CSS pixel canvas uses `(36, 54)` as its hotspot, 52 pixels per model unit,
+a capped 2× resolution and cached multisample/depth views. The original arrow
+continues to indicate noninteractive surfaces.
 
-## Website behavior
+Models load only for mouse intent on the homepage/feed. One same-origin worker
+runs strict bounded GLB validation, with cancellation, an 8 second deadline and
+10 second idle shutdown. Denied or unavailable workers use the same validation
+cooperatively. The production CSP admits the exact content-hashed renderer as
+its own worker entry point. GPU resources are fresh per mount and disposed on
+navigation. The pointer-transparent manual popover stays above bio/search UI.
 
-`homepage.rs` supplies content-hashed model URLs on both `/` and `/feed`.
-`cursor-renderer.js` is a dependency-free WebGPU renderer for this specific glTF
-subset. `big-cursor.js` owns input, damped orientation/click springs, grip
-interpolation, and navigation cleanup. Position follows the mouse exactly;
-only the model's orientation and press response have inertia.
-
-The canvas is 192 CSS pixels with capped 2× resolution and 4× MSAA. Its hotspot
-is `(48, 54)` with 52 pixels per model unit, allowing room for the curled hand
-above the contact point. It renders only while input or a spring is changing.
-A pointer-transparent manual popover keeps it above modal UI. The journey
-router excludes that decorative popover when checking for open overlays.
-
-Models load on the first mouse interaction. Native cursors stay in use for
-unsupported WebGPU, reduced motion, coarse pointers, forced colors, save-data,
-editable fields, and any model/GPU failure. Native cursor hiding starts only
-after a successful frame. Leaving the feed disposes the GPU and aborts loading;
-returning mounts a single fresh instance using the new page's asset URLs.
+Native cursors remain for reduced motion, coarse/touch input, forced colors,
+Save-Data, unavailable GPU, editable fields and rendering/model failures. The
+custom cursor stops drawing when its springs settle, when hidden/offscreen,
+and behind the revealed journey curtain. Leaving the feed releases its GPU;
+retained feed/homepage remounts own exactly one fresh overlay.
 
 ## Verification
 
-Run `npm ci --prefix scripts --ignore-scripts` and `npm test --prefix scripts`.
-The cursor suites exercise the real exported GLBs and renderer cleanup with a
-GPU stub, plus controller input, fallback, popover, spring, and navigation
-behavior. The Rust route test checks both pages' hashed model URLs, script
-order, and binary asset responses.
+```sh
+node --test scripts/cursor.test.mjs scripts/cursor-renderer.test.mjs
+node scripts/inspect-marble-cursor.mjs --url=http://127.0.0.1:3097 \
+  --output=/tmp/engmanager-marble-hand-review/native
+node scripts/inspect-marble-cursor.mjs --url=http://127.0.0.1:3097 \
+  --exposure=only --output=/tmp/engmanager-marble-hand-review/native-exposure
+```
 
-Real Chrome WebGPU was also checked with the actual models in arrow/open/grip
-states on light/dark backgrounds and on `/` and `/feed`, including a topic-chip
-drag, bio/search overlays, native input cursors, reduced-motion changes, and
-navigation to the store and back. The source previews above are Blender
-renders; the browser uses the renderer's own lighting.
+The portable tests decode the actual Blender GLB in both worker/cooperative
+paths, verify material cavities, outward indexed volume, painting proportions,
+asset provenance, tip anchoring and cancellation/disposal. Native Chrome checks
+the real WGSL, visible uncropped triangles on both palettes, true profile,
+fingertip coordinates, actual bio clicks, real drag/Grip, settled rendering,
+retained navigation and reduced/Save-Data/GPU/worker fallbacks.
+The separate exposure case uses a native wheel to enter the automatic reveal,
+checks real Continue hit testing and zero cursor submissions, then scrolls back
+and verifies that the cursor resumes. Neither case calls `prepareNext`.
 
-Validation on 2026-09-25: all 180 JavaScript tests pass; Rust unit/route tests,
-formatting, and Clippy pass. The broad Rust browser run exposes an existing
-`journey_navigation_respects_reduced_motion` failure at `/coach` ("long role
-label does not shift the mobile slider"). The same assertion fails on pristine
-base commit `bde0c0166` with the identical Cargo.lock; it is unrelated to this
-cursor change.
+Full required CI checks pass: 392 Node tests, immutable personality releases,
+formatting, Clippy, and the complete required Rust/Chrome suite. Native WebGPU
+reports and screenshots are preserved in the review directory. The final
+combined release and exact CSS manifest pass AC-powered cold/warm latest and
+long-article journey comparisons on the same Chrome 154/M4 Max native GPU,
+390×844 touch DPR 2, 4× CPU and shaped 4G. Worst candidate scroll presentation
+p95 is 18.65 ms, visible fade draw p95 is 18.89 ms and active sculpture
+submission p95 is 19.10 ms; all strict budgets pass with no missing pixels or
+scroll/fade/settled long tasks. Raw laps, original CLI assertions, per-leg
+before/after results and artifact hashes are preserved in
+`/tmp/engmanager-morning-pr-review`. The final long warm lap's last idle
+observation includes an OS Maintenance Sleep; its full trace is retained and
+no idle cadence or total lap-duration claim is made. See
+`_docs/cyclic-navigation-plan.md` for the complete comparison and limitations.

@@ -62,7 +62,6 @@
     .article-toc .article-meta-tools {
         margin-block-start: 1rem;
         padding-block-start: 1rem;
-        border-block-start: 1px solid var(--ctp-surface0);
     }
 }
 
@@ -88,6 +87,7 @@
 }
 
 .article-toc-list {
+    position: relative;
     list-style: none;
     padding: 0;
     margin: 0;

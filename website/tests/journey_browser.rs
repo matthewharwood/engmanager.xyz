@@ -49,6 +49,153 @@ async function ready(path){await load(path);await until(()=>win().__engNav?.read
 async function navigate(path,options={}){const expected=new URL(path,win().location.href).pathname;const done=phase('navigate '+path);await win().__engNav.navigate(path,options);done();await until(()=>win().location.pathname===expected&&query('[data-journey-current]')&&settled(),'navigate '+path);await delay(50);}
 async function click(selector,label=selector){if(selector==='[data-close-product]')await until(()=>!query('.is-camera-opening')&&!doc().body.classList.contains('shop-camera-transitioning'),'product camera settles before close');const node=query(selector);assert(node,'action exists: '+label);node.click();await delay(30);}
 async function promote(path){await click('[data-journey-promote]','continue to '+path);await until(()=>win().location.pathname===path&&query('[data-journey-current]')&&settled(),'promote '+path);await delay(80);}
+async function hoverAt(x,y){const bounds=frame.getBoundingClientRect();window.__journeyPointer={x:bounds.left+x,y:bounds.top+y};await until(()=>!window.__journeyPointer,'native pointer moves');await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));}
+async function decodeImage(image,label,selected=()=>true){
+  const deadline=performance.now()+12000;
+  while(performance.now()<deadline){
+    if(!selected()||!image.complete||!image.naturalWidth){await delay(50);continue;}
+    const source=image.currentSrc;
+    try{await image.decode();}catch(error){
+      // A resize can cancel decoding the former srcset candidate. Retry only
+      // that observed source change, within this image's original deadline.
+      if(error.name==='EncodingError'&&image.currentSrc!==source)continue;
+      throw new Error(label+' decode failed: '+error.name+' '+error.message+' '+source);
+    }
+    if(image.currentSrc===source)return;
+  }
+  throw new Error('Timed out decoding '+label+': '+image.currentSrc);
+}
+async function checkForegroundAvatar(){
+  for(const path of ['/', '/feed']){
+    await ready(path);await doc().fonts.ready;await win().__engTypography?.ready;
+    const photo=query('[data-avatar-bouncer]'),bio=query('#bio'),api=win().__engAvatarBouncer;
+    assert(photo&&api&&photo.getAttribute('popovertarget')==='bio','both feed routes retain the accessible foreground bio trigger');
+    const image=photo.querySelector('img');
+    await decodeImage(image,'foreground photo');
+    await hoverAt(5,5);
+    const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const initial=photo.style.transform;await delay(220);
+    assert((photo.style.transform!==initial)===!reduced,'the native photo moves only with normal motion on '+path);
+    api.hold(photo,true);api.place(photo,10,10);
+    let rect=photo.getBoundingClientRect();
+    assert(doc().elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2)?.closest('[data-avatar-bouncer]')===photo,'the photo is the foreground hit target above navigation on '+path);
+    await hoverAt(rect.x+rect.width/2,rect.y+rect.height/2);api.hold(photo,false);
+    const hovered=photo.style.transform;await delay(180);
+    assert(!photo.hasAttribute('data-avatar-moving')&&photo.style.transform===hovered,'native hover holds the moving photo still for clicking');
+    await hoverAt(5,win().innerHeight-5);
+    window.__journeyKey='Tab';await until(()=>!window.__journeyKey,'keyboard modality for foreground bio');
+    photo.focus({preventScroll:true});
+    assert(photo.matches(':focus-visible')&&!photo.hasAttribute('data-avatar-moving'),'keyboard focus pauses the photo without scrolling the page');
+    photo.blur();
+    for(const [width,height] of [[1200,900],[320,568]]){
+      frame.style.width=width+'px';frame.style.height=height+'px';
+      await until(()=>win().innerWidth===width&&win().innerHeight===height,'foreground photo viewport '+width+'×'+height);
+      await doc().fonts.ready;await win().__engTypography?.ready;
+      api.hold(photo,true);
+      rect=photo.getBoundingClientRect();
+      for(const [x,y] of [[0,0],[width-rect.width,0],[0,height-rect.height],[width-rect.width,height-rect.height],[width/2,height/2]]){
+        api.place(photo,x,y);photo.click();
+        await until(()=>bio.matches(':popover-open'),'native bio opens from moving photo');
+        await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+        const bounds=bio.getBoundingClientRect();
+        assert(bounds.left>=-1&&bounds.top>=-1&&bounds.right<=width+1&&bounds.bottom<=height+1&&bio.scrollWidth<=bio.clientWidth+1,
+          'bio stays reachable at every photo edge on '+path+' '+width+'×'+height+': '+JSON.stringify(bounds.toJSON()));
+        assert(!photo.hasAttribute('data-avatar-moving'),'open bio keeps its anchor stationary');
+        bio.hidePopover();await until(()=>!bio.matches(':popover-open'),'bio closes');
+      }
+      api.hold(photo,false);
+      assert(doc().documentElement.scrollWidth<=width&&Math.abs(win().scrollX)<1,'the foreground photo never enlarges the document width');
+    }
+    frame.style.width='1200px';frame.style.height='900px';await until(()=>win().innerWidth===1200&&win().innerHeight===900,'foreground photo desktop restored');
+    await hoverAt(5,5);photo.blur();
+    await reveal();
+    assert(!visible(photo)&&!photo.hasAttribute('data-avatar-moving'),'the foreground photo yields to the automatically revealed poster');
+    const button=query('[data-journey-promote]'),target=button.getBoundingClientRect();
+    assert(doc().elementFromPoint(target.x+target.width/2,target.y+target.height/2)?.closest('[data-journey-promote]')===button,'the foreground photo leaves Continue reachable');
+    win().scrollTo({top:0,behavior:'instant'});await until(()=>visible(photo),'scrolling back restores the foreground photo');
+    await navigate('/coach',{source:'reveal'});const disposed=photo.style.transform;await delay(180);
+    assert(!photo.hasAttribute('data-avatar-moving')&&photo.style.transform===disposed,'the outgoing photo stops after navigation');
+    await click('[data-journey-resume]');await until(()=>win().location.pathname===path&&settled(),'retained foreground feed resumes');
+    assert(query('[data-avatar-bouncer]')===photo,'retained navigation restores the existing photo on '+path);
+    await until(()=>photo.hasAttribute('data-avatar-moving')===!reduced,'retained photo restores its motion preference');
+  }
+}
+async function checkContinueMotion(){
+  await doc().fonts.ready;await win().__engTypography?.ready;
+  const button=query('[data-journey-promote]'),label=button.querySelector('.journey-promote-label'),marquee=button.querySelector('.journey-promote-marquee');
+  const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pulse=()=>win().getComputedStyle(button,'::before'),track=()=>win().getComputedStyle(marquee);
+  const bounds=()=>{const rect=button.getBoundingClientRect();return[rect.x,rect.y,rect.width,rect.height];};
+  assert(button.getAttribute('aria-label')===label.textContent&&marquee.getAttribute('aria-hidden')==='true'&&marquee.children.length===2,'Continue keeps one accessible name and two decorative marquee copies');
+  await hoverAt(5,5);
+  assert(pulse().animationPlayState===(reduced?'paused':'running')&&track().animationPlayState==='paused','only the visible normal-motion Continue button pulses before hover');
+  for(const width of [1200,320]){
+    frame.style.width=width+'px';await until(()=>win().innerWidth===width,'Continue viewport '+width);await reveal();
+    const rect=button.getBoundingClientRect();await hoverAt(rect.x+rect.width/2,rect.y+rect.height/2);
+    const start=bounds(),before=track().transform,pulseBefore=pulse().transform;
+    assert(track().animationPlayState===(reduced?'paused':'running')&&track().visibility===(reduced?'hidden':'visible'),'native Continue hover enables the marquee only with normal motion');
+    for(let sample=0;sample<8;sample++){
+      await delay(35);
+      assert(bounds().every((value,index)=>Math.abs(value-start[index])<.5)&&doc().documentElement.scrollWidth<=width&&Math.abs(win().scrollX)<1,'pulse and marquee keep Continue bounds and horizontal overflow stable at '+width+'px');
+    }
+    assert((track().transform!==before)===!reduced&&(pulse().transform!==pulseBefore)===!reduced,'CSS advances both Continue effects only with normal motion');
+    assert(doc().elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2)?.closest('[data-journey-promote]')===button,'the animated Continue button remains the native hit target');
+    doc().documentElement.setAttribute('data-wave-paused','');
+    assert(pulse().animationPlayState==='paused'&&track().animationPlayState==='paused','hidden-document guard pauses both Continue animations');
+    // Let the compositor apply the new play state before sampling its phase.
+    await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
+    const paused=track().transform;await delay(100);
+    assert(track().transform===paused,'hidden-document guard freezes the applied Continue phase: '+JSON.stringify({before:paused,after:track().transform,state:track().animationPlayState}));
+    doc().documentElement.removeAttribute('data-wave-paused');await hoverAt(5,5);
+    assert(track().animationPlayState==='paused'&&track().visibility==='hidden'&&win().getComputedStyle(label).visibility==='visible','leaving Continue hover restores its stationary label');
+  }
+  frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after Continue motion');await reveal();
+}
+async function checkWaveRules(){
+  const original=win().location.pathname;
+  await navigate('/articles/auteurs');
+  await doc().fonts.ready;
+  win().scrollTo({top:0,behavior:'instant'});await scrollSettled();
+  const reduced=win().matchMedia('(prefers-reduced-motion: reduce)').matches;
+  assert(win().matchMedia('(hover: hover)').matches&&win().matchMedia('(pointer: fine)').matches,'the native mouse fixture exposes desktop hover and fine-pointer capabilities');
+  const sample=(node,pseudo='::after')=>{const style=win().getComputedStyle(node,pseudo);return{state:style.animationPlayState,position:style.maskPosition,image:style.maskImage};};
+  const check=async(node,hoverNode=node)=>{
+    await hoverAt(5,win().innerHeight-5);
+    assert(sample(node).state==='paused'&&sample(node).image.includes('data:image/svg+xml'),'sine separator starts paused with its authored SVG mask');
+    hoverNode.scrollIntoView({block:'center',behavior:'instant'});await scrollSettled();
+    const rect=hoverNode.getBoundingClientRect();await hoverAt(rect.left+rect.width/2,rect.top+Math.min(10,rect.height/2));
+    assert(sample(node).state===(reduced?'paused':'running'),'native container hover respects the motion preference: '+JSON.stringify({
+      node:node.className,hoverNode:hoverNode.className,state:sample(node).state,reduced,
+      hover:win().matchMedia('(hover: hover)').matches,pointer:win().matchMedia('(pointer: fine)').matches,
+      hovered:node.matches(':hover'),targetHovered:hoverNode.matches(':hover'),rect:rect.toJSON(),
+      target:doc().elementFromPoint(rect.left+rect.width/2,rect.top+Math.min(10,rect.height/2))?.outerHTML.slice(0,400),
+      frame:frame.getBoundingClientRect().toJSON(),parentScroll:[scrollX,scrollY],hidden:doc().hidden,
+      wavePaused:doc().documentElement.hasAttribute('data-wave-paused'),loading:doc().documentElement.hasAttribute('data-journey-loading'),
+      revealing:doc().body.classList.contains('journey-revealing'),busy:win().__engNav.busy
+    }));
+    const before=sample(node).position;await delay(180);
+    assert((sample(node).position!==before)===!reduced,'the wave travels only during normal-motion hover');
+    if(node.matches('.site-nav'))assert(sample(node,'::before').state===sample(node).state&&win().getComputedStyle(node,'::before').backdropFilter.includes('blur'),'the wavy glass edge follows the navigation stroke');
+    await hoverAt(5,win().innerHeight-5);const paused=sample(node).position;await delay(180);
+    assert(sample(node).state==='paused'&&sample(node).position===paused,'leaving hover freezes the current wave phase');
+    await hoverAt(rect.left+rect.width/2,rect.top+Math.min(10,rect.height/2));
+    assert(reduced||parseFloat(sample(node).position)>=parseFloat(paused),'hover resumes the retained phase without rewinding');
+    doc().documentElement.setAttribute('data-wave-paused','');const hidden=sample(node).position;await delay(100);
+    assert(sample(node).state==='paused'&&sample(node).position===hidden,'hidden-document guard stops hovered waves');
+    doc().documentElement.removeAttribute('data-wave-paused');
+    await hoverAt(5,win().innerHeight-5);
+  };
+  await check(query('.site-nav'),query('.site-nav-brand'));
+  await check(query('.article-meta'));
+  await check(query('.article-toc-list'));
+  const rule=query('.article hr');
+  assert(rule,'the Auteurs article includes a semantic horizontal rule');
+  await check(rule);
+  await check(rule,rule.previousElementSibling);
+  assert(doc().documentElement.scrollWidth<=win().innerWidth,'wave masks do not enlarge the page width');
+  win().scrollTo({top:0,behavior:'instant'});await scrollSettled();
+  await navigate(original);
+}
 async function checkVisibleDiagrams(article){
   // The same-origin module supplies deterministic graph markup for lifecycle
   // checks. Real Mermaid layout is checked separately over its actual CDN.
@@ -285,20 +432,24 @@ try{
   frame.style.height='900px';
   frame.style.width='1200px';await until(()=>win().innerWidth===1200,'desktop restored after unread article reveals');
 
+  await checkForegroundAvatar();
+
   await ready('/shop');
   assert(!visible(previous()),'opening the storefront directly has no previous-page window');
   assert(query('[data-product-card]'),'the real embedded catalog is available without Stripe credentials');
   const firstCard=query('[data-product-card]'),productPath=new URL(firstCard.href).pathname;
   frame.style.width='390px';await until(()=>win().innerWidth===390,'mobile responsive catalog');
-  const mobileCardImage=firstCard.querySelector('img');await mobileCardImage.decode();
+  await doc().fonts.ready;await win().__engTypography?.ready;
+  const mobileCardImage=firstCard.querySelector('img');
+  await decodeImage(mobileCardImage,'mobile catalog candidate',()=>/-(160|384|640)(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(mobileCardImage.currentSrc||mobileCardImage.src).pathname));
   assert(mobileCardImage.naturalWidth>0&&mobileCardImage.naturalWidth<900&&/-(160|384|640)(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(mobileCardImage.currentSrc).pathname),'native mobile cards decode a responsive candidate instead of the 900px original');
   assert(mobileCardImage.srcset.includes('160w')&&mobileCardImage.srcset.includes('384w')&&mobileCardImage.srcset.includes('640w')&&mobileCardImage.srcset.includes('900w'),'cards retain the complete responsive image ladder');
   firstCard.click();await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='false','direct product opens');
   assert(win().location.pathname===productPath,'product overlay writes the product URL');
-  const responsiveGallery=query('[data-product-image]');await responsiveGallery.decode();
+  const responsiveGallery=query('[data-product-image]');await decodeImage(responsiveGallery,'responsive product gallery');
   const product=win().__shopProducts.products.find(item=>item.slug===firstCard.dataset.slug),original=new (win().Image)();
   assert(responsiveGallery.srcset===product.images[0].srcset&&responsiveGallery.sizes,'the gallery requests the candidate appropriate to its actual panel size');
-  const galleryThumb=query('.shop-thumb img');await galleryThumb.decode();
+  const galleryThumb=query('.shop-thumb img');await decodeImage(galleryThumb,'product thumbnail');
   assert(galleryThumb.naturalWidth===160&&/-160(?:\.[0-9a-f]{8})?\.webp$/.test(new URL(galleryThumb.currentSrc).pathname),'gallery thumbnails decode the 160px derivative');
   original.src=product.images[0].url;await original.decode();
   assert(original.naturalWidth===900,'the original full-resolution product image remains available');
@@ -310,6 +461,7 @@ try{
   await click('[data-close-product]');await until(()=>win().location.pathname==='/shop'&&query('[data-product-panel]')?.getAttribute('aria-hidden')==='true','hard-loaded product returns to shop');
 
   await navigate(article);
+  await checkWaveRules();
   await checkVisibleDiagrams(article);
   const hero=query('[data-article-hero="the-execution-marketplace"]');
   assert(hero&&hero.querySelector('svg.article-hero-poster')&&hero.querySelector('canvas.article-hero-canvas'),'execution article has an accessible static hero and canvas');
@@ -357,21 +509,9 @@ try{
   await until(()=>visible(previous()),'article previous window');
   assert(previous().textContent.includes('Execution')||previous().querySelector('[data-journey-resume]'),'article window includes a resume control');
   assert(doc().querySelectorAll('[data-journey-previous]').length===1,'exactly one previous window is retained');
-  await until(()=>previous()?.querySelector('iframe[data-preview-ready="true"]')?.contentDocument?.querySelector('.article'),'resume snapshot hydrates with styles, fonts and visible images when idle');
-  const resumeSnapshot=previous().querySelector('iframe');
-  assert(resumeSnapshot.getAttribute('sandbox')==='allow-same-origin'&&!resumeSnapshot.contentDocument.querySelector('script,dialog,[popover],[role="dialog"][aria-modal="true"]'),'idle resume snapshot remains script-free and omits interactive overlays');
-  const previewViewport=resumeSnapshot.parentElement,previewBounds=previewViewport.getBoundingClientRect(),snapshotBounds=resumeSnapshot.getBoundingClientRect();
-  assert(win().getComputedStyle(previewViewport).contain.includes('paint')&&win().getComputedStyle(resumeSnapshot).contain.includes('paint')&&Math.abs(snapshotBounds.width-previewBounds.width)<2,'the full snapshot is paint-contained inside its scaled thumbnail viewport');
-  assert(Math.abs(resumeSnapshot.contentWindow.innerWidth-parseFloat(resumeSnapshot.style.width))<2&&Math.abs(resumeSnapshot.contentWindow.innerHeight-parseFloat(resumeSnapshot.style.height))<2,'thumbnail scaling preserves the original CSS viewport: '+JSON.stringify({inner:[resumeSnapshot.contentWindow.innerWidth,resumeSnapshot.contentWindow.innerHeight],style:[resumeSnapshot.style.width,resumeSnapshot.style.height]}));
-  assert([...resumeSnapshot.contentDocument.querySelectorAll('svg')].every(svg=>!svg.animationsPaused||svg.animationsPaused()),'static snapshots pause SVG animation timelines as well as CSS animations');
-  const snapshotTimelines=[...resumeSnapshot.contentDocument.querySelectorAll('svg')].filter(svg=>svg.getCurrentTime).map(svg=>({svg,time:svg.getCurrentTime()}));
-  assert(snapshotTimelines.some(({svg})=>svg.querySelector('animate')),'snapshot timing check includes an authored animated SVG filter');
-  await new Promise(resolve=>win().requestAnimationFrame(()=>win().requestAnimationFrame(resolve)));
-  assert(snapshotTimelines.every(({svg,time})=>Math.abs(svg.getCurrentTime()-time)<.001),'snapshot SVG timelines do not advance across display frames');
-  assert([...resumeSnapshot.contentDocument.querySelectorAll('.marquee-track,.article-fluid-link,.liquid-title')].every(node=>resumeSnapshot.contentWindow.getComputedStyle(node).willChange==='auto'),'static snapshots discard decorative animation layer hints');
-  assert(resumeSnapshot.contentDocument.fonts.status==='loaded','ready snapshot has settled typography');
-  assert([...resumeSnapshot.contentDocument.images].filter(image=>{const rect=image.getBoundingClientRect();return rect.width>0&&rect.height>0&&rect.bottom>0&&rect.top<resumeSnapshot.contentWindow.innerHeight;}).every(image=>image.complete),'ready snapshot has settled visible-image decoding or native fallback');
-  await until(()=>Math.abs(resumeSnapshot.contentWindow.scrollY-articleScroll)<8,'idle snapshot preserves the outgoing viewport');
+  assert(!previous().querySelector('iframe'),'the compact resume tab never creates a thumbnail iframe');
+  assert(previous().querySelector('.journey-previous-title').textContent==='The Execution Marketplace','the resume tab labels the article with its title-cased slug');
+  assert(previous().getBoundingClientRect().height<60,'the resume tab occupies one compact row');
   await click('[data-product-card]');await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='false','product opens after reveal');
   assert(!visible(previous()),'product overlay hides the previous-page window');
   await click('[data-close-product]');await until(()=>query('[data-product-panel]')?.getAttribute('aria-hidden')==='true'&&visible(previous()),'closing product restores previous window');
@@ -387,8 +527,8 @@ try{
   assert(win().location.pathname==='/shop','dismissing the previous window preserves the active storefront');
 
   await navigate(article);await navigate('/shop',{source:'reveal'});await until(()=>visible(previous()),'swipe previous window');
-  const swipeRect=previous().getBoundingClientRect(),frameRect=frame.getBoundingClientRect();
-  window.__journeyGesture={x:frameRect.left+swipeRect.right-40,y:frameRect.top+swipeRect.top+35};
+  const swipeRect=previous().querySelector('[data-journey-resume]').getBoundingClientRect(),frameRect=frame.getBoundingClientRect();
+  window.__journeyGesture={x:frameRect.left+swipeRect.right-20,y:frameRect.top+swipeRect.top+swipeRect.height/2};
   await until(()=>!visible(previous()),'swipe dismisses previous');
   assert(win().location.pathname==='/shop','swipe dismissal preserves the current destination');
 
@@ -598,6 +738,7 @@ try{
   await click('[data-journey-resume]');await until(()=>win().location.pathname==='/shop'&&settled(),'resume storefront');
   assert(!previous()?.textContent.includes('Execution marketplace'),'the ephemeral previous window never retains an article stack');
   await navigate('/coach',{source:'reveal'});await reveal();
+  await checkContinueMotion();
   const newsletterPoster=query('[data-journey-next="subscribe"]');
   assert(newsletterPoster&&newsletterPoster.querySelector('h2').textContent==='The newsletter.'&&newsletterPoster.querySelector('.journey-poster-rail').textContent.includes('03'),'coaching reveals the newsletter as the third destination');
   assert(newsletterPoster.querySelector('.journey-poster-credit').textContent.includes('portrait carved into a mask and scrolls added'),'the newsletter sculpture credits its source and additions');
@@ -880,7 +1021,9 @@ async fn forward(State(proxy): State<Proxy>, request: Request<Body>) -> Response
         let csp = csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'");
         headers.insert(header::CONTENT_SECURITY_POLICY, csp.parse().unwrap());
     } else {
-        headers.insert(header::CONTENT_SECURITY_POLICY, "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src 'self'; connect-src 'self'; frame-ancestors 'self'".parse().unwrap());
+        // Public pages permit HTTPS images. The proxy's otherwise stricter
+        // fixture policy must admit the real author photo for native decoding.
+        headers.insert(header::CONTENT_SECURITY_POLICY, "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://engmanager.xyz/cdn-cgi/imagedelivery/; frame-src 'self'; connect-src 'self'; frame-ancestors 'self'".parse().unwrap());
     }
     match response.bytes().await {
         Ok(bytes) if diagrams => (

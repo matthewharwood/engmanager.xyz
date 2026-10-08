@@ -1,0 +1,1 @@
+(()=>{class e{static get inputProperties(){return[`--hatch-color`,`--hatch-gap`]}paint(e,t,n){let r=(n.get(`--hatch-color`)||``).toString().trim()||`#4c4f6918`,i=parseFloat(n.get(`--hatch-gap`))||9;e.strokeStyle=r,e.lineWidth=1;for(let n=-t.height;n<t.width;n+=i)e.beginPath(),e.moveTo(n,0),e.lineTo(n+t.height,t.height),e.stroke()}}registerPaint(`brutalist-hatch`,e)})();

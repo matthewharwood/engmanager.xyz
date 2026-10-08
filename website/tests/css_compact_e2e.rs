@@ -164,35 +164,47 @@ async fn stale_content_hashes_never_alias_current_class_maps() {
 }
 
 #[tokio::test]
-async fn previous_generation_archive_serves_only_its_exact_provenance_checked_bodies() {
-    let manifest: Value = serde_json::from_str(include_str!(
-        "../compat/css-generation-2061afa3/manifest.json"
-    ))
-    .unwrap();
-    assert_eq!(
-        manifest["source_commit"],
-        "2061afa3aad1577e56f95cf665b49a3462f5d890"
-    );
+async fn previous_generation_archives_serve_only_their_exact_provenance_checked_bodies() {
+    let archives = [
+        (
+            include_str!("../compat/css-generation-2061afa3/manifest.json"),
+            "2061afa3aad1577e56f95cf665b49a3462f5d890",
+        ),
+        (
+            include_str!("../compat/css-generation-c65689df/manifest.json"),
+            "fd5c8495dd939ca9dcea38de82d677c17a301b8f",
+        ),
+    ];
     let server = TestServer::start(None).await;
     let client = server.client();
-    for entry in manifest["assets"].as_array().unwrap() {
-        let path = entry["path"].as_str().unwrap();
-        let response = client
-            .get(server.url(SITE_HOST, path))
-            .send()
-            .await
-            .unwrap();
-        assert_eq!(response.status(), StatusCode::OK, "archived {path}");
-        assert_eq!(
-            response.headers()["content-type"],
-            entry["content_type"].as_str().unwrap()
-        );
-        let body = response.bytes().await.unwrap();
-        assert_eq!(body.len() as u64, entry["bytes"].as_u64().unwrap());
-        assert_eq!(
-            hex::encode(Sha256::digest(&body)),
-            entry["sha256"].as_str().unwrap(),
-            "exact previous bytes at {path}"
-        );
+    for (source, commit) in archives {
+        let manifest: Value = serde_json::from_str(source).unwrap();
+        assert_eq!(manifest["source_commit"], commit);
+        for entry in manifest["assets"].as_array().unwrap() {
+            let path = entry["path"].as_str().unwrap();
+            let response = client
+                .get(server.url(SITE_HOST, path))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK, "archived {path}");
+            assert_eq!(
+                response.headers()["content-type"],
+                entry["content_type"].as_str().unwrap()
+            );
+            assert!(
+                response.headers()["cache-control"]
+                    .to_str()
+                    .unwrap()
+                    .contains("immutable")
+            );
+            let body = response.bytes().await.unwrap();
+            assert_eq!(body.len() as u64, entry["bytes"].as_u64().unwrap());
+            assert_eq!(
+                hex::encode(Sha256::digest(&body)),
+                entry["sha256"].as_str().unwrap(),
+                "exact previous bytes at {path}"
+            );
+        }
     }
 }

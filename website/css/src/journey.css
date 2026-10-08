@@ -79,7 +79,6 @@ html[data-journey="ready"] [data-journey-fallback] { display: none; }
 /* The mounted newsletter already waits for its first GPU frame behind the
    poster. Its own canvas fade would run inside the full-viewport handoff. */
 html[data-journey-loading] .armillary-canvas { transition: none; }
-.journey-preview { display: block; inline-size: 100%; block-size: 100%; border: 0; pointer-events: none; background: var(--surface-1); }
 .journey-promote {
     position: absolute;
     inset-inline-start: 50%;
@@ -96,6 +95,41 @@ html[data-journey-loading] .armillary-canvas { transition: none; }
     font: 500 .8rem var(--font-mono);
     text-decoration: none;
     pointer-events: auto;
+}
+.journey-promote::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--text-2);
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    animation: journey-button-pulse 2.8s ease-out infinite paused;
+}
+.journey-promote-text { display: block; position: relative; overflow: hidden; white-space: nowrap; }
+.journey-promote-label { display: block; }
+.journey-promote-marquee {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    display: flex;
+    inline-size: max-content;
+    visibility: hidden;
+    pointer-events: none;
+    animation: journey-button-marquee 6s linear infinite paused;
+}
+.journey-promote-marquee > span { flex: none; padding-inline-end: 1.5rem; }
+@keyframes journey-button-pulse {
+    0% { opacity: .6; transform: scale(1); }
+    85%, 100% { opacity: 0; transform: scale(1.045, 1.18); }
+}
+@keyframes journey-button-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: no-preference) {
+    html:not([data-wave-paused]):not([data-journey-loading]) .journey-revealing .journey-stage[data-preview-ready]:not([data-committing]) .journey-promote::before { animation-play-state: running; }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    html:not([data-wave-paused]):not([data-journey-loading]) .journey-revealing .journey-stage[data-preview-ready]:not([data-committing]) .journey-promote:hover .journey-promote-label { visibility: hidden; }
+    html:not([data-wave-paused]):not([data-journey-loading]) .journey-revealing .journey-stage[data-preview-ready]:not([data-committing]) .journey-promote:hover .journey-promote-marquee { visibility: visible; animation-play-state: running; }
 }
 /* A quiet museum label and one sculpture, always using the active theme. */
 .journey-poster {
@@ -189,24 +223,50 @@ html[data-journey-loading] .armillary-canvas { transition: none; }
     z-index: 75;
     inset-inline-start: max(1rem, env(safe-area-inset-left));
     inset-block-end: max(1rem, env(safe-area-inset-bottom));
-    inline-size: clamp(10rem, 20vw, 16rem);
+    display: flex;
+    align-items: center;
+    max-inline-size: min(24rem, calc(100vw - 2rem));
     border: 1px solid color-mix(in oklab, var(--text-2) 35%, transparent);
-    border-radius: .8rem;
-    background: var(--surface-1);
+    border-radius: .65rem;
+    background: color-mix(in oklab, var(--surface-1) 88%, transparent);
+    backdrop-filter: blur(14px);
     color: var(--text-1);
-    box-shadow: 0 8px 32px color-mix(in oklab, var(--text-1) 16%, transparent);
+    box-shadow: 0 4px 16px color-mix(in oklab, var(--text-1) 10%, transparent);
     touch-action: pan-y;
     overflow: hidden;
 }
 .journey-previous[hidden], .journey-stage[hidden] { display: none; }
 .journey-revealing .journey-previous { visibility: hidden; }
-.journey-resume { display: block; inline-size: 100%; padding: 0; border: 0; color: inherit; background: transparent; text-align: start; cursor: pointer; font: inherit; }
-.journey-previous-viewport { display: block; position: relative; inline-size: 100%; aspect-ratio: 16 / 9; overflow: hidden; contain: layout paint; pointer-events: none; }
-.journey-previous-viewport .journey-preview { position: absolute; inset: 0; contain: layout paint; transform-origin: top left; }
-.journey-previous-caption { display: grid; gap: .3rem; padding: .7rem; border-block-start: 1px solid color-mix(in oklab, var(--text-2) 20%, transparent); font: .65rem/1.4 var(--font-mono); }
-.journey-previous-caption strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; }
-.journey-previous-caption > span { color: var(--text-2); }
-.journey-dismiss { position: absolute; inset-block-start: .3rem; inset-inline-end: .3rem; display: grid; place-items: center; inline-size: 2.25rem; block-size: 2.25rem; padding: 0; border: 1px solid var(--text-2); border-radius: 50%; background: var(--surface-1); color: var(--text-1); font-size: 1.2rem; cursor: pointer; }
+.journey-resume {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    min-inline-size: 0;
+    min-block-size: 2.75rem;
+    padding: .65rem .8rem;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    text-align: start;
+    cursor: pointer;
+    font: 500 .75rem/1.4 var(--font-mono);
+}
+.journey-previous-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.journey-resume:hover { color: var(--accent); }
+.journey-dismiss {
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+.journey-dismiss:hover { color: var(--text-1); }
 .journey-resume:focus-visible, .journey-dismiss:focus-visible, .journey-promote:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
 .service-nav-link { display: inline-grid; place-items: center; inline-size: 2.75rem; block-size: 2.75rem; flex-shrink: 0; color: var(--text-1); border-radius: 50%; }
 .service-nav-link svg { inline-size: 1.2rem; block-size: 1.2rem; }
@@ -219,9 +279,7 @@ html[data-journey-loading] .armillary-canvas { transition: none; }
 }
 @media (max-width: 42rem) {
     .site-nav .service-nav-link { inline-size: 2.25rem; block-size: 2.25rem; }
-    .journey-previous { inline-size: 7.5rem; inset-inline-start: .65rem; inset-block-end: max(.65rem, env(safe-area-inset-bottom)); }
-    .journey-previous-viewport { aspect-ratio: 3 / 4; }
-    .journey-previous-caption { font-size: .58rem; padding: .5rem; }
+    .journey-previous { max-inline-size: calc(100vw - 1.3rem); inset-inline-start: .65rem; inset-block-end: max(.65rem, env(safe-area-inset-bottom)); }
     .homepage .journey-previous { inset-block-end: 5.5rem; }
 }
 @media (prefers-reduced-motion: reduce) {
